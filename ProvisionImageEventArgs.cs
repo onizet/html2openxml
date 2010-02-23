@@ -29,7 +29,7 @@ namespace NotesFor.HtmlToOpenXml
 		public ImagePartType? ImageExtension { get; set; }
 
 		/// <summary>
-		/// Gets or sets the width and height of the image as it should be displayed in the document.
+		/// Gets or sets the width and height (in pixels) of the image as it should be displayed in the document.
 		/// </summary>
 		public System.Drawing.Size ImageSize { get; set; }
 	}

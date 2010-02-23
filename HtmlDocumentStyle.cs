@@ -104,6 +104,21 @@ namespace NotesFor.HtmlToOpenXml
 
 		#endregion
 
+		#region AddStyle
+
+		/// <summary>
+		/// Add a new style inside the document and refresh the style cache.
+		/// </summary>
+		internal void AddStyle(String name, Style style)
+		{
+			knownStyles[name] = style;
+			if (mainPart.StyleDefinitionsPart == null)
+				mainPart.AddNewPart<StyleDefinitionsPart>().Styles = new Styles();
+			mainPart.StyleDefinitionsPart.Styles.Append(style);
+		}
+
+		#endregion
+
 		//____________________________________________________________________
 		//
 
@@ -136,7 +151,7 @@ namespace NotesFor.HtmlToOpenXml
 		}
 
 		/// <summary>
-		/// Gets or sets The default paragraph style to apply on any new runs.
+		/// Gets or sets the default paragraph style to apply on any new runs.
 		/// </summary>
 		public String DefaultStyle
 		{
