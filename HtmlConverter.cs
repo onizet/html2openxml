@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Globalization;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -10,9 +11,8 @@ namespace NotesFor.HtmlToOpenXml
 {
 	using a = DocumentFormat.OpenXml.Drawing;
 	using pic = DocumentFormat.OpenXml.Drawing.Pictures;
-	using Point = System.Drawing.Point;
 	using wp = DocumentFormat.OpenXml.Drawing.Wordprocessing;
-    using System.Globalization;
+	using Point = System.Drawing.Point;
 
 
 	/// <summary>
@@ -300,9 +300,9 @@ namespace NotesFor.HtmlToOpenXml
 
 		#endregion
 
-		#region CreateImage
+		#region AddImagePart
 
-		private Drawing AddImagePart(Uri imageUrl, String imageSource, String alt)
+		private Drawing AddImagePart(Uri imageUrl, String imageSource, String alt, Size preferredSize)
 		{
 			if (imageObjId == UInt32.MinValue)
 			{
@@ -330,6 +330,7 @@ namespace NotesFor.HtmlToOpenXml
 			if(!knownImageParts.TryGetValue(imageUrl, out imagePart))
 			{
 				ProvisionImageEventArgs e = new ProvisionImageEventArgs(imageUrl);
+				e.ImageSize = preferredSize;
 				if (this.ImageProcessing == ImageProcessing.AutomaticDownload && imageUrl.IsAbsoluteUri)
 				{
 					e.Data = ConverterUtility.DownloadData(imageUrl);
@@ -933,11 +934,27 @@ namespace NotesFor.HtmlToOpenXml
 				if (src != null && Uri.TryCreate(src, UriKind.RelativeOrAbsolute, out uri))
 				{
 					string alt = en.Attributes["alt"];
+					bool process = true;
 
 					if (!uri.IsAbsoluteUri && this.BaseImageUrl != null)
 						uri = new Uri(this.BaseImageUrl, uri);
 
-					drawing = AddImagePart(uri, src, alt);
+					Size preferredSize = Size.Empty;
+					if (en.Attributes["width"] != null && en.Attributes["height"] != null)
+					{
+						Unit wu = en.Attributes.GetAsUnit("width");
+						Unit hu = en.Attributes.GetAsUnit("height");
+
+						// If a specified size is set to null, we skip the image.
+						if (wu.Value == 0 && hu.Value == 0)
+							process = false;
+						// only keep if the unit are px (otherwise it's dependent of the user's font size)
+						else if(wu.Type == "px" && hu.Type == "px")
+							preferredSize = new Size(wu.Value, hu.Value);
+					}
+
+					if(process)
+						drawing = AddImagePart(uri, src, alt, preferredSize);
 				}
 			}
 
@@ -1051,6 +1068,18 @@ namespace NotesFor.HtmlToOpenXml
 					// Append the processed elements and put them to the Run of the Hyperlink
 					h.Append(elements);
 
+					if (!htmlStyles.DoesStyleExists("Hyperlink"))
+					{
+						htmlStyles.AddStyle("Hyperlink", new Style(
+							new StyleName() { Val = "Hyperlink" },
+							new UnhideWhenUsed(),
+							new StyleRunProperties(
+								new DocumentFormat.OpenXml.Wordprocessing.Color() { Val = "0000FF", ThemeColor = ThemeColorValues.Hyperlink },
+								new Underline() { Val = UnderlineValues.Single }
+							)
+						) { Type = StyleValues.Character, StyleId = "Hyperlink" });
+					}
+
 					h.GetFirstChild<Run>().InsertInProperties(
 						new RunStyle() { Val = htmlStyles.GetStyle("Hyperlink", true) });
 
@@ -1124,14 +1153,14 @@ namespace NotesFor.HtmlToOpenXml
 				Table currentTable = new Table(
 					new TableProperties(
 						new TableStyle() { Val = htmlStyles.GetStyle("Table Grid", false) },
-						new TableWidth() { Type = TableWidthUnitValues.Pct, Width = "5000" }), // 100% * 500
-					 new TableGrid(
-						  new GridColumn() { Width = "5610" }),
-					   new TableRow(
-						  new TableCell(
-							  // Ensure the border lines are visible (regardless of the style used)
-							  new TableCellProperties(
-								  new TableCellBorders(
+						new TableWidth() { Type = TableWidthUnitValues.Pct, Width = "5000" }), // 100% * 50
+					new TableGrid(
+						new GridColumn() { Width = "5610" }),
+					new TableRow(
+						new TableCell(
+							// Ensure the border lines are visible (regardless of the style used)
+							new TableCellProperties(
+								new TableCellBorders(
 									new TopBorder() { Val = BorderValues.Single },
 									new LeftBorder() { Val = BorderValues.Single },
 									new BottomBorder() { Val = BorderValues.Single },
@@ -1245,7 +1274,7 @@ namespace NotesFor.HtmlToOpenXml
 				switch (unit.Type)
 				{
 					case "%":
-                        properties.Add(new TableWidth() { Type = TableWidthUnitValues.Pct, Width = (unit.Value * 500).ToString(CultureInfo.InvariantCulture) }); break;
+                        properties.Add(new TableWidth() { Type = TableWidthUnitValues.Pct, Width = (unit.Value * 50).ToString(CultureInfo.InvariantCulture) }); break;
 					case "pt":
                         properties.Add(new TableWidth() { Type = TableWidthUnitValues.Dxa, Width = (unit.Value * 20).ToString(CultureInfo.InvariantCulture) }); break;
 					case "px":
@@ -1254,7 +1283,7 @@ namespace NotesFor.HtmlToOpenXml
 			}
 			else
 			{
-				properties.Add(new TableWidth() { Type = TableWidthUnitValues.Pct, Width = "5000" }); // 100% * 500
+				properties.Add(new TableWidth() { Type = TableWidthUnitValues.Pct, Width = "5000" }); // 100% * 50
 			}
 
 			string align = en.Attributes["align"];
@@ -1651,7 +1680,7 @@ namespace NotesFor.HtmlToOpenXml
 		/// Gets or sets whether anchor links are included or not in the conversion.
 		/// </summary>
 		/// <remarks>An anchor is a term used to define a hyperlink destination inside a document.
-		/// <see cref="http://www.w3schools.com/HTML/html_links.asp"/>.
+		/// <see href="http://www.w3schools.com/HTML/html_links.asp"/>.
 		/// <br/>
 		/// It exists some predefined anchors used by Word such as _top to refer to the top of the document.
 		/// The anchor <i>#_top</i> is always accepted regardless this property value.

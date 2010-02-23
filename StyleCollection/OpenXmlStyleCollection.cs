@@ -11,7 +11,7 @@ namespace NotesFor.HtmlToOpenXml
 	/// <summary>
 	/// Defines the styles to apply on OpenXml elements.
 	/// </summary>
-	public abstract class OpenXmlStyleCollection
+	abstract class OpenXmlStyleCollection
 	{
 		/// <summary>Holds the tags to apply to the current OpenXml element.</summary>
 		/// <remarks>The key contains the name of the tag, the values contains a list of queued attributes of the same tag.</remarks>
