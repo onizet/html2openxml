@@ -63,6 +63,31 @@ namespace NotesFor.HtmlToOpenXml
             }
         }
 
+		/// <summary>
+		/// Resize an image keeping its aspect ratio.
+		/// </summary>
+		public static Size KeepAspectRatio(Size actualSize, Size preferredSize)
+		{
+			int width, height;
+
+			// Resize by the highest difference ratio between constrained dimension and real one.
+			bool forceResizeByWidth = preferredSize.Height <= 0 && preferredSize.Width > 0;
+			bool forceResizeByHeight = preferredSize.Width <= 0 && preferredSize.Height > 0;
+			if (forceResizeByWidth || (!forceResizeByHeight &&
+				Math.Abs(preferredSize.Width - actualSize.Width) > Math.Abs(preferredSize.Height - actualSize.Height)))
+			{
+				width = preferredSize.Width;
+				height = (int) (((float) actualSize.Height / actualSize.Width) * width);
+			}
+			else
+			{
+				height = preferredSize.Height;
+				width = (int) (((float) actualSize.Width / actualSize.Height) * height);
+			}
+
+			return new Size(width, height);
+		}
+
         /// <summary>        
         /// Gets the dimensions of an image.        
         /// </summary>        

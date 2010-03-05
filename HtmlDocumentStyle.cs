@@ -67,10 +67,19 @@ namespace NotesFor.HtmlToOpenXml
 		#region GetStyle
 
 		/// <summary>
+		/// Helper method to obtain the StyleId of a named paragraph style (invariant or localized name).
+		/// </summary>
+		/// <param name="name">The name of the style to look for.</param>
+		/// <returns>If not found, returns the given name argument.</returns>
+		public String GetStyle(string name)
+		{
+			return GetStyle(name, false);
+		}
+
+		/// <summary>
 		/// Helper method to obtain the StyleId of a named style (invariant or localized name).
 		/// </summary>
 		/// <param name="name">The name of the style to look for.</param>
-		/// <param name="defaultStyleName">Fallback style if the given one was not found.</param>
 		/// <param name="characterType">True to obtain the character version of the given style.</param>
 		/// <returns>If not found, returns the given name argument.</returns>
 		public String GetStyle(string name, bool characterType)

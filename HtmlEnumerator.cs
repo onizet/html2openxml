@@ -22,7 +22,7 @@ namespace NotesFor.HtmlToOpenXml
 		static HtmlEnumerator()
 		{
 			stripTagRegex = new Regex(@"(</?\w+)", RegexOptions.Compiled);
-			beginOfLineTrimRegex = new Regex(@"\r?\n\s+([^<])", RegexOptions.Compiled);
+			beginOfLineTrimRegex = new Regex(@"\r?\n\s*([^<])", RegexOptions.Compiled);
 		}
 
 		/// <summary>
@@ -38,6 +38,9 @@ namespace NotesFor.HtmlToOpenXml
 
 			// Preserves whitespaces inside Pre tags.
 			html = Regex.Replace(html, "(<pre.*?>)(.+?)</pre>", PreserveWhitespacesInPre, RegexOptions.Singleline);
+
+			// Remove tabs and whitespace at the beginning of the lines
+			html = Regex.Replace(html, @"^\s+", String.Empty, RegexOptions.Multiline);
 
 			// Split our html using the tags
 			String[] lines = Regex.Split(html, @"(</?\w+[^>]*/?>)", RegexOptions.Singleline);

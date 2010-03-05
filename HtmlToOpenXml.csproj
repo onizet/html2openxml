@@ -48,6 +48,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Configuration enum.cs" />
+    <Compile Include="HtmlConverter.ProcessTag.cs" />
     <Compile Include="ProvisionImageEventArgs.cs" />
     <Compile Include="HtmlAttributeCollection.cs" />
     <Compile Include="StyleCollection\ParagraphStyleCollection.cs" />
