@@ -246,7 +246,7 @@ namespace NotesFor.HtmlToOpenXml
 				knownExtensions.Add(".wmf", ImagePartType.Wmf);
 			}
 
-			String extension = System.IO.Path.GetExtension(uri.AbsoluteUri);
+			String extension = System.IO.Path.GetExtension(uri.IsAbsoluteUri? uri.AbsoluteUri : uri.ToString());
 			ImagePartType type;
 			if (knownExtensions.TryGetValue(extension, out type)) return type;
 			return null;
@@ -263,7 +263,25 @@ namespace NotesFor.HtmlToOpenXml
 		{
 			// Read only the size of the image using a little API found on codeproject.
 			using (BinaryReader breader = new BinaryReader(imageStream))
-				return ImageHeader.GetDimensions(breader);
+			{
+				try
+				{
+					return ImageHeader.GetDimensions(breader);
+				}
+				catch (ArgumentException)
+				{
+					try
+					{
+						// Image format not recognized, try with .Net drawing API
+						return Bitmap.FromStream(imageStream).Size;
+					}
+					catch(ArgumentException)
+					{
+						// Still not recognized
+						return Size.Empty;
+					}
+				}
+			}
 		}
 
 		#endregion
