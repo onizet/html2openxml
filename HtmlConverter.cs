@@ -52,7 +52,7 @@ namespace NotesFor.HtmlToOpenXml
 		/// <summary>
 		/// Constructor.
 		/// </summary>
-		/// <param name="maker">The mainDocumentPart of a document where to write the conversion to.</param>
+		/// <param name="mainPart">The mainDocumentPart of a document where to write the conversion to.</param>
 		/// <remarks>We preload some configuration from inside the document such as style, bookmarks,...</remarks>
 		public HtmlConverter(MainDocumentPart mainPart)
 		{

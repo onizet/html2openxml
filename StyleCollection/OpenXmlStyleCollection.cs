@@ -51,7 +51,7 @@ namespace NotesFor.HtmlToOpenXml
 		/// Add the specified tag to the list.
 		/// </summary>
 		/// <param name="name">The name of the tag.</param>
-		/// <param name="element">The Run properties to apply to the next build run until the tag is popped out.</param>
+		/// <param name="elements">The Run properties to apply to the next build run until the tag is popped out.</param>
 		public void BeginTag(string name, List<OpenXmlElement> elements)
 		{
 			if (elements.Count == 0) return;
@@ -69,7 +69,7 @@ namespace NotesFor.HtmlToOpenXml
 		/// Add the specified tag to the list.
 		/// </summary>
 		/// <param name="name">The name of the tag.</param>
-		/// <param name="element">The Run properties to apply to the next build run until the tag is popped out.</param>
+		/// <param name="elements">The Run properties to apply to the next build run until the tag is popped out.</param>
 		public void BeginTag(string name, params OpenXmlElement[] elements)
 		{
 			Stack<TagsAtSameLevel> enqueuedTags;
@@ -89,7 +89,7 @@ namespace NotesFor.HtmlToOpenXml
 		/// Merge the properties with the tag of the previous level.
 		/// </summary>
 		/// <param name="name">The name of the tag.</param>
-		/// <param name="element">The properties to apply to the next build run until the tag is popped out.</param>
+		/// <param name="elements">The properties to apply to the next build run until the tag is popped out.</param>
 		public void MergeTag(string name, List<OpenXmlElement> elements)
 		{
 			Stack<TagsAtSameLevel> enqueuedTags;
@@ -124,7 +124,7 @@ namespace NotesFor.HtmlToOpenXml
 		/// Merge the properties with the tag of the previous level.
 		/// </summary>
 		/// <param name="name">The name of the tag.</param>
-		/// <param name="element">The properties to apply to the next build run until the tag is popped out.</param>
+		/// <param name="elements">The properties to apply to the next build run until the tag is popped out.</param>
 		public void MergeTag(string name, params OpenXmlElement[] elements)
 		{
 			Stack<TagsAtSameLevel> enqueuedTags;
@@ -163,7 +163,6 @@ namespace NotesFor.HtmlToOpenXml
 		/// Remove the specified tag from the list.
 		/// </summary>
 		/// <param name="name">The name of the tag.</param>
-		/// <param name="element">The Run properties to apply to the next build run until the tag is popped out.</param>
 		public void EndTag(string name)
 		{
 			Stack<TagsAtSameLevel> enqueuedTags;
