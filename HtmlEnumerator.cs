@@ -13,7 +13,7 @@ namespace NotesFor.HtmlToOpenXml
 	{
 		private static Regex
 			stripTagRegex,          // extract the name of a tag without its attributes but with the < >
-			beginOfLineTrimRegex;   // remove whitespaces at the beginning of any new lines.
+			lineBreakTrimRegex;		// remove carriage new lines.
 
 		private IEnumerator<String> en;
 		private String current, currentTag;
@@ -22,7 +22,7 @@ namespace NotesFor.HtmlToOpenXml
 		static HtmlEnumerator()
 		{
 			stripTagRegex = new Regex(@"(</?\w+)", RegexOptions.Compiled);
-			beginOfLineTrimRegex = new Regex(@"\r?\n\s*([^<])", RegexOptions.Compiled);
+			lineBreakTrimRegex = new Regex(@"\r?\n", RegexOptions.Compiled);
 		}
 
 		/// <summary>
@@ -35,6 +35,9 @@ namespace NotesFor.HtmlToOpenXml
 			// Remove Script tags, doctype, comments, css style, controls and html head part
 			html = Regex.Replace(html, @"<!--.+?-->|<script.+?</script>|<style.+?</style>|<head.+</head>|<!.+?>|<input.+?/>|<select.+?</select>|<textarea.+?</textarea>|<button.+?</button>", String.Empty,
 								 RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
+			// Removes tabs and whitespace inside and before|next the line-breaking tags (p, div, br and body)
+			html = Regex.Replace(html, @"(\s*)(</?(p|div|br|body)[^>]*/?>)(\s*)", "$2", RegexOptions.Multiline);
 
 			// Preserves whitespaces inside Pre tags.
 			html = Regex.Replace(html, "(<pre.*?>)(.+?)</pre>", PreserveWhitespacesInPre, RegexOptions.Singleline);
@@ -82,20 +85,8 @@ namespace NotesFor.HtmlToOpenXml
 			attributes = styleAttributes = null;
 			bool success;
 
-			// Ignore empty lines and remove tabs and whitespace at the beginning of the lines
-			// (unless the PreserveWhitespaces property is enabled)
-			if (this.PreserveWhitespaces)
-			{
-				while ((success = en.MoveNext()) && en.Current.Length == 0) ;
-				if (success) current = en.Current;
-			}
-			else
-			{
-				while ((success = en.MoveNext()) && en.Current.Trim().Length == 0) ;
-
-				// Remove tabs and whitespace at the beginning of the lines
-				if(success) current = beginOfLineTrimRegex.Replace(en.Current, " $1");
-			}
+			// Ignore empty lines
+			while ((success = en.MoveNext()) && (current = en.Current.Trim('\n', '\r')).Length == 0) ;
 
 			if (success && tag != null)
 				return !current.Equals(tag, StringComparison.CurrentCultureIgnoreCase);
@@ -155,11 +146,6 @@ namespace NotesFor.HtmlToOpenXml
 				return currentTag;
 			}
 		}
-
-		/// <summary>
-		/// Gets or sets whether the enumerator should preserve white spaces at the beginning of the lines.
-		/// </summary>
-		public bool PreserveWhitespaces { get; set; }
 
 		/// <summary>
 		/// Gets the line or tag at the current position of the enumerator.

@@ -488,8 +488,6 @@ namespace NotesFor.HtmlToOpenXml
 
 		private void ProcessPre(HtmlEnumerator en)
 		{
-			en.PreserveWhitespaces = true;
-
 			CompleteCurrentParagraph();
 			currentParagraph = htmlStyles.Paragraph.NewParagraph();
 
@@ -540,7 +538,6 @@ namespace NotesFor.HtmlToOpenXml
 			currentParagraph.Append(elements);
 			elements.Clear();
 			this.paragraphs.Add(currentParagraph = htmlStyles.Paragraph.NewParagraph());
-			en.PreserveWhitespaces = false;
 		}
 
 		#endregion
