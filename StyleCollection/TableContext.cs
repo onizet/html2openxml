@@ -10,16 +10,15 @@ namespace NotesFor.HtmlToOpenXml
 	/// </summary>
 	sealed class TableContext : IComparer<Point>
 	{
-		struct Tuple
+		sealed class Tuple
 		{
 			public Table Table;
 			public Point CellPosition;
 			public SortedList<Point, Int32> RowSpan;
 		}
 		private Stack<Tuple> tables = new Stack<Tuple>(5);
-		private Table table;
-		private Point cellPosition;
-		private SortedList<Point, Int32> rowSpan;
+		private Tuple current;
+
 
 
 		// IComparer<Point> Implementation
@@ -32,55 +31,50 @@ namespace NotesFor.HtmlToOpenXml
 
 		public void NewContext(Table table)
 		{
-			if (this.table != null)
-				tables.Push(new Tuple() { Table = this.table, CellPosition = this.CellPosition, RowSpan = this.rowSpan });
+			if (this.current != null)
+				tables.Push(current);
 
-			this.table = table;
-			rowSpan = new SortedList<Point, Int32>(this);
-			this.CellPosition = Point.Empty;
+			current = new Tuple() { Table = table, CellPosition = Point.Empty, RowSpan = new SortedList<Point, Int32>(this) };
 		}
 
 		public void CloseContext()
 		{
 			if (tables.Count > 0)
 			{
-				Tuple t = tables.Pop();
-				this.table = t.Table;
-				this.CellPosition = t.CellPosition;
-				this.rowSpan = t.RowSpan;
+				current = tables.Pop();
 			}
 			else
 			{
-				this.table = null;
+				this.current = null;
 			}
 		}
 
 		public bool HasContext
 		{
-			get { return table != null; }
+			get { return current != null; }
 		}
 
 		/// <summary>
 		/// Gets or sets the position of the current processed cell in a table.
 		/// Origins is at the top left corner.
 		/// </summary>
-		internal Point CellPosition
+		public Point CellPosition
 		{
-			get { return cellPosition; }
-			set { cellPosition = value; }
+			get { return current.CellPosition; }
+			set { current.CellPosition = value; }
 		}
 
 		/// <summary>
 		/// Gets the concurrent remaining row span foreach columns.
 		/// </summary>
-		internal SortedList<Point, Int32> RowSpan
+		public SortedList<Point, Int32> RowSpan
 		{
-			get { return rowSpan; }
+			get { return current.RowSpan; }
 		}
 
 		public Table CurrentTable
 		{
-			get { return table; }
+			get { return current.Table; }
 		}
 	}
 }
