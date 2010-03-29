@@ -104,8 +104,8 @@ namespace NotesFor.HtmlToOpenXml
 		#region RemoveEmptyParagraphs
 
 		/// <summary>
-		/// Remove empty paragraph unless 2 tables are side by side
-		/// These paragraph could be empty due to misformed html or spaces in the html source
+		/// Remove empty paragraph unless 2 tables are side by side.
+		/// These paragraph could be empty due to misformed html or spaces in the html source.
 		/// </summary>
 		private void RemoveEmptyParagraphs()
 		{
@@ -114,6 +114,12 @@ namespace NotesFor.HtmlToOpenXml
 			for (int i = 0; i < paragraphs.Count; i++)
 			{
 				OpenXmlCompositeElement p = paragraphs[i];
+
+				// If the paragraph is between 2 tables, we don't remove it (it provides some
+				// separation or Word will merge the two tables)
+				if (i > 0 && i + 1 < paragraphs.Count - 1
+					&& paragraphs[i - 1].LocalName == "tbl"
+					&& paragraphs[i + 1].LocalName == "tbl") continue;
 
 				if (p.HasChildren)
 				{
@@ -132,14 +138,6 @@ namespace NotesFor.HtmlToOpenXml
 					}
 
 					if (hasRuns) continue;
-				}
-				else
-				{
-					// If the paragraph is between 2 tables, we don't remove it (it provides some
-					// separation or Word will merge the two tables)
-					if (i > 0 && i + 1 < paragraphs.Count - 1
-						&& paragraphs[i - 1].LocalName == "tbl"
-						&& paragraphs[i + 1].LocalName == "tbl") continue;
 				}
 
 				paragraphs.RemoveAt(i);
@@ -189,6 +187,22 @@ namespace NotesFor.HtmlToOpenXml
 		{
 			if(elements.Count > 0) CompleteCurrentParagraph();
 			ProcessHtmlChunks(en, endTag);
+		}
+
+		#endregion
+
+		#region AddParagraph
+
+		/// <summary>
+		/// Add a new paragraph, table, ... to the list of processed paragrahs. This method takes care of 
+		/// adding the new element to the current table if it exists.
+		/// </summary>
+		private void AddParagraph(OpenXmlCompositeElement element)
+		{
+			if (tables.HasContext)
+				tables.CurrentTable.GetLastChild<TableRow>().GetLastChild<TableCell>().Append(element);
+			else
+				this.paragraphs.Add(element);
 		}
 
 		#endregion

@@ -130,7 +130,7 @@ namespace NotesFor.HtmlToOpenXml
 			);
 
 			// Restore the original elements list
-			this.paragraphs.Add(currentParagraph);
+			AddParagraph(currentParagraph);
 			this.elements.Clear();
 		}
 
@@ -168,11 +168,11 @@ namespace NotesFor.HtmlToOpenXml
 						this.paragraphs.Insert(this.paragraphs.Count-1, currentParagraph);
 						AlternateProcessHtmlChunks(en, "</div>");
 						CompleteCurrentParagraph();
-						this.paragraphs.Add(currentParagraph = htmlStyles.Paragraph.NewParagraph());
+						AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
 					}
 					else
 					{
-						this.paragraphs.Add(currentParagraph);
+						AddParagraph(currentParagraph);
 					}
 				}
 			}
@@ -217,8 +217,8 @@ namespace NotesFor.HtmlToOpenXml
 				new ParagraphStyleId() { Val = htmlStyles.GetStyle("heading " + level, false) });
 
 			this.elements.Clear();
-			this.paragraphs.Add(p);
-			this.paragraphs.Add(currentParagraph = htmlStyles.Paragraph.NewParagraph());
+			AddParagraph(p);
+			AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
 		}
 
 		#endregion
@@ -254,7 +254,7 @@ namespace NotesFor.HtmlToOpenXml
 			currentParagraph.InsertInProperties(
 				new ParagraphBorders(
 					new BottomBorder() { Val = BorderValues.Single, Size = hrSize }));
-			this.paragraphs.Add(currentParagraph = htmlStyles.Paragraph.NewParagraph());
+			AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
 		}
 
 		#endregion
@@ -296,8 +296,6 @@ namespace NotesFor.HtmlToOpenXml
 				}
 			}
 
-			if (!en.IsSelfClosedTag) AlternateProcessHtmlChunks(en, "</img>");
-
 			if (drawing != null)
 				elements.Add(new Run(drawing));
 		}
@@ -317,11 +315,11 @@ namespace NotesFor.HtmlToOpenXml
 
 		private void ProcessLi(HtmlEnumerator en)
 		{
-			// Continue to process the html until we found </li>
-			AlternateProcessHtmlChunks(en, "</li>");
+			CompleteCurrentParagraph();
 
-			currentParagraph = htmlStyles.Paragraph.NewParagraph();
-			currentParagraph.Append(elements);
+			// Save the new paragraph reference to support nested numbering list.
+			Paragraph p = htmlStyles.Paragraph.NewParagraph();
+			currentParagraph = p;
 			currentParagraph.InsertInProperties(
 				new SpacingBetweenLines() { After = "0" },
 				new NumberingProperties(
@@ -331,7 +329,11 @@ namespace NotesFor.HtmlToOpenXml
 			);
 
 			// Restore the original elements list
-			this.paragraphs.Add(currentParagraph);
+			AddParagraph(currentParagraph);
+
+			// Continue to process the html until we found </li>
+			AlternateProcessHtmlChunks(en, "</li>");
+			p.Append(elements);
 			this.elements.Clear();
 		}
 
@@ -399,7 +401,7 @@ namespace NotesFor.HtmlToOpenXml
 					}
 
 					CompleteCurrentParagraph();
-					this.paragraphs.Add(currentParagraph = htmlStyles.Paragraph.NewParagraph());
+					AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
 				}
 				else
 				{
@@ -452,7 +454,7 @@ namespace NotesFor.HtmlToOpenXml
 		private void ProcessParagraph(HtmlEnumerator en)
 		{
 			CompleteCurrentParagraph();
-			this.paragraphs.Add(currentParagraph = htmlStyles.Paragraph.NewParagraph());
+			AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
 
 			// Respect this order: this is the way the browsers apply them
 			String attrValue = en.StyleAttributes["text-align"];
@@ -478,7 +480,7 @@ namespace NotesFor.HtmlToOpenXml
 				AlternateProcessHtmlChunks(en, "</p>");
 
 				CompleteCurrentParagraph();
-				this.paragraphs.Add(currentParagraph = htmlStyles.Paragraph.NewParagraph());
+				AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
 			}
 		}
 
@@ -512,12 +514,12 @@ namespace NotesFor.HtmlToOpenXml
 							currentParagraph))
 				);
 
-				this.paragraphs.Add(currentTable);
+				AddParagraph(currentTable);
 				tables.NewContext(currentTable);
 			}
 			else
 			{
-				this.paragraphs.Add(currentParagraph);
+				AddParagraph(currentParagraph);
 			}
 
 			// Process the entire <pre> tag and append it to the document
@@ -537,7 +539,6 @@ namespace NotesFor.HtmlToOpenXml
 
 			currentParagraph.Append(elements);
 			elements.Clear();
-			this.paragraphs.Add(currentParagraph = htmlStyles.Paragraph.NewParagraph());
 		}
 
 		#endregion
@@ -561,7 +562,7 @@ namespace NotesFor.HtmlToOpenXml
 				AlternateProcessHtmlChunks(en, "</span>");
 
 				CompleteCurrentParagraph();
-				this.paragraphs.Add(currentParagraph = htmlStyles.Paragraph.NewParagraph());
+				AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
 			}
 		}
 
@@ -841,6 +842,11 @@ namespace NotesFor.HtmlToOpenXml
 
 			if (en.IsSelfClosedTag) // Force a call to ProcessClosingTableColumn
 				ProcessClosingTableColumn(en);
+			else
+			{
+				// we create a new currentParagraph to add new runs inside the TableCell
+				cell.Append(currentParagraph = new Paragraph());
+			}
 		}
 
 		#endregion
@@ -906,9 +912,9 @@ namespace NotesFor.HtmlToOpenXml
 			numberLevelRef--;
 
 			// If we are no more inside a list, we move to another paragraph (as we created
-			// one for containing all the <li>
+			// one for containing all the <li>. This will ensure the next run will not be added to the <li>.
 			if (numberLevelRef == 0)
-				this.paragraphs.Add(currentParagraph = htmlStyles.Paragraph.NewParagraph());
+				AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
 		}
 
 		#endregion
@@ -918,7 +924,7 @@ namespace NotesFor.HtmlToOpenXml
 		private void ProcessClosingParagraph(HtmlEnumerator en)
 		{
 			CompleteCurrentParagraph();
-			this.paragraphs.Add(currentParagraph = htmlStyles.Paragraph.NewParagraph());
+			AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
 
 			string tag = en.CurrentTag.Replace("/", "");
 			htmlStyles.Runs.EndTag(tag);
@@ -960,7 +966,7 @@ namespace NotesFor.HtmlToOpenXml
 			tables.CloseContext();
 
 			if (!tables.HasContext)
-				this.paragraphs.Add(currentParagraph = htmlStyles.Paragraph.NewParagraph());
+				AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
 		}
 
 		#endregion
@@ -1015,9 +1021,18 @@ namespace NotesFor.HtmlToOpenXml
 		private void ProcessClosingTableColumn(HtmlEnumerator en)
 		{
 			TableCell cell = tables.CurrentTable.GetLastChild<TableRow>().GetLastChild<TableCell>();
-			Paragraph p = htmlStyles.Paragraph.NewParagraph();
-			p.Append(elements);
-			cell.Append(p);
+
+			// As we add automatically a paragraph to the cell once we create it, we'll remove it if finally, it was not used.
+			// For all the other children, we will ensure there is no more empty paragraphs (similarly to what we do at the end
+			// of the convert processing).
+			foreach(Paragraph p in cell.Elements<Paragraph>())
+			{
+				if (!p.HasChild<Run>()) p.Remove();
+			}
+
+			// We add this paragraph regardless it has elements or not. A TableCell requires at least a Paragraph.
+			// The append should occur after the previous foreach()
+			cell.Append(new Paragraph(elements));
 
 			htmlStyles.Tables.ApplyTags(cell);
 

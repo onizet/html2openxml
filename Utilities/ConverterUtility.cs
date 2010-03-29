@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using DocumentFormat.OpenXml.Packaging;
 using System.IO;
 using System.Drawing;
+using System.Globalization;
 
 namespace NotesFor.HtmlToOpenXml
 {
@@ -137,6 +138,17 @@ namespace NotesFor.HtmlToOpenXml
 		public static System.Drawing.Color ConvertToForeColor(string htmlColor)
 		{
 			System.Drawing.Color color;
+
+			// Bug fixed by jairoXXX to support rgb(r,g,b) format
+			if (htmlColor.StartsWith("rgb(", StringComparison.InvariantCultureIgnoreCase))
+			{
+				var colorStringArray = htmlColor.Substring(4, htmlColor.LastIndexOf(')')-4).Split(',');
+
+				return System.Drawing.Color.FromArgb(
+					Int32.Parse(colorStringArray[0], NumberStyles.Integer, CultureInfo.InvariantCulture),
+					Int32.Parse(colorStringArray[1], NumberStyles.Integer, CultureInfo.InvariantCulture),
+					Int32.Parse(colorStringArray[2], NumberStyles.Integer, CultureInfo.InvariantCulture));
+			}
 
 			// The Html allows to write color in hexa without the preceding '#'
 			// I just ensure it's a correct hexadecimal value (length=6 and first character should be
