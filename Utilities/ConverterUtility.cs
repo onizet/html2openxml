@@ -258,9 +258,15 @@ namespace NotesFor.HtmlToOpenXml
 				knownExtensions.Add(".wmf", ImagePartType.Wmf);
 			}
 
-			String extension = System.IO.Path.GetExtension(uri.IsAbsoluteUri? uri.AbsoluteUri : uri.ToString());
 			ImagePartType type;
+			String extension = System.IO.Path.GetExtension(uri.Segments[uri.Segments.Length - 1]);
 			if (knownExtensions.TryGetValue(extension, out type)) return type;
+
+			// extension not recognized, try with checking the query string. Expecting to resolve something like:
+			// ./image.axd?picture=img1.jpg
+			extension = System.IO.Path.GetExtension(uri.IsAbsoluteUri? uri.AbsoluteUri : uri.ToString());
+			if (knownExtensions.TryGetValue(extension, out type)) return type;
+
 			return null;
 		}
 
@@ -271,7 +277,7 @@ namespace NotesFor.HtmlToOpenXml
 		/// <summary>
 		/// Loads an image from a stream and grab its size.
 		/// </summary>
-		internal static Size GetImageSize(Stream imageStream)
+		public static Size GetImageSize(Stream imageStream)
 		{
 			// Read only the size of the image using a little API found on codeproject.
 			using (BinaryReader breader = new BinaryReader(imageStream))
