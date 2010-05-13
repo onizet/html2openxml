@@ -543,6 +543,7 @@ namespace NotesFor.HtmlToOpenXml
 				{ "<tr>", ProcessTableRow },
 				{ "<u>", ProcessUnderline },
 				{ "<ul>", ProcessNumberingList },
+				{ "<xml>", ProcessXmlDataIsland },
 
 				// closing tag
 				{ "</b>", ProcessClosingBold },

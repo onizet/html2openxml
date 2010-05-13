@@ -33,7 +33,7 @@ namespace NotesFor.HtmlToOpenXml
 			// Clean a bit the html before processing
 
 			// Remove Script tags, doctype, comments, css style, controls and html head part
-			html = Regex.Replace(html, @"<!--.+?-->|<script.+?</script>|<style.+?</style>|<head.+</head>|<!.+?>|<input.+?/>|<select.+?</select>|<textarea.+?</textarea>|<button.+?</button>", String.Empty,
+			html = Regex.Replace(html, @"<xml.+?</xml>|<!--.+?-->|<script.+?</script>|<style.+?</style>|<head.+</head>|<!.+?>|<input.+?/>|<select.+?</select>|<textarea.+?</textarea>|<button.+?</button>", String.Empty,
 								 RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
 			// Removes tabs and whitespace inside and before|next the line-breaking tags (p, div, br and body)
@@ -44,6 +44,9 @@ namespace NotesFor.HtmlToOpenXml
 
 			// Remove tabs and whitespace at the beginning of the lines
 			html = Regex.Replace(html, @"^\s+", String.Empty, RegexOptions.Multiline);
+
+			// Replace xml header by xml tag for further processing
+			html = Regex.Replace(html, @"<\?xml:namespace.+?>", "<xml>", RegexOptions.Singleline);
 
 			// Split our html using the tags
 			String[] lines = Regex.Split(html, @"(</?\w+[^>]*/?>)", RegexOptions.Singleline);
@@ -94,7 +97,7 @@ namespace NotesFor.HtmlToOpenXml
 			return success;
 		}
 
-		bool System.Collections.IEnumerator.MoveNext()
+		public bool MoveNext()
 		{
 			return MoveUntilMatch(null);
 		}

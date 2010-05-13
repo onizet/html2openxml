@@ -865,6 +865,33 @@ namespace NotesFor.HtmlToOpenXml
 
 		#endregion
 
+		#region ProcessXmlDataIsland
+
+		private void ProcessXmlDataIsland(HtmlEnumerator en)
+		{
+			// Process inner Xml data island and do nothing.
+			// The Xml has this format:
+			/* <?xml:namespace prefix = o ns = \"urn:schemas-microsoft-com:office:office\" >
+			   <globalGuideLine>
+				   <employee>
+					  <FirstName>Austin</FirstName>
+					  <LastName>Hennery</LastName>
+				   </employee>
+			   </globalGuideLine>
+			 */
+
+			// Move to the first root element of the Xml then process until the end of the xml chunks.
+			while (en.MoveNext() && !en.IsCurrentHtmlTag) ;
+
+			if (en.Current != null)
+			{
+				string xmlRootElement = en.CurrentTag;
+				while(en.MoveUntilMatch(xmlRootElement.Replace("<", "</"))) ;
+			}
+		}
+
+		#endregion
+
 		// Closing tags
 
 		#region ProcessClosingBold

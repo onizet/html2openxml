@@ -20,6 +20,8 @@ namespace NotesFor.HtmlToOpenXml
 
 		public static T GetLastChild<T>(this OpenXmlElement element) where T : OpenXmlElement
 		{
+			if (element == null) return null;
+
 			for (int i = element.ChildElements.Count - 1; i >= 0; i--)
 			{
 				if (element.ChildElements[i] is T)
