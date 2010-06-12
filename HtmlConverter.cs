@@ -568,6 +568,7 @@ namespace NotesFor.HtmlToOpenXml
 				{ "</tfoot>", ProcessClosingTablePart },
 				{ "</thead>", ProcessClosingTablePart },
 				{ "</td>", ProcessClosingTableColumn },
+				{ "</th>", ProcessClosingTableColumn },
 				{ "</tr>", ProcessClosingTableRow },
 				{ "</u>", ProcessClosingTag },
 				{ "</ul>", ProcessClosingNumberingList },
