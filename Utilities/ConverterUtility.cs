@@ -259,7 +259,7 @@ namespace NotesFor.HtmlToOpenXml
 			}
 
 			ImagePartType type;
-			String extension = System.IO.Path.GetExtension(uri.Segments[uri.Segments.Length - 1]);
+			String extension = System.IO.Path.GetExtension(uri.IsAbsoluteUri? uri.Segments[uri.Segments.Length - 1] : uri.OriginalString);
 			if (knownExtensions.TryGetValue(extension, out type)) return type;
 
 			// extension not recognized, try with checking the query string. Expecting to resolve something like:
