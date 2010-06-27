@@ -263,41 +263,104 @@ namespace NotesFor.HtmlToOpenXml
 
 		private void ProcessImage(HtmlEnumerator en)
 		{
+			if (this.ImageProcessing == ImageProcessing.Ignore) return;
+
 			Drawing drawing = null;
+			Border border = new Border();
+			string src = en.Attributes["src"];
+			Uri uri;
 
-			if (this.ImageProcessing != ImageProcessing.Ignore)
+			if (src != null && Uri.TryCreate(src, UriKind.RelativeOrAbsolute, out uri))
 			{
-				string src = en.Attributes["src"];
-				Uri uri;
+				string alt = en.Attributes["alt"];
+				bool process = true;
 
-				if (src != null && Uri.TryCreate(src, UriKind.RelativeOrAbsolute, out uri))
+				if (!uri.IsAbsoluteUri && this.BaseImageUrl != null)
+					uri = new Uri(this.BaseImageUrl, uri);
+
+				Size preferredSize = Size.Empty;
+				if (en.Attributes["width"] != null || en.Attributes["height"] != null)
 				{
-					string alt = en.Attributes["alt"];
-					bool process = true;
+					Unit wu = en.Attributes.GetAsUnit("width");
+					Unit hu = en.Attributes.GetAsUnit("height");
 
-					if (!uri.IsAbsoluteUri && this.BaseImageUrl != null)
-						uri = new Uri(this.BaseImageUrl, uri);
-
-					Size preferredSize = Size.Empty;
-					if (en.Attributes["width"] != null || en.Attributes["height"] != null)
-					{
-						Unit wu = en.Attributes.GetAsUnit("width");
-						Unit hu = en.Attributes.GetAsUnit("height");
-
-						// only keep if the unit are px (otherwise it's dependent of the user's font size)
-						if (wu.IsValid && wu.Value > 0 && wu.Type == "px")
-							preferredSize.Width = wu.Value;
-						if (hu.IsValid && hu.Value > 0 && hu.Type == "px")
-							preferredSize.Height = hu.Value;
-					}
-
-					if (process)
-						drawing = AddImagePart(uri, src, alt, preferredSize);
+					// only keep if the unit are px (otherwise it's dependent of the user's font size)
+					if (wu.IsValid && wu.Value > 0 && wu.Type == "px")
+						preferredSize.Width = wu.Value;
+					if (hu.IsValid && hu.Value > 0 && hu.Type == "px")
+						preferredSize.Height = hu.Value;
 				}
+
+				string borderWidth = null, borderColor = null, borderStyle = null;
+				if (en.StyleAttributes["border"] != null)
+				{
+					string[] borderParts = en.StyleAttributes["border"].Split(new char[] {' '}, StringSplitOptions.RemoveEmptyEntries);
+					if (borderParts.Length > 0)
+					{
+						borderStyle = borderParts[0];
+						if (borderParts.Length > 1)
+						{
+							borderWidth = borderParts[1];
+							if (borderParts.Length > 2)
+								borderColor = borderParts[2];
+						}
+					}
+				}
+				if (en.StyleAttributes["border-width"] != null)
+					borderWidth = en.StyleAttributes["border-width"];
+				if (en.StyleAttributes["border-color"] != null)
+					borderColor = en.StyleAttributes["border-color"];
+				if (en.StyleAttributes["border-style"] != null)
+					borderStyle = en.StyleAttributes["border-style"];
+
+				if (borderWidth != null)
+				{
+					Unit bu = Unit.Parse(borderWidth);
+					if (bu.IsValid)
+					{
+						if (bu.Value > 0 && bu.Type == "px")
+							border.Size = (uint) bu.Value;
+					}
+					else
+					{
+						switch (borderWidth)
+						{
+							case "medium": border.Size = 18U; break;
+							case "thick": border.Size = 12U; break;
+							case "thin": border.Size = 8U; break;	
+						}
+					}
+				}
+				if (borderColor != null)
+				{
+					var colorValue = ConverterUtility.ConvertToForeColor(borderColor);
+					if (!colorValue.IsEmpty) border.Color = colorValue.ToHexString();
+				}
+				if (borderStyle != null)
+				{
+					switch (borderStyle)
+					{
+						case "dotted": border.Val = BorderValues.Dotted; break;
+						case "dashed": border.Val = BorderValues.Dashed; break;
+						case "solid": border.Val = BorderValues.Single; break;
+						case "double": border.Val = BorderValues.Double; break;
+						case "inset": border.Val = BorderValues.Inset; break;
+						case "outset": border.Val = BorderValues.Outset; break;
+						case "none":
+						default: border.Val = BorderValues.Outset; break;
+					}
+				}
+
+				if (process)
+					drawing = AddImagePart(uri, src, alt, preferredSize);
 			}
 
 			if (drawing != null)
-				elements.Add(new Run(drawing));
+			{
+				Run run = new Run(drawing);
+				if (!border.Val.Equals<BorderValues>(BorderValues.None)) run.InsertInProperties(border);
+				elements.Add(run);
+			}
 		}
 
 		#endregion
