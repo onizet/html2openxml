@@ -211,15 +211,41 @@ namespace NotesFor.HtmlToOpenXml
 
 		#endregion
 
+		#region ConvertToForeColor
+
+		public static BorderValues ConvertToBorderStyle(string borderStyle)
+		{
+			switch (borderStyle)
+			{
+				case "dotted": return BorderValues.Dotted;
+				case "dashed": return BorderValues.Dashed;
+				case "solid": return BorderValues.Single;
+				case "double": return BorderValues.Double;
+				case "inset": return BorderValues.Inset;
+				case "outset": return BorderValues.Outset;
+				case "none":
+				default: return BorderValues.None;
+			}
+		}
+
+		#endregion
+
 
 		#region DownloadData
 
 		/// <summary>
 		/// Download some data located at the specified url.
 		/// </summary>
-		public static byte[] DownloadData(Uri uri)
+		public static byte[] DownloadData(Uri uri, WebProxy proxy)
 		{
 			System.Net.WebClient webClient = new System.Net.WebClient();
+            if (proxy != null)
+            {
+                if(proxy.Credentials != null)
+                    webClient.Credentials = proxy.Credentials;
+                if (proxy.Proxy != null)
+                    webClient.Proxy = proxy.Proxy;
+            }
 
 			try
 			{

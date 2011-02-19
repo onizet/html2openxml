@@ -55,7 +55,7 @@ namespace NotesFor.HtmlToOpenXml
 				if (n != null)
 				{
 					String name = n.Val.Value;
-					if (name != s.StyleId) knownStyles.Add(name, s);
+					if (name != s.StyleId) knownStyles[name] = s;
 				}
 
 				knownStyles.Add(s.StyleId, s);
