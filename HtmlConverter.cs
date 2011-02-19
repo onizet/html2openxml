@@ -30,7 +30,7 @@ namespace NotesFor.HtmlToOpenXml
 			public Int32 Height;
 		}
 
-		private MainDocumentPart mainPart;
+        private MainDocumentPart mainPart;
 
 		/// <summary>The list of paragraphs that will be returned.</summary>
 		private IList<OpenXmlCompositeElement> paragraphs;
@@ -62,6 +62,7 @@ namespace NotesFor.HtmlToOpenXml
 			knownTags = InitKnownTags();
 			htmlStyles = new HtmlDocumentStyle(mainPart);
 			knownImageParts = new Dictionary<Uri, CachedImagePart>();
+            this.WebProxy = new WebProxy();
 		}
 
 		/// <summary>
@@ -395,7 +396,7 @@ namespace NotesFor.HtmlToOpenXml
 				e.ImageSize = preferredSize;
 				if (this.ImageProcessing == ImageProcessing.AutomaticDownload && imageUrl.IsAbsoluteUri)
 				{
-					e.Data = ConverterUtility.DownloadData(imageUrl);
+					e.Data = ConverterUtility.DownloadData(imageUrl, this.WebProxy);
 				}
 				else
 				{
@@ -815,6 +816,11 @@ namespace NotesFor.HtmlToOpenXml
 				this.baseImageUri = value;
 			}
 		}
+
+        /// <summary>
+        /// Gets or sets the proxy used to download images.
+        /// </summary>
+        public WebProxy WebProxy { get; set; }
 
 		/// <summary>
 		/// Gets or sets where the Legend tag (&lt;caption&gt;) should be rendered (above or below the table).
