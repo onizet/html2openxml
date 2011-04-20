@@ -126,5 +126,15 @@ namespace NotesFor.HtmlToOpenXml
 			string attrValue = this[name];
 			return Unit.Parse(attrValue);
 		}
+
+        /// <summary>
+        /// Gets an attribute representing the 4 unit sides.
+        /// </summary>
+        /// <returns>If the attribute is misformed, the <see cref="Margin.IsValid"/> property is set to false.</returns>
+        public Margin GetAsMargin(String name)
+        {
+            string attrValue = this[name];
+            return Margin.Parse(attrValue);
+        }
 	}
 }
