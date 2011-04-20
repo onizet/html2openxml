@@ -20,6 +20,7 @@ namespace NotesFor.HtmlToOpenXml
 		private RunStyleCollection runStyle;
 		private TableStyleCollection tableStyle;
 		private ParagraphStyleCollection paraStyle;
+        private NumberingListStyleCollection listStyle;
 		private Dictionary<String, Style> knownStyles;
 		private MainDocumentPart mainPart;
 
@@ -31,6 +32,7 @@ namespace NotesFor.HtmlToOpenXml
 			runStyle = new RunStyleCollection();
 			tableStyle = new TableStyleCollection();
 			paraStyle = new ParagraphStyleCollection();
+            listStyle = new NumberingListStyleCollection(mainPart);
 			this.mainPart = mainPart;
 		}
 
@@ -146,6 +148,11 @@ namespace NotesFor.HtmlToOpenXml
 			[System.Diagnostics.DebuggerHidden()]
 			get { return paraStyle; }
 		}
+        internal NumberingListStyleCollection NumberingList
+        {
+            [System.Diagnostics.DebuggerHidden()]
+            get { return listStyle; }
+        }
 
 		//____________________________________________________________________
 		//

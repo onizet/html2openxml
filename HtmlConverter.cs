@@ -37,14 +37,13 @@ namespace NotesFor.HtmlToOpenXml
 		/// <summary>Holds the elements to append to the current paragraph.</summary>
 		private List<OpenXmlElement> elements;
 		private Paragraph currentParagraph;
-		private Int32 numberingId, numberLevelRef, footnotesRef=1, endnotesRef=1;
+		private Int32 footnotesRef=1, endnotesRef=1, figCaptionRef=-1;
 		private Dictionary<String, Action<HtmlEnumerator>> knownTags;
 		private Dictionary<Uri, CachedImagePart> knownImageParts;
 		private List<String> bookmarks;
 		private TableContext tables;
 		private HtmlDocumentStyle htmlStyles;
 		private uint drawingObjId, imageObjId = UInt32.MinValue;
-		private int numberingUlId, numberingOlId = Int32.MinValue;
 		private Uri baseImageUri;
 
 
@@ -80,7 +79,6 @@ namespace NotesFor.HtmlToOpenXml
 			tables = new TableContext();
 			htmlStyles.Runs.Reset();
 			currentParagraph = null;
-			numberLevelRef = 0;
 
 			// Start a new processing
 			paragraphs.Add(currentParagraph = htmlStyles.Paragraph.NewParagraph());
@@ -363,9 +361,32 @@ namespace NotesFor.HtmlToOpenXml
 
 		#endregion
 
-		#region AddImagePart
+        #region AddFigureCaption
 
-		private Drawing AddImagePart(Uri imageUrl, String imageSource, String alt, Size preferredSize)
+        /// <summary>
+        /// Add a new figure caption to the document.
+        /// </summary>
+        /// <returns>Returns the id of the new figure caption.</returns>
+        private int AddFigureCaption()
+        {
+            if(figCaptionRef == -1)
+            {
+                figCaptionRef = 0;
+                foreach (var p in mainPart.Document.Descendants<SimpleField>())
+                {
+                    if (p.Instruction == " SEQ Figure \\* ARABIC ")
+                        figCaptionRef++;
+                }
+            }
+            figCaptionRef++;
+            return figCaptionRef;
+        }
+
+        #endregion
+
+        #region AddImagePart
+
+        private Drawing AddImagePart(Uri imageUrl, String imageSource, String alt, Size preferredSize)
 		{
 			if (imageObjId == UInt32.MinValue)
 			{
@@ -522,6 +543,7 @@ namespace NotesFor.HtmlToOpenXml
 				{ "<h5>", ProcessHeading },
 				{ "<h6>", ProcessHeading },
 				{ "<hr>", ProcessHorizontalLine },
+                { "<figcaption>", ProcessFigureCaption },
 				{ "<i>", ProcessItalic },
 				{ "<img>", ProcessImage },
 				{ "<ins>", ProcessUnderline },
@@ -626,6 +648,37 @@ namespace NotesFor.HtmlToOpenXml
 
 		#endregion
 
+        #region EnsureCaptionStlye
+
+        /// <summary>
+        /// Ensure the 'caption' style exists in the document.
+        /// </summary>
+        private void EnsureCaptionStlye()
+        {
+            String normalStyleName = htmlStyles.GetStyle("Normal", false);
+            Style style = new Style(
+                new StyleName { Val = "caption" },
+                new BasedOn { Val = normalStyleName },
+                new NextParagraphStyle { Val = normalStyleName },
+                new UnhideWhenUsed(),
+                new PrimaryStyle(),
+                new StyleParagraphProperties(
+                    new SpacingBetweenLines { Line = "240", LineRule = LineSpacingRuleValues.Auto }
+                ),
+                new StyleRunProperties(
+                    new Bold(),
+                    new BoldComplexScript(),
+                    new DocumentFormat.OpenXml.Wordprocessing.Color() { Val = "4F81BD", ThemeColor = ThemeColorValues.Accent1 },
+                    new FontSize { Val = "18" },
+                    new FontSizeComplexScript { Val = "18" }
+                )
+            ) { Type = StyleValues.Paragraph, StyleId = "Caption" };
+
+            htmlStyles.AddStyle("caption", style);
+        }
+
+        #endregion
+
 		#region ProcessContainerAttributes
 
 		/// <summary>
@@ -685,62 +738,6 @@ namespace NotesFor.HtmlToOpenXml
 			htmlStyles.Runs.ProcessCommonRunAttributes(en, styleAttributes);
 
 			return paragraphBreakAfter;
-		}
-
-		#endregion
-
-		#region EnsureNumberingIds
-
-		private void EnsureNumberingIds()
-		{
-			if (numberingOlId != Int32.MinValue) return;
-
-			// Ensure the numbering.xml file exists or any numbering or bullets list will results
-			// in simple numbering list (1.   2.   3...)
-			if (mainPart.NumberingDefinitionsPart == null || mainPart.NumberingDefinitionsPart.Numbering == null)
-			{
-				// This minimal numbering definition has been inspired by the documentation OfficeXMLMarkupExplained_en.docx
-				// http://www.microsoft.com/downloads/details.aspx?FamilyID=6f264d0b-23e8-43fe-9f82-9ab627e5eaa3&displaylang=en
-
-				NumberingDefinitionsPart numberingPart = mainPart.AddNewPart<NumberingDefinitionsPart>();
-				new Numbering(
-					new AbstractNum(
-						new MultiLevelType() { Val = MultiLevelValues.SingleLevel },
-						new Level(
-							new NumberingFormat() { Val = NumberFormatValues.Bullet },
-							new LevelText() { Val = "•" },
-							new PreviousParagraphProperties(
-								new Indentation() { Left = "420", Hanging = "360" })
-						) { LevelIndex = 0 }
-					) { AbstractNumberId = 0 },
-					new AbstractNum(
-						new MultiLevelType() { Val = MultiLevelValues.SingleLevel },
-						new Level(
-							new StartNumberingValue() { Val = 1 },
-							new NumberingFormat() { Val = NumberFormatValues.Decimal },
-							new LevelText() { Val = "%1." },
-							new PreviousParagraphProperties(
-								new Indentation() { Left = "420", Hanging = "360" })
-						) { LevelIndex = 0 }
-					) { AbstractNumberId = 1 },
-                    new NumberingInstance(
-						new AbstractNumId() { Val = 0 }
-					) { NumberID = 1 },
-                    new NumberingInstance(
-						new AbstractNumId() { Val = 1 }
-					) { NumberID = 2 }).Save(numberingPart);
-
-				numberingUlId = 1;
-				numberingOlId = 2;
-			}
-			else
-			{
-				// else find back the numbering for (un)ordered list
-
-				Numbering numbering = mainPart.NumberingDefinitionsPart.Numbering;
-				numberingOlId = numbering.FindNumberIDByFormat(NumberFormatValues.Decimal);
-				numberingUlId = numbering.FindNumberIDByFormat(NumberFormatValues.Bullet);
-			}
 		}
 
 		#endregion

@@ -70,6 +70,7 @@
     <Compile Include="HtmlConverter.ProcessTag.cs" />
     <Compile Include="ProvisionImageEventArgs.cs" />
     <Compile Include="HtmlAttributeCollection.cs" />
+    <Compile Include="StyleCollection\NumberingListStyleCollection.cs" />
     <Compile Include="StyleCollection\ParagraphStyleCollection.cs" />
     <Compile Include="StyleCollection\TableContext.cs" />
     <Compile Include="StyleCollection\TableStyleCollection.cs" />
@@ -78,6 +79,7 @@
     <Compile Include="HtmlEnumerator.cs" />
     <Compile Include="StyleCollection\OpenXmlStyleCollection.cs" />
     <Compile Include="StyleEventArgs.cs" />
+    <Compile Include="Utilities\Margin.cs" />
     <Compile Include="Utilities\HttpUtility.cs" />
     <Compile Include="OpenXmlExtension.cs" />
     <Compile Include="Utilities\ConverterUtility.cs" />

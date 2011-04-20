@@ -265,6 +265,42 @@ namespace NotesFor.HtmlToOpenXml
 
         #endregion
 
+        #region ProcessFigureCaption
+
+        private void ProcessFigureCaption(HtmlEnumerator en)
+        {
+            this.CompleteCurrentParagraph();
+            EnsureCaptionStlye();
+
+            AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
+            currentParagraph.Append(
+                    new ParagraphProperties(
+                        new ParagraphStyleId() { Val = htmlStyles.GetStyle("caption", false) },
+                        new KeepNext()
+                    ),
+                    new Run(
+                        new Text("Figure ") { Space = SpaceProcessingModeValues.Preserve }
+                    ),
+                    new SimpleField(
+                        new Run(
+                            new Text(AddFigureCaption().ToString(CultureInfo.InvariantCulture)))
+                    ) { Instruction = " SEQ Figure \\* ARABIC " }
+                );
+
+            ProcessHtmlChunks(en, "</figcaption>");
+
+            if (elements.Count > 0) // any caption?
+            {
+                Text t = (elements[0] as Run).GetFirstChild<Text>();
+                t.Text = " " + t.InnerText; // append a space after the numero of the picture
+            }
+
+            this.CompleteCurrentParagraph();
+            AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
+        }
+
+        #endregion
+
         #region ProcessImage
 
         private void ProcessImage(HtmlEnumerator en)
@@ -375,6 +411,9 @@ namespace NotesFor.HtmlToOpenXml
         private void ProcessLi(HtmlEnumerator en)
         {
             CompleteCurrentParagraph();
+
+            int numberingId = htmlStyles.NumberingList.ProcessItem(en);
+            int numberLevelRef = htmlStyles.NumberingList.LevelRef;
 
             // Save the new paragraph reference to support nested numbering list.
             Paragraph p = htmlStyles.Paragraph.NewParagraph();
@@ -499,14 +538,7 @@ namespace NotesFor.HtmlToOpenXml
 
         private void ProcessNumberingList(HtmlEnumerator en)
         {
-            EnsureNumberingIds();
-
-            if (en.CurrentTag.Equals("<ul>", StringComparison.InvariantCultureIgnoreCase))
-                numberingId = numberingUlId;
-            else
-                numberingId = numberingOlId;
-
-            numberLevelRef++;
+            htmlStyles.NumberingList.BeginList(en);
         }
 
         #endregion
@@ -807,6 +839,8 @@ namespace NotesFor.HtmlToOpenXml
             {
                 this.paragraphs.Add(legend);
             }
+
+            EnsureCaptionStlye();
         }
 
         #endregion
@@ -819,6 +853,23 @@ namespace NotesFor.HtmlToOpenXml
             List<OpenXmlElement> runStyleAttributes = new List<OpenXmlElement>();
 
             htmlStyles.Tables.ProcessCommonAttributes(en, styleAttributes);
+
+
+            Unit unit = en.StyleAttributes.GetAsUnit("height");
+            if (!unit.IsValid) unit = en.Attributes.GetAsUnit("height");
+
+            if (unit.IsValid)
+            {
+                switch (unit.Type)
+                {
+                    case "pt":
+                        styleAttributes.Add(new TableRowHeight() { HeightType = HeightRuleValues.AtLeast, Val = (uint) (unit.Value * 20) });
+                        break;
+                    case "px":
+                        styleAttributes.Add(new TableRowHeight() { HeightType = HeightRuleValues.AtLeast, Val = (uint) (unit.Value / 96 * 2189L) });
+                        break;
+                }
+            }
 
             TableRow row = new TableRow();
             if (styleAttributes.Count > 0)
@@ -998,11 +1049,11 @@ namespace NotesFor.HtmlToOpenXml
 
         private void ProcessClosingNumberingList(HtmlEnumerator en)
         {
-            numberLevelRef--;
+            htmlStyles.NumberingList.EndList();
 
             // If we are no more inside a list, we move to another paragraph (as we created
             // one for containing all the <li>. This will ensure the next run will not be added to the <li>.
-            if (numberLevelRef == 0)
+            if (htmlStyles.NumberingList.LevelRef == 0)
                 AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
         }
 
