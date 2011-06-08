@@ -10,7 +10,7 @@ namespace NotesFor.HtmlToOpenXml
 	sealed class NumberingListStyleCollection
 	{
         private MainDocumentPart mainPart;
-        private int currentNumId, absNumId, numberLevelRef;
+        private int currentNumId = 4, absNumId, numberLevelRef;
         private bool firstItem;
         private string levelText;
         private NumberFormatValues format;
@@ -180,7 +180,9 @@ namespace NotesFor.HtmlToOpenXml
                 }
             }
 
+            firstItem = true;
             numberLevelRef++;
+            currentNumId++;
 
             Numbering numbering = mainPart.NumberingDefinitionsPart.Numbering;
             numbering.Append(
@@ -202,6 +204,8 @@ namespace NotesFor.HtmlToOpenXml
         }
 
         #endregion
+
+        #region ProcessItem
 
         public int ProcessItem(HtmlEnumerator en)
         {
@@ -229,7 +233,6 @@ namespace NotesFor.HtmlToOpenXml
 
             if (leftMarginSize > 0)
             {
-                currentNumId++;
                 Margin margin = en.StyleAttributes.GetAsMargin("margin");
 
                 mainPart.NumberingDefinitionsPart.Numbering.Append(
@@ -254,6 +257,8 @@ namespace NotesFor.HtmlToOpenXml
 
             return currentNumId;
         }
+
+        #endregion
 
         //____________________________________________________________________
         //
