@@ -463,18 +463,8 @@ namespace NotesFor.HtmlToOpenXml
 			}
 
 			String imagePartId = mainPart.GetIdOfPart(imagePart.Part);
-
-			/* Compute width and height in English Metrics Units.
-			 * There are 360000 EMUs per centimeter, 914400 EMUs per inch, 12700 EMUs per point
-			 * widthInEmus = widthInPixels / HorizontalResolutionInDPI * 914400
-			 * heightInEmus = heightInPixels / VerticalResolutionInDPI * 914400
-			 * 
-			 * According to 1 px ~= 9525 EMU -> 914400 EMU per inch / 9525 EMU = 96 dpi
-			 * So Word use 96 DPI printing which seems fair.
-			 * http://hastobe.net/blogs/stevemorgan/archive/2008/09/15/howto-insert-an-image-into-a-word-document-and-display-it-using-openxml.aspx
-			 */
-			long widthInEmus = (long)((double) preferredSize.Width / 96 * 914400L);
-			long heightInEmus = (long) ((double) preferredSize.Height / 96 * 914400L);
+			long widthInEmus = new Unit("px", preferredSize.Width).ValueInEmus;
+			long heightInEmus = new Unit("px", preferredSize.Height).ValueInEmus;
 
 			++drawingObjId;
 			++imageObjId;
@@ -648,12 +638,12 @@ namespace NotesFor.HtmlToOpenXml
 
 		#endregion
 
-        #region EnsureCaptionStlye
+        #region EnsureCaptionStyle
 
         /// <summary>
         /// Ensure the 'caption' style exists in the document.
         /// </summary>
-        private void EnsureCaptionStlye()
+        private void EnsureCaptionStyle()
         {
             String normalStyleName = htmlStyles.GetStyle("Normal", false);
             Style style = new Style(

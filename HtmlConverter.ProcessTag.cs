@@ -270,7 +270,7 @@ namespace NotesFor.HtmlToOpenXml
         private void ProcessFigureCaption(HtmlEnumerator en)
         {
             this.CompleteCurrentParagraph();
-            EnsureCaptionStlye();
+            EnsureCaptionStyle();
 
             AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
             currentParagraph.Append(
@@ -326,11 +326,15 @@ namespace NotesFor.HtmlToOpenXml
                     Unit wu = en.Attributes.GetAsUnit("width");
                     Unit hu = en.Attributes.GetAsUnit("height");
 
-                    // only keep if the unit are px (otherwise it's dependent of the user's font size)
-                    if (wu.IsValid && wu.Value > 0 && wu.Type == "px")
-                        preferredSize.Width = wu.Value;
-                    if (hu.IsValid && hu.Value > 0 && hu.Type == "px")
-                        preferredSize.Height = hu.Value;
+                    // % is not supported
+                    if (wu.IsValid && wu.Value > 0 && wu.Type != "%")
+                    {
+                        preferredSize.Width = wu.ValueInPx;
+                    }
+                    if (hu.IsValid && hu.Value > 0 && wu.Type != "%")
+                    {
+                        preferredSize.Height = wu.ValueInPx;
+                    }
                 }
 
                 string borderWidth = null, borderColor = null, borderStyle = null;
@@ -419,6 +423,7 @@ namespace NotesFor.HtmlToOpenXml
             Paragraph p = htmlStyles.Paragraph.NewParagraph();
             currentParagraph = p;
             currentParagraph.InsertInProperties(
+                new ParagraphStyleId() { Val = htmlStyles.GetStyle("ListParagraph", false) },
                 new SpacingBetweenLines() { After = "0" },
                 new NumberingProperties(
                     new NumberingLevelReference() { Val = numberLevelRef - 1 },
@@ -734,9 +739,9 @@ namespace NotesFor.HtmlToOpenXml
                     case "%":
                         properties.Add(new TableWidth() { Type = TableWidthUnitValues.Pct, Width = (unit.Value * 50).ToString(CultureInfo.InvariantCulture) }); break;
                     case "pt":
-                        properties.Add(new TableWidth() { Type = TableWidthUnitValues.Dxa, Width = (unit.Value * 20).ToString(CultureInfo.InvariantCulture) }); break;
+                        properties.Add(new TableWidth() { Type = TableWidthUnitValues.Dxa, Width = unit.ValueInDxa.ToString(CultureInfo.InvariantCulture) }); break;
                     case "px":
-                        properties.Add(new TableWidth() { Type = TableWidthUnitValues.Dxa, Width = (unit.Value).ToString(CultureInfo.InvariantCulture) }); break;
+                        properties.Add(new TableWidth() { Type = TableWidthUnitValues.Dxa, Width = unit.ValueInDxa.ToString(CultureInfo.InvariantCulture) }); break;
                 }
             }
             else
@@ -840,7 +845,7 @@ namespace NotesFor.HtmlToOpenXml
                 this.paragraphs.Add(legend);
             }
 
-            EnsureCaptionStlye();
+            EnsureCaptionStyle();
         }
 
         #endregion
@@ -866,7 +871,7 @@ namespace NotesFor.HtmlToOpenXml
                         styleAttributes.Add(new TableRowHeight() { HeightType = HeightRuleValues.AtLeast, Val = (uint) (unit.Value * 20) });
                         break;
                     case "px":
-                        styleAttributes.Add(new TableRowHeight() { HeightType = HeightRuleValues.AtLeast, Val = (uint) (unit.Value / 96 * 2189L) });
+                        styleAttributes.Add(new TableRowHeight() { HeightType = HeightRuleValues.AtLeast, Val = (uint) unit.ValueInDxa });
                         break;
                 }
             }
@@ -1102,7 +1107,7 @@ namespace NotesFor.HtmlToOpenXml
                 }
             }
 
-            tables.CurrentTable.PrependChild<TableGrid>(grid);
+            tables.CurrentTable.InsertAt<TableGrid>(grid, 1);
             tables.CloseContext();
 
             if (!tables.HasContext)
