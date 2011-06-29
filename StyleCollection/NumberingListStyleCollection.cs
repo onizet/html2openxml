@@ -126,7 +126,7 @@ namespace NotesFor.HtmlToOpenXml
         {
             if (en.CurrentTag.Equals("<ul>", StringComparison.InvariantCultureIgnoreCase))
             {
-                switch (en.StyleAttributes["list-style-type"])
+                switch ((en.StyleAttributes["list-style-type"] ?? "disc").ToLowerInvariant())
                 {
                     case "none":
                     case "circle":
@@ -149,7 +149,7 @@ namespace NotesFor.HtmlToOpenXml
             }
             else
             {
-                switch (en.StyleAttributes["list-style-type"])
+                switch ((en.StyleAttributes["list-style-type"] ?? "decimal").ToLowerInvariant())
                 {
                     case "upper-alpha":
                         format = NumberFormatValues.UpperLetter;
@@ -212,7 +212,7 @@ namespace NotesFor.HtmlToOpenXml
             if (!firstItem) return currentNumId;
 
             firstItem = false;
-            Int32 leftMarginSize = 0;
+            Double leftMarginSize = 0;
             if (en.StyleAttributes["margin-left"] != null)
             {
                 Unit margin = en.StyleAttributes.GetAsUnit("margin-left");
