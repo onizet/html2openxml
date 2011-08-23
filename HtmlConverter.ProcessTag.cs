@@ -854,6 +854,10 @@ namespace NotesFor.HtmlToOpenXml
 
         private void ProcessTableRow(HtmlEnumerator en)
         {
+			// in case the html is bad-formed and use <tr> outside a <table> tag, we will ensure
+			// a table context exists.
+			if (!tables.HasContext) return;
+
             List<OpenXmlElement> styleAttributes = new List<OpenXmlElement>();
             List<OpenXmlElement> runStyleAttributes = new List<OpenXmlElement>();
 
@@ -894,6 +898,8 @@ namespace NotesFor.HtmlToOpenXml
 
         private void ProcessTableColumn(HtmlEnumerator en)
         {
+			if (!tables.HasContext) return;
+
             List<OpenXmlElement> styleAttributes = new List<OpenXmlElement>();
             List<OpenXmlElement> runStyleAttributes = new List<OpenXmlElement>();
 
@@ -1132,6 +1138,7 @@ namespace NotesFor.HtmlToOpenXml
 
         private void ProcessClosingTableRow(HtmlEnumerator en)
         {
+			if (!tables.HasContext) return;
             TableRow row = tables.CurrentTable.GetLastChild<TableRow>();
 
             // Add empty columns to fill rowspan
@@ -1165,6 +1172,15 @@ namespace NotesFor.HtmlToOpenXml
 
         private void ProcessClosingTableColumn(HtmlEnumerator en)
         {
+			if (!tables.HasContext)
+			{
+				// When the Html is bad-formed and doesn't contain <table>, the browser renders the column separated by a space.
+				// So we do the same here
+				Run run = new Run(new Text(" ") { Space = SpaceProcessingModeValues.Preserve });
+				htmlStyles.Runs.ApplyTags(run);
+				elements.Add(run);
+				return;
+			}
             TableCell cell = tables.CurrentTable.GetLastChild<TableRow>().GetLastChild<TableCell>();
 
             // As we add automatically a paragraph to the cell once we create it, we'll remove it if finally, it was not used.
