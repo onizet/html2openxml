@@ -69,7 +69,24 @@ namespace NotesFor.HtmlToOpenXml
 
         private void ProcessBold(HtmlEnumerator en)
         {
-            htmlStyles.Runs.BeginTag("<b>", new Bold());
+            htmlStyles.Runs.BeginTag(en.CurrentTag, new Bold());
+        }
+
+        #endregion
+
+        #region ProcessBlockQuote
+
+        private void ProcessBlockQuote(HtmlEnumerator en)
+        {
+            CompleteCurrentParagraph();
+            AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
+
+            // for nested paragraphs:
+            htmlStyles.Paragraph.BeginTag(en.CurrentTag, new ParagraphStyleId() { Val = htmlStyles.GetStyle("IntenseQuote") });
+
+            // if the style was not yet defined, we force the indentation
+            if(!htmlStyles.DoesStyleExists("IntenseQuote"))
+                htmlStyles.Paragraph.BeginTag(en.CurrentTag, new Indentation() { Left = "708" });
         }
 
         #endregion
@@ -405,7 +422,7 @@ namespace NotesFor.HtmlToOpenXml
 
         private void ProcessItalic(HtmlEnumerator en)
         {
-            htmlStyles.Runs.BeginTag("<i>", new Italic());
+            htmlStyles.Runs.BeginTag(en.CurrentTag, new Italic());
         }
 
         #endregion
@@ -638,6 +655,25 @@ namespace NotesFor.HtmlToOpenXml
 
             currentParagraph.Append(elements);
             elements.Clear();
+        }
+
+        #endregion
+
+        #region ProcessQuote
+
+        private void ProcessQuote(HtmlEnumerator en)
+        {
+            // The browsers render the quote tag between a kind of separators.
+            // We add the Quote style to the nested runs to match more Word.
+
+            htmlStyles.Runs.BeginTag("<q>", new RunStyle() { Val = htmlStyles.GetStyle("Quote", true) });
+
+            Run run = new Run(
+                new Text(" " + HtmlStyles.QuoteCharacters.chars[0]) { Space = SpaceProcessingModeValues.Preserve }
+            );
+
+            htmlStyles.Runs.ApplyTags(run);
+            elements.Add(run);
         }
 
         #endregion
@@ -1018,11 +1054,14 @@ namespace NotesFor.HtmlToOpenXml
 
         // Closing tags
 
-        #region ProcessClosingBold
+        #region ProcessClosingBlockQuote
 
-        private void ProcessClosingBold(HtmlEnumerator en)
+        private void ProcessClosingBlockQuote(HtmlEnumerator en)
         {
-            htmlStyles.Runs.EndTag("<b>");
+            CompleteCurrentParagraph();
+            htmlStyles.Paragraph.BeginTag("<blockquote>");
+
+            AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
         }
 
         #endregion
@@ -1034,15 +1073,6 @@ namespace NotesFor.HtmlToOpenXml
             // Mimic the rendering of the browser:
             ProcessBr(en);
             ProcessClosingTag(en);
-        }
-
-        #endregion
-
-        #region ProcessClosingItalic
-
-        private void ProcessClosingItalic(HtmlEnumerator en)
-        {
-            htmlStyles.Runs.EndTag("<i>");
         }
 
         #endregion
@@ -1080,6 +1110,21 @@ namespace NotesFor.HtmlToOpenXml
             string tag = en.CurrentTag.Replace("/", "");
             htmlStyles.Runs.EndTag(tag);
             htmlStyles.Paragraph.EndTag(tag);
+        }
+
+        #endregion
+
+        #region ProcessClosingQuote
+
+        private void ProcessClosingQuote(HtmlEnumerator en)
+        {
+            Run run = new Run(
+                new Text(HtmlStyles.QuoteCharacters.chars[1]) { Space = SpaceProcessingModeValues.Preserve }
+            );
+            htmlStyles.Runs.ApplyTags(run);
+            elements.Add(run);
+
+            htmlStyles.Runs.EndTag("<q>");
         }
 
         #endregion

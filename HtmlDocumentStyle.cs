@@ -33,6 +33,7 @@ namespace NotesFor.HtmlToOpenXml
 			tableStyle = new TableStyleCollection();
 			paraStyle = new ParagraphStyleCollection();
             listStyle = new NumberingListStyleCollection(mainPart);
+            this.QuoteCharacters = QuoteChars.IE;
 			this.mainPart = mainPart;
 		}
 
@@ -69,22 +70,12 @@ namespace NotesFor.HtmlToOpenXml
 		#region GetStyle
 
 		/// <summary>
-		/// Helper method to obtain the StyleId of a named paragraph style (invariant or localized name).
-		/// </summary>
-		/// <param name="name">The name of the style to look for.</param>
-		/// <returns>If not found, returns the given name argument.</returns>
-		public String GetStyle(string name)
-		{
-			return GetStyle(name, false);
-		}
-
-		/// <summary>
 		/// Helper method to obtain the StyleId of a named style (invariant or localized name).
 		/// </summary>
 		/// <param name="name">The name of the style to look for.</param>
 		/// <param name="characterType">True to obtain the character version of the given style.</param>
 		/// <returns>If not found, returns the given name argument.</returns>
-		public String GetStyle(string name, bool characterType)
+		public String GetStyle(string name, bool characterType = false)
 		{
 			Style style;
 			if (!knownStyles.TryGetValue(name, out style))
@@ -195,5 +186,10 @@ namespace NotesFor.HtmlToOpenXml
 				}
 			}
 		}
+
+        /// <summary>
+        /// Gets or sets the beginning and ending characters used in the &lt;q&gt; tag.
+        /// </summary>
+        public QuoteChars QuoteCharacters { get; set; }
 	}
 }
