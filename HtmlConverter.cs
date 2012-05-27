@@ -398,6 +398,7 @@ namespace NotesFor.HtmlToOpenXml
 				imageObjId = 1;
 				foreach (var d in mainPart.Document.Body.Descendants<Drawing>())
 				{
+                    if (d.Inline == null) continue; // fix some rare issue where Inline is null (reported by scwebgroup)
 					if (d.Inline.DocProperties.Id > drawingObjId) drawingObjId = d.Inline.DocProperties.Id;
 
 					var nvPr = d.Inline.Graphic.GraphicData.GetFirstChild<pic.NonVisualPictureProperties>();
@@ -534,6 +535,7 @@ namespace NotesFor.HtmlToOpenXml
 				{ "<h5>", ProcessHeading },
 				{ "<h6>", ProcessHeading },
 				{ "<hr>", ProcessHorizontalLine },
+                { "<html>", ProcessHtml },
                 { "<figcaption>", ProcessFigureCaption },
 				{ "<i>", ProcessItalic },
 				{ "<img>", ProcessImage },
@@ -569,6 +571,7 @@ namespace NotesFor.HtmlToOpenXml
 				{ "</div>", ProcessClosingDiv },
 				{ "</em>", ProcessClosingTag },
 				{ "</font>", ProcessClosingTag },
+                { "</html>", ProcessClosingTag },
 				{ "</i>", ProcessClosingTag },
 				{ "</ins>", ProcessClosingTag },
 				{ "</ol>", ProcessClosingNumberingList },
@@ -689,9 +692,28 @@ namespace NotesFor.HtmlToOpenXml
 			string attrValue = en.Attributes["lang"];
 			if (attrValue != null && attrValue.Length > 0)
 			{
-				containerStyleAttributes.Add(
-					new ParagraphMarkRunProperties(
-						new Languages() { Val = attrValue }));
+                try
+                {
+                    var ci = System.Globalization.CultureInfo.GetCultureInfo(attrValue);
+                    bool rtl = ci.TextInfo.IsRightToLeft;
+
+                    Languages lang = new Languages() { Val = ci.TwoLetterISOLanguageName };
+                    if (rtl)
+                    {
+                        lang.Bidi = ci.Name;
+                        //styleAttributes.Add(new RightToLeftText());
+                        styleAttributes.Add(new Languages() { Bidi = ci.Name });
+                    }
+
+                    containerStyleAttributes.Add(
+                        new ParagraphMarkRunProperties(lang));
+
+                    containerStyleAttributes.Add(new BiDi() { Val = OnOffValue.FromBoolean(rtl) });
+                }
+                catch (ArgumentException)
+                {
+                    // lang not valid, ignore it
+                }
 			}
 
 
@@ -725,6 +747,14 @@ namespace NotesFor.HtmlToOpenXml
 					containerStyleAttributes.Add(new Justification { Val = align });
 				}
 			}
+
+            // according to w3c, dir should be used in conjonction with lang. But whatever happens, we'll apply the RTL layout
+            attrValue = en.Attributes["dir"];
+            if (attrValue != null && attrValue.Equals("rtl", StringComparison.InvariantCultureIgnoreCase))
+            {
+                styleAttributes.Add(new RightToLeftText());
+                containerStyleAttributes.Add(new Justification() { Val = JustificationValues.Right });
+            }
 
 			htmlStyles.Paragraph.BeginTag(en.CurrentTag, containerStyleAttributes);
 
@@ -760,7 +790,7 @@ namespace NotesFor.HtmlToOpenXml
 		public AcronymPosition AcronymPosition { get; set; }
 
 		/// <summary>
-		/// Gets or sets whether the &lt;div&gt; tag should be processed as &lt;p&gt;. It depends whether you consider &lt;div&gt;
+		/// Gets or sets whether the &lt;div&gt; tag should be processed as &lt;p&gt; (default false). It depends whether you consider &lt;div&gt;
 		/// as part of the layout or as part of a text field.
 		/// </summary>
 		public bool ConsiderDivAsParagraph { get; set; }

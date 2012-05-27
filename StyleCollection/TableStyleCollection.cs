@@ -7,6 +7,7 @@ using System.Drawing;
 namespace NotesFor.HtmlToOpenXml
 {
 	using TagsAtSameLevel = System.ArraySegment<DocumentFormat.OpenXml.OpenXmlElement>;
+	using System.Globalization;
 
 	sealed class TableStyleCollection : OpenXmlStyleCollection
 	{

@@ -81,58 +81,6 @@ namespace NotesFor.HtmlToOpenXml
 
 		#endregion
 
-		#region ConvertToHighlightColor
-
-		/// <summary>
-		/// Convert an Html color to its hightlight color representation in OpenXml.
-		/// </summary>
-		/// <remarks>
-		/// As OpenXml supports a limited number of highlight colors, we will check whether the
-		/// Html color is near a known color. If no near color are satisfied, it will returns
-		/// HighlightColorValues.None.
-		/// </remarks>
-		public static HighlightColorValues ConvertToHighlightColor(System.Drawing.Color c)
-		{
-			const int tolerance = 55;
-
-			if (AreColorClose(c, System.Drawing.Color.White, tolerance))
-				return HighlightColorValues.White;
-			if (AreColorClose(c, System.Drawing.Color.Yellow, tolerance))
-				return HighlightColorValues.Yellow;
-			if (AreColorClose(c, System.Drawing.Color.Red, tolerance))
-				return HighlightColorValues.Red;
-			if (AreColorClose(c, System.Drawing.Color.Blue, tolerance))
-				return HighlightColorValues.Blue;
-			if (AreColorClose(c, System.Drawing.Color.Lime, tolerance))
-				return HighlightColorValues.Green;
-			if (AreColorClose(c, System.Drawing.Color.Cyan, tolerance))
-				return HighlightColorValues.Cyan;
-			if (AreColorClose(c, System.Drawing.Color.Fuchsia, tolerance))
-				return HighlightColorValues.Magenta;
-			if (AreColorClose(c, System.Drawing.Color.Silver, tolerance))
-				return HighlightColorValues.LightGray;
-			if (AreColorClose(c, System.Drawing.Color.Navy, tolerance))
-				return HighlightColorValues.DarkBlue;
-			if (AreColorClose(c, System.Drawing.Color.Olive, tolerance))
-				return HighlightColorValues.DarkYellow;
-			if (AreColorClose(c, System.Drawing.Color.Teal, tolerance))
-				return HighlightColorValues.DarkCyan;
-			if (AreColorClose(c, System.Drawing.Color.Maroon, tolerance))
-				return HighlightColorValues.DarkRed;
-			if (AreColorClose(c, System.Drawing.Color.Green, tolerance))
-				return HighlightColorValues.DarkGreen;
-			if (AreColorClose(c, System.Drawing.Color.Purple, tolerance))
-				return HighlightColorValues.DarkMagenta;
-			if (AreColorClose(c, System.Drawing.Color.Gray, tolerance))
-				return HighlightColorValues.DarkGray;
-			if (AreColorClose(c, System.Drawing.Color.Black, tolerance))
-				return HighlightColorValues.Black;
-
-			return HighlightColorValues.None;
-		}
-
-		#endregion
-
 		#region ConvertToForeColor
 
 		public static System.Drawing.Color ConvertToForeColor(string htmlColor)
@@ -176,37 +124,6 @@ namespace NotesFor.HtmlToOpenXml
 			}
 
 			return color;
-		}
-
-		#endregion
-
-		#region AreColorClose
-
-		/// <summary>
-		/// Check whether two colors are close (as a Magic Wand tool performs).
-		/// </summary>
-		/// <remarks>
-		/// This algorithm comes from the source code of Paint.Net, in FloodToolBase.cs, CheckColor method.
-		/// </remarks>
-		/// <param name="tolerance">From 0 to 100.</param>
-		public static bool AreColorClose(System.Drawing.Color a, System.Drawing.Color b, int tolerance)
-		{
-			int sum = 0;
-			int diff;
-
-			diff = a.R - b.R;
-			sum += (1 + diff * diff) * a.A / 256;
-
-			diff = a.G - b.G;
-			sum += (1 + diff * diff) * a.A / 256;
-
-			diff = a.B - b.B;
-			sum += (1 + diff * diff) * a.A / 256;
-
-			diff = a.A - b.A;
-			sum += diff * diff;
-
-			return (sum <= tolerance * tolerance * 4);
 		}
 
 		#endregion

@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
-using DocumentFormat.OpenXml;
-using System.Collections.Specialized;
 
 namespace NotesFor.HtmlToOpenXml
 {

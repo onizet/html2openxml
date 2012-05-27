@@ -9,6 +9,9 @@ namespace NotesFor.HtmlToOpenXml
 	/// </summary>
 	struct Unit
 	{
+		/// <summary>Represents an empty unit (not defined).</summary>
+		public static readonly Unit Empty = new Unit();
+
 		private String type;
 		private double value;
         private long valueInEmus;
@@ -69,7 +72,7 @@ namespace NotesFor.HtmlToOpenXml
         /// <summary>
         /// Gets the value expressed in the English Metrics Units.
         /// </summary>
-        private static long ComputeInEmus(String type, double value)
+        private static Int64 ComputeInEmus(String type, double value)
         {
             /* Compute width and height in English Metrics Units.
              * There are 360000 EMUs per centimeter, 914400 EMUs per inch, 12700 EMUs per point
@@ -134,7 +137,7 @@ namespace NotesFor.HtmlToOpenXml
         /// </summary>
         public Int64 ValueInDxa
         {
-            get { return (valueInEmus / 914400L) * 20 * 72; }
+			get { return (long) (((double) valueInEmus / 914400L) * 20 * 72); }
         }
 
         /// <summary>
