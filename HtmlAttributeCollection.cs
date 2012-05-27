@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
-using System.Globalization;
 using System.Collections.Specialized;
+using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace NotesFor.HtmlToOpenXml
 {
@@ -21,7 +20,7 @@ namespace NotesFor.HtmlToOpenXml
 (?<tag>\w+)=(?<val>\w+)
 |
 # single tag (with no value): contenteditable
-\b(?<tag>\w+)\b", RegexOptions.Compiled| RegexOptions.IgnorePatternWhitespace);
+\b(?<tag>\w+)\b", RegexOptions.Compiled | RegexOptions.IgnorePatternWhitespace);
 
 		private static Regex stripStyleAttributesRegex = new Regex(@"(?<name>.+?):\s*(?<val>[^;]+);*\s*", RegexOptions.Compiled);
 
@@ -59,7 +58,7 @@ namespace NotesFor.HtmlToOpenXml
 			}
 
 			MatchCollection matches = stripAttributesRegex.Matches(htmlTag, startIndex);
-			foreach(Match m in matches)
+			foreach (Match m in matches)
 			{
 				attributes[m.Groups["tag"].Value] = m.Groups["val"].Value;
 			}
@@ -87,7 +86,7 @@ namespace NotesFor.HtmlToOpenXml
 		/// </summary>
 		public String this[String name]
 		{
-			get{ return attributes[name]; }
+			get { return attributes[name]; }
 		}
 
 		/// <summary>
@@ -110,7 +109,7 @@ namespace NotesFor.HtmlToOpenXml
 		public System.Drawing.Color GetAsColor(String name)
 		{
 			string attrValue = this[name];
-			if(attrValue != null)
+			if (attrValue != null)
 			{
 				return ConverterUtility.ConvertToForeColor(attrValue);
 			}
@@ -127,14 +126,39 @@ namespace NotesFor.HtmlToOpenXml
 			return Unit.Parse(attrValue);
 		}
 
-        /// <summary>
-        /// Gets an attribute representing the 4 unit sides.
-        /// </summary>
-        /// <returns>If the attribute is misformed, the <see cref="Margin.IsValid"/> property is set to false.</returns>
-        public Margin GetAsMargin(String name)
-        {
-            string attrValue = this[name];
-            return Margin.Parse(attrValue);
-        }
+		/// <summary>
+		/// Gets an attribute representing the 4 unit sides.
+		/// If a side has been specified individually, it will override the grouped definition.
+		/// </summary>
+		/// <returns>If the attribute is misformed, the <see cref="Margin.IsValid"/> property is set to false.</returns>
+		public Margin GetAsMargin(String name)
+		{
+			string attrValue = this[name];
+			Margin margin = Margin.Parse(attrValue);
+
+			// try to consolidate the margin/padding with the parts specified in inline.
+			// html respect the order in wich they have been defined: the last term wins.
+			// for example:
+			// style="margin: 0 30px;margin-left: 20px"   => margin-left = 20px
+			// style="margin-left: 20px;margin: 0 30px"   => margin-left = 30px
+			// Without going so far, for the moment I will just merge the single-part afterwards.
+			Margin consolidatedMargin = new Margin(
+				this.GetAsUnit(name + Margin.SingleSideParts[0]),
+				this.GetAsUnit(name + Margin.SingleSideParts[1]),
+				this.GetAsUnit(name + Margin.SingleSideParts[2]),
+				this.GetAsUnit(name + Margin.SingleSideParts[3])
+			);
+
+			if (consolidatedMargin.IsEmpty) // no single side parts specified
+				return margin;
+			if (!margin.IsValid)
+				return consolidatedMargin;
+
+			return new Margin(
+				consolidatedMargin.Top.IsValid? consolidatedMargin.Top : margin.Top,
+				consolidatedMargin.Right.IsValid ? consolidatedMargin.Right : margin.Right,
+				consolidatedMargin.Bottom.IsValid ? consolidatedMargin.Bottom : margin.Bottom,
+				consolidatedMargin.Left.IsValid ? consolidatedMargin.Left : margin.Left);
+		}
 	}
 }

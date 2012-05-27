@@ -9,6 +9,7 @@ namespace NotesFor.HtmlToOpenXml
     /// </summary>
     struct Margin
     {
+		internal static readonly String[] SingleSideParts = new[] { "-top", "-right", "-bottom", "-left" };
         static char[] whitespaces = { ' ', '\t' };
 
         private Unit[] sides;
@@ -72,7 +73,7 @@ namespace NotesFor.HtmlToOpenXml
                         Unit u1 = Unit.Parse(parts[0]);
                         Unit u2 = Unit.Parse(parts[1]);
                         Unit u3 = Unit.Parse(parts[2]);
-                        Unit u4 = Unit.Parse(parts[2]);
+                        Unit u4 = Unit.Parse(parts[3]);
                         return new Margin(u1, u2, u3, u4);
                     }
             }
@@ -88,7 +89,7 @@ namespace NotesFor.HtmlToOpenXml
         /// </summary>
         public Unit Bottom
         {
-            get { return sides[2]; }
+            get { return sides == null ? Unit.Empty : sides[2]; }
         }
 
         /// <summary>
@@ -96,7 +97,7 @@ namespace NotesFor.HtmlToOpenXml
         /// </summary>
         public Unit Left
         {
-            get { return sides[3]; }
+			get { return sides == null ? Unit.Empty : sides[3]; }
         }
 
         /// <summary>
@@ -104,7 +105,7 @@ namespace NotesFor.HtmlToOpenXml
         /// </summary>
         public Unit Top
         {
-            get { return sides[0]; }
+			get { return sides == null ? Unit.Empty : sides[0]; }
         }
 
         /// <summary>
@@ -112,12 +113,20 @@ namespace NotesFor.HtmlToOpenXml
         /// </summary>
         public Unit Right
         {
-            get { return sides[1]; }
+			get { return sides == null ? Unit.Empty : sides[1]; }
         }
 
         public bool IsValid
         {
             get { return sides != null && Left.IsValid && Right.IsValid && Bottom.IsValid && Top.IsValid; }
         }
+
+		/// <summary>
+		/// Gets whether at least one side has been specified.
+		/// </summary>
+		public bool IsEmpty
+		{
+			get { return sides == null || !(Left.IsValid || Right.IsValid || Bottom.IsValid || Top.IsValid); }
+		}
     }
 }

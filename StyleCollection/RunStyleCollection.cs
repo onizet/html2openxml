@@ -54,9 +54,9 @@ namespace NotesFor.HtmlToOpenXml
 			colorValue = en.StyleAttributes.GetAsColor("background-color");
 			if (!colorValue.IsEmpty)
 			{
-				HighlightColorValues color = ConverterUtility.ConvertToHighlightColor(colorValue);
-				if (color != HighlightColorValues.None)
-					styleAttributes.Add(new Highlight { Val = color });
+                // change the way the background-color renders. It now uses Shading instead of Highlight.
+                // Changes brought by Wude on http://notesforhtml2openxml.codeplex.com/discussions/277570
+                styleAttributes.Add(new Shading { Val = ShadingPatternValues.Clear, Fill = colorValue.ToHexString() });
 			}
 
 			string attrValue = en.StyleAttributes["text-decoration"];
