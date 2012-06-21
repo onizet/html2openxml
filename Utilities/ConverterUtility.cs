@@ -128,11 +128,12 @@ namespace NotesFor.HtmlToOpenXml
 
 		#endregion
 
-		#region ConvertToForeColor
+		#region ConvertToBorderStyle
 
 		public static BorderValues ConvertToBorderStyle(string borderStyle)
 		{
-			switch (borderStyle)
+			if (borderStyle == null) return BorderValues.Nil;
+			switch (borderStyle.ToLowerInvariant())
 			{
 				case "dotted": return BorderValues.Dotted;
 				case "dashed": return BorderValues.Dashed;
@@ -140,8 +141,30 @@ namespace NotesFor.HtmlToOpenXml
 				case "double": return BorderValues.Double;
 				case "inset": return BorderValues.Inset;
 				case "outset": return BorderValues.Outset;
-				case "none":
-				default: return BorderValues.None;
+				case "none": return BorderValues.None;
+				default: return BorderValues.Nil;
+			}
+		}
+
+		#endregion
+
+		#region ConvertToUnitMetric
+
+		public static UnitMetric ConvertToUnitMetric(String type)
+		{
+			if (type == null) return UnitMetric.Unknown;
+			switch (type.ToLowerInvariant())
+			{
+				case "%": return UnitMetric.Percent;
+				case "in": return UnitMetric.Inch;
+				case "cm": return UnitMetric.Centimeter;
+				case "mm": return UnitMetric.Millimeter;
+				case "em": return UnitMetric.EM;
+				case "ex": return UnitMetric.Ex;
+				case "pt": return UnitMetric.Point;
+				case "pc": return UnitMetric.Pica;
+				case "px": return UnitMetric.Pixel;
+				default: return UnitMetric.Unknown;
 			}
 		}
 
@@ -155,6 +178,26 @@ namespace NotesFor.HtmlToOpenXml
 		/// </summary>
 		public static byte[] DownloadData(Uri uri, WebProxy proxy)
 		{
+			// is it a local path?
+			if (uri.IsFile)
+			{
+				try
+				{
+					// just read the picture from the file system
+					return File.ReadAllBytes(uri.LocalPath);
+				}
+				catch (IOException)
+				{
+					return null;
+				}
+				catch(SystemException exc)
+				{
+					if(exc is UnauthorizedAccessException || exc is System.Security.SecurityException || exc is NotSupportedException)
+						return null;
+					throw;
+				}
+			}
+
 			System.Net.WebClient webClient = new System.Net.WebClient();
             if (proxy != null)
             {

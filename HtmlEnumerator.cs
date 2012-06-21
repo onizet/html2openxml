@@ -106,7 +106,7 @@ namespace NotesFor.HtmlToOpenXml
 		/// </summary>
 		public HtmlAttributeCollection StyleAttributes
 		{
-			get { return styleAttributes ?? (styleAttributes = new HtmlAttributeCollection(this.Attributes["style"], true)); }
+			get { return styleAttributes ?? (styleAttributes = HtmlAttributeCollection.ParseStyle(this.Attributes["style"])); }
 		}
 
 		/// <summary>
@@ -114,7 +114,7 @@ namespace NotesFor.HtmlToOpenXml
 		/// </summary>
 		public HtmlAttributeCollection Attributes
 		{
-			get { return attributes ?? (attributes = new HtmlAttributeCollection(current, false)); }
+			get { return attributes ?? (attributes = HtmlAttributeCollection.Parse(current)); }
 		}
 
 		/// <summary>

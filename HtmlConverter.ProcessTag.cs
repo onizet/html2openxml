@@ -10,6 +10,7 @@ namespace NotesFor.HtmlToOpenXml
 {
 	using a = DocumentFormat.OpenXml.Drawing;
 	using pic = DocumentFormat.OpenXml.Drawing.Pictures;
+	using wBorder = DocumentFormat.OpenXml.Wordprocessing.Border;
 
 	partial class HtmlConverter
 	{
@@ -340,7 +341,7 @@ namespace NotesFor.HtmlToOpenXml
 			if (this.ImageProcessing == ImageProcessing.Ignore) return;
 
 			Drawing drawing = null;
-			Border border = new Border();
+			wBorder border = new wBorder();
 			string src = en.Attributes["src"];
 			Uri uri;
 
@@ -359,65 +360,23 @@ namespace NotesFor.HtmlToOpenXml
 					Unit hu = en.Attributes.GetAsUnit("height");
 
 					// % is not supported
-					if (wu.IsValid && wu.Value > 0 && wu.Type != "%")
+					if (wu.IsValid && wu.Value > 0 && wu.Type != UnitMetric.Percent)
 					{
 						preferredSize.Width = wu.ValueInPx;
 					}
-					if (hu.IsValid && hu.Value > 0 && wu.Type != "%")
+					if (hu.IsValid && hu.Value > 0 && wu.Type != UnitMetric.Percent)
 					{
 						// Image perspective skewed. Bug fixed by ddeforge on http://notesforhtml2openxml.codeplex.com/discussions/350500
 						preferredSize.Height = hu.ValueInPx;
 					}
 				}
 
-				string borderWidth = null, borderColor = null, borderStyle = null;
-				if (en.StyleAttributes["border"] != null)
+				SideBorder attrBorder = en.StyleAttributes.GetAsSideBorder("border");
+				if (attrBorder.IsValid)
 				{
-					string[] borderParts = en.StyleAttributes["border"].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-					if (borderParts.Length > 0)
-					{
-						borderStyle = borderParts[0];
-						if (borderParts.Length > 1)
-						{
-							borderWidth = borderParts[1];
-							if (borderParts.Length > 2)
-								borderColor = borderParts[2];
-						}
-					}
-				}
-				if (en.StyleAttributes["border-width"] != null)
-					borderWidth = en.StyleAttributes["border-width"];
-				if (en.StyleAttributes["border-color"] != null)
-					borderColor = en.StyleAttributes["border-color"];
-				if (en.StyleAttributes["border-style"] != null)
-					borderStyle = en.StyleAttributes["border-style"];
-
-				if (borderWidth != null)
-				{
-					Unit bu = Unit.Parse(borderWidth);
-					if (bu.IsValid)
-					{
-						if (bu.Value > 0 && bu.Type == "px")
-							border.Size = (uint) bu.Value;
-					}
-					else
-					{
-						switch (borderWidth)
-						{
-							case "medium": border.Size = 18U; break;
-							case "thick": border.Size = 12U; break;
-							case "thin": border.Size = 8U; break;
-						}
-					}
-				}
-				if (borderColor != null)
-				{
-					var colorValue = ConverterUtility.ConvertToForeColor(borderColor);
-					if (!colorValue.IsEmpty) border.Color = colorValue.ToHexString();
-				}
-				if (borderStyle != null)
-				{
-					border.Val = ConverterUtility.ConvertToBorderStyle(borderStyle);
+					border.Val = attrBorder.Style;
+					border.Color = attrBorder.Color.ToHexString();
+					border.Size = (uint) attrBorder.Width.ValueInPx * 4;
 				}
 
 				if (process)
@@ -427,7 +386,7 @@ namespace NotesFor.HtmlToOpenXml
 			if (drawing != null)
 			{
 				Run run = new Run(drawing);
-				if (!border.Val.Equals<BorderValues>(BorderValues.None)) run.InsertInProperties(border);
+				if (border.Val != BorderValues.None) run.InsertInProperties(border);
 				elements.Add(run);
 			}
 		}
@@ -450,7 +409,7 @@ namespace NotesFor.HtmlToOpenXml
 			CompleteCurrentParagraph();
 
 			int numberingId = htmlStyles.NumberingList.ProcessItem(en);
-			int numberLevelRef = htmlStyles.NumberingList.LevelRef;
+			int level = htmlStyles.NumberingList.LevelIndex;
 
 			// Save the new paragraph reference to support nested numbering list.
 			Paragraph p = htmlStyles.Paragraph.NewParagraph();
@@ -458,9 +417,9 @@ namespace NotesFor.HtmlToOpenXml
 			currentParagraph.InsertInProperties(
 				new ParagraphStyleId() { Val = htmlStyles.GetStyle("ListParagraph", false) },
 				new SpacingBetweenLines() { After = "0" },
-				new Indentation() { Hanging = "357", Left = ((numberLevelRef - 1) * 357).ToString(CultureInfo.InvariantCulture) },
+				new Indentation() { Hanging = "357", Left = ((level - 1) * 357).ToString(CultureInfo.InvariantCulture) },
 				new NumberingProperties(
-					new NumberingLevelReference() { Val = numberLevelRef - 1 },
+					new NumberingLevelReference() { Val = level - 1 },
 					new NumberingId() { Val = numberingId }
 				)
 			);
@@ -786,11 +745,11 @@ namespace NotesFor.HtmlToOpenXml
 			{
 				switch (unit.Type)
 				{
-					case "%":
+					case UnitMetric.Percent:
 						properties.Add(new TableWidth() { Type = TableWidthUnitValues.Pct, Width = (unit.Value * 50).ToString(CultureInfo.InvariantCulture) }); break;
-					case "pt":
+					case UnitMetric.Point:
 						properties.Add(new TableWidth() { Type = TableWidthUnitValues.Dxa, Width = unit.ValueInDxa.ToString(CultureInfo.InvariantCulture) }); break;
-					case "px":
+					case UnitMetric.Pixel:
 						properties.Add(new TableWidth() { Type = TableWidthUnitValues.Dxa, Width = unit.ValueInDxa.ToString(CultureInfo.InvariantCulture) }); break;
 				}
 			}
@@ -814,7 +773,7 @@ namespace NotesFor.HtmlToOpenXml
 				Margin margin = en.StyleAttributes.GetAsMargin("margin");
 
 				// OpenXml doesn't support left table margin in Percent, but Html does
-				if (margin.Left.IsValid && margin.Left.Type != "%")
+				if (margin.Left.IsValid && margin.Left.Type != UnitMetric.Percent)
 				{
 					properties.Add(new TableIndentation() { Width = (int) margin.Left.ValueInDxa, Type = TableWidthUnitValues.Dxa });
 				}
@@ -934,10 +893,10 @@ namespace NotesFor.HtmlToOpenXml
 			{
 				switch (unit.Type)
 				{
-					case "pt":
+					case UnitMetric.Point:
 						styleAttributes.Add(new TableRowHeight() { HeightType = HeightRuleValues.AtLeast, Val = (uint) (unit.Value * 20) });
 						break;
-					case "px":
+					case UnitMetric.Pixel:
 						styleAttributes.Add(new TableRowHeight() { HeightType = HeightRuleValues.AtLeast, Val = (uint) unit.ValueInDxa });
 						break;
 				}
@@ -973,13 +932,13 @@ namespace NotesFor.HtmlToOpenXml
 			{
 				switch (unit.Type)
 				{
-					case "%":
+					case UnitMetric.Percent:
 						styleAttributes.Add(new TableCellWidth() { Type = TableWidthUnitValues.Pct, Width = (unit.Value * 50).ToString(CultureInfo.InvariantCulture) });
 						break;
-					case "pt":
+					case UnitMetric.Point:
 						styleAttributes.Add(new TableCellWidth() { Type = TableWidthUnitValues.Dxa, Width = (unit.Value * 20).ToString(CultureInfo.InvariantCulture) });
 						break;
-					case "px":
+					case UnitMetric.Pixel:
 						styleAttributes.Add(new TableCellWidth() { Type = TableWidthUnitValues.Dxa, Width = (unit.Value).ToString(CultureInfo.InvariantCulture) });
 						break;
 				}
@@ -1020,7 +979,7 @@ namespace NotesFor.HtmlToOpenXml
 			}
 
 			var padding = en.StyleAttributes.GetAsMargin("padding");
-			if (padding.IsValid)
+			if (!padding.IsEmpty)
 			{
 				TableCellMargin cellMargin = new TableCellMargin();
 				var cellMarginSide = new List<KeyValuePair<Unit, TableWidthType>>();
@@ -1031,8 +990,8 @@ namespace NotesFor.HtmlToOpenXml
 
 				foreach (var pair in cellMarginSide)
 				{
-					if (pair.Key.Value == 0) continue;
-					if (pair.Key.Type == "%")
+					if (!pair.Key.IsValid || pair.Key.Value == 0) continue;
+					if (pair.Key.Type == UnitMetric.Percent)
 					{
 						pair.Value.Width = (pair.Key.Value * 50).ToString(CultureInfo.InvariantCulture);
 						pair.Value.Type = TableWidthUnitValues.Pct;
@@ -1151,7 +1110,7 @@ namespace NotesFor.HtmlToOpenXml
 
 			// If we are no more inside a list, we move to another paragraph (as we created
 			// one for containing all the <li>. This will ensure the next run will not be added to the <li>.
-			if (htmlStyles.NumberingList.LevelRef == 0)
+			if (htmlStyles.NumberingList.LevelIndex == 0)
 				AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
 		}
 

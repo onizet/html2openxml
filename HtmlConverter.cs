@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -30,14 +31,14 @@ namespace NotesFor.HtmlToOpenXml
 			public Int32 Height;
 		}
 
-        private MainDocumentPart mainPart;
+		private MainDocumentPart mainPart;
 
 		/// <summary>The list of paragraphs that will be returned.</summary>
 		private IList<OpenXmlCompositeElement> paragraphs;
 		/// <summary>Holds the elements to append to the current paragraph.</summary>
 		private List<OpenXmlElement> elements;
 		private Paragraph currentParagraph;
-		private Int32 footnotesRef=1, endnotesRef=1, figCaptionRef=-1;
+		private Int32 footnotesRef = 1, endnotesRef = 1, figCaptionRef = -1;
 		private Dictionary<String, Action<HtmlEnumerator>> knownTags;
 		private Dictionary<Uri, CachedImagePart> knownImageParts;
 		private List<String> bookmarks;
@@ -61,7 +62,7 @@ namespace NotesFor.HtmlToOpenXml
 			knownTags = InitKnownTags();
 			htmlStyles = new HtmlDocumentStyle(mainPart);
 			knownImageParts = new Dictionary<Uri, CachedImagePart>();
-            this.WebProxy = new WebProxy();
+			this.WebProxy = new WebProxy();
 		}
 
 		/// <summary>
@@ -95,6 +96,8 @@ namespace NotesFor.HtmlToOpenXml
 			if (elements.Count > 0)
 				this.currentParagraph.Append(elements);
 
+			// As the Parse method is public, to avoid changing the type of the return value, I use this proxy
+			// that will allow me to call the recursive method RemoveEmptyParagraphs with no major changes, impacting the client.
 			RemoveEmptyParagraphs();
 
 			return paragraphs;
@@ -184,7 +187,7 @@ namespace NotesFor.HtmlToOpenXml
 		/// </summary>
 		private void AlternateProcessHtmlChunks(HtmlEnumerator en, string endTag)
 		{
-			if(elements.Count > 0) CompleteCurrentParagraph();
+			if (elements.Count > 0) CompleteCurrentParagraph();
 			ProcessHtmlChunks(en, endTag);
 		}
 
@@ -248,7 +251,7 @@ namespace NotesFor.HtmlToOpenXml
 				// to retrieve the highest Id.
 				foreach (var p in fpart.Footnotes.Elements<Footnote>())
 				{
-					if (p.Id.HasValue && p.Id > footnotesRef) footnotesRef = (int)p.Id.Value;
+					if (p.Id.HasValue && p.Id > footnotesRef) footnotesRef = (int) p.Id.Value;
 				}
 				footnotesRef++;
 			}
@@ -264,9 +267,9 @@ namespace NotesFor.HtmlToOpenXml
 								new RunStyle() { Val = htmlStyles.GetStyle("footnote reference", true) }),
 							new FootnoteReferenceMark()),
 						new Run(
-							// Word insert automatically a space before the definition to separate the reference number
-							// with its description
-                            new Text(" " + description) { Space = SpaceProcessingModeValues.Preserve })
+				// Word insert automatically a space before the definition to separate the reference number
+				// with its description
+							new Text(" " + description) { Space = SpaceProcessingModeValues.Preserve })
 					)
 				) { Id = footnotesRef });
 
@@ -325,7 +328,7 @@ namespace NotesFor.HtmlToOpenXml
 				// to retrieve the highest Id.
 				foreach (var p in fpart.Endnotes.Elements<Endnote>())
 				{
-					if (p.Id.HasValue && p.Id > footnotesRef) endnotesRef = (int)p.Id.Value;
+					if (p.Id.HasValue && p.Id > footnotesRef) endnotesRef = (int) p.Id.Value;
 				}
 				endnotesRef++;
 			}
@@ -341,9 +344,9 @@ namespace NotesFor.HtmlToOpenXml
 								new RunStyle() { Val = htmlStyles.GetStyle("endnote reference", true) }),
 							new FootnoteReferenceMark()),
 						new Run(
-							// Word insert automatically a space before the definition to separate the reference number
-							// with its description
-                            new Text(" " + description) { Space = SpaceProcessingModeValues.Preserve })
+				// Word insert automatically a space before the definition to separate the reference number
+				// with its description
+							new Text(" " + description) { Space = SpaceProcessingModeValues.Preserve })
 					)
 				) { Id = endnotesRef });
 
@@ -353,7 +356,7 @@ namespace NotesFor.HtmlToOpenXml
 				// the rendering will be awful.
 				markerRun.InsertInProperties(new VerticalTextAlignment() { Val = VerticalPositionValues.Superscript });
 			}
-	
+
 			fpart.Endnotes.Save();
 
 			return endnotesRef;
@@ -361,32 +364,32 @@ namespace NotesFor.HtmlToOpenXml
 
 		#endregion
 
-        #region AddFigureCaption
+		#region AddFigureCaption
 
-        /// <summary>
-        /// Add a new figure caption to the document.
-        /// </summary>
-        /// <returns>Returns the id of the new figure caption.</returns>
-        private int AddFigureCaption()
-        {
-            if(figCaptionRef == -1)
-            {
-                figCaptionRef = 0;
-                foreach (var p in mainPart.Document.Descendants<SimpleField>())
-                {
-                    if (p.Instruction == " SEQ Figure \\* ARABIC ")
-                        figCaptionRef++;
-                }
-            }
-            figCaptionRef++;
-            return figCaptionRef;
-        }
+		/// <summary>
+		/// Add a new figure caption to the document.
+		/// </summary>
+		/// <returns>Returns the id of the new figure caption.</returns>
+		private int AddFigureCaption()
+		{
+			if (figCaptionRef == -1)
+			{
+				figCaptionRef = 0;
+				foreach (var p in mainPart.Document.Descendants<SimpleField>())
+				{
+					if (p.Instruction == " SEQ Figure \\* ARABIC ")
+						figCaptionRef++;
+				}
+			}
+			figCaptionRef++;
+			return figCaptionRef;
+		}
 
-        #endregion
+		#endregion
 
-        #region AddImagePart
+		#region AddImagePart
 
-        private Drawing AddImagePart(Uri imageUrl, String imageSource, String alt, Size preferredSize)
+		private Drawing AddImagePart(Uri imageUrl, String imageSource, String alt, Size preferredSize)
 		{
 			if (imageObjId == UInt32.MinValue)
 			{
@@ -398,11 +401,11 @@ namespace NotesFor.HtmlToOpenXml
 				imageObjId = 1;
 				foreach (var d in mainPart.Document.Body.Descendants<Drawing>())
 				{
-                    if (d.Inline == null) continue; // fix some rare issue where Inline is null (reported by scwebgroup)
+					if (d.Inline == null) continue; // fix some rare issue where Inline is null (reported by scwebgroup)
 					if (d.Inline.DocProperties.Id > drawingObjId) drawingObjId = d.Inline.DocProperties.Id;
 
 					var nvPr = d.Inline.Graphic.GraphicData.GetFirstChild<pic.NonVisualPictureProperties>();
-					if(nvPr != null && nvPr.NonVisualDrawingProperties.Id > imageObjId)
+					if (nvPr != null && nvPr.NonVisualDrawingProperties.Id > imageObjId)
 						imageObjId = nvPr.NonVisualDrawingProperties.Id;
 				}
 				if (drawingObjId > 1) drawingObjId++;
@@ -412,7 +415,7 @@ namespace NotesFor.HtmlToOpenXml
 
 			// Cache all the ImagePart processed to avoid downloading the same image.
 			CachedImagePart imagePart;
-			if(!knownImageParts.TryGetValue(imageUrl, out imagePart))
+			if (!knownImageParts.TryGetValue(imageUrl, out imagePart))
 			{
 				ProvisionImageEventArgs e = new ProvisionImageEventArgs(imageUrl);
 				e.ImageSize = preferredSize;
@@ -425,7 +428,7 @@ namespace NotesFor.HtmlToOpenXml
 					RaiseProvisionImage(e);
 				}
 
-				if(e.Data == null) return null;
+				if (e.Data == null) return null;
 
 				if (!e.ImageExtension.HasValue)
 				{
@@ -464,8 +467,8 @@ namespace NotesFor.HtmlToOpenXml
 			}
 
 			String imagePartId = mainPart.GetIdOfPart(imagePart.Part);
-			long widthInEmus = new Unit("px", preferredSize.Width).ValueInEmus;
-			long heightInEmus = new Unit("px", preferredSize.Height).ValueInEmus;
+			long widthInEmus = new Unit(UnitMetric.Pixel, preferredSize.Width).ValueInEmus;
+			long heightInEmus = new Unit(UnitMetric.Pixel, preferredSize.Height).ValueInEmus;
 
 			++drawingObjId;
 			++imageObjId;
@@ -498,7 +501,7 @@ namespace NotesFor.HtmlToOpenXml
 									) { Preset = a.ShapeTypeValues.Rectangle }
 								) { BlackWhiteMode = a.BlackWhiteModeValues.Auto })
 						) { Uri = "http://schemas.openxmlformats.org/drawingml/2006/picture" })
-				) { DistanceFromTop = (UInt32Value)0U, DistanceFromBottom = (UInt32Value)0U, DistanceFromLeft = (UInt32Value)0U, DistanceFromRight = (UInt32Value)0U }
+				) { DistanceFromTop = (UInt32Value) 0U, DistanceFromBottom = (UInt32Value) 0U, DistanceFromLeft = (UInt32Value) 0U, DistanceFromRight = (UInt32Value) 0U }
 			);
 
 			return img;
@@ -645,36 +648,36 @@ namespace NotesFor.HtmlToOpenXml
 
 		#endregion
 
-        #region EnsureCaptionStyle
+		#region EnsureCaptionStyle
 
-        /// <summary>
-        /// Ensure the 'caption' style exists in the document.
-        /// </summary>
-        private void EnsureCaptionStyle()
-        {
-            String normalStyleName = htmlStyles.GetStyle("Normal", false);
-            Style style = new Style(
-                new StyleName { Val = "caption" },
-                new BasedOn { Val = normalStyleName },
-                new NextParagraphStyle { Val = normalStyleName },
-                new UnhideWhenUsed(),
-                new PrimaryStyle(),
-                new StyleParagraphProperties(
-                    new SpacingBetweenLines { Line = "240", LineRule = LineSpacingRuleValues.Auto }
-                ),
-                new StyleRunProperties(
-                    new Bold(),
-                    new BoldComplexScript(),
-                    new DocumentFormat.OpenXml.Wordprocessing.Color() { Val = "4F81BD", ThemeColor = ThemeColorValues.Accent1 },
-                    new FontSize { Val = "18" },
-                    new FontSizeComplexScript { Val = "18" }
-                )
-            ) { Type = StyleValues.Paragraph, StyleId = "Caption" };
+		/// <summary>
+		/// Ensure the 'caption' style exists in the document.
+		/// </summary>
+		private void EnsureCaptionStyle()
+		{
+			String normalStyleName = htmlStyles.GetStyle("Normal", false);
+			Style style = new Style(
+				new StyleName { Val = "caption" },
+				new BasedOn { Val = normalStyleName },
+				new NextParagraphStyle { Val = normalStyleName },
+				new UnhideWhenUsed(),
+				new PrimaryStyle(),
+				new StyleParagraphProperties(
+					new SpacingBetweenLines { Line = "240", LineRule = LineSpacingRuleValues.Auto }
+				),
+				new StyleRunProperties(
+					new Bold(),
+					new BoldComplexScript(),
+					new DocumentFormat.OpenXml.Wordprocessing.Color() { Val = "4F81BD", ThemeColor = ThemeColorValues.Accent1 },
+					new FontSize { Val = "18" },
+					new FontSizeComplexScript { Val = "18" }
+				)
+			) { Type = StyleValues.Paragraph, StyleId = "Caption" };
 
-            htmlStyles.AddStyle("caption", style);
-        }
+			htmlStyles.AddStyle("caption", style);
+		}
 
-        #endregion
+		#endregion
 
 		#region ProcessContainerAttributes
 
@@ -692,28 +695,27 @@ namespace NotesFor.HtmlToOpenXml
 			string attrValue = en.Attributes["lang"];
 			if (attrValue != null && attrValue.Length > 0)
 			{
-                try
-                {
-                    var ci = System.Globalization.CultureInfo.GetCultureInfo(attrValue);
-                    bool rtl = ci.TextInfo.IsRightToLeft;
+				try
+				{
+					var ci = System.Globalization.CultureInfo.GetCultureInfo(attrValue);
+					bool rtl = ci.TextInfo.IsRightToLeft;
 
-                    Languages lang = new Languages() { Val = ci.TwoLetterISOLanguageName };
-                    if (rtl)
-                    {
-                        lang.Bidi = ci.Name;
-                        //styleAttributes.Add(new RightToLeftText());
-                        styleAttributes.Add(new Languages() { Bidi = ci.Name });
-                    }
+					Languages lang = new Languages() { Val = ci.TwoLetterISOLanguageName };
+					if (rtl)
+					{
+						lang.Bidi = ci.Name;
+						styleAttributes.Add(new Languages() { Bidi = ci.Name });
+					}
 
-                    containerStyleAttributes.Add(
-                        new ParagraphMarkRunProperties(lang));
+					containerStyleAttributes.Add(
+						new ParagraphMarkRunProperties(lang));
 
-                    containerStyleAttributes.Add(new BiDi() { Val = OnOffValue.FromBoolean(rtl) });
-                }
-                catch (ArgumentException)
-                {
-                    // lang not valid, ignore it
-                }
+					containerStyleAttributes.Add(new BiDi() { Val = OnOffValue.FromBoolean(rtl) });
+				}
+				catch (ArgumentException)
+				{
+					// lang not valid, ignore it
+				}
 			}
 
 
@@ -748,13 +750,13 @@ namespace NotesFor.HtmlToOpenXml
 				}
 			}
 
-            // according to w3c, dir should be used in conjonction with lang. But whatever happens, we'll apply the RTL layout
-            attrValue = en.Attributes["dir"];
-            if (attrValue != null && attrValue.Equals("rtl", StringComparison.InvariantCultureIgnoreCase))
-            {
-                styleAttributes.Add(new RightToLeftText());
-                containerStyleAttributes.Add(new Justification() { Val = JustificationValues.Right });
-            }
+			// according to w3c, dir should be used in conjonction with lang. But whatever happens, we'll apply the RTL layout
+			attrValue = en.Attributes["dir"];
+			if (attrValue != null && attrValue.Equals("rtl", StringComparison.InvariantCultureIgnoreCase))
+			{
+				styleAttributes.Add(new RightToLeftText());
+				containerStyleAttributes.Add(new Justification() { Val = JustificationValues.Right });
+			}
 
 			htmlStyles.Paragraph.BeginTag(en.CurrentTag, containerStyleAttributes);
 
@@ -832,16 +834,24 @@ namespace NotesFor.HtmlToOpenXml
 			get { return this.baseImageUri; }
 			set
 			{
-				if (value != null && !value.IsAbsoluteUri)
-					throw new ArgumentException("BaseImageUrl should be an absolute Uri");
+				if (value != null)
+				{
+					if (!value.IsAbsoluteUri)
+						throw new ArgumentException("BaseImageUrl should be an absolute Uri");
+					// in case of local uri (file:///) we need to be sure the uri ends with '/' or the
+					// combination of uri = new Uri(@"C:\users\demo\images", "pic.jpg");
+					// will eat the images part
+					if (value.IsFile && value.LocalPath[value.LocalPath.Length - 1] != '/')
+						value = new Uri(value.OriginalString + '/');
+				} 
 				this.baseImageUri = value;
 			}
 		}
 
-        /// <summary>
-        /// Gets or sets the proxy used to download images.
-        /// </summary>
-        public WebProxy WebProxy { get; set; }
+		/// <summary>
+		/// Gets or sets the proxy used to download images.
+		/// </summary>
+		public WebProxy WebProxy { get; set; }
 
 		/// <summary>
 		/// Gets or sets where the Legend tag (&lt;caption&gt;) should be rendered (above or below the table).

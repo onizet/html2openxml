@@ -9,9 +9,7 @@ namespace NotesFor.HtmlToOpenXml
     /// </summary>
     struct Margin
     {
-		internal static readonly String[] SingleSideParts = new[] { "-top", "-right", "-bottom", "-left" };
-        static char[] whitespaces = { ' ', '\t' };
-
+		static char[] whitespaces = { ' ', '\t' };
         private Unit[] sides;
 
 
@@ -81,39 +79,48 @@ namespace NotesFor.HtmlToOpenXml
             return new Margin();
         }
 
+		private void EnsureSides()
+		{
+			if (this.sides == null) sides = new Unit[4];
+		}
+
         //____________________________________________________________________
         //
 
         /// <summary>
-        /// Gets the unit of the bottom side.
+		/// Gets or sets the unit of the bottom side.
         /// </summary>
         public Unit Bottom
         {
             get { return sides == null ? Unit.Empty : sides[2]; }
+			set { EnsureSides(); sides[2] = value; }
         }
 
         /// <summary>
-        /// Gets the unit of the left side.
+		/// Gets or sets the unit of the left side.
         /// </summary>
         public Unit Left
         {
 			get { return sides == null ? Unit.Empty : sides[3]; }
+			set { EnsureSides(); sides[3] = value; }
         }
 
         /// <summary>
-        /// Gets the unit of the top side.
+		/// Gets or sets the unit of the top side.
         /// </summary>
         public Unit Top
         {
 			get { return sides == null ? Unit.Empty : sides[0]; }
+			set { EnsureSides(); sides[0] = value; }
         }
 
         /// <summary>
-        /// Gets the unit of the right side.
+		/// Gets or sets the unit of the right side.
         /// </summary>
         public Unit Right
         {
 			get { return sides == null ? Unit.Empty : sides[1]; }
+			set { EnsureSides(); sides[1] = value; }
         }
 
         public bool IsValid

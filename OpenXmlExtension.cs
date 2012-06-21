@@ -61,33 +61,6 @@ namespace NotesFor.HtmlToOpenXml
 			prop.Append(newChildren);
 		}
 
-		/// <summary>
-		/// Finds the referencing ID of a numbering list matching a specified format.
-		/// </summary>
-		public static int FindNumberIDByFormat(this Numbering numbering, NumberFormatValues format)
-		{
-			foreach(AbstractNum absNum in numbering.Elements<AbstractNum>())
-			{
-				Level lvl = absNum.GetFirstChild<Level>();
-				if (lvl != null && lvl.NumberingFormat != null &&
-					lvl.NumberingFormat.Val.Equals<NumberFormatValues>(format))
-				{
-					// found ! Now let's find its referencing ID
-
-					int id = absNum.AbstractNumberId.Value;
-                    foreach (NumberingInstance num in numbering.Elements<NumberingInstance>())
-					{
-						if (num.AbstractNumId.Val == id)
-							return num.NumberID.Value;
-					}
-
-					break;
-				}
-			}
-
-			return 0; // fallback on default style
-		}
-
 		// needed since December 2009 CTP refactoring, where casting is not anymore an option
 
 		public static TableRowAlignmentValues ToTableRowAlignment(this JustificationValues val)
