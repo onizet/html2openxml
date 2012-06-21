@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 namespace NotesFor.HtmlToOpenXml
 {
 	/// <summary>
-	/// Split an html piece of text and provide a way to enumerate its tags.
+	/// Splits an html chunk of text and provide a way to enumerate through its tags.
 	/// </summary>
 	[System.Diagnostics.DebuggerDisplay("HtmlEnumerator. Current: {Current}")]
 	sealed class HtmlEnumerator : IEnumerator<String>
@@ -146,6 +146,18 @@ namespace NotesFor.HtmlToOpenXml
 					currentTag = m.Success ? m.Groups[1].Value + ">" : null;
 				}
 				return currentTag;
+			}
+		}
+
+		/// <summary>
+		/// Gets the expected closing tag for the current tag.
+		/// </summary>
+		public String ClosingCurrentTag
+		{
+			get
+			{
+				if (IsSelfClosedTag) return this.CurrentTag;
+				return this.CurrentTag.Insert(1, "/");
 			}
 		}
 
