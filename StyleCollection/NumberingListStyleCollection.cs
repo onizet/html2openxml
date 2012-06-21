@@ -145,7 +145,7 @@ namespace NotesFor.HtmlToOpenXml
 			};
 
 			// compute the next list instance ID seed
-			nextInstanceID = 4; // 4 stands for the default value from Word
+			nextInstanceID = 1;
 			foreach (NumberingInstance inst in numberingPart.Numbering.Elements<NumberingInstance>())
 			{
 				if (inst.NumberID.Value > nextInstanceID) nextInstanceID = inst.NumberID;

@@ -27,7 +27,7 @@ namespace NotesFor.HtmlToOpenXml
 			string title = en.Attributes["title"];
 			if (title == null) return;
 
-			AlternateProcessHtmlChunks(en, en.CurrentTag.Replace("<", "</"));
+			AlternateProcessHtmlChunks(en, en.ClosingCurrentTag);
 
 			if (elements.Count > 0 && elements[0] is Run)
 			{
@@ -100,7 +100,7 @@ namespace NotesFor.HtmlToOpenXml
 			ProcessContainerAttributes(en, styleAttributes);
 
 			if (styleAttributes.Count > 0)
-				htmlStyles.Runs.BeginTag("<body>", styleAttributes.ToArray());
+				htmlStyles.Runs.BeginTag(en.CurrentTag, styleAttributes.ToArray());
 		}
 
 		#endregion
@@ -118,7 +118,7 @@ namespace NotesFor.HtmlToOpenXml
 
 		private void ProcessCite(HtmlEnumerator en)
 		{
-			htmlStyles.Runs.BeginTag("<cite>", new RunStyle() { Val = htmlStyles.GetStyle("Quote", true) });
+			htmlStyles.Runs.BeginTag(en.CurrentTag, new RunStyle() { Val = htmlStyles.GetStyle("Quote", true) });
 		}
 
 		#endregion
@@ -160,7 +160,7 @@ namespace NotesFor.HtmlToOpenXml
 		{
 			// The way the browser consider <div> is like a simple Break. But in case of any attributes that targets
 			// the paragraph, we don't want to apply the style on the old paragraph but on a new one.
-			if (en.Attributes.Count == 0 || (en.StyleAttributes["text-align"] == null && en.Attributes["align"] == null))
+			if (en.Attributes.Count == 0 || (en.StyleAttributes["text-align"] == null && en.Attributes["align"] == null && en.StyleAttributes.GetAsBorder("border").IsEmpty))
 			{
 				CompleteCurrentParagraph();
 				Paragraph previousParagraph = currentParagraph;
@@ -184,7 +184,7 @@ namespace NotesFor.HtmlToOpenXml
 					{
 						// Insert before the break, complete this paragraph and start a new one
 						this.paragraphs.Insert(this.paragraphs.Count - 1, currentParagraph);
-						AlternateProcessHtmlChunks(en, "</div>");
+						AlternateProcessHtmlChunks(en, en.ClosingCurrentTag);
 						CompleteCurrentParagraph();
 						AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
 					}
@@ -226,7 +226,7 @@ namespace NotesFor.HtmlToOpenXml
 			}
 
 			if (styleAttributes.Count > 0)
-				htmlStyles.Runs.MergeTag("<font>", styleAttributes);
+				htmlStyles.Runs.MergeTag(en.CurrentTag, styleAttributes);
 		}
 
 		#endregion
@@ -293,7 +293,7 @@ namespace NotesFor.HtmlToOpenXml
 			ProcessContainerAttributes(en, styleAttributes);
 
 			if (styleAttributes.Count > 0)
-				htmlStyles.Runs.BeginTag("<html>", styleAttributes.ToArray());
+				htmlStyles.Runs.BeginTag(en.CurrentTag, styleAttributes.ToArray());
 		}
 
 		#endregion
@@ -341,7 +341,7 @@ namespace NotesFor.HtmlToOpenXml
 			if (this.ImageProcessing == ImageProcessing.Ignore) return;
 
 			Drawing drawing = null;
-			wBorder border = new wBorder();
+			wBorder border = new wBorder() { Val = BorderValues.None };
 			string src = en.Attributes["src"];
 			Uri uri;
 
@@ -566,10 +566,8 @@ namespace NotesFor.HtmlToOpenXml
 
 			if (newParagraph)
 			{
-				AlternateProcessHtmlChunks(en, "</p>");
-
-				CompleteCurrentParagraph();
-				AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
+				AlternateProcessHtmlChunks(en, en.ClosingCurrentTag);
+				ProcessClosingParagraph(en);
 			}
 		}
 
@@ -616,12 +614,12 @@ namespace NotesFor.HtmlToOpenXml
 			ProcessContainerAttributes(en, styleAttributes);
 
 			if (styleAttributes.Count > 0)
-				htmlStyles.Runs.BeginTag("<pre>", styleAttributes.ToArray());
+				htmlStyles.Runs.BeginTag(en.CurrentTag, styleAttributes.ToArray());
 
 			AlternateProcessHtmlChunks(en, "</pre>");
 
 			if (styleAttributes.Count > 0)
-				htmlStyles.Runs.EndTag("<pre>");
+				htmlStyles.Runs.EndTag(en.CurrentTag);
 
 			if (RenderPreAsTable)
 				tables.CloseContext();
@@ -639,7 +637,7 @@ namespace NotesFor.HtmlToOpenXml
 			// The browsers render the quote tag between a kind of separators.
 			// We add the Quote style to the nested runs to match more Word.
 
-			htmlStyles.Runs.BeginTag("<q>", new RunStyle() { Val = htmlStyles.GetStyle("Quote", true) });
+			htmlStyles.Runs.BeginTag(en.CurrentTag, new RunStyle() { Val = htmlStyles.GetStyle("Quote", true) });
 
 			Run run = new Run(
 				new Text(" " + HtmlStyles.QuoteCharacters.chars[0]) { Space = SpaceProcessingModeValues.Preserve }
@@ -663,11 +661,11 @@ namespace NotesFor.HtmlToOpenXml
 			bool newParagraph = ProcessContainerAttributes(en, styleAttributes);
 
 			if (styleAttributes.Count > 0)
-				htmlStyles.Runs.MergeTag("<span>", styleAttributes);
+				htmlStyles.Runs.MergeTag(en.CurrentTag, styleAttributes);
 
 			if (newParagraph)
 			{
-				AlternateProcessHtmlChunks(en, "</span>");
+				AlternateProcessHtmlChunks(en, en.ClosingCurrentTag);
 
 				CompleteCurrentParagraph();
 				AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
@@ -689,7 +687,7 @@ namespace NotesFor.HtmlToOpenXml
 
 		private void ProcessSubscript(HtmlEnumerator en)
 		{
-			htmlStyles.Runs.BeginTag("<sub>", new VerticalTextAlignment() { Val = VerticalPositionValues.Subscript });
+			htmlStyles.Runs.BeginTag(en.CurrentTag, new VerticalTextAlignment() { Val = VerticalPositionValues.Subscript });
 		}
 
 		#endregion
@@ -698,7 +696,7 @@ namespace NotesFor.HtmlToOpenXml
 
 		private void ProcessSuperscript(HtmlEnumerator en)
 		{
-			htmlStyles.Runs.BeginTag("<sup>", new VerticalTextAlignment() { Val = VerticalPositionValues.Superscript });
+			htmlStyles.Runs.BeginTag(en.CurrentTag, new VerticalTextAlignment() { Val = VerticalPositionValues.Superscript });
 		}
 
 		#endregion
@@ -908,7 +906,7 @@ namespace NotesFor.HtmlToOpenXml
 
 			htmlStyles.Runs.ProcessCommonRunAttributes(en, runStyleAttributes);
 			if (runStyleAttributes.Count > 0)
-				htmlStyles.Runs.BeginTag("<tr>", runStyleAttributes.ToArray());
+				htmlStyles.Runs.BeginTag(en.CurrentTag, runStyleAttributes.ToArray());
 
 			tables.CurrentTable.Append(row);
 			tables.CellPosition = new Point(0, tables.CellPosition.Y + 1);
@@ -1010,7 +1008,7 @@ namespace NotesFor.HtmlToOpenXml
 
 			htmlStyles.Tables.ProcessCommonAttributes(en, styleAttributes);
 			if (runStyleAttributes.Count > 0)
-				htmlStyles.Runs.BeginTag("<td>", runStyleAttributes.ToArray());
+				htmlStyles.Runs.BeginTag(en.CurrentTag, runStyleAttributes.ToArray());
 
 			TableCell cell = new TableCell(
 				new TableCellProperties(styleAttributes));
@@ -1047,7 +1045,7 @@ namespace NotesFor.HtmlToOpenXml
 		{
 			// Process inner Xml data island and do nothing.
 			// The Xml has this format:
-			/* <?xml:namespace prefix = o ns = \"urn:schemas-microsoft-com:office:office\" >
+			/* <?xml:namespace prefix=o ns="urn:schemas-microsoft-com:office:office">
 			   <globalGuideLine>
 				   <employee>
 					  <FirstName>Austin</FirstName>
@@ -1061,8 +1059,8 @@ namespace NotesFor.HtmlToOpenXml
 
 			if (en.Current != null)
 			{
-				string xmlRootElement = en.CurrentTag;
-				while (en.MoveUntilMatch(xmlRootElement.Replace("<", "</"))) ;
+				string xmlRootElement = en.ClosingCurrentTag;
+				while (en.MoveUntilMatch(xmlRootElement)) ;
 			}
 		}
 
