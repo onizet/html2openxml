@@ -79,6 +79,9 @@
     <Compile Include="HtmlEnumerator.cs" />
     <Compile Include="StyleCollection\OpenXmlStyleCollection.cs" />
     <Compile Include="StyleEventArgs.cs" />
+    <Compile Include="Utilities\SideBorder.cs" />
+    <Compile Include="Utilities\UnitMetric.cs" />
+    <Compile Include="Utilities\HtmlBorder.cs" />
     <Compile Include="Utilities\Margin.cs" />
     <Compile Include="Utilities\HttpUtility.cs" />
     <Compile Include="OpenXmlExtension.cs" />

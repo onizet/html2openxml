@@ -5,6 +5,9 @@ using System.Text.RegularExpressions;
 
 namespace NotesFor.HtmlToOpenXml
 {
+	using w = DocumentFormat.OpenXml.Wordprocessing;
+
+
 	/// <summary>
 	/// Represents the collection of attributes present in the current html tag.
 	/// </summary>
@@ -28,19 +31,16 @@ namespace NotesFor.HtmlToOpenXml
 
 
 
-		internal HtmlAttributeCollection(String htmlTag, bool targetStyleAttribute)
+		private HtmlAttributeCollection()
 		{
 			this.attributes = new StringDictionary();
-
-			if (!String.IsNullOrEmpty(htmlTag))
-			{
-				if (targetStyleAttribute) ParseStyle(htmlTag, attributes);
-				else Parse(htmlTag, attributes);
-			}
 		}
 
-		private static void Parse(String htmlTag, StringDictionary attributes)
+		public static HtmlAttributeCollection Parse(String htmlTag)
 		{
+			HtmlAttributeCollection collection = new HtmlAttributeCollection();
+			if (String.IsNullOrEmpty(htmlTag)) return collection;
+
 			// We remove the name of the tag (due to our regex) and ensure there are at least one parameter
 			int startIndex;
 			for (startIndex = 0; startIndex < htmlTag.Length; startIndex++)
@@ -53,24 +53,29 @@ namespace NotesFor.HtmlToOpenXml
 				else if (htmlTag[startIndex] == '>' || htmlTag[startIndex] == '/')
 				{
 					// no attribute in this tag
-					return;
+					return collection;
 				}
 			}
 
 			MatchCollection matches = stripAttributesRegex.Matches(htmlTag, startIndex);
 			foreach (Match m in matches)
 			{
-				attributes[m.Groups["tag"].Value] = m.Groups["val"].Value;
+				collection.attributes[m.Groups["tag"].Value] = m.Groups["val"].Value;
 			}
+
+			return collection;
 		}
 
-		private static void ParseStyle(String htmlTag, StringDictionary attributes)
+		public static HtmlAttributeCollection ParseStyle(String htmlTag)
 		{
+			HtmlAttributeCollection collection = new HtmlAttributeCollection();
+			if (String.IsNullOrEmpty(htmlTag)) return collection;
+
 			MatchCollection matches = stripStyleAttributesRegex.Matches(htmlTag);
 			foreach (Match m in matches)
-			{
-				attributes[m.Groups["name"].Value] = m.Groups["val"].Value;
-			}
+				collection.attributes[m.Groups["name"].Value] = m.Groups["val"].Value;
+
+			return collection;
 		}
 
 		/// <summary>
@@ -110,9 +115,8 @@ namespace NotesFor.HtmlToOpenXml
 		{
 			string attrValue = this[name];
 			if (attrValue != null)
-			{
 				return ConverterUtility.ConvertToForeColor(attrValue);
-			}
+
 			return System.Drawing.Color.Empty;
 		}
 
@@ -122,8 +126,7 @@ namespace NotesFor.HtmlToOpenXml
 		/// <returns>If the attribute is misformed, the <see cref="Unit.IsValid"/> property is set to false.</returns>
 		public Unit GetAsUnit(String name)
 		{
-			string attrValue = this[name];
-			return Unit.Parse(attrValue);
+			return Unit.Parse(this[name]);
 		}
 
 		/// <summary>
@@ -133,32 +136,64 @@ namespace NotesFor.HtmlToOpenXml
 		/// <returns>If the attribute is misformed, the <see cref="Margin.IsValid"/> property is set to false.</returns>
 		public Margin GetAsMargin(String name)
 		{
+			Margin margin = Margin.Parse(this[name]);
+			Unit u;
+
+			u = GetAsUnit(name + "-top");
+			if (u.IsValid) margin.Top = u;
+			u = GetAsUnit(name + "-right");
+			if (u.IsValid) margin.Right = u;
+			u = GetAsUnit(name + "-bottom");
+			if (u.IsValid) margin.Bottom = u;
+			u = GetAsUnit(name + "-left");
+			if (u.IsValid) margin.Left = u;
+
+			return margin;
+		}
+
+		/// <summary>
+		/// Gets an attribute representing the 4 border sides.
+		/// If a border style/color/width has been specified individually, it will override the grouped definition.
+		/// </summary>
+		/// <returns>If the attribute is misformed, the <see cref="Border.IsValid"/> property is set to false.</returns>
+		public Border GetAsBorder(String name)
+		{
+			Border border = new Border(GetAsSideBorder(name));
+			SideBorder sb;
+
+			sb = GetAsSideBorder(name + "-top");
+			if (sb.IsValid) border.Top = sb;
+			sb = GetAsSideBorder(name + "-right");
+			if (sb.IsValid) border.Right = sb;
+			sb = GetAsSideBorder(name + "-bottom");
+			if (sb.IsValid) border.Bottom = sb;
+			sb = GetAsSideBorder(name + "-left");
+			if (sb.IsValid) border.Left = sb;
+
+			return border;
+		}
+
+		/// <summary>
+		/// Gets an attribute representing a single border side.
+		/// If a border style/color/width has been specified individually, it will override the grouped definition.
+		/// </summary>
+		/// <returns>If the attribute is misformed, the <see cref="Border.IsValid"/> property is set to false.</returns>
+		public SideBorder GetAsSideBorder(String name)
+		{
 			string attrValue = this[name];
-			Margin margin = Margin.Parse(attrValue);
+			SideBorder border = SideBorder.Parse(attrValue);
 
-			// try to consolidate the margin/padding with the parts specified in inline.
-			// html respect the order in wich they have been defined: the last term wins.
-			// for example:
-			// style="margin: 0 30px;margin-left: 20px"   => margin-left = 20px
-			// style="margin-left: 20px;margin: 0 30px"   => margin-left = 30px
-			// Without going so far, for the moment I will just merge the single-part afterwards.
-			Margin consolidatedMargin = new Margin(
-				this.GetAsUnit(name + Margin.SingleSideParts[0]),
-				this.GetAsUnit(name + Margin.SingleSideParts[1]),
-				this.GetAsUnit(name + Margin.SingleSideParts[2]),
-				this.GetAsUnit(name + Margin.SingleSideParts[3])
-			);
+			// handle attributes specified individually.
+			Unit width = SideBorder.ParseWidth(this[name + "-width"]);
+			if (width.IsValid) border.Width = width;
 
-			if (consolidatedMargin.IsEmpty) // no single side parts specified
-				return margin;
-			if (!margin.IsValid)
-				return consolidatedMargin;
+			var color = GetAsColor(name + "-color");
+			if (!color.IsEmpty) border.Color = color;
 
-			return new Margin(
-				consolidatedMargin.Top.IsValid? consolidatedMargin.Top : margin.Top,
-				consolidatedMargin.Right.IsValid ? consolidatedMargin.Right : margin.Right,
-				consolidatedMargin.Bottom.IsValid ? consolidatedMargin.Bottom : margin.Bottom,
-				consolidatedMargin.Left.IsValid ? consolidatedMargin.Left : margin.Left);
+			var style = ConverterUtility.ConvertToBorderStyle(this[name + "-style"]);
+			if (style != w.BorderValues.Nil) border.Style = style;
+
+			return border;
 		}
 	}
 }
