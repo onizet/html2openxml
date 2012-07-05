@@ -55,7 +55,7 @@ namespace NotesFor.HtmlToOpenXml
 			// This minimal numbering definition has been inspired by the documentation OfficeXMLMarkupExplained_en.docx
 			// http://www.microsoft.com/downloads/details.aspx?FamilyID=6f264d0b-23e8-43fe-9f82-9ab627e5eaa3&displaylang=en
 
-			numberingPart.Numbering.Append(
+			DocumentFormat.OpenXml.OpenXmlElement[] absNumChildren = new [] {
 				//8 kinds of abstractnum + 1 multi-level.
 				new AbstractNum(
 					new MultiLevelType() { Val = MultiLevelValues.SingleLevel },
@@ -134,7 +134,25 @@ namespace NotesFor.HtmlToOpenXml
 							new Indentation() { Left = "420", Hanging = "360" })
 					) { LevelIndex = 0 }
 				) { AbstractNumberId = absNumIdRef + 7 }
-			);
+			};
+
+			// this is not documented but MS Word needs that all the AbstractNum are stored consecutively.
+			// Otherwise, it will apply the "NoList" style to the existing ListInstances.
+			// This is the reason why I insert all the items after the last AbstractNum.
+			int lastAbsNumIndex = 0;
+			if (absNumIdRef > 0)
+			{
+				lastAbsNumIndex = numberingPart.Numbering.ChildElements.Count-1;
+				for (; lastAbsNumIndex >= 0; lastAbsNumIndex--)
+				{
+					if(numberingPart.Numbering.ChildElements[lastAbsNumIndex] is AbstractNum)
+						break;
+				}
+			}
+
+			if (lastAbsNumIndex == 0) numberingPart.Numbering.Append(absNumChildren);
+			else for (int i = 0; i < absNumChildren.Length; i++)
+				numberingPart.Numbering.InsertAt(absNumChildren[i], i + lastAbsNumIndex);
 
 			// initializes the lookup
 			knonwAbsNumIds = new Dictionary<String, Int32>() {
@@ -152,7 +170,7 @@ namespace NotesFor.HtmlToOpenXml
 			}
 			numInstances.Push(nextInstanceID);
 
-			numberingPart.Numbering.Save(numberingPart);
+			numberingPart.Numbering.Save();
 		}
 
 		#endregion

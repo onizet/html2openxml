@@ -30,7 +30,6 @@ namespace NotesFor.HtmlToOpenXml
 			runStyle = new RunStyleCollection();
 			tableStyle = new TableStyleCollection();
 			paraStyle = new ParagraphStyleCollection();
-            listStyle = new NumberingListStyleCollection(mainPart);
             this.QuoteCharacters = QuoteChars.IE;
 			this.mainPart = mainPart;
 		}
@@ -139,8 +138,9 @@ namespace NotesFor.HtmlToOpenXml
 		}
         internal NumberingListStyleCollection NumberingList
         {
+			// use lazy loading to avoid injecting NumberListDefinition if not required
             [System.Diagnostics.DebuggerHidden()]
-            get { return listStyle; }
+            get { return listStyle ?? (listStyle = new NumberingListStyleCollection(mainPart)); }
         }
 
 		//____________________________________________________________________
