@@ -11,6 +11,9 @@ namespace NotesFor.HtmlToOpenXml
 	/// </summary>
 	static class HttpUtility
 	{
+		/// <summary>The common characters considered as WhiteSpace.</summary>
+		internal static readonly char[] WhiteSpaces = { ' ', '\t', '\r', '\u00A0', '\u0085' };
+
 		static class HtmlEntities
 		{
 			private static string[] entitiesList = new string[] { 
@@ -114,7 +117,7 @@ namespace NotesFor.HtmlToOpenXml
 
 						if (success)
 						{
-							output.Write((char)result);
+							if (IsLegalXmlChar(result)) output.Write((char) result);
 							i = endIndex;
 						}
 						else
@@ -136,6 +139,23 @@ namespace NotesFor.HtmlToOpenXml
 					}
 				}
 			}
+		}
+
+		/// <summary>
+		/// Gets whether a given character is allowed by XML 1.0.
+		/// </summary>
+		private static bool IsLegalXmlChar(int character)
+		{
+			// http://seattlesoftware.wordpress.com/2008/09/11/hexadecimal-value-0-is-an-invalid-character/
+
+			return (
+				 character == 0x9 /* == '\t' == 9   */       ||
+				 character == 0xA /* == '\n' == 10  */       ||
+				 character == 0xD /* == '\r' == 13  */       ||
+				(character >= 0x20 && character <= 0xD7FF) ||
+				(character >= 0xE000 && character <= 0xFFFD) ||
+				(character >= 0x10000 && character <= 0x10FFFF)
+			);
 		}
 	}
 }

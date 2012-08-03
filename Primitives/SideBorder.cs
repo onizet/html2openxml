@@ -39,7 +39,7 @@ namespace NotesFor.HtmlToOpenXml
 			// The main problem for parsing this attribute is that the browsers allow any permutation of the values... meaning more coding :(
 			// http://www.w3schools.com/cssref/pr_border.asp
 
-			List<String> borderParts = new List<String>(str.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
+			List<String> borderParts = new List<String>(str.Split(HttpUtility.WhiteSpaces, StringSplitOptions.RemoveEmptyEntries));
 			if (borderParts.Count == 0) return SideBorder.Empty;
 
 			// Initialize default values

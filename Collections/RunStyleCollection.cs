@@ -10,6 +10,14 @@ namespace NotesFor.HtmlToOpenXml
 
 	sealed class RunStyleCollection : OpenXmlStyleCollection
 	{
+		private HtmlDocumentStyle documentStyle;
+
+
+		internal RunStyleCollection(HtmlDocumentStyle documentStyle)
+		{
+			this.documentStyle = documentStyle;
+		}
+
 		/// <summary>
 		/// Apply all the current Html tag (Run properties) to the specified run.
 		/// </summary>
@@ -42,7 +50,7 @@ namespace NotesFor.HtmlToOpenXml
 		/// attributes to their OpenXml equivalence.
 		/// </summary>
 		/// <param name="styleAttributes">The collection of attributes where to store new discovered attributes.</param>
-		public void ProcessCommonRunAttributes(HtmlEnumerator en, IList<OpenXmlElement> styleAttributes)
+		public void ProcessCommonAttributes(HtmlEnumerator en, IList<OpenXmlElement> styleAttributes)
 		{
 			if (en.Attributes.Count == 0) return;
 
@@ -54,9 +62,9 @@ namespace NotesFor.HtmlToOpenXml
 			colorValue = en.StyleAttributes.GetAsColor("background-color");
 			if (!colorValue.IsEmpty)
 			{
-                // change the way the background-color renders. It now uses Shading instead of Highlight.
-                // Changes brought by Wude on http://notesforhtml2openxml.codeplex.com/discussions/277570
-                styleAttributes.Add(new Shading { Val = ShadingPatternValues.Clear, Fill = colorValue.ToHexString() });
+				// change the way the background-color renders. It now uses Shading instead of Highlight.
+				// Changes brought by Wude on http://notesforhtml2openxml.codeplex.com/discussions/277570
+				styleAttributes.Add(new Shading { Val = ShadingPatternValues.Clear, Fill = colorValue.ToHexString() });
 			}
 
 			string attrValue = en.StyleAttributes["text-decoration"];
@@ -79,6 +87,20 @@ namespace NotesFor.HtmlToOpenXml
 			if (attrValue == "bold" || attrValue == "bolder")
 			{
 				styleAttributes.Add(new Bold());
+			}
+
+			String[] classes = en.Attributes.GetAsClass();
+			if (classes != null)
+			{
+				for (int i = 0; i < classes.Length; i++)
+				{
+					string className = documentStyle.GetStyle(classes[i], StyleValues.Character, ignoreCase: true);
+					if (className != null) // only one Style can be applied in OpenXml and dealing with inheritance is out of scope
+					{
+						styleAttributes.Add(new RunStyle() { Val = className });
+						break;
+					}
+				}
 			}
 
 			// We ignore font-family and font-size voluntarily because the user oftenly copy-paste from web pages
