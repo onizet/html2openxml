@@ -9,7 +9,6 @@ namespace NotesFor.HtmlToOpenXml
     /// </summary>
     struct Margin
     {
-		static char[] whitespaces = { ' ', '\t' };
         private Unit[] sides;
 
 
@@ -45,7 +44,7 @@ namespace NotesFor.HtmlToOpenXml
         {
             if (str == null) return new Margin();
 
-            String[] parts = str.Split(whitespaces);
+            String[] parts = str.Split(HttpUtility.WhiteSpaces);
             switch (parts.Length)
             {
                 case 1:

@@ -8,9 +8,13 @@ namespace NotesFor.HtmlToOpenXml
 	/// </summary>
 	public class ProvisionImageEventArgs : EventArgs
 	{
-		internal ProvisionImageEventArgs(Uri uri)
+		private HtmlImageInfo info;
+
+
+		internal ProvisionImageEventArgs(Uri uri, HtmlImageInfo info)
 		{
 			this.ImageUrl = uri;
+			this.info = info;
 		}
 
 		/// <summary>
@@ -21,16 +25,28 @@ namespace NotesFor.HtmlToOpenXml
 		/// <summary>
 		/// Gets the styles definition part located inside MainDocumentPart.
 		/// </summary>
-		public byte[] Data { get; set; }
+		public byte[] Data
+		{
+			get { return info.RawData; }
+			set { info.RawData = value; }
+		}
 
 		/// <summary>
 		/// Gets or sets the format of the image.
 		/// </summary>
-		public ImagePartType? ImageExtension { get; set; }
+		public ImagePartType? ImageExtension
+		{
+			get { return info.Type; }
+			set { info.Type = value; }
+		}
 
 		/// <summary>
 		/// Gets or sets the width and height (in pixels) of the image as it should be displayed in the document.
 		/// </summary>
-		public System.Drawing.Size ImageSize { get; set; }
+		public System.Drawing.Size ImageSize
+		{
+			get { return info.Size; }
+			set { info.Size = value; }
+		}
 	}
 }

@@ -195,5 +195,15 @@ namespace NotesFor.HtmlToOpenXml
 
 			return border;
 		}
+
+		/// <summary>
+		/// Gets the class attribute that specify one or more classnames.
+		/// </summary>
+		public String[] GetAsClass()
+		{
+			string attrValue = this["class"];
+			if (attrValue == null) return new String[0];
+			return attrValue.Split(HttpUtility.WhiteSpaces, StringSplitOptions.RemoveEmptyEntries);
+		}
 	}
 }

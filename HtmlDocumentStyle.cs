@@ -19,7 +19,7 @@ namespace NotesFor.HtmlToOpenXml
 		private TableStyleCollection tableStyle;
 		private ParagraphStyleCollection paraStyle;
         private NumberingListStyleCollection listStyle;
-		private Dictionary<String, Style> knownStyles;
+		private OpenXmlDocumentStyleCollection knownStyles;
 		private MainDocumentPart mainPart;
 
 
@@ -27,9 +27,9 @@ namespace NotesFor.HtmlToOpenXml
 		internal HtmlDocumentStyle(MainDocumentPart mainPart)
 		{
 			PrepareStyles(mainPart);
-			runStyle = new RunStyleCollection();
-			tableStyle = new TableStyleCollection();
-			paraStyle = new ParagraphStyleCollection();
+			tableStyle = new TableStyleCollection(this);
+			runStyle = new RunStyleCollection(this);
+			paraStyle = new ParagraphStyleCollection(this);
             this.QuoteCharacters = QuoteChars.IE;
 			this.mainPart = mainPart;
 		}
@@ -44,14 +44,14 @@ namespace NotesFor.HtmlToOpenXml
 		/// </summary>
 		internal void PrepareStyles(MainDocumentPart mainPart)
 		{
-			knownStyles = new Dictionary<String, Style>();
+			knownStyles = new OpenXmlDocumentStyleCollection();
 			if (mainPart.StyleDefinitionsPart == null) return;
 
 			Styles styles = mainPart.StyleDefinitionsPart.Styles;
 
 			foreach (var s in styles.Elements<Style>())
 			{
-				StyleName n = s.GetFirstChild<StyleName>();
+				StyleName n = s.StyleName;
 				if (n != null)
 				{
 					String name = n.Val.Value;
@@ -70,23 +70,45 @@ namespace NotesFor.HtmlToOpenXml
 		/// Helper method to obtain the StyleId of a named style (invariant or localized name).
 		/// </summary>
 		/// <param name="name">The name of the style to look for.</param>
-		/// <param name="characterType">True to obtain the character version of the given style.</param>
+		/// <param name="styleType">True to obtain the character version of the given style.</param>
+		/// <param name="ignoreCase">Indicate whether the search should be performed with the case-sensitive flag or not.</param>
 		/// <returns>If not found, returns the given name argument.</returns>
-		public String GetStyle(string name, bool characterType = false)
+		public String GetStyle(string name, StyleValues styleType = StyleValues.Paragraph, bool ignoreCase = false)
 		{
 			Style style;
-			if (!knownStyles.TryGetValue(name, out style))
-			{
-				if (StyleMissing != null) StyleMissing(this, new StyleEventArgs(name, mainPart));
-				return name;
-			}
 
-			if (characterType && !style.Type.Equals<StyleValues>(StyleValues.Character))
+			// OpenXml is case-sensitive but CSS is not.
+			// We will try to find the styles another time with case-insensitive:
+			if (ignoreCase)
 			{
-				LinkedStyle linkStyle = style.GetFirstChild<LinkedStyle>();
-				if (linkStyle != null) return linkStyle.Val;
+				if (!knownStyles.TryGetValueIgnoreCase(name, styleType, out style))
+				{
+					if (StyleMissing != null)
+					{
+						StyleMissing(this, new StyleEventArgs(name, mainPart, styleType));
+						if (knownStyles.TryGetValueIgnoreCase(name, styleType, out style))
+							return style.StyleId;
+					}
+					return null; // null means we ignore this style (css class)
+				}
+
+				return style.StyleId;
 			}
-			return style.StyleId;
+			else
+			{
+				if (!knownStyles.TryGetValue(name, out style))
+				{
+					if (StyleMissing != null) StyleMissing(this, new StyleEventArgs(name, mainPart, styleType));
+					return name;
+				}
+
+				if (styleType == StyleValues.Character && !style.Type.Equals<StyleValues>(StyleValues.Character))
+				{
+					LinkedStyle linkStyle = style.GetFirstChild<LinkedStyle>();
+					if (linkStyle != null) return linkStyle.Val;
+				}
+				return style.StyleId;
+			}
 		}
 
 		#endregion

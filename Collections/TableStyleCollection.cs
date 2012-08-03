@@ -12,10 +12,12 @@ namespace NotesFor.HtmlToOpenXml
 	sealed class TableStyleCollection : OpenXmlStyleCollection
 	{
 		private Dictionary<String, Stack<TagsAtSameLevel>> tagsParagraph;
+		private HtmlDocumentStyle documentStyle;
 
 
-		public TableStyleCollection()
+		internal TableStyleCollection(HtmlDocumentStyle documentStyle)
 		{
+			this.documentStyle = documentStyle;
 			tagsParagraph = new Dictionary<String, Stack<TagsAtSameLevel>>();
 		}
 
@@ -92,11 +94,13 @@ namespace NotesFor.HtmlToOpenXml
 		/// <param name="styleAttributes">The collection of attributes where to store new discovered attributes.</param>
 		public void ProcessCommonAttributes(HtmlEnumerator en, IList<OpenXmlElement> styleAttributes)
 		{
+			List<OpenXmlElement> containerStyleAttributes = new List<OpenXmlElement>();
+
 			var colorValue = en.StyleAttributes.GetAsColor("background-color");
 			if (colorValue.IsEmpty) colorValue = en.Attributes.GetAsColor("bgcolor");
 			if (!colorValue.IsEmpty)
 			{
-				styleAttributes.Add(
+				containerStyleAttributes.Add(
 					new Shading() { Val = ShadingPatternValues.Clear, Color = "auto", Fill = colorValue.ToHexString() });
 			}
 
@@ -106,7 +110,7 @@ namespace NotesFor.HtmlToOpenXml
 			{
 				TableVerticalAlignmentValues? valign = ConverterUtility.FormatVAlign(htmlAlign);
 				if (valign.HasValue)
-					styleAttributes.Add(new TableCellVerticalAlignment() { Val = valign });
+					containerStyleAttributes.Add(new TableCellVerticalAlignment() { Val = valign });
 			}
 
 			htmlAlign = en.StyleAttributes["text-align"];
@@ -117,6 +121,11 @@ namespace NotesFor.HtmlToOpenXml
 				if (halign.HasValue)
 					this.BeginTagForParagraph(en.CurrentTag, new KeepNext(), new Justification { Val = halign });
 			}
+
+			this.BeginTag(en.CurrentTag, containerStyleAttributes);
+
+			// Process general run styles
+			documentStyle.Runs.ProcessCommonAttributes(en, styleAttributes);
 		}
 	}
 }

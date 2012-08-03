@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
+using System.Linq;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -52,7 +53,7 @@ namespace NotesFor.HtmlToOpenXml
 				elements.Add(
 					run = new Run(
 						new RunProperties(
-							new RunStyle() { Val = htmlStyles.GetStyle(runStyle, true) }),
+							new RunStyle() { Val = htmlStyles.GetStyle(runStyle, StyleValues.Character) }),
 						reference));
 
 				if (!htmlStyles.DoesStyleExists(defaultRefStyle))
@@ -97,7 +98,7 @@ namespace NotesFor.HtmlToOpenXml
 		private void ProcessBody(HtmlEnumerator en)
 		{
 			List<OpenXmlElement> styleAttributes = new List<OpenXmlElement>();
-			ProcessContainerAttributes(en, styleAttributes);
+			htmlStyles.Paragraph.ProcessCommonAttributes(en, styleAttributes);
 
 			if (styleAttributes.Count > 0)
 				htmlStyles.Runs.BeginTag(en.CurrentTag, styleAttributes.ToArray());
@@ -118,7 +119,7 @@ namespace NotesFor.HtmlToOpenXml
 
 		private void ProcessCite(HtmlEnumerator en)
 		{
-			htmlStyles.Runs.BeginTag(en.CurrentTag, new RunStyle() { Val = htmlStyles.GetStyle("Quote", true) });
+			htmlStyles.Runs.BeginTag(en.CurrentTag, new RunStyle() { Val = htmlStyles.GetStyle("Quote", StyleValues.Character) });
 		}
 
 		#endregion
@@ -220,7 +221,7 @@ namespace NotesFor.HtmlToOpenXml
 			attrValue = en.Attributes["face"];
 			if (attrValue != null)
 			{
-				// Set HightAnsi. Bug fixed by xjpmauricio on http://notesforhtml2openxml.codeplex.com/discussions/285439
+				// Set HightAnsi. Bug fixed by xjpmauricio on http://html2openxml.codeplex.com/discussions/285439
 				// where characters with accents were always using fallback font
 				styleAttributes.Add(new RunFonts { Ascii = attrValue, HighAnsi = attrValue });
 			}
@@ -240,7 +241,7 @@ namespace NotesFor.HtmlToOpenXml
 			AlternateProcessHtmlChunks(en, "</h" + level + ">");
 			Paragraph p = new Paragraph(elements);
 			p.InsertInProperties(
-				new ParagraphStyleId() { Val = htmlStyles.GetStyle("heading " + level, false) });
+				new ParagraphStyleId() { Val = htmlStyles.GetStyle("heading " + level, StyleValues.Paragraph) });
 
 			this.elements.Clear();
 			AddParagraph(p);
@@ -290,7 +291,7 @@ namespace NotesFor.HtmlToOpenXml
 		private void ProcessHtml(HtmlEnumerator en)
 		{
 			List<OpenXmlElement> styleAttributes = new List<OpenXmlElement>();
-			ProcessContainerAttributes(en, styleAttributes);
+			htmlStyles.Paragraph.ProcessCommonAttributes(en, styleAttributes);
 
 			if (styleAttributes.Count > 0)
 				htmlStyles.Runs.BeginTag(en.CurrentTag, styleAttributes.ToArray());
@@ -308,7 +309,7 @@ namespace NotesFor.HtmlToOpenXml
 			AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
 			currentParagraph.Append(
 					new ParagraphProperties(
-						new ParagraphStyleId() { Val = htmlStyles.GetStyle("caption", false) },
+						new ParagraphStyleId() { Val = htmlStyles.GetStyle("caption", StyleValues.Paragraph) },
 						new KeepNext()
 					),
 					new Run(
@@ -366,7 +367,7 @@ namespace NotesFor.HtmlToOpenXml
 					}
 					if (hu.IsValid && hu.Value > 0 && wu.Type != UnitMetric.Percent)
 					{
-						// Image perspective skewed. Bug fixed by ddeforge on http://notesforhtml2openxml.codeplex.com/discussions/350500
+						// Image perspective skewed. Bug fixed by ddeforge on http://html2openxml.codeplex.com/discussions/350500
 						preferredSize.Height = hu.ValueInPx;
 					}
 				}
@@ -415,7 +416,7 @@ namespace NotesFor.HtmlToOpenXml
 			Paragraph p = htmlStyles.Paragraph.NewParagraph();
 			currentParagraph = p;
 			currentParagraph.InsertInProperties(
-				new ParagraphStyleId() { Val = htmlStyles.GetStyle("ListParagraph", false) },
+				new ParagraphStyleId() { Val = htmlStyles.GetStyle("ListParagraph", StyleValues.Paragraph) },
 				new SpacingBetweenLines() { After = "0" },
 				new Indentation() { Hanging = "357", Left = ((level - 1) * 357).ToString(CultureInfo.InvariantCulture) },
 				new NumberingProperties(
@@ -517,7 +518,7 @@ namespace NotesFor.HtmlToOpenXml
 					}
 
 					h.GetFirstChild<Run>().InsertInProperties(
-						new RunStyle() { Val = htmlStyles.GetStyle("Hyperlink", true) });
+						new RunStyle() { Val = htmlStyles.GetStyle("Hyperlink", StyleValues.Character) });
 
 					this.elements.Clear();
 
@@ -585,7 +586,7 @@ namespace NotesFor.HtmlToOpenXml
 			{
 				Table currentTable = new Table(
 					new TableProperties(
-						new TableStyle() { Val = htmlStyles.GetStyle("Table Grid", false) },
+						new TableStyle() { Val = htmlStyles.GetStyle("Table Grid", StyleValues.Paragraph) },
 						new TableWidth() { Type = TableWidthUnitValues.Pct, Width = "5000" }), // 100% * 50
 					new TableGrid(
 						new GridColumn() { Width = "5610" }),
@@ -637,7 +638,7 @@ namespace NotesFor.HtmlToOpenXml
 			// The browsers render the quote tag between a kind of separators.
 			// We add the Quote style to the nested runs to match more Word.
 
-			htmlStyles.Runs.BeginTag(en.CurrentTag, new RunStyle() { Val = htmlStyles.GetStyle("Quote", true) });
+			htmlStyles.Runs.BeginTag(en.CurrentTag, new RunStyle() { Val = htmlStyles.GetStyle("Quote", StyleValues.Character) });
 
 			Run run = new Run(
 				new Text(" " + HtmlStyles.QuoteCharacters.chars[0]) { Space = SpaceProcessingModeValues.Preserve }
@@ -722,7 +723,7 @@ namespace NotesFor.HtmlToOpenXml
 				// If the border has been specified, we display the Table Grid style which display
 				// its grid lines. Otherwise the default table style hides the grid lines.
 				if (htmlStyles.DoesStyleExists("Table Grid"))
-					properties.Add(new TableStyle() { Val = htmlStyles.GetStyle("Table Grid", false) });
+					properties.Add(new TableStyle() { Val = htmlStyles.GetStyle("Table Grid", StyleValues.Paragraph) });
 				else
 				{
 					properties.Add(new TableBorders(
@@ -778,7 +779,7 @@ namespace NotesFor.HtmlToOpenXml
 			}
 
 			List<OpenXmlElement> runStyleAttributes = new List<OpenXmlElement>();
-			htmlStyles.Runs.ProcessCommonRunAttributes(en, runStyleAttributes);
+			htmlStyles.Tables.ProcessCommonAttributes(en, runStyleAttributes);
 			if (runStyleAttributes.Count > 0)
 				htmlStyles.Runs.BeginTag(en.CurrentTag, runStyleAttributes.ToArray());
 
@@ -814,10 +815,10 @@ namespace NotesFor.HtmlToOpenXml
 
 			ProcessHtmlChunks(en, "</caption>");
 
-			var runStyleId = htmlStyles.GetStyle("Subtle Reference", true);
+			var runStyleId = htmlStyles.GetStyle("Subtle Reference", StyleValues.Character);
 			var legend = new Paragraph(
 					new ParagraphProperties(
-						new ParagraphStyleId() { Val = htmlStyles.GetStyle("caption", false) },
+						new ParagraphStyleId() { Val = htmlStyles.GetStyle("caption", StyleValues.Paragraph) },
 						new ParagraphMarkRunProperties(
 							new RunStyle() { Val = runStyleId })),
 					new Run(
@@ -904,7 +905,7 @@ namespace NotesFor.HtmlToOpenXml
 			if (styleAttributes.Count > 0)
 				row.Append(new TableRowProperties(styleAttributes));
 
-			htmlStyles.Runs.ProcessCommonRunAttributes(en, runStyleAttributes);
+			htmlStyles.Runs.ProcessCommonAttributes(en, runStyleAttributes);
 			if (runStyleAttributes.Count > 0)
 				htmlStyles.Runs.BeginTag(en.CurrentTag, runStyleAttributes.ToArray());
 
@@ -955,7 +956,7 @@ namespace NotesFor.HtmlToOpenXml
 				tables.RowSpan[tables.CellPosition] = rowspan.Value - 1;
 			}
 
-			htmlStyles.Runs.ProcessCommonRunAttributes(en, runStyleAttributes);
+			htmlStyles.Runs.ProcessCommonAttributes(en, runStyleAttributes);
 
 			// Manage vertical text (only for table cell)
 			string direction = en.StyleAttributes["writing-mode"];
@@ -1253,14 +1254,18 @@ namespace NotesFor.HtmlToOpenXml
 			// As we add automatically a paragraph to the cell once we create it, we'll remove it if finally, it was not used.
 			// For all the other children, we will ensure there is no more empty paragraphs (similarly to what we do at the end
 			// of the convert processing).
-			foreach (Paragraph p in cell.Elements<Paragraph>())
+			// use a basic loop instead of foreach to allow removal (bug reported by antgraf)
+			for (int i=0; i<cell.ChildElements.Count; )
 			{
-				if (!p.HasChild<Run>()) p.Remove();
+				Paragraph p = cell.ChildElements[i] as Paragraph;
+				if (p != null && !p.HasChild<Run>()) p.Remove();
+				else i++;
 			}
 
 			// We add this paragraph regardless it has elements or not. A TableCell requires at least a Paragraph.
 			// The append should occur after the previous foreach()
-			cell.Append(new Paragraph(elements));
+			// additional check for a proper cleaning (reported by antgraf http://html2openxml.codeplex.com/discussions/272744)
+			if (!cell.Elements<Paragraph>().Any() || elements.Count > 0) cell.Append(new Paragraph(elements));
 
 			htmlStyles.Tables.ApplyTags(cell);
 
