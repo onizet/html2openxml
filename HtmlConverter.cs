@@ -72,6 +72,12 @@ namespace NotesFor.HtmlToOpenXml
 			if (String.IsNullOrEmpty(html))
 				return new Paragraph[0];
 
+			// ensure a body exists to avoid any errors when trying to access it
+			if (mainPart.Document == null)
+				new Document(new Body()).Save(mainPart);
+			else if (mainPart.Document.Body == null)
+				mainPart.Document.Body = new Body();
+
 			// Reset:
 			elements = new List<OpenXmlElement>();
 			paragraphs = new List<OpenXmlCompositeElement>();

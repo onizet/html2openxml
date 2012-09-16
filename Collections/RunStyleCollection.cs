@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
 
@@ -77,18 +78,6 @@ namespace NotesFor.HtmlToOpenXml
 				styleAttributes.Add(new Strike());
 			}
 
-			attrValue = en.StyleAttributes["font-style"];
-			if (attrValue == "italic" || attrValue == "oblique")
-			{
-				styleAttributes.Add(new Italic());
-			}
-
-			attrValue = en.StyleAttributes["font-weight"];
-			if (attrValue == "bold" || attrValue == "bolder")
-			{
-				styleAttributes.Add(new Bold());
-			}
-
 			String[] classes = en.Attributes.GetAsClass();
 			if (classes != null)
 			{
@@ -103,8 +92,25 @@ namespace NotesFor.HtmlToOpenXml
 				}
 			}
 
-			// We ignore font-family and font-size voluntarily because the user oftenly copy-paste from web pages
-			// but don't want to see these font in the report.
+			HtmlFont font = en.StyleAttributes.GetAsFont("font");
+			if (!font.IsEmpty)
+			{
+				if (font.Style == FontStyle.Italic)
+					styleAttributes.Add(new Italic());
+
+				if (font.Weight == FontWeight.Bold || font.Weight == FontWeight.Bolder)
+					styleAttributes.Add(new Bold());
+
+				if (font.Variant == FontVariant.SmallCaps)
+					styleAttributes.Add(new SmallCaps());
+
+				if (font.Family != null)
+					styleAttributes.Add(new RunFonts() { Ascii = font.Family.Name, HighAnsi = font.Family.Name });
+
+				// size are half-point font size
+				if (font.Size.IsValid)
+					styleAttributes.Add(new FontSize() { Val = (font.Size.ValueInPoint * 2).ToString(CultureInfo.InvariantCulture) });
+			}
 		}
 	}
 }

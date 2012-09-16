@@ -213,9 +213,9 @@ namespace NotesFor.HtmlToOpenXml
 			string attrValue = en.Attributes["size"];
 			if (attrValue != null)
 			{
-				uint fontSize = ConverterUtility.ConvertToFontSize(attrValue);
-				if (fontSize != 0L)
-					styleAttributes.Add(new FontSize { Val = fontSize.ToString(CultureInfo.InvariantCulture) });
+				Unit fontSize = ConverterUtility.ConvertToFontSize(attrValue);
+				if (fontSize.IsValid)
+					styleAttributes.Add(new FontSize { Val = (fontSize.ValueInPoint * 2).ToString(CultureInfo.InvariantCulture) });
 			}
 
 			attrValue = en.Attributes["face"];
@@ -1258,7 +1258,8 @@ namespace NotesFor.HtmlToOpenXml
 			for (int i=0; i<cell.ChildElements.Count; )
 			{
 				Paragraph p = cell.ChildElements[i] as Paragraph;
-				if (p != null && !p.HasChild<Run>()) p.Remove();
+				// care of hyperlinks as they are not inside Run (bug reported by mdeclercq http://html2openxml.codeplex.com/workitem/11162)
+				if (p != null && !p.HasChild<Run>() && !p.HasChild<Hyperlink>()) p.Remove();
 				else i++;
 			}
 

@@ -32,7 +32,7 @@ namespace NotesFor.HtmlToOpenXml
 
 		public static SideBorder Parse(String str)
 		{
-			if (str == null) return new SideBorder();
+			if (str == null) return SideBorder.Empty;
 
 			// The properties of a border that can be set, are (in order): border-width, border-style, and border-color.
 			// It does not matter if one of the values above are missing, e.g. border:solid #ff0000; is allowed.
