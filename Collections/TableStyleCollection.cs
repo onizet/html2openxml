@@ -2,12 +2,11 @@
 using System.Collections.Generic;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
-using System.Drawing;
 
 namespace NotesFor.HtmlToOpenXml
 {
 	using TagsAtSameLevel = System.ArraySegment<DocumentFormat.OpenXml.OpenXmlElement>;
-	using System.Globalization;
+
 
 	sealed class TableStyleCollection : OpenXmlStyleCollection
 	{
@@ -91,6 +90,7 @@ namespace NotesFor.HtmlToOpenXml
 		/// Move inside the current tag related to table (td, thead, tr, ...) and converts some common
 		/// attributes to their OpenXml equivalence.
 		/// </summary>
+		/// <param name="en">The Html enumerator positionned on a <i>table (or related)</i> tag.</param>
 		/// <param name="styleAttributes">The collection of attributes where to store new discovered attributes.</param>
 		public void ProcessCommonAttributes(HtmlEnumerator en, IList<OpenXmlElement> styleAttributes)
 		{

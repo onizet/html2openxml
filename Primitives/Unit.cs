@@ -151,7 +151,15 @@ namespace NotesFor.HtmlToOpenXml
 		/// </summary>
 		public int ValueInPx
 		{
-			get { return (int) ((float) valueInEmus / 914400L * 96); }
+			get { return (int) (type == UnitMetric.Pixel ? this.value : (float) valueInEmus / 914400L * 96); }
+		}
+
+		/// <summary>
+		/// Gets the value expressed in Point unit.
+		/// </summary>
+		public int ValueInPoint
+		{
+			get { return (int) (type == UnitMetric.Point ? this.value : (float) valueInEmus / 12700L); }
 		}
 
 		/// <summary>

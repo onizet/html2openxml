@@ -11,7 +11,7 @@ namespace NotesFor.HtmlToOpenXml
 	/// </summary>
 	static class HttpUtility
 	{
-		/// <summary>The common characters considered as WhiteSpace.</summary>
+		/// <summary>The common characters considered as white space.</summary>
 		internal static readonly char[] WhiteSpaces = { ' ', '\t', '\r', '\u00A0', '\u0085' };
 
 		static class HtmlEntities

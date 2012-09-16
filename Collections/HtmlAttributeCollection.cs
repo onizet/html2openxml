@@ -202,8 +202,37 @@ namespace NotesFor.HtmlToOpenXml
 		public String[] GetAsClass()
 		{
 			string attrValue = this["class"];
-			if (attrValue == null) return new String[0];
+			if (attrValue == null) return null;
 			return attrValue.Split(HttpUtility.WhiteSpaces, StringSplitOptions.RemoveEmptyEntries);
+		}
+
+		/// <summary>
+		/// Gets the font attribute and combine with the style, size and family.
+		/// </summary>
+		public HtmlFont GetAsFont(String name)
+		{
+			HtmlFont font = HtmlFont.Parse(this[name]);
+			string attrValue = this[name + "-style"];
+			if (attrValue == null)
+			{
+				var style = ConverterUtility.ConvertToFontStyle(attrValue);
+				if (style.HasValue) font.Style = style.Value;
+			}
+			attrValue = this[name + "-variant"];
+			if (attrValue == null)
+			{
+				var variant = ConverterUtility.ConvertToFontVariant(attrValue);
+				if (variant.HasValue) font.Variant = variant.Value;
+			}
+			attrValue = this[name + "-weight"];
+			if (attrValue == null)
+			{
+				var variant = ConverterUtility.ConvertToFontWeight(attrValue);
+				if (variant.HasValue) font.Weight = variant.Value;
+			}
+			Unit unit = this.GetAsUnit(name + "-size");
+			if (unit.IsValid) font.Size = unit;
+			return font;
 		}
 	}
 }

@@ -162,7 +162,10 @@ namespace NotesFor.HtmlToOpenXml
 				{ "decimal", absNumIdRef }
 			};
 
-			// compute the next list instance ID seed
+			// compute the next list instance ID seed. We start at 1 because 0 has a special meaning: 
+			// The w:numId can contain a value of 0, which is a special value that indicates that numbering was removed
+			// at this level of the style hierarchy. While processing this markup, if the w:val='0',
+			// the paragraph does not have a list item (http://msdn.microsoft.com/en-us/library/ee922775(office.14).aspx)
 			nextInstanceID = 1;
 			foreach (NumberingInstance inst in numberingPart.Numbering.Elements<NumberingInstance>())
 			{

@@ -47,6 +47,10 @@ namespace NotesFor.HtmlToOpenXml
 			// Replace xml header by xml tag for further processing
 			html = Regex.Replace(html, @"<\?xml:namespace.+?>", "<xml>", RegexOptions.Singleline);
 
+			// Ensure order of table elements are respected: thead, tbody and tfooter
+			// we select only the table that contains at least a tfoot or thead tag
+			html = Regex.Replace(html, "(<table.*?>)(.*?(?:<tfoot>|<thead>){1}.*?)</table>", PreserveTablePartOrder, RegexOptions.Singleline);
+
 			// Split our html using the tags
 			String[] lines = Regex.Split(html, @"(</?\w+[^>]*/?>)", RegexOptions.Singleline);
 
@@ -58,10 +62,11 @@ namespace NotesFor.HtmlToOpenXml
 			en.Dispose();
 		}
 
-		public void Reset()
-		{
-			en.Reset();
-		}
+		//__________________________________________________________________________
+		//
+		// Private Implementation
+
+		#region PreserveWhitespacesInPre
 
 		private static String PreserveWhitespacesInPre(Match match)
 		{
@@ -70,6 +75,45 @@ namespace NotesFor.HtmlToOpenXml
 			// Remove any whitespace at the beginning or end of the pre
 			innerHtml = Regex.Replace(innerHtml, "^<br>|<br>$", String.Empty);
 			return match.Groups[1].Value + innerHtml + "</pre>";
+		}
+
+		#endregion
+
+		#region PreserveTablePartOrder
+
+		private static String PreserveTablePartOrder(Match match)
+		{
+			// ensure the order of the table elements are set in the correct order.
+			// bug #11016 reported by pauldbentley
+
+			String innerHtml = match.Groups[2].Value;
+			String[] parts = Regex.Split(innerHtml, "((?:<tfoot|<thead|<tbody).*?>.+?(?:</tfoot>|</thead>|</tbody>){1}?)+", RegexOptions.Singleline);
+
+			String thead = "", tbody = "", tfoot = "";
+			for (int i = 0; i < parts.Length; i++)
+			{
+				if (parts[i] == Environment.NewLine) continue;
+
+				if (parts[i].StartsWith("<thead", StringComparison.OrdinalIgnoreCase))
+					thead = parts[i];
+				else if (parts[i].StartsWith("<tbody", StringComparison.OrdinalIgnoreCase))
+					tbody = parts[i];
+				else if (parts[i].StartsWith("<tfoot", StringComparison.OrdinalIgnoreCase))
+					tfoot = parts[i];
+			}
+
+			return match.Groups[1].Value + thead + tbody + tfoot + "</table>";
+		}
+
+		#endregion
+
+		//__________________________________________________________________________
+		//
+		// Public Functionality
+
+		public void Reset()
+		{
+			en.Reset();
 		}
 
 		/// <summary>

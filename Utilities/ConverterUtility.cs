@@ -20,7 +20,8 @@ namespace NotesFor.HtmlToOpenXml
 		/// </summary>
 		public static JustificationValues? FormatParagraphAlign(string htmlAlign)
 		{
-			switch (htmlAlign)
+			if (htmlAlign == null) return null;
+			switch (htmlAlign.ToLowerInvariant())
 			{
 				case "left": return JustificationValues.Left;
 				case "right": return JustificationValues.Right;
@@ -40,7 +41,8 @@ namespace NotesFor.HtmlToOpenXml
 		/// </summary>
 		public static TableVerticalAlignmentValues? FormatVAlign(string htmlAlign)
 		{
-			switch (htmlAlign)
+			if (htmlAlign == null) return null;
+			switch (htmlAlign.ToLowerInvariant())
 			{
 				case "top": return TableVerticalAlignmentValues.Top;
 				case "middle": return TableVerticalAlignmentValues.Center;
@@ -57,25 +59,82 @@ namespace NotesFor.HtmlToOpenXml
 		/// <summary>
 		/// Convert Html regular font-size to OpenXml font value (expressed in point).
 		/// </summary>
-		public static UInt32 ConvertToFontSize(string htmlSize)
+		public static Unit ConvertToFontSize(string htmlSize)
 		{
-			switch (htmlSize)
+			if (htmlSize == null) return Unit.Empty;
+			switch (htmlSize.ToLowerInvariant())
 			{
 				case "1":
-				case "xx-small": return 15u;
+				case "xx-small": return new Unit(UnitMetric.Point, 15);
 				case "2":
-				case "x-small": return 20u;
+				case "x-small": return new Unit(UnitMetric.Point, 20);
 				case "4":
-				case "medium": return 27u;
+				case "medium": return new Unit(UnitMetric.Point, 27);
 				case "5":
-				case "large": return 36u;
+				case "large": return new Unit(UnitMetric.Point, 36);
 				case "6":
-				case "x-large": return 48u;
+				case "x-large": return new Unit(UnitMetric.Point, 48);
 				case "7":
-				case "xx-large": return 72u;
+				case "xx-large": return new Unit(UnitMetric.Point, 72);
 				case "3":
 				case "small":
-				default: return 0u;
+				default:
+					// the font-size is specified in positive half-points
+					Unit unit = Unit.Parse(htmlSize);
+					if (!unit.IsValid || unit.Value <= 0)
+						return Unit.Empty;
+
+					// this is a rough conversion to support some percent size, considering 100% = 11 pt
+					if (unit.Type == UnitMetric.Percent) unit = new Unit(UnitMetric.Point, unit.Value * 0.11);
+					return unit;
+			}
+		}
+
+		#endregion
+
+		#region ConvertToFontVariant
+
+		public static FontVariant? ConvertToFontVariant(string html)
+		{
+			if (html == null) return null;
+
+			switch (html.ToLowerInvariant())
+			{
+				case "small-caps": return FontVariant.SmallCaps;
+				case "normal": return FontVariant.Normal;
+				default: return null;
+			}
+		}
+
+		#endregion
+
+		#region ConvertToFontStyle
+
+		public static FontStyle? ConvertToFontStyle(string html)
+		{
+			if (html == null) return null;
+			switch (html.ToLowerInvariant())
+			{
+				case "italic":
+				case "oblique": return FontStyle.Italic;
+				case "normal": return FontStyle.Normal;
+				default: return null;
+			}
+		}
+
+		#endregion
+
+		#region ConvertToFontWeight
+
+		public static FontWeight? ConvertToFontWeight(string html)
+		{
+			if (html == null) return null;
+			switch (html.ToLowerInvariant())
+			{
+				case "bold": return FontWeight.Bold;
+				case "bolder": return FontWeight.Bolder;
+				case "normal": return FontWeight.Normal;
+				default: return null;
 			}
 		}
 
@@ -90,7 +149,7 @@ namespace NotesFor.HtmlToOpenXml
 			// Bug fixed by jairoXXX to support rgb(r,g,b) format
 			if (htmlColor.StartsWith("rgb(", StringComparison.InvariantCultureIgnoreCase))
 			{
-				var colorStringArray = htmlColor.Substring(4, htmlColor.LastIndexOf(')')-4).Split(',');
+				var colorStringArray = htmlColor.Substring(4, htmlColor.LastIndexOf(')') - 4).Split(',');
 
 				return System.Drawing.Color.FromArgb(
 					Int32.Parse(colorStringArray[0], NumberStyles.Integer, CultureInfo.InvariantCulture),
@@ -174,7 +233,7 @@ namespace NotesFor.HtmlToOpenXml
 		//
 		// Private Implementation
 
-		static char[] hexDigits = {
+		static readonly char[] hexDigits = {
          '0', '1', '2', '3', '4', '5', '6', '7',
          '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 

@@ -73,6 +73,10 @@
     <Compile Include="Collections\OpenXmlDocumentStyleCollection.cs" />
     <Compile Include="Configuration enum.cs" />
     <Compile Include="HtmlConverter.ProcessTag.cs" />
+    <Compile Include="Primitives\FontStyle.cs" />
+    <Compile Include="Primitives\FontVariant.cs" />
+    <Compile Include="Primitives\FontWeight.cs" />
+    <Compile Include="Primitives\HtmlFont.cs" />
     <Compile Include="Primitives\HtmlImageInfo.cs" />
     <Compile Include="ProvisionImageEventArgs.cs" />
     <Compile Include="Collections\HtmlAttributeCollection.cs" />
@@ -91,7 +95,7 @@
     <Compile Include="Primitives\HtmlBorder.cs" />
     <Compile Include="Primitives\Margin.cs" />
     <Compile Include="Utilities\HttpUtility.cs" />
-    <Compile Include="OpenXmlExtension.cs" />
+    <Compile Include="Utilities\OpenXmlExtension.cs" />
     <Compile Include="Utilities\ConverterUtility.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Collections\RunStyleCollection.cs" />
