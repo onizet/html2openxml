@@ -358,7 +358,9 @@ namespace NotesFor.HtmlToOpenXml
 				if (en.Attributes["width"] != null || en.Attributes["height"] != null)
 				{
 					Unit wu = en.Attributes.GetAsUnit("width");
+					if (!wu.IsValid) wu = en.StyleAttributes.GetAsUnit("width");
 					Unit hu = en.Attributes.GetAsUnit("height");
+					if (!hu.IsValid) hu = en.StyleAttributes.GetAsUnit("height");
 
 					// % is not supported
 					if (wu.IsValid && wu.Value > 0 && wu.Type != UnitMetric.Percent)
@@ -943,14 +945,15 @@ namespace NotesFor.HtmlToOpenXml
 				}
 			}
 
+			// fix an issue when specifying the RowSpan or ColSpan=1 (reported by imagremlin)
 			int? colspan = en.Attributes.GetAsInt("colspan");
-			if (colspan.HasValue)
+			if (colspan.HasValue && colspan.Value > 1)
 			{
 				styleAttributes.Add(new GridSpan() { Val = colspan });
 			}
 
 			int? rowspan = en.Attributes.GetAsInt("rowspan");
-			if (rowspan.HasValue)
+			if (rowspan.HasValue && rowspan.Value > 1)
 			{
 				styleAttributes.Add(new VerticalMerge() { Val = MergedCellValues.Restart });
 				tables.RowSpan[tables.CellPosition] = rowspan.Value - 1;
