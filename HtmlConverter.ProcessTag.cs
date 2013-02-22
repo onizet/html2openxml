@@ -355,23 +355,20 @@ namespace NotesFor.HtmlToOpenXml
 					uri = new Uri(this.BaseImageUrl, uri);
 
 				Size preferredSize = Size.Empty;
-				if (en.Attributes["width"] != null || en.Attributes["height"] != null)
-				{
-					Unit wu = en.Attributes.GetAsUnit("width");
-					if (!wu.IsValid) wu = en.StyleAttributes.GetAsUnit("width");
-					Unit hu = en.Attributes.GetAsUnit("height");
-					if (!hu.IsValid) hu = en.StyleAttributes.GetAsUnit("height");
+				Unit wu = en.Attributes.GetAsUnit("width");
+				if (!wu.IsValid) wu = en.StyleAttributes.GetAsUnit("width");
+				Unit hu = en.Attributes.GetAsUnit("height");
+				if (!hu.IsValid) hu = en.StyleAttributes.GetAsUnit("height");
 
-					// % is not supported
-					if (wu.IsValid && wu.Value > 0 && wu.Type != UnitMetric.Percent)
-					{
-						preferredSize.Width = wu.ValueInPx;
-					}
-					if (hu.IsValid && hu.Value > 0 && wu.Type != UnitMetric.Percent)
-					{
-						// Image perspective skewed. Bug fixed by ddeforge on http://html2openxml.codeplex.com/discussions/350500
-						preferredSize.Height = hu.ValueInPx;
-					}
+				// % is not supported
+				if (wu.IsValid && wu.Value > 0 && wu.Type != UnitMetric.Percent)
+				{
+					preferredSize.Width = wu.ValueInPx;
+				}
+				if (hu.IsValid && hu.Value > 0 && wu.Type != UnitMetric.Percent)
+				{
+					// Image perspective skewed. Bug fixed by ddeforge on http://html2openxml.codeplex.com/discussions/350500
+					preferredSize.Height = hu.ValueInPx;
 				}
 
 				SideBorder attrBorder = en.StyleAttributes.GetAsSideBorder("border");
