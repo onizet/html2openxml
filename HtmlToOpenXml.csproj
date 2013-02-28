@@ -73,6 +73,7 @@
     <Compile Include="Collections\OpenXmlDocumentStyleCollection.cs" />
     <Compile Include="Configuration enum.cs" />
     <Compile Include="HtmlConverter.ProcessTag.cs" />
+    <Compile Include="Primitives\DataUri.cs" />
     <Compile Include="Primitives\FontStyle.cs" />
     <Compile Include="Primitives\FontVariant.cs" />
     <Compile Include="Primitives\FontWeight.cs" />

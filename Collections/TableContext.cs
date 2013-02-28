@@ -49,6 +49,9 @@ namespace NotesFor.HtmlToOpenXml
 			}
 		}
 
+		/// <summary>
+		/// Tells whether the Html enumerator is currently inside any table element.
+		/// </summary>
 		public bool HasContext
 		{
 			get { return current != null; }

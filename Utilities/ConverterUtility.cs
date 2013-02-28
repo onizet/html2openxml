@@ -65,9 +65,11 @@ namespace NotesFor.HtmlToOpenXml
 			switch (htmlSize.ToLowerInvariant())
 			{
 				case "1":
-				case "xx-small": return new Unit(UnitMetric.Point, 15);
+				case "xx-small": return new Unit(UnitMetric.Point, 10);
 				case "2":
-				case "x-small": return new Unit(UnitMetric.Point, 20);
+				case "x-small": return new Unit(UnitMetric.Point, 15);
+				case "3":
+				case "small": return new Unit(UnitMetric.Point, 20);
 				case "4":
 				case "medium": return new Unit(UnitMetric.Point, 27);
 				case "5":
@@ -76,8 +78,6 @@ namespace NotesFor.HtmlToOpenXml
 				case "x-large": return new Unit(UnitMetric.Point, 48);
 				case "7":
 				case "xx-large": return new Unit(UnitMetric.Point, 72);
-				case "3":
-				case "small":
 				default:
 					// the font-size is specified in positive half-points
 					Unit unit = Unit.Parse(htmlSize);

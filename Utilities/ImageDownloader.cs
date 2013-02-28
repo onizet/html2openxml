@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using DocumentFormat.OpenXml.Packaging;
+using System.Text.RegularExpressions;
 
 namespace NotesFor.HtmlToOpenXml
 {
@@ -68,6 +69,20 @@ namespace NotesFor.HtmlToOpenXml
 				return;
 			}
 
+			// data inline, encoded in base64
+			if (imageUrl.Scheme == "data")
+			{
+				DataUri dataUri = DataUri.Parse(imageUrl.OriginalString);
+				if (dataUri != null)
+				{
+					ImagePartType type;
+					if (knownContentType.TryGetValue(dataUri.Mime, out type))
+						imageInfo.Type = type;
+
+					imageInfo.RawData = dataUri.Data;
+				}
+			}
+
 			System.Net.WebClient webClient = new System.Net.WebClient();
 			if (proxy != null)
 			{
@@ -103,13 +118,19 @@ namespace NotesFor.HtmlToOpenXml
 			if (!imageInfo.Type.HasValue)
 				imageInfo.Type = GetImagePartTypeForImageUrl(imageUrl);
 
-			using (Stream outputStream = new MemoryStream(imageInfo.RawData))
+			if (!imageInfo.Type.HasValue)
+				return false;
+
+			if (imageInfo.Size.IsEmpty)
 			{
-				if (imageInfo.Size.Width == 0 || imageInfo.Size.Height == 0)
-					imageInfo.Size = GetImageSize(outputStream);
+				using (Stream outputStream = new MemoryStream(imageInfo.RawData))
+				{
+					if (imageInfo.Size.Width == 0 || imageInfo.Size.Height == 0)
+						imageInfo.Size = GetImageSize(outputStream);
+				}
 			}
 
-			return imageInfo.Type.HasValue;
+			return true;
 		}
 
 		#endregion
