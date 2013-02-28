@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
 
@@ -153,6 +154,25 @@ namespace NotesFor.HtmlToOpenXml
 						styleAttributes.Add(new ParagraphStyleId() { Val = className });
 						break;
 					}
+				}
+			}
+
+			Margin margin = en.StyleAttributes.GetAsMargin("margin");
+			if (!margin.IsEmpty)
+			{
+				if (margin.Top.IsValid || margin.Bottom.IsValid)
+				{
+					SpacingBetweenLines spacing = new SpacingBetweenLines();
+					if (margin.Top.IsValid) spacing.Before = margin.Top.ValueInDxa.ToString(CultureInfo.InvariantCulture);
+					if (margin.Bottom.IsValid) spacing.After = margin.Bottom.ValueInDxa.ToString(CultureInfo.InvariantCulture);
+					containerStyleAttributes.Add(spacing);
+				}
+				if (margin.Left.IsValid || margin.Right.IsValid)
+				{
+					Indentation indentation = new Indentation();
+					if (margin.Left.IsValid) indentation.Left = margin.Left.ValueInDxa.ToString(CultureInfo.InvariantCulture);
+					if (margin.Right.IsValid) indentation.Right = margin.Right.ValueInDxa.ToString(CultureInfo.InvariantCulture);
+					containerStyleAttributes.Add(indentation);
 				}
 			}
 

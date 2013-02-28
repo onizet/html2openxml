@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
@@ -348,7 +348,7 @@ namespace NotesFor.HtmlToOpenXml
 
 			if (src != null && Uri.TryCreate(src, UriKind.RelativeOrAbsolute, out uri))
 			{
-				string alt = en.Attributes["alt"];
+				string alt = en.Attributes["title"] ?? en.Attributes["alt"];
 				bool process = true;
 
 				if (!uri.IsAbsoluteUri && this.BaseImageUrl != null)
@@ -772,9 +772,7 @@ namespace NotesFor.HtmlToOpenXml
 
 				// OpenXml doesn't support left table margin in Percent, but Html does
 				if (margin.Left.IsValid && margin.Left.Type != UnitMetric.Percent)
-				{
 					properties.Add(new TableIndentation() { Width = (int) margin.Left.ValueInDxa, Type = TableWidthUnitValues.Dxa });
-				}
 			}
 
 			List<OpenXmlElement> runStyleAttributes = new List<OpenXmlElement>();
@@ -785,9 +783,13 @@ namespace NotesFor.HtmlToOpenXml
 			Table currentTable = new Table(
 				new TableProperties(properties));
 
+			// are we currently inside another table?
 			if (tables.HasContext)
 			{
+				// Okay we will insert nested table but beware the paragraph inside TableCell should contains at least 1 run.
+
 				TableCell currentCell = tables.CurrentTable.GetLastChild<TableRow>().GetLastChild<TableCell>();
+				if (elements.Count == 0) elements.Add(new Run(new Text("")));
 				currentCell.Append(new Paragraph(elements));
 				currentCell.Append(currentTable);
 				elements.Clear();

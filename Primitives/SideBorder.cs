@@ -1,12 +1,10 @@
 ﻿using System;
-using System.ComponentModel;
-using System.Globalization;
+using System.Collections.Generic;
 using System.Drawing;
 
 namespace NotesFor.HtmlToOpenXml
 {
 	using w = DocumentFormat.OpenXml.Wordprocessing;
-	using System.Collections.Generic;
 
 
 	/// <summary>

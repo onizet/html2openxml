@@ -60,6 +60,7 @@ namespace NotesFor.HtmlToOpenXml
 			}
 		}
 
+		#region HtmlDecode
 
 		/// <summary>
 		/// Converts a string that has been HTML-encoded for HTTP transmission into a decoded string.
@@ -141,6 +142,28 @@ namespace NotesFor.HtmlToOpenXml
 			}
 		}
 
+		#endregion
+
+		#region UrlDecode
+
+		/// <summary>
+		/// Converts a string that represents an Html-encoded URL to a decoded string.
+		/// </summary>
+		public static string UrlDecode(string text)
+		{
+			// pre-process for + sign space formatting since System.Uri doesn't handle it
+			// plus literals are encoded as %2b normally so this should be safe
+			// http://www.west-wind.com/weblog/posts/2009/Feb/05/Html-and-Uri-String-Encoding-without-SystemWeb
+			text = text.Replace("+", " ");
+			return System.Uri.UnescapeDataString(text);
+		}
+
+		#endregion
+
+		// Utilities methods
+
+		#region IsLegalXmlChar
+
 		/// <summary>
 		/// Gets whether a given character is allowed by XML 1.0.
 		/// </summary>
@@ -157,5 +180,7 @@ namespace NotesFor.HtmlToOpenXml
 				(character >= 0x10000 && character <= 0x10FFFF)
 			);
 		}
+
+		#endregion
 	}
 }
