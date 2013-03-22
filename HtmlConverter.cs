@@ -206,7 +206,15 @@ namespace NotesFor.HtmlToOpenXml
 		private void AddParagraph(OpenXmlCompositeElement element)
 		{
 			if (tables.HasContext)
-				tables.CurrentTable.GetLastChild<TableRow>().GetLastChild<TableCell>().Append(element);
+			{
+				TableRow row = tables.CurrentTable.GetLastChild<TableRow>();
+				if (row == null)
+				{
+					tables.CurrentTable.Append(row = new TableRow());
+					tables.CellPosition = new Point(0, tables.CellPosition.Y + 1);
+				}
+				row.GetLastChild<TableCell>().Append(element);
+			}
 			else
 				this.paragraphs.Add(element);
 		}
@@ -704,6 +712,30 @@ namespace NotesFor.HtmlToOpenXml
 
 			newParagraph |= htmlStyles.Paragraph.ProcessCommonAttributes(en, styleAttributes);
 			return newParagraph;
+		}
+
+		#endregion
+
+		#region ChangePageOrientation
+
+		private static SectionProperties ChangePageOrientation(PageOrientationValues orientation)
+		{
+			PageSize pageSize = new PageSize() { Width = (UInt32Value) 16838U, Height = (UInt32Value) 11906U, Orient = orientation };
+			if (orientation == PageOrientationValues.Portrait)
+			{
+				UInt32Value swap = pageSize.Width;
+				pageSize.Width = pageSize.Height;
+				pageSize.Height = swap;
+			}
+
+			return new SectionProperties(
+				pageSize,
+				new PageMargin() { Top = 1417, Right = (UInt32Value) 1417U, Bottom = 1417, Left = (UInt32Value) 1417U,
+					Header = (UInt32Value) 708U, Footer = (UInt32Value) 708U, Gutter = (UInt32Value) 0U
+				},
+				new Columns() { Space = "708" },
+				new DocGrid() { LinePitch = 360 }
+			);
 		}
 
 		#endregion

@@ -13,7 +13,7 @@ namespace NotesFor.HtmlToOpenXml
 	sealed class ImageProvisioningProvider
 	{
 		// Map extension to ImagePartType
-		private static Dictionary<String, ImagePartType> knownExtensions = new Dictionary<String, ImagePartType>() {
+		private static Dictionary<String, ImagePartType> knownExtensions = new Dictionary<String, ImagePartType>(StringComparer.InvariantCultureIgnoreCase) {
 			{ ".gif", ImagePartType.Gif },
 			{ ".bmp", ImagePartType.Bmp },
 			{ ".emf", ImagePartType.Emf },
@@ -121,13 +121,10 @@ namespace NotesFor.HtmlToOpenXml
 			if (!imageInfo.Type.HasValue)
 				return false;
 
-			if (imageInfo.Size.IsEmpty)
+			if (imageInfo.Size.Width == 0 || imageInfo.Size.Height == 0)
 			{
 				using (Stream outputStream = new MemoryStream(imageInfo.RawData))
-				{
-					if (imageInfo.Size.Width == 0 || imageInfo.Size.Height == 0)
-						imageInfo.Size = GetImageSize(outputStream);
-				}
+					imageInfo.Size = GetImageSize(outputStream);
 			}
 
 			return true;
