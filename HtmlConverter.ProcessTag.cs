@@ -102,6 +102,16 @@ namespace NotesFor.HtmlToOpenXml
 
 			if (styleAttributes.Count > 0)
 				htmlStyles.Runs.BeginTag(en.CurrentTag, styleAttributes.ToArray());
+
+			string orientation = en.StyleAttributes["page-orientation"];
+			if (orientation != null)
+			{
+				PageOrientationValues or = PageOrientationValues.Portrait;
+				if (String.Equals(orientation, "landscape", StringComparison.OrdinalIgnoreCase))
+					or = PageOrientationValues.Landscape;
+
+				mainPart.Document.Body.Append(HtmlConverter.ChangePageOrientation(or));
+			}
 		}
 
 		#endregion
@@ -756,6 +766,10 @@ namespace NotesFor.HtmlToOpenXml
 				properties.Add(new TableWidth() { Type = TableWidthUnitValues.Pct, Width = "5000" }); // 100% * 50
 			}
 
+			string classValue = en.Attributes["class"];
+			if (classValue != null)
+				properties.Add(new TableStyle() { Val = htmlStyles.GetStyle(classValue, StyleValues.Table, ignoreCase: true) });
+
 			string align = en.Attributes["align"];
 			if (align != null)
 			{
@@ -770,10 +784,33 @@ namespace NotesFor.HtmlToOpenXml
 			{
 				Margin margin = en.StyleAttributes.GetAsMargin("margin");
 
-				// OpenXml doesn't support left table margin in Percent, but Html does
-				if (margin.Left.IsValid && margin.Left.Type != UnitMetric.Percent)
-					properties.Add(new TableIndentation() { Width = (int) margin.Left.ValueInDxa, Type = TableWidthUnitValues.Dxa });
+				if (margin.IsValid)
+				{
+					// OpenXml doesn't support table margin in Percent, but Html does
+					// the margin part has been implemented by Olek (patch #8457)
+
+					TableCellMarginDefault cellMargin = new TableCellMarginDefault();
+					if (margin.Left.IsValid && margin.Left.Type != UnitMetric.Percent)
+						cellMargin.TableCellLeftMargin = new TableCellLeftMargin() { Type = TableWidthValues.Dxa, Width = (short) margin.Left.ValueInDxa };
+					if (margin.Right.IsValid && margin.Right.Type != UnitMetric.Percent)
+						cellMargin.TableCellRightMargin = new TableCellRightMargin() { Type = TableWidthValues.Dxa, Width = (short) margin.Right.ValueInDxa };
+					if (margin.Top.IsValid && margin.Top.Type != UnitMetric.Percent)
+						cellMargin.TopMargin = new TopMargin() { Type = TableWidthUnitValues.Dxa, Width = margin.Top.ValueInDxa.ToString(CultureInfo.InvariantCulture) };
+					if (margin.Bottom.IsValid && margin.Bottom.Type != UnitMetric.Percent)
+						cellMargin.BottomMargin = new BottomMargin() { Type = TableWidthUnitValues.Dxa, Width = margin.Bottom.ValueInDxa.ToString(CultureInfo.InvariantCulture) };
+
+					if (cellMargin.HasChildren)
+						properties.Add(cellMargin);
+				}
 			}
+
+			int? spacing = en.Attributes.GetAsInt("cellspacing");
+			if (spacing.HasValue)
+				properties.Add(new TableCellSpacing { Type = TableWidthUnitValues.Dxa, Width = spacing.Value.ToString(CultureInfo.InvariantCulture) });
+
+			int? padding = en.Attributes.GetAsInt("cellpadding");
+			if (padding.HasValue)
+				properties.Add(new TableIndentation { Type = TableWidthUnitValues.Dxa, Width = padding.Value });
 
 			List<OpenXmlElement> runStyleAttributes = new List<OpenXmlElement>();
 			htmlStyles.Tables.ProcessCommonAttributes(en, runStyleAttributes);
@@ -790,8 +827,7 @@ namespace NotesFor.HtmlToOpenXml
 
 				TableCell currentCell = tables.CurrentTable.GetLastChild<TableRow>().GetLastChild<TableCell>();
 				if (elements.Count == 0) elements.Add(new Run(new Text("")));
-				currentCell.Append(new Paragraph(elements));
-				currentCell.Append(currentTable);
+				currentCell.Append(new Paragraph(elements), currentTable);
 				elements.Clear();
 			}
 			else
@@ -1274,8 +1310,9 @@ namespace NotesFor.HtmlToOpenXml
 
 			// Reset all our variables and move to next cell
 			this.elements.Clear();
-			htmlStyles.Tables.EndTagForParagraph("<td>");
-			htmlStyles.Runs.EndTag("<td>");
+			String openingTag = en.CurrentTag.Replace("/", "");
+			htmlStyles.Tables.EndTagForParagraph(openingTag);
+			htmlStyles.Runs.EndTag(openingTag);
 
 			Point pos = tables.CellPosition;
 			pos.X++;

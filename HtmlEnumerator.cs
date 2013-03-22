@@ -36,20 +36,21 @@ namespace NotesFor.HtmlToOpenXml
 								 RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
 			// Removes tabs and whitespace inside and before|next the line-breaking tags (p, div, br and body)
-			html = Regex.Replace(html, @"(\s*)(</?(p|div|br|body)[^>]*/?>)(\s*)", "$2", RegexOptions.Multiline);
+			html = Regex.Replace(html, @"(\s*)(</?(p|div|br|body)[^>]*/?>)(\s*)", "$2", RegexOptions.Multiline| RegexOptions.IgnoreCase);
 
 			// Preserves whitespaces inside Pre tags.
-			html = Regex.Replace(html, "(<pre.*?>)(.+?)</pre>", PreserveWhitespacesInPre, RegexOptions.Singleline);
+			html = Regex.Replace(html, "(<pre.*?>)(.+?)</pre>", PreserveWhitespacesInPre, RegexOptions.Singleline| RegexOptions.IgnoreCase);
 
 			// Remove tabs and whitespace at the beginning of the lines
 			html = Regex.Replace(html, @"^\s+", String.Empty, RegexOptions.Multiline);
 
 			// Replace xml header by xml tag for further processing
-			html = Regex.Replace(html, @"<\?xml:namespace.+?>", "<xml>", RegexOptions.Singleline);
+			html = Regex.Replace(html, @"<\?xml:namespace.+?>", "<xml>", RegexOptions.Singleline| RegexOptions.IgnoreCase);
 
 			// Ensure order of table elements are respected: thead, tbody and tfooter
 			// we select only the table that contains at least a tfoot or thead tag
-			html = Regex.Replace(html, "(<table.*?>)(.*?(?:<tfoot>|<thead>){1}.*?)</table>", PreserveTablePartOrder, RegexOptions.Singleline);
+			//html = Regex.Replace(html, @"<table.*?>(\s+</?(?=(thead|tbody|tfoot))).+?</\2>\s+</table>", PreserveTablePartOrder, RegexOptions.Singleline);
+			html = Regex.Replace(html, "(<table.*?>)(.*?)(</table>)", PreserveTablePartOrder, RegexOptions.Singleline | RegexOptions.IgnoreCase);
 
 			// Split our html using the tags
 			String[] lines = Regex.Split(html, @"(</?\w+[^>]*/?>)", RegexOptions.Singleline);
@@ -86,23 +87,21 @@ namespace NotesFor.HtmlToOpenXml
 			// ensure the order of the table elements are set in the correct order.
 			// bug #11016 reported by pauldbentley
 
-			String innerHtml = match.Groups[2].Value;
-			String[] parts = Regex.Split(innerHtml, "((?:<tfoot|<thead|<tbody).*?>.+?(?:</tfoot>|</thead>|</tbody>){1}?)+", RegexOptions.Singleline);
+			var sb = new System.Text.StringBuilder();
+			sb.Append(match.Groups[1].Value);
 
-			String thead = "", tbody = "", tfoot = "";
-			for (int i = 0; i < parts.Length; i++)
+			Regex tableSplitReg = new Regex(@"(<(?=(caption|colgroup|thead|tbody|tfoot|tr)).*?>.+?</\2>)", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+			MatchCollection matches = tableSplitReg.Matches(match.Groups[2].Value);
+
+			foreach (String tagOrder in new [] { "caption", "colgroup", "thead", "tbody", "tfoot", "tr" })
+			foreach (Match m in matches)
 			{
-				if (parts[i] == Environment.NewLine) continue;
-
-				if (parts[i].StartsWith("<thead", StringComparison.OrdinalIgnoreCase))
-					thead = parts[i];
-				else if (parts[i].StartsWith("<tbody", StringComparison.OrdinalIgnoreCase))
-					tbody = parts[i];
-				else if (parts[i].StartsWith("<tfoot", StringComparison.OrdinalIgnoreCase))
-					tfoot = parts[i];
+				if (m.Groups[2].Value.Equals(tagOrder, StringComparison.OrdinalIgnoreCase))
+					sb.Append(m.Groups[1].Value);
 			}
 
-			return match.Groups[1].Value + thead + tbody + tfoot + "</table>";
+			sb.Append(match.Groups[3].Value);
+			return sb.ToString();
 		}
 
 		#endregion

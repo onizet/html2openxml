@@ -122,6 +122,21 @@ namespace NotesFor.HtmlToOpenXml
 					this.BeginTagForParagraph(en.CurrentTag, new KeepNext(), new Justification { Val = halign });
 			}
 
+			// implemented by ddforge
+			String[] classes = en.Attributes.GetAsClass();
+			if (classes != null)
+			{
+				for (int i = 0; i < classes.Length; i++)
+				{
+					string className = documentStyle.GetStyle(classes[i], StyleValues.Table, ignoreCase: true);
+					if (className != null) // only one Style can be applied in OpenXml and dealing with inheritance is out of scope
+					{
+						containerStyleAttributes.Add(new RunStyle() { Val = className });
+						break;
+					}
+				}
+			}
+
 			this.BeginTag(en.CurrentTag, containerStyleAttributes);
 
 			// Process general run styles
