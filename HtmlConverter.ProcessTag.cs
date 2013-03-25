@@ -763,7 +763,7 @@ namespace NotesFor.HtmlToOpenXml
 			}
 			else
 			{
-				properties.Add(new TableWidth() { Type = TableWidthUnitValues.Pct, Width = "5000" }); // 100% * 50
+				properties.Add(new TableWidth() { Type = TableWidthUnitValues.Pct, Width = "auto" });
 			}
 
 			string classValue = en.Attributes["class"];
