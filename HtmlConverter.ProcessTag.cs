@@ -1005,12 +1005,12 @@ namespace NotesFor.HtmlToOpenXml
 					case "tb-lr":
 						styleAttributes.Add(new TextDirection() { Val = TextDirectionValues.BottomToTopLeftToRight });
 						styleAttributes.Add(new TableCellVerticalAlignment() { Val = TableVerticalAlignmentValues.Center });
-						htmlStyles.Tables.BeginTagForParagraph("<td>", new Justification() { Val = JustificationValues.Center });
+						htmlStyles.Tables.BeginTagForParagraph(en.CurrentTag, new Justification() { Val = JustificationValues.Center });
 						break;
 					case "tb-rl":
 						styleAttributes.Add(new TextDirection() { Val = TextDirectionValues.TopToBottomRightToLeft });
 						styleAttributes.Add(new TableCellVerticalAlignment() { Val = TableVerticalAlignmentValues.Center });
-						htmlStyles.Tables.BeginTagForParagraph("<td>", new Justification() { Val = JustificationValues.Center });
+						htmlStyles.Tables.BeginTagForParagraph(en.CurrentTag, new Justification() { Val = JustificationValues.Center });
 						break;
 				}
 			}
@@ -1227,7 +1227,6 @@ namespace NotesFor.HtmlToOpenXml
 			string closingTag = en.CurrentTag.Replace("/", "");
 
 			htmlStyles.Tables.EndTag(closingTag);
-			htmlStyles.Tables.EndTagForParagraph(closingTag);
 		}
 
 		#endregion
@@ -1268,7 +1267,7 @@ namespace NotesFor.HtmlToOpenXml
 				}
 			}
 
-			htmlStyles.Tables.EndTagForParagraph("<tr>");
+			htmlStyles.Tables.EndTag("<tr>");
 			htmlStyles.Runs.EndTag("<tr>");
 		}
 
@@ -1311,7 +1310,7 @@ namespace NotesFor.HtmlToOpenXml
 			// Reset all our variables and move to next cell
 			this.elements.Clear();
 			String openingTag = en.CurrentTag.Replace("/", "");
-			htmlStyles.Tables.EndTagForParagraph(openingTag);
+			htmlStyles.Tables.EndTag(openingTag);
 			htmlStyles.Runs.EndTag(openingTag);
 
 			Point pos = tables.CellPosition;

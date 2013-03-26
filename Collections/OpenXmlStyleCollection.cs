@@ -163,7 +163,7 @@ namespace NotesFor.HtmlToOpenXml
 		/// Remove the specified tag from the list.
 		/// </summary>
 		/// <param name="name">The name of the tag.</param>
-		public void EndTag(string name)
+		public virtual void EndTag(string name)
 		{
 			Stack<TagsAtSameLevel> enqueuedTags;
 			if (tags.TryGetValue(name, out enqueuedTags))

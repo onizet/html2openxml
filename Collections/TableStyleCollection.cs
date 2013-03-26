@@ -76,7 +76,7 @@ namespace NotesFor.HtmlToOpenXml
 			enqueuedTags.Push(new TagsAtSameLevel(elements));
 		}
 
-		public void EndTagForParagraph(string name)
+		public override void EndTag(string name)
 		{
 			Stack<TagsAtSameLevel> enqueuedTags;
 			if (tagsParagraph.TryGetValue(name, out enqueuedTags))
@@ -84,6 +84,7 @@ namespace NotesFor.HtmlToOpenXml
 				enqueuedTags.Pop();
 				if (enqueuedTags.Count == 0) tagsParagraph.Remove(name);
 			}
+			base.EndTag(name);
 		}
 
 		/// <summary>
