@@ -5,7 +5,7 @@ namespace NotesFor.HtmlToOpenXml
 	/// <summary>
 	/// Specifies the measurement values of a Html Unit.
 	/// </summary>
-	enum UnitMetric
+    public enum UnitMetric
 	{
 		Unknown,
 		Percent,
