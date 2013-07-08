@@ -190,16 +190,24 @@ namespace NotesFor.HtmlToOpenXml
 		/// </summary>
 		public static ImagePartType? GetImagePartTypeForImageUrl(Uri uri)
 		{
-			ImagePartType type;
-			String extension = System.IO.Path.GetExtension(uri.IsAbsoluteUri ? uri.Segments[uri.Segments.Length - 1] : uri.OriginalString);
-			if (knownExtensions.TryGetValue(extension, out type)) return type;
+            ImagePartType type;
+            String extension = System.IO.Path.GetExtension(uri.IsAbsoluteUri ? uri.Segments[uri.Segments.Length - 1] : uri.OriginalString);
+            if (knownExtensions.TryGetValue(extension, out type)) return type;
 
-			// extension not recognized, try with checking the query string. Expecting to resolve something like:
-			// ./image.axd?picture=img1.jpg
-			extension = System.IO.Path.GetExtension(uri.IsAbsoluteUri ? uri.AbsoluteUri : uri.ToString());
-			if (knownExtensions.TryGetValue(extension, out type)) return type;
+            // extension not recognized, try with checking the query string. Expecting to resolve something like:
+            // ./image.axd?picture=img1.jpg
+            extension = System.IO.Path.GetExtension(uri.IsAbsoluteUri ? uri.AbsoluteUri : uri.ToString());
+            if (knownExtensions.TryGetValue(extension, out type)) return type;
 
-			return null;
+            // so, match text of the form: data:image/yyy;base64,zzzzzzzzzzzz...
+            // where yyy is the MIME type, zzz is the base64 encoded data
+            DataUri dataUri = DataUri.Parse(uri.ToString());
+            if (dataUri != null)
+            {
+                if (knownContentType.TryGetValue(dataUri.Mime, out type)) return type;
+            }
+
+            return null;
 		}
 
 		#endregion

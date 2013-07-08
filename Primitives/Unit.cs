@@ -8,7 +8,7 @@ namespace NotesFor.HtmlToOpenXml
 	/// Represents a Html Unit (ie: 120px, 10em, ...).
 	/// </summary>
 	[System.Diagnostics.DebuggerDisplay("{DebuggerDisplay,nq}")]
-	struct Unit
+	public struct Unit
 	{
 		/// <summary>Represents an empty unit (not defined).</summary>
 		public static readonly Unit Empty = new Unit();
