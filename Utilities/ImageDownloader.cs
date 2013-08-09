@@ -141,7 +141,9 @@ namespace NotesFor.HtmlToOpenXml
 		// http://stackoverflow.com/questions/58510/using-net-how-can-you-find-the-mime-type-of-a-file-based-on-the-file-signature
 		private static Dictionary<String, ImagePartType> knownContentType = new Dictionary<String, ImagePartType>(StringComparer.OrdinalIgnoreCase) {
 			{ "image/gif", ImagePartType.Gif },
+            { "image/pjpeg", ImagePartType.Jpeg },
 			{ "image/jpeg", ImagePartType.Jpeg },
+            { "image/x-png", ImagePartType.Png },
 			{ "image/png", ImagePartType.Png },
 			{ "image/tiff", ImagePartType.Tiff },
 			{ "image/vnd.microsoft.icon", ImagePartType.Icon },

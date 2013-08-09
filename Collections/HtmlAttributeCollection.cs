@@ -213,19 +213,19 @@ namespace NotesFor.HtmlToOpenXml
 		{
 			HtmlFont font = HtmlFont.Parse(this[name]);
 			string attrValue = this[name + "-style"];
-			if (attrValue == null)
+			if (attrValue != null)
 			{
 				var style = ConverterUtility.ConvertToFontStyle(attrValue);
 				if (style.HasValue) font.Style = style.Value;
 			}
 			attrValue = this[name + "-variant"];
-			if (attrValue == null)
+			if (attrValue != null)
 			{
 				var variant = ConverterUtility.ConvertToFontVariant(attrValue);
 				if (variant.HasValue) font.Variant = variant.Value;
 			}
 			attrValue = this[name + "-weight"];
-			if (attrValue == null)
+			if (attrValue != null)
 			{
 				var variant = ConverterUtility.ConvertToFontWeight(attrValue);
 				if (variant.HasValue) font.Weight = variant.Value;
