@@ -8,21 +8,22 @@ namespace NotesFor.HtmlToOpenXml
 	using TagsAtSameLevel = System.ArraySegment<DocumentFormat.OpenXml.OpenXmlElement>;
 
 
-	sealed class TableStyleCollection : OpenXmlStyleCollection
+	sealed class TableStyleCollection : OpenXmlStyleCollectionBase
 	{
-		private Dictionary<String, Stack<TagsAtSameLevel>> tagsParagraph;
+		private ParagraphStyleCollection paragraphStyle;
 		private HtmlDocumentStyle documentStyle;
+		private static GetSequenceNumberHandler getTagOrderHandler;
 
 
 		internal TableStyleCollection(HtmlDocumentStyle documentStyle)
 		{
 			this.documentStyle = documentStyle;
-			tagsParagraph = new Dictionary<String, Stack<TagsAtSameLevel>>();
+			paragraphStyle = new ParagraphStyleCollection(documentStyle);
 		}
 
 		internal override void Reset()
 		{
-			this.tagsParagraph.Clear();
+			paragraphStyle.Reset();
 			base.Reset();
 		}
 
@@ -44,56 +45,35 @@ namespace NotesFor.HtmlToOpenXml
 				{
 					TagsAtSameLevel tagsOfSameLevel = en.Current.Value.Peek();
 					foreach (OpenXmlElement tag in tagsOfSameLevel.Array)
-						properties.Append(tag.CloneNode(true));
+						SetProperties(properties, tag.CloneNode(true));
 				}
 			}
 
 			// Apply some style attributes on the unique Paragraph tag contained inside a table cell.
-			if (tagsParagraph.Count > 0)
-			{
-				Paragraph p = tableCell.GetFirstChild<Paragraph>();
-				ParagraphProperties properties = p.GetFirstChild<ParagraphProperties>();
-				if (properties == null) p.PrependChild<ParagraphProperties>(properties = new ParagraphProperties());
-
-				var en = tagsParagraph.GetEnumerator();
-				while (en.MoveNext())
-				{
-					TagsAtSameLevel tagsOfSameLevel = en.Current.Value.Peek();
-					foreach (OpenXmlElement tag in tagsOfSameLevel.Array)
-						properties.Append(tag.CloneNode(true));
-				}
-			}
+			Paragraph p = tableCell.GetFirstChild<Paragraph>();
+			paragraphStyle.ApplyTags(p);
 		}
 
 		public void BeginTagForParagraph(string name, params OpenXmlElement[] elements)
 		{
-			Stack<TagsAtSameLevel> enqueuedTags;
-			if (!tagsParagraph.TryGetValue(name, out enqueuedTags))
-			{
-				tagsParagraph.Add(name, enqueuedTags = new Stack<TagsAtSameLevel>());
-			}
-
-			enqueuedTags.Push(new TagsAtSameLevel(elements));
+			paragraphStyle.BeginTag(name, elements);
 		}
 
 		public override void EndTag(string name)
 		{
-			Stack<TagsAtSameLevel> enqueuedTags;
-			if (tagsParagraph.TryGetValue(name, out enqueuedTags))
-			{
-				enqueuedTags.Pop();
-				if (enqueuedTags.Count == 0) tagsParagraph.Remove(name);
-			}
+			paragraphStyle.EndTag(name);
 			base.EndTag(name);
 		}
+
+		#region ProcessCommonAttributes
 
 		/// <summary>
 		/// Move inside the current tag related to table (td, thead, tr, ...) and converts some common
 		/// attributes to their OpenXml equivalence.
 		/// </summary>
 		/// <param name="en">The Html enumerator positionned on a <i>table (or related)</i> tag.</param>
-		/// <param name="styleAttributes">The collection of attributes where to store new discovered attributes.</param>
-		public void ProcessCommonAttributes(HtmlEnumerator en, IList<OpenXmlElement> styleAttributes)
+		/// <param name="runStyleAttributes">The collection of attributes where to store new discovered attributes.</param>
+		public void ProcessCommonAttributes(HtmlEnumerator en, IList<OpenXmlElement> runStyleAttributes)
 		{
 			List<OpenXmlElement> containerStyleAttributes = new List<OpenXmlElement>();
 
@@ -141,7 +121,31 @@ namespace NotesFor.HtmlToOpenXml
 			this.BeginTag(en.CurrentTag, containerStyleAttributes);
 
 			// Process general run styles
-			documentStyle.Runs.ProcessCommonAttributes(en, styleAttributes);
+			documentStyle.Runs.ProcessCommonAttributes(en, runStyleAttributes);
 		}
+
+		#endregion
+
+		#region GetTagOrder
+
+		protected override int GetTagOrder(OpenXmlElement element)
+		{
+			// I don't want to hard-code the sequence number of the child elements of a RunProperties.
+			// I prefer relying on the OpenXml API and use a bit Reflection.
+			if (getTagOrderHandler == null)
+			{
+				var mi = typeof(OpenXmlCompositeElement)
+					.GetMethod("GetSequenceNumber", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+
+				// We use a dummy new RunProperties instance
+				getTagOrderHandler = (GetSequenceNumberHandler)
+					Delegate.CreateDelegate(typeof(GetSequenceNumberHandler), new TableProperties(), mi, true);
+			}
+
+			// Create a delegate to speed up the invocation to the GetSequenceNumber method
+			return (int) getTagOrderHandler.DynamicInvoke(element);
+		}
+
+		#endregion
 	}
 }

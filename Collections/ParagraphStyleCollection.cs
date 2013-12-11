@@ -9,9 +9,10 @@ namespace NotesFor.HtmlToOpenXml
 	using TagsAtSameLevel = System.ArraySegment<DocumentFormat.OpenXml.OpenXmlElement>;
 
 
-	sealed class ParagraphStyleCollection : OpenXmlStyleCollection
+	sealed class ParagraphStyleCollection : OpenXmlStyleCollectionBase
 	{
 		private HtmlDocumentStyle documentStyle;
+		private static GetSequenceNumberHandler getTagOrderHandler;
 
 
 		internal ParagraphStyleCollection(HtmlDocumentStyle documentStyle)
@@ -34,22 +35,27 @@ namespace NotesFor.HtmlToOpenXml
 			{
 				TagsAtSameLevel tagsOfSameLevel = en.Current.Value.Peek();
 				foreach (OpenXmlElement tag in tagsOfSameLevel.Array)
-					properties.Append(tag.CloneNode(true));
+					SetProperties(properties, tag.CloneNode(true));
 			}
 		}
 
-		/// <summary>
-		/// Gets the default StyleId to apply on the any new paragraph.
-		/// </summary>
-		internal String DefaultParagraphStyle { get; set; }
+		#region NewParagraph
 
+		/// <summary>
+		/// Factor method to create a new Paragraph with its default style already defined.
+		/// </summary>
+		/// <returns></returns>
 		public Paragraph NewParagraph()
 		{
 			Paragraph p = new Paragraph();
 			if (this.DefaultParagraphStyle != null)
-				p.InsertInProperties(new ParagraphStyleId() { Val = this.DefaultParagraphStyle });
+				p.InsertInProperties(prop => prop.ParagraphStyleId = new ParagraphStyleId() { Val = this.DefaultParagraphStyle });
 			return p;
 		}
+
+		#endregion
+
+		#region ProcessCommonAttributes
 
 		/// <summary>
 		/// There is a few attributes shared by a large number of tags. This method will check them for a limited
@@ -151,7 +157,7 @@ namespace NotesFor.HtmlToOpenXml
 					string className = documentStyle.GetStyle(classes[i], StyleValues.Paragraph, ignoreCase: true);
 					if (className != null)
 					{
-						styleAttributes.Add(new ParagraphStyleId() { Val = className });
+						containerStyleAttributes.Add(new ParagraphStyleId() { Val = className });
 						break;
 					}
 				}
@@ -183,5 +189,38 @@ namespace NotesFor.HtmlToOpenXml
 
 			return newParagraph;
 		}
+
+		#endregion
+
+		#region GetTagOrder
+
+		protected override int GetTagOrder(OpenXmlElement element)
+		{
+			// I don't want to hard-code the sequence number of the child elements of a RunProperties.
+			// I prefer relying on the OpenXml API and use a bit Reflection.
+			if (getTagOrderHandler == null)
+			{
+				var mi = typeof(OpenXmlCompositeElement)
+					.GetMethod("GetSequenceNumber", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+
+				// We use a dummy new RunProperties instance
+				getTagOrderHandler = (GetSequenceNumberHandler)
+					Delegate.CreateDelegate(typeof(GetSequenceNumberHandler), new ParagraphProperties(), mi, true);
+			}
+
+			// Create a delegate to speed up the invocation to the GetSequenceNumber method
+			return (int) getTagOrderHandler.DynamicInvoke(element);
+		}
+
+		#endregion
+
+		//____________________________________________________________________
+		//
+		// Properties
+
+		/// <summary>
+		/// Gets the default StyleId to apply on the any new paragraph.
+		/// </summary>
+		internal String DefaultParagraphStyle { get; set; }
 	}
 }

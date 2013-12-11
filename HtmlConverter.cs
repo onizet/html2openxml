@@ -89,9 +89,9 @@ namespace NotesFor.HtmlToOpenXml
 			paragraphs.Add(currentParagraph = htmlStyles.Paragraph.NewParagraph());
 			if (htmlStyles.DefaultParagraphStyle != null)
 			{
-				currentParagraph.Append(new ParagraphProperties(
-					new ParagraphStyleId { Val = htmlStyles.DefaultParagraphStyle }
-				));
+				currentParagraph.ParagraphProperties = new ParagraphProperties {
+					ParagraphStyleId = new ParagraphStyleId { Val = htmlStyles.DefaultParagraphStyle }
+				};
 			}
 
 			HtmlEnumerator en = new HtmlEnumerator(html);
@@ -240,16 +240,18 @@ namespace NotesFor.HtmlToOpenXml
 				new Footnotes(
 					new Footnote(
 						new Paragraph(
-							new ParagraphProperties(
-								new SpacingBetweenLines() { After = "0", Line = "240", LineRule = LineSpacingRuleValues.Auto }),
+							new ParagraphProperties {
+								SpacingBetweenLines = new SpacingBetweenLines() { After = "0", Line = "240", LineRule = LineSpacingRuleValues.Auto }
+							},
 							new Run(
 								new SeparatorMark())
 						)
 					) { Type = FootnoteEndnoteValues.Separator, Id = -1 },
 					new Footnote(
 						new Paragraph(
-							new ParagraphProperties(
-								new SpacingBetweenLines() { After = "0", Line = "240", LineRule = LineSpacingRuleValues.Auto }),
+							new ParagraphProperties {
+								SpacingBetweenLines = new SpacingBetweenLines() { After = "0", Line = "240", LineRule = LineSpacingRuleValues.Auto }
+							},
 							new Run(
 								new ContinuationSeparatorMark())
 						)
@@ -272,11 +274,13 @@ namespace NotesFor.HtmlToOpenXml
 			fpart.Footnotes.Append(
 				new Footnote(
 					new Paragraph(
-						new ParagraphProperties(
-							new ParagraphStyleId() { Val = htmlStyles.GetStyle("footnote text", StyleValues.Paragraph) }),
+						new ParagraphProperties {
+							ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle("footnote text", StyleValues.Paragraph) }
+						},
 						markerRun = new Run(
-							new RunProperties(
-								new RunStyle() { Val = htmlStyles.GetStyle("footnote reference", StyleValues.Character) }),
+							new RunProperties {
+								RunStyle = new RunStyle() { Val = htmlStyles.GetStyle("footnote reference", StyleValues.Character) }
+							},
 							new FootnoteReferenceMark()),
 						new Run(
 				// Word insert automatically a space before the definition to separate the reference number
@@ -289,7 +293,8 @@ namespace NotesFor.HtmlToOpenXml
 			{
 				// Force the superscript style because if the footnote text style does not exists,
 				// the rendering will be awful.
-				markerRun.InsertInProperties(new VerticalTextAlignment() { Val = VerticalPositionValues.Superscript });
+				markerRun.InsertInProperties(prop =>
+					prop.VerticalTextAlignment = new VerticalTextAlignment() { Val = VerticalPositionValues.Superscript });
 			}
 			fpart.Footnotes.Save();
 
@@ -317,16 +322,18 @@ namespace NotesFor.HtmlToOpenXml
 				new Endnotes(
 					new Endnote(
 						new Paragraph(
-							new ParagraphProperties(
-								new SpacingBetweenLines() { After = "0", Line = "240", LineRule = LineSpacingRuleValues.Auto }),
+							new ParagraphProperties {
+								SpacingBetweenLines = new SpacingBetweenLines() { After = "0", Line = "240", LineRule = LineSpacingRuleValues.Auto }
+							},
 							new Run(
 								new SeparatorMark())
 						)
 					) { Type = FootnoteEndnoteValues.ContinuationSeparator, Id = -1 },
 					new Endnote(
 						new Paragraph(
-							new ParagraphProperties(
-								new SpacingBetweenLines() { After = "0", Line = "240", LineRule = LineSpacingRuleValues.Auto }),
+							new ParagraphProperties {
+								SpacingBetweenLines = new SpacingBetweenLines() { After = "0", Line = "240", LineRule = LineSpacingRuleValues.Auto }
+							},
 							new Run(
 								new ContinuationSeparatorMark())
 						)
@@ -349,11 +356,13 @@ namespace NotesFor.HtmlToOpenXml
 			fpart.Endnotes.Append(
 				new Endnote(
 					new Paragraph(
-						new ParagraphProperties(
-							new ParagraphStyleId() { Val = htmlStyles.GetStyle("endnote text", StyleValues.Paragraph) }),
+						new ParagraphProperties {
+							ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle("endnote text", StyleValues.Paragraph) }
+						},
 						markerRun = new Run(
-							new RunProperties(
-								new RunStyle() { Val = htmlStyles.GetStyle("endnote reference", StyleValues.Character) }),
+							new RunProperties {
+								RunStyle = new RunStyle() { Val = htmlStyles.GetStyle("endnote reference", StyleValues.Character) }
+							},
 							new FootnoteReferenceMark()),
 						new Run(
 				// Word insert automatically a space before the definition to separate the reference number
@@ -366,7 +375,8 @@ namespace NotesFor.HtmlToOpenXml
 			{
 				// Force the superscript style because if the footnote text style does not exists,
 				// the rendering will be awful.
-				markerRun.InsertInProperties(new VerticalTextAlignment() { Val = VerticalPositionValues.Superscript });
+				markerRun.InsertInProperties(prop => 
+					prop.VerticalTextAlignment = new VerticalTextAlignment() { Val = VerticalPositionValues.Superscript });
 			}
 
 			fpart.Endnotes.Save();
@@ -477,15 +487,17 @@ namespace NotesFor.HtmlToOpenXml
 					new wp.Extent() { Cx = widthInEmus, Cy = heightInEmus },
 					new wp.EffectExtent() { LeftEdge = 19050L, TopEdge = 0L, RightEdge = 0L, BottomEdge = 0L },
 					new wp.DocProperties() { Id = drawingObjId, Name = imageSource, Description = String.Empty },
-					new wp.NonVisualGraphicFrameDrawingProperties(
-						new a.GraphicFrameLocks() { NoChangeAspect = true }),
+					new wp.NonVisualGraphicFrameDrawingProperties {
+						GraphicFrameLocks = new a.GraphicFrameLocks() { NoChangeAspect = true }
+					},
 					new a.Graphic(
 						new a.GraphicData(
 							new pic.Picture(
-								new pic.NonVisualPictureProperties(
-									new pic.NonVisualDrawingProperties() { Id = imageObjId, Name = imageSource, Description = alt },
-									new pic.NonVisualPictureDrawingProperties(
-										new a.PictureLocks() { NoChangeAspect = true, NoChangeArrowheads = true })),
+								new pic.NonVisualPictureProperties {
+									NonVisualDrawingProperties = new pic.NonVisualDrawingProperties() { Id = imageObjId, Name = imageSource, Description = alt },
+									NonVisualPictureDrawingProperties = new pic.NonVisualPictureDrawingProperties(
+										new a.PictureLocks() { NoChangeAspect = true, NoChangeArrowheads = true })
+								},
 								new pic.BlipFill(
 									new a.Blip() { Embed = imagePartId },
 									new a.SourceRectangle(),
@@ -654,6 +666,9 @@ namespace NotesFor.HtmlToOpenXml
 		/// </summary>
 		private void EnsureCaptionStyle()
 		{
+			if (htmlStyles.DoesStyleExists("caption"))
+				return;
+
 			String normalStyleName = htmlStyles.GetStyle("Normal", StyleValues.Paragraph);
 			Style style = new Style(
 				new StyleName { Val = "caption" },
@@ -661,16 +676,16 @@ namespace NotesFor.HtmlToOpenXml
 				new NextParagraphStyle { Val = normalStyleName },
 				new UnhideWhenUsed(),
 				new PrimaryStyle(),
-				new StyleParagraphProperties(
-					new SpacingBetweenLines { Line = "240", LineRule = LineSpacingRuleValues.Auto }
-				),
-				new StyleRunProperties(
-					new Bold(),
-					new BoldComplexScript(),
-					new DocumentFormat.OpenXml.Wordprocessing.Color() { Val = "4F81BD", ThemeColor = ThemeColorValues.Accent1 },
-					new FontSize { Val = "18" },
-					new FontSizeComplexScript { Val = "18" }
-				)
+				new StyleParagraphProperties {
+					SpacingBetweenLines = new SpacingBetweenLines { Line = "240", LineRule = LineSpacingRuleValues.Auto }
+				},
+				new StyleRunProperties() {
+					Bold = new Bold(),
+					BoldComplexScript = new BoldComplexScript(),
+					Color = new DocumentFormat.OpenXml.Wordprocessing.Color() { Val = "4F81BD", ThemeColor = ThemeColorValues.Accent1 },
+					FontSize = new FontSize { Val = "18" },
+					FontSizeComplexScript = new FontSizeComplexScript { Val = "18" }
+				}
 			) { Type = StyleValues.Paragraph, StyleId = "Caption" };
 
 			htmlStyles.AddStyle("caption", style);
@@ -728,9 +743,10 @@ namespace NotesFor.HtmlToOpenXml
 				pageSize.Height = swap;
 			}
 
-			return new SectionProperties(
+			return new SectionProperties (
 				pageSize,
-				new PageMargin() { Top = 1417, Right = (UInt32Value) 1417U, Bottom = 1417, Left = (UInt32Value) 1417U,
+				new PageMargin() {
+					Top = 1417, Right = (UInt32Value) 1417U, Bottom = 1417, Left = (UInt32Value) 1417U,
 					Header = (UInt32Value) 708U, Footer = (UInt32Value) 708U, Gutter = (UInt32Value) 0U
 				},
 				new Columns() { Space = "708" },

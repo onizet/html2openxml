@@ -1,8 +1,6 @@
 ﻿using System;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
-using DocumentFormat.OpenXml.Packaging;
-using System.Collections.Generic;
 
 namespace NotesFor.HtmlToOpenXml
 {
@@ -36,20 +34,28 @@ namespace NotesFor.HtmlToOpenXml
             return value != null && value.Value.Equals(comparand);
         }
 
-        public static void InsertInProperties(this Paragraph p, params OpenXmlElement[] newChildren)
-        {
-            ParagraphProperties prop = p.GetFirstChild<ParagraphProperties>();
-            if (prop == null) p.PrependChild<ParagraphProperties>(prop = new ParagraphProperties());
+		public static void InsertInProperties(this Paragraph p, Action<ParagraphProperties> @delegate)
+		{
+			ParagraphProperties prop = p.GetFirstChild<ParagraphProperties>();
+			if (prop == null) p.PrependChild<ParagraphProperties>(prop = new ParagraphProperties());
 
-            prop.Append(newChildren);
-        }
+			@delegate(prop);
+		}
 
-		public static void InsertInProperties(this Run r, params OpenXmlElement[] newChildren)
+		public static void InsertInProperties(this Run r, Action<RunProperties> @delegate)
 		{
 			RunProperties prop = r.GetFirstChild<RunProperties>();
 			if (prop == null) r.PrependChild<RunProperties>(prop = new RunProperties());
 
-			prop.Append(newChildren);
+			@delegate(prop);
+		}
+
+		public static void InsertInProperties(this Table t, Action<TableProperties> @delegate)
+		{
+			TableProperties prop = t.GetFirstChild<TableProperties>();
+			if (prop == null) t.PrependChild<TableProperties>(prop = new TableProperties());
+
+			@delegate(prop);
 		}
 
 		public static void InsertInDocProperties(this Drawing d, params OpenXmlElement[] newChildren)

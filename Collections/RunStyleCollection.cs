@@ -9,9 +9,10 @@ namespace NotesFor.HtmlToOpenXml
 	using TagsAtSameLevel = System.ArraySegment<DocumentFormat.OpenXml.OpenXmlElement>;
 
 
-	sealed class RunStyleCollection : OpenXmlStyleCollection
+	sealed class RunStyleCollection : OpenXmlStyleCollectionBase
 	{
 		private HtmlDocumentStyle documentStyle;
+		private static GetSequenceNumberHandler getTagOrderHandler;
 
 
 		internal RunStyleCollection(HtmlDocumentStyle documentStyle)
@@ -34,21 +35,17 @@ namespace NotesFor.HtmlToOpenXml
 			{
 				TagsAtSameLevel tagsOfSameLevel = en.Current.Value.Peek();
 				foreach (OpenXmlElement tag in tagsOfSameLevel.Array)
-					properties.Append(tag.CloneNode(true));
+					SetProperties(properties, tag.CloneNode(true));
 			}
 
 			if (this.DefaultRunStyle != null)
-				properties.Append(new RunStyle() { Val = this.DefaultRunStyle });
+				properties.RunStyle = new RunStyle() { Val = this.DefaultRunStyle };
 		}
 
-		/// <summary>
-		/// Gets the default StyleId to apply on the any new runs.
-		/// </summary>
-		internal String DefaultRunStyle { get; set; }
+		#region ProcessCommonAttributes
 
 		/// <summary>
-		/// Move inside the current tag related to table (td, thead, tr, ...) and converts some common
-		/// attributes to their OpenXml equivalence.
+		/// Converts some common styling attributes to their OpenXml equivalence.
 		/// </summary>
 		/// <param name="styleAttributes">The collection of attributes where to store new discovered attributes.</param>
 		public void ProcessCommonAttributes(HtmlEnumerator en, IList<OpenXmlElement> styleAttributes)
@@ -112,5 +109,38 @@ namespace NotesFor.HtmlToOpenXml
 					styleAttributes.Add(new FontSize() { Val = (font.Size.ValueInPoint * 2).ToString(CultureInfo.InvariantCulture) });
 			}
 		}
+
+		#endregion
+
+		#region GetTagOrder
+		
+		protected override int GetTagOrder(OpenXmlElement element)
+		{
+			// I don't want to hard-code the sequence number of the child elements of a RunProperties.
+			// I prefer relying on the OpenXml API and use a bit Reflection.
+			if (getTagOrderHandler == null)
+			{
+				var mi = typeof(OpenXmlCompositeElement)
+					.GetMethod("GetSequenceNumber", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+
+				// We use a dummy new RunProperties instance
+				getTagOrderHandler = (GetSequenceNumberHandler)
+					Delegate.CreateDelegate(typeof(GetSequenceNumberHandler), new RunProperties(), mi, true);
+			}
+
+			// Create a delegate to speed up the invocation to the GetSequenceNumber method
+			return (int) getTagOrderHandler.DynamicInvoke(element);
+		}
+
+		#endregion
+
+		//____________________________________________________________________
+		//
+		// Properties
+
+		/// <summary>
+		/// Gets the default StyleId to apply on the any new runs.
+		/// </summary>
+		internal String DefaultRunStyle { get; set; }
 	}
 }
