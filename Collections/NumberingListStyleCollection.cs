@@ -59,80 +59,96 @@ namespace NotesFor.HtmlToOpenXml
 				//8 kinds of abstractnum + 1 multi-level.
 				new AbstractNum(
 					new MultiLevelType() { Val = MultiLevelValues.SingleLevel },
-					new Level(
-						new StartNumberingValue() { Val = 1 },
-						new NumberingFormat() { Val = NumberFormatValues.Decimal },
-						new LevelText() { Val = "%1." },
-						new PreviousParagraphProperties(
-							new Indentation() { Left = "420", Hanging = "360" })
-					) { LevelIndex = 0 }
+					new Level {
+						StartNumberingValue = new StartNumberingValue() { Val = 1 },
+						NumberingFormat = new NumberingFormat() { Val = NumberFormatValues.Decimal },
+						LevelIndex = 0,
+						LevelText = new LevelText() { Val = "%1." },
+						PreviousParagraphProperties = new PreviousParagraphProperties {
+							Indentation = new Indentation() { Left = "420", Hanging = "360" }
+						}
+					}
 				) { AbstractNumberId = absNumIdRef },
 				new AbstractNum(
 					new MultiLevelType() { Val = MultiLevelValues.SingleLevel },
-					new Level(
-						new NumberingFormat() { Val = NumberFormatValues.Bullet },
-						new LevelText() { Val = "•" },
-						new PreviousParagraphProperties(
-							new Indentation() { Left = "420", Hanging = "360" })
-					) { LevelIndex = 0 }
+					new Level {
+						NumberingFormat = new NumberingFormat() { Val = NumberFormatValues.Bullet },
+						LevelIndex = 0,
+						LevelText = new LevelText() { Val = "•" },
+						PreviousParagraphProperties = new PreviousParagraphProperties {
+							Indentation = new Indentation() { Left = "420", Hanging = "360" }
+						}
+					}
 				) { AbstractNumberId = absNumIdRef + 1 },
 				new AbstractNum(
 					new MultiLevelType() { Val = MultiLevelValues.SingleLevel },
-					new Level(
-						new NumberingFormat() { Val = NumberFormatValues.Bullet },
-						new LevelText() { Val = "▪" },
-						new PreviousParagraphProperties(
-							new Indentation() { Left = "420", Hanging = "360" })
-					) { LevelIndex = 0 }
+					new Level {
+						NumberingFormat = new NumberingFormat() { Val = NumberFormatValues.Bullet },
+						LevelIndex = 0,
+						LevelText = new LevelText() { Val = "▪" },
+						PreviousParagraphProperties = new PreviousParagraphProperties {
+							Indentation = new Indentation() { Left = "420", Hanging = "360" }
+						}
+					}
 				) { AbstractNumberId = absNumIdRef + 2 },
 				new AbstractNum(
 					new MultiLevelType() { Val = MultiLevelValues.SingleLevel },
-					new Level(
-						new NumberingFormat() { Val = NumberFormatValues.Bullet },
-						new LevelText() { Val = "o" },
-						new PreviousParagraphProperties(
-							new Indentation() { Left = "420", Hanging = "360" })
-					) { LevelIndex = 0 }
+					new Level {
+						NumberingFormat = new NumberingFormat() { Val = NumberFormatValues.Bullet },
+						LevelIndex = 0,
+						LevelText = new LevelText() { Val = "o" },
+						PreviousParagraphProperties = new PreviousParagraphProperties {
+							Indentation = new Indentation() { Left = "420", Hanging = "360" }
+						}
+					}
 				) { AbstractNumberId = absNumIdRef + 3 },
 				new AbstractNum(
 					new MultiLevelType() { Val = MultiLevelValues.SingleLevel },
-					new Level(
-						new StartNumberingValue() { Val = 1 },
-						new NumberingFormat() { Val = NumberFormatValues.UpperLetter },
-						new LevelText() { Val = "%1." },
-						new PreviousParagraphProperties(
-							new Indentation() { Left = "420", Hanging = "360" })
-					) { LevelIndex = 0 }
+					new Level {
+						StartNumberingValue = new StartNumberingValue() { Val = 1 },
+						NumberingFormat = new NumberingFormat() { Val = NumberFormatValues.UpperLetter },
+						LevelIndex = 0,
+						LevelText = new LevelText() { Val = "%1." },
+						PreviousParagraphProperties = new PreviousParagraphProperties {
+							Indentation = new Indentation() { Left = "420", Hanging = "360" }
+						}
+					}
 				) { AbstractNumberId = absNumIdRef + 4 },
 				new AbstractNum(
 					new MultiLevelType() { Val = MultiLevelValues.SingleLevel },
-					new Level(
-						new StartNumberingValue() { Val = 1 },
-						new NumberingFormat() { Val = NumberFormatValues.LowerLetter },
-						new LevelText() { Val = "%1." },
-						new PreviousParagraphProperties(
-							new Indentation() { Left = "420", Hanging = "360" })
-					) { LevelIndex = 0 }
+					new Level {
+						StartNumberingValue = new StartNumberingValue() { Val = 1 },
+						NumberingFormat = new NumberingFormat() { Val = NumberFormatValues.LowerLetter },
+						LevelIndex = 0,
+						LevelText = new LevelText() { Val = "%1." },
+						PreviousParagraphProperties = new PreviousParagraphProperties {
+							Indentation = new Indentation() { Left = "420", Hanging = "360" }
+						}
+					}
 				) { AbstractNumberId = absNumIdRef + 5 },
 				new AbstractNum(
 					new MultiLevelType() { Val = MultiLevelValues.SingleLevel },
-					new Level(
-						new StartNumberingValue() { Val = 1 },
-						new NumberingFormat() { Val = NumberFormatValues.UpperRoman },
-						new LevelText() { Val = "%1." },
-						new PreviousParagraphProperties(
-							new Indentation() { Left = "420", Hanging = "360" })
-					) { LevelIndex = 0 }
+					new Level {
+						StartNumberingValue = new StartNumberingValue() { Val = 1 },
+						NumberingFormat = new NumberingFormat() { Val = NumberFormatValues.UpperRoman },
+						LevelIndex = 0,
+						LevelText = new LevelText() { Val = "%1." },
+						PreviousParagraphProperties = new PreviousParagraphProperties {
+							Indentation = new Indentation() { Left = "420", Hanging = "360" }
+						}
+					}
 				) { AbstractNumberId = absNumIdRef + 6 },
 				new AbstractNum(
 					new MultiLevelType() { Val = MultiLevelValues.SingleLevel },
-					new Level(
-						new StartNumberingValue() { Val = 1 },
-						new NumberingFormat() { Val = NumberFormatValues.LowerRoman },
-						new LevelText() { Val = "%1." },
-						new PreviousParagraphProperties(
-							new Indentation() { Left = "420", Hanging = "360" })
-					) { LevelIndex = 0 }
+					new Level {
+						StartNumberingValue = new StartNumberingValue() { Val = 1 },
+						NumberingFormat = new NumberingFormat() { Val = NumberFormatValues.LowerRoman },
+						LevelIndex = 0,
+						LevelText = new LevelText() { Val = "%1." },
+						PreviousParagraphProperties = new PreviousParagraphProperties {
+							Indentation = new Indentation() { Left = "420", Hanging = "360" }
+						}
+					}
 				) { AbstractNumberId = absNumIdRef + 7 }
 			};
 
@@ -259,11 +275,12 @@ namespace NotesFor.HtmlToOpenXml
 						numbering.Append(
 							new AbstractNum(
 									new MultiLevelType() { Val = MultiLevelValues.SingleLevel },
-									new Level(
-										new StartNumberingValue() { Val = 1 },
-										new NumberingFormat() { Val = lvl.NumberingFormat.Val },
-										new LevelText() { Val = lvl.LevelText.Val }
-									) { LevelIndex = 0 }
+									new Level {
+										StartNumberingValue = new StartNumberingValue() { Val = 1 },
+										NumberingFormat = new NumberingFormat() { Val = lvl.NumberingFormat.Val },
+										LevelIndex = 0,
+										LevelText = new LevelText() { Val = lvl.LevelText.Val }
+									}
 								) { AbstractNumberId = currentNumId });
 						numbering.Save(mainPart.NumberingDefinitionsPart);
 						numbering.Append(
@@ -308,13 +325,15 @@ namespace NotesFor.HtmlToOpenXml
 				// skip the first level, starts to 2
 				for (int i = 2; i < 10; i++)
 				{
-					absNumMultilevel.Append(new Level(
-						new StartNumberingValue() { Val = 1 },
-						new NumberingFormat() { Val = level1.NumberingFormat.Val },
-						new LevelText() { Val = "%" + i + "." },
-						new PreviousParagraphProperties(
-							new Indentation() { Left = (720 * i).ToString(CultureInfo.InvariantCulture), Hanging = "360" })
-					) { LevelIndex = i - 1 });
+					absNumMultilevel.Append(new Level {
+						StartNumberingValue = new StartNumberingValue() { Val = 1 },
+						NumberingFormat = new NumberingFormat() { Val = level1.NumberingFormat.Val },
+						LevelIndex = i - 1,
+						LevelText = new LevelText() { Val = "%" + i + "." },
+						PreviousParagraphProperties = new PreviousParagraphProperties {
+							Indentation = new Indentation() { Left = (720 * i).ToString(CultureInfo.InvariantCulture), Hanging = "360" }
+						}
+					});
 				}
 			}
 		}

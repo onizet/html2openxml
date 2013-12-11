@@ -11,14 +11,22 @@ namespace NotesFor.HtmlToOpenXml
 	/// <summary>
 	/// Defines the styles to apply on OpenXml elements.
 	/// </summary>
-	abstract class OpenXmlStyleCollection
+	abstract class OpenXmlStyleCollectionBase
 	{
+		/// <summary>
+		/// Handler to retrieves the insert order of a child inside its parent element.
+		/// </summary>
+		/// <param name="child">The child to look up.</param>
+		/// <returns>The sequence order where to insert the child.</returns>
+		protected delegate int GetSequenceNumberHandler(OpenXmlElement child);
+
+
 		/// <summary>Holds the tags to apply to the current OpenXml element.</summary>
 		/// <remarks>The key contains the name of the tag, the values contains a list of queued attributes of the same tag.</remarks>
 		protected Dictionary<String, Stack<TagsAtSameLevel>> tags;
 
 
-		protected OpenXmlStyleCollection()
+		protected OpenXmlStyleCollectionBase()
 		{
 			tags = new Dictionary<String, Stack<ArraySegment<OpenXmlElement>>>();
 		}
@@ -174,5 +182,65 @@ namespace NotesFor.HtmlToOpenXml
 		}
 
 		#endregion
+
+
+		// SetProperties (to enforce XSD Schema compliance)
+
+		#region SetProperties
+
+		/// <summary>
+		/// Insert a style element inside a RunProperties, taking care of the correct sequence order as defined in the ECMA Standard.
+		/// </summary>
+		/// <param name="containerProperties">A RunProperties or ParagraphProperties wherein the tag will be inserted.</param>
+		/// <param name="tag">The style to apply to the run.</param>
+		protected void SetProperties(OpenXmlCompositeElement containerProperties, OpenXmlElement tag)
+		{
+			// This implementation is largely inspired by DocumentFormat.OpenXml.OpenXmlCompositeElement.SetElement which is internal.
+
+			int tagOrder = GetTagOrder(tag);
+
+			OpenXmlElement firstChild = containerProperties.FirstChild;
+			OpenXmlElement openXmlElement = null;
+			Type type = tag.GetType();
+
+			while (firstChild != null)
+			{
+				bool isKnownElement = (!(firstChild is OpenXmlUnknownElement) && !(firstChild is OpenXmlMiscNode));
+				if (isKnownElement)
+				{
+					int num = GetTagOrder(firstChild);
+
+					if (num != tagOrder)
+					{
+						if (num > tagOrder) break;
+						openXmlElement = firstChild;
+					}
+					else if (!type.IsInstanceOfType(tag))
+					{
+						openXmlElement = firstChild;
+					}
+					else
+					{
+						openXmlElement = firstChild.PreviousSibling();
+						containerProperties.RemoveChild<OpenXmlElement>(firstChild);
+						break;
+					}
+				}
+
+				firstChild = firstChild.NextSibling();
+			}
+
+			if (tag != null)
+				containerProperties.InsertAfter(tag, openXmlElement);
+		}
+
+		#endregion
+
+		/// <summary>
+		/// Resolve the element order of the children of RunProperties or ParagraphProperties.
+		/// </summary>
+		/// <param name="element">The child item to look up.</param>
+		/// <returns>Returns the order of the child.</returns>
+		protected abstract int GetTagOrder(OpenXmlElement element);
 	}
 }
