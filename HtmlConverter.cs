@@ -679,13 +679,7 @@ namespace NotesFor.HtmlToOpenXml
 				new StyleParagraphProperties {
 					SpacingBetweenLines = new SpacingBetweenLines { Line = "240", LineRule = LineSpacingRuleValues.Auto }
 				},
-				new StyleRunProperties() {
-					Bold = new Bold(),
-					BoldComplexScript = new BoldComplexScript(),
-					Color = new DocumentFormat.OpenXml.Wordprocessing.Color() { Val = "4F81BD", ThemeColor = ThemeColorValues.Accent1 },
-					FontSize = new FontSize { Val = "18" },
-					FontSizeComplexScript = new FontSizeComplexScript { Val = "18" }
-				}
+				new StyleRunProperties(PredefinedStyles.Caption)
 			) { Type = StyleValues.Paragraph, StyleId = "Caption" };
 
 			htmlStyles.AddStyle("caption", style);
