@@ -215,7 +215,7 @@ namespace NotesFor.HtmlToOpenXml
 			levelDepth++;
 
 			// save a NumberingInstance if the nested list style is the same as its ancestor.
-			// this allows us to nest <ol> and restart the identation to 1.
+			// this allows us to nest <ol> and restart the indentation to 1.
 			int currentInstanceId = this.InstanceID;
 			if (levelDepth > 1 && absNumId == prevAbsNumId && orderedList)
 			{
@@ -230,7 +230,7 @@ namespace NotesFor.HtmlToOpenXml
 						new AbstractNumId() { Val = absNumId },
 						new LevelOverride(
 							new StartOverrideNumberingValue() { Val = 1 }
-						)
+						) { LevelIndex = 0, }
 					) { NumberID = currentInstanceId });
 			}
 

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
-using System.Linq;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -248,11 +247,33 @@ namespace NotesFor.HtmlToOpenXml
 		private void ProcessHeading(HtmlEnumerator en)
 		{
 			char level = en.Current[2];
+			string clsName = "Heading " + level;
+
+			// ensure style exists or the heading will be displayed as a normal text
+			if (!htmlStyles.DoesStyleExists(clsName))
+			{
+				String normalStyleName = htmlStyles.GetStyle("Normal", StyleValues.Paragraph);
+				htmlStyles.AddStyle(clsName, new Style(
+					new StyleName() { Val = clsName },
+					new BasedOn() { Val = normalStyleName },
+					new NextParagraphStyle() { Val = normalStyleName },
+					new UnhideWhenUsed(),
+					new PrimaryStyle(),
+					new StyleParagraphProperties() {
+						KeepNext = new KeepNext(),
+						KeepLines = new KeepLines(),
+						SpacingBetweenLines = new SpacingBetweenLines(){ Before = "200", After = "0" },
+						OutlineLevel = new OutlineLevel() { Val = Convert.ToInt32(new String(level, 1)) - 1 /* outline starts at 0 */ }
+					},
+					new StyleRunProperties(PredefinedStyles.ResourceManager.GetString(clsName))
+				) { Type = StyleValues.Paragraph, StyleId = clsName });
+			}
+
 
 			AlternateProcessHtmlChunks(en, "</h" + level + ">");
 			Paragraph p = new Paragraph(elements);
-			p.InsertInProperties(prop => 
-				prop.ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle("heading " + level, StyleValues.Paragraph) });
+			p.InsertInProperties(prop =>
+				prop.ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle(clsName, StyleValues.Paragraph) });
 
 			this.elements.Clear();
 			AddParagraph(p);
@@ -429,7 +450,7 @@ namespace NotesFor.HtmlToOpenXml
 			currentParagraph.InsertInProperties(prop => {
 				prop.ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle("ListParagraph", StyleValues.Paragraph) };
 				prop.SpacingBetweenLines = new SpacingBetweenLines() { After = "0" };
-				prop.Indentation = new Indentation() { Hanging = "357", Left = ((level - 1) * 357).ToString(CultureInfo.InvariantCulture) };
+				prop.Indentation = new Indentation() { Hanging = "357", Left = (level * 357).ToString(CultureInfo.InvariantCulture) };
 				prop.NumberingProperties = new NumberingProperties {
 					NumberingLevelReference = new NumberingLevelReference() { Val = level - 1 },
 					NumberingId = new NumberingId() { Val = numberingId }
@@ -521,10 +542,7 @@ namespace NotesFor.HtmlToOpenXml
 						htmlStyles.AddStyle("Hyperlink", new Style(
 							new StyleName() { Val = "Hyperlink" },
 							new UnhideWhenUsed(),
-							new StyleRunProperties() {
-								Color = new DocumentFormat.OpenXml.Wordprocessing.Color() { Val = "0000FF", ThemeColor = ThemeColorValues.Hyperlink },
-								Underline = new Underline() { Val = UnderlineValues.Single },
-							}
+							new StyleRunProperties(PredefinedStyles.HyperLink)
 						) { Type = StyleValues.Character, StyleId = "Hyperlink" });
 					}
 
