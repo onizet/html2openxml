@@ -92,6 +92,7 @@ namespace NotesFor.HtmlToOpenXml
 
 					imageInfo.RawData = dataUri.Data;
 				}
+				return;
 			}
 
 			System.Net.WebClient webClient = new System.Net.WebClient();
@@ -153,6 +154,7 @@ namespace NotesFor.HtmlToOpenXml
 		private static Dictionary<String, ImagePartType> knownContentType = new Dictionary<String, ImagePartType>(StringComparer.OrdinalIgnoreCase) {
 			{ "image/gif", ImagePartType.Gif },
             { "image/pjpeg", ImagePartType.Jpeg },
+			{ "image/jpg", ImagePartType.Jpeg },
 			{ "image/jpeg", ImagePartType.Jpeg },
             { "image/x-png", ImagePartType.Png },
 			{ "image/png", ImagePartType.Png },
