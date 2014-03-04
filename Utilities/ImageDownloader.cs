@@ -65,7 +65,8 @@ namespace NotesFor.HtmlToOpenXml
 				try
 				{
 					// just read the picture from the file system
-					imageInfo.RawData = File.ReadAllBytes(imageUrl.LocalPath);
+					// replace string %20 in LocalPath by daviderapicavoli (patch #15938)
+					imageInfo.RawData = File.ReadAllBytes(Uri.UnescapeDataString(imageUrl.LocalPath));
 				}
 				catch (IOException)
 				{
