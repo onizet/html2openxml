@@ -1,4 +1,4 @@
-﻿/* Copyright (C) Olivier Nizet http://html2openxml.codeplex.com - All Rights Reserved
+/* Copyright (C) Olivier Nizet http://html2openxml.codeplex.com - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -55,7 +55,6 @@ namespace NotesFor.HtmlToOpenXml
 		/// <summary>
 		/// Factor method to create a new Paragraph with its default style already defined.
 		/// </summary>
-		/// <returns></returns>
 		public Paragraph NewParagraph()
 		{
 			Paragraph p = new Paragraph();
@@ -93,11 +92,12 @@ namespace NotesFor.HtmlToOpenXml
 					{
 						lang.Bidi = ci.Name;
 						styleAttributes.Add(new Languages() { Bidi = ci.Name });
+
+						// notify table
+						documentStyle.Tables.BeginTag(en.CurrentTag, new TableJustification() { Val = TableRowAlignmentValues.Right });
 					}
 
-					containerStyleAttributes.Add(
-						new ParagraphMarkRunProperties(lang));
-
+					containerStyleAttributes.Add(new ParagraphMarkRunProperties(lang));
 					containerStyleAttributes.Add(new BiDi() { Val = OnOffValue.FromBoolean(rtl) });
 				}
 				catch (ArgumentException)
@@ -119,10 +119,17 @@ namespace NotesFor.HtmlToOpenXml
 
 			// according to w3c, dir should be used in conjonction with lang. But whatever happens, we'll apply the RTL layout
 			attrValue = en.Attributes["dir"];
-			if (attrValue != null && attrValue.Equals("rtl", StringComparison.InvariantCultureIgnoreCase))
+			if (attrValue != null)
 			{
-				styleAttributes.Add(new RightToLeftText());
-				containerStyleAttributes.Add(new Justification() { Val = JustificationValues.Right });
+				if (attrValue.Equals("rtl", StringComparison.InvariantCultureIgnoreCase))
+				{
+					styleAttributes.Add(new RightToLeftText());
+					containerStyleAttributes.Add(new Justification() { Val = JustificationValues.Right });
+				}
+				else if (attrValue.Equals("ltr", StringComparison.InvariantCultureIgnoreCase))
+				{
+					containerStyleAttributes.Add(new Justification() { Val = JustificationValues.Left });
+				}
 			}
 
 			// <span> and <font> are considered as semi-container attribute. When converted to OpenXml, there are Runs but not Paragraphs

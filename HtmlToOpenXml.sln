@@ -3,7 +3,24 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HtmlToOpenXml", "HtmlToOpenXml.csproj", "{EF700F30-C9BB-49A6-912C-E3B77857B514}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HtmlToOpenXml.2.5", "HtmlToOpenXml.2.5.csproj", "{3D8B42D5-B1D4-46F4-B0B5-08093A11B661}"
+EndProject
 Global
+	GlobalSection(TeamFoundationVersionControl) = preSolution
+		SccNumberOfProjects = 2
+		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
+		SccTeamFoundationServer = https://tfs.codeplex.com/tfs/tfs08
+		SccProjectUniqueName0 = HtmlToOpenXml.csproj
+		SccProjectName0 = .
+		SccAuxPath0 = https://tfs.codeplex.com/tfs/tfs08
+		SccLocalPath0 = .
+		SccProvider0 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
+		SccProjectUniqueName1 = HtmlToOpenXml.2.5.csproj
+		SccProjectName1 = .
+		SccAuxPath1 = https://tfs.codeplex.com/tfs/tfs08
+		SccLocalPath1 = .
+		SccProvider1 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -13,6 +30,10 @@ Global
 		{EF700F30-C9BB-49A6-912C-E3B77857B514}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EF700F30-C9BB-49A6-912C-E3B77857B514}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EF700F30-C9BB-49A6-912C-E3B77857B514}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D8B42D5-B1D4-46F4-B0B5-08093A11B661}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D8B42D5-B1D4-46F4-B0B5-08093A11B661}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D8B42D5-B1D4-46F4-B0B5-08093A11B661}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D8B42D5-B1D4-46F4-B0B5-08093A11B661}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

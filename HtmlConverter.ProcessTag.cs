@@ -472,6 +472,7 @@ namespace NotesFor.HtmlToOpenXml
 			AddParagraph(currentParagraph);
 
 			// Continue to process the html until we found </li>
+			HtmlStyles.Paragraph.ApplyTags(currentParagraph);
 			AlternateProcessHtmlChunks(en, "</li>");
 			p.Append(elements);
 			this.elements.Clear();
