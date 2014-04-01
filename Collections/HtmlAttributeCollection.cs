@@ -238,8 +238,13 @@ namespace NotesFor.HtmlToOpenXml
 			attrValue = this[name + "-weight"];
 			if (attrValue != null)
 			{
-				var variant = ConverterUtility.ConvertToFontWeight(attrValue);
-				if (variant.HasValue) font.Weight = variant.Value;
+				var weight = ConverterUtility.ConvertToFontWeight(attrValue);
+				if (weight.HasValue) font.Weight = weight.Value;
+			}
+			attrValue = this[name + "-family"];
+			if (attrValue != null)
+			{
+				font.Family = ConverterUtility.ConvertToFontFamily(attrValue);
 			}
 			Unit unit = this.GetAsUnit(name + "-size");
 			if (unit.IsValid) font.Size = unit;

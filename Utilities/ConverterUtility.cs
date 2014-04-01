@@ -10,12 +10,8 @@
  * PARTICULAR PURPOSE.
  */
 using System;
-using DocumentFormat.OpenXml.Wordprocessing;
-using System.Collections.Generic;
-using DocumentFormat.OpenXml.Packaging;
-using System.IO;
-using System.Drawing;
 using System.Globalization;
+using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace NotesFor.HtmlToOpenXml
 {
@@ -147,6 +143,28 @@ namespace NotesFor.HtmlToOpenXml
 				case "normal": return FontWeight.Normal;
 				default: return null;
 			}
+		}
+
+		#endregion
+
+		#region ConvertToFontFamily
+
+		public static System.Drawing.FontFamily ConvertToFontFamily(string str)
+		{
+			String[] names = str.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+			for (int i = 0; i < names.Length; i++)
+			{
+				try
+				{
+					return new System.Drawing.FontFamily(names[i]);
+				}
+				catch (ArgumentException)
+				{
+					// the name is not a TrueType font or is not a font installed on this computer
+				}
+			}
+
+			return null;
 		}
 
 		#endregion

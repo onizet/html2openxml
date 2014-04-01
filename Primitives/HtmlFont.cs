@@ -63,7 +63,7 @@ namespace NotesFor.HtmlToOpenXml
 				// should be the size and the family (in that order). Others are set to their default values
 				font.size = ReadFontSize(fontParts[0]);
 				if (!font.size.IsValid) return HtmlFont.Empty;
-				font.family = ReadFontFamily(fontParts[1]);
+				font.family = ConverterUtility.ConvertToFontFamily(fontParts[1]);
 				return font;
 			}
 
@@ -84,27 +84,9 @@ namespace NotesFor.HtmlToOpenXml
 			font.size = ReadFontSize(fontParts[fontParts.Length - 2]);
 			if (!font.size.IsValid) return HtmlFont.Empty;
 
-			font.family = ReadFontFamily(fontParts[fontParts.Length - 1]);
+			font.family = ConverterUtility.ConvertToFontFamily(fontParts[fontParts.Length - 1]);
 
 			return font;
-		}
-
-		private static FontFamily ReadFontFamily(string str)
-		{
-			String[] names = str.Split(new [] { ',' }, StringSplitOptions.RemoveEmptyEntries); 
-			for (int i=0; i<names.Length; i++)
-			{
-				try
-				{
-					return new FontFamily(names[i]);
-				}
-				catch (ArgumentException)
-				{
-					// the name is not a TrueType font or is not a font installed on this computer
-				}
-			}
-
-			return null;
 		}
 
 		private static Unit ReadFontSize(string str)
