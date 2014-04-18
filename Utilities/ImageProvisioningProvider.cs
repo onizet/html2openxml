@@ -38,13 +38,13 @@ namespace NotesFor.HtmlToOpenXml
 			{ ".wmf", ImagePartType.Wmf }
 		};
 
-		private Uri imageUrl;
+		private WebProxy proxy;
 		private HtmlImageInfo imageInfo;
 
 
-		public ImageProvisioningProvider(Uri imageUrl, HtmlImageInfo image)
+		public ImageProvisioningProvider(WebProxy proxy, HtmlImageInfo image)
 		{
-			this.imageUrl = imageUrl;
+			this.proxy = proxy;
 			this.imageInfo = image;
 		}
 
@@ -55,24 +55,29 @@ namespace NotesFor.HtmlToOpenXml
 		#region DownloadData
 
 		/// <summary>
-		/// Download some data located at the specified url.
+		/// Download the remote or local image located at the specified url.
 		/// </summary>
-		public void DownloadData(WebProxy proxy)
+		public void DownloadData(Uri imageUrl)
 		{
 			// is it a local path?
 			if (imageUrl.IsFile)
 			{
+				// replace string %20 in LocalPath by daviderapicavoli (patch #15938)
+				String localPath = Uri.UnescapeDataString(imageUrl.LocalPath);
+
 				try
 				{
 					// just read the picture from the file system
-					// replace string %20 in LocalPath by daviderapicavoli (patch #15938)
-					imageInfo.RawData = File.ReadAllBytes(Uri.UnescapeDataString(imageUrl.LocalPath));
+					imageInfo.RawData = File.ReadAllBytes(localPath);
 				}
-				catch (IOException)
+				catch (IOException exc)
 				{
+					if (Logging.On) Logging.PrintError("ImageDownloader.DownloadData(\"" + localPath + "\")", exc);
 				}
 				catch (SystemException exc)
 				{
+					if (Logging.On) Logging.PrintError("ImageDownloader.DownloadData(\"" + localPath + "\")", exc);
+
 					if (exc is UnauthorizedAccessException || exc is System.Security.SecurityException || exc is NotSupportedException)
 						return;
 					throw;
@@ -85,14 +90,7 @@ namespace NotesFor.HtmlToOpenXml
 			if (imageUrl.Scheme == "data")
 			{
 				DataUri dataUri = DataUri.Parse(imageUrl.OriginalString);
-				if (dataUri != null)
-				{
-					ImagePartType type;
-					if (knownContentType.TryGetValue(dataUri.Mime, out type))
-						imageInfo.Type = type;
-
-					imageInfo.RawData = dataUri.Data;
-				}
+				DownloadData(dataUri);
 				return;
 			}
 
@@ -112,8 +110,28 @@ namespace NotesFor.HtmlToOpenXml
 				// For requested url with no filename, we need to read the media mime type if provided
 				imageInfo.Type = InspectMimeType(webClient);
 			}
-			catch (System.Net.WebException)
+			catch (System.Net.WebException exc)
 			{
+				if (Logging.On) Logging.PrintError("ImageDownloader.DownloadData(\"" + imageUrl.AbsoluteUri + "\")", exc);
+			}
+		}
+
+		#endregion
+
+		#region DownloadData
+
+		/// <summary>
+		/// Decrypt the given DataUri.
+		/// </summary>
+		public void DownloadData(DataUri dataUri)
+		{
+			if (dataUri != null)
+			{
+				ImagePartType type;
+				if (knownContentType.TryGetValue(dataUri.Mime, out type))
+					imageInfo.Type = type;
+
+				imageInfo.RawData = dataUri.Data;
 			}
 		}
 
@@ -124,7 +142,7 @@ namespace NotesFor.HtmlToOpenXml
 		/// <summary>
 		/// Discover the metadata of the image.
 		/// </summary>
-		public bool Provision()
+		public bool Provision(Uri imageUrl)
 		{
 			if (imageInfo.RawData == null) return false;
 

@@ -79,12 +79,13 @@
     <Compile Include="HtmlEnumerator.cs" />
     <Compile Include="Collections\OpenXmlStyleCollectionBase.cs" />
     <Compile Include="StyleEventArgs.cs" />
-    <Compile Include="Utilities\ImageDownloader.cs" />
     <Compile Include="Primitives\SideBorder.cs" />
     <Compile Include="Primitives\UnitMetric.cs" />
     <Compile Include="Primitives\HtmlBorder.cs" />
     <Compile Include="Primitives\Margin.cs" />
     <Compile Include="Utilities\HttpUtility.cs" />
+    <Compile Include="Utilities\ImageProvisioningProvider.cs" />
+    <Compile Include="Utilities\Logging.cs" />
     <Compile Include="Utilities\OpenXmlExtension.cs" />
     <Compile Include="Utilities\ConverterUtility.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -10,8 +10,8 @@
  * PARTICULAR PURPOSE.
  */
 using System;
-using System.Text.RegularExpressions;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace NotesFor.HtmlToOpenXml
 {
@@ -21,6 +21,9 @@ namespace NotesFor.HtmlToOpenXml
 	[System.Diagnostics.DebuggerDisplay("{Mime,nq}")]
 	sealed class DataUri
 	{
+		private readonly static Regex dataUriRegex = new Regex(
+				@"data\:(?<mime>\w+/\w+)?(?:;charset=(?<charset>[a-zA-Z_0-9-]+))?(?<base64>;base64)?,(?<data>.*)",
+				RegexOptions.IgnoreCase | RegexOptions.Singleline);
 		private String mime;
 		private byte[] data;
 
@@ -45,9 +48,7 @@ namespace NotesFor.HtmlToOpenXml
 
 			// We will stick for IE compliance for the moment...
 
-			Match match = Regex.Match(uri,
-				@"data\:(?<mime>\w+/\w+)?(?:;charset=(?<charset>[a-zA-Z_0-9-]+))?(?<base64>;base64)?,(?<data>.*)",
-				RegexOptions.IgnoreCase| RegexOptions.Singleline);
+			Match match = dataUriRegex.Match(uri);
 
 			if (!match.Success) return null;
 
@@ -70,6 +71,7 @@ namespace NotesFor.HtmlToOpenXml
 				catch (ArgumentException)
 				{
 					// charSet was not recognized
+					if (Logging.On) Logging.PrintError("DataUri.Parse", "CharSet not recognized: " + match.Groups["charset"].Value);
 					return null;
 				}
 			}
@@ -87,6 +89,7 @@ namespace NotesFor.HtmlToOpenXml
 				catch (FormatException)
 				{
 					// invalid base64
+					if (Logging.On) Logging.PrintError("DataUri.Parse", "Base64 data is not valid: " + base64);
 					return null;
 				}
 			}
@@ -101,11 +104,20 @@ namespace NotesFor.HtmlToOpenXml
 				}
 				catch (ArgumentException)
 				{
+					if (Logging.On) Logging.PrintError("DataUri.Parse", "UTF-8 Encoded data is not valid: " + raw);
 					return null;
 				}
 			}
 
 			return new DataUri(mime, rawData);
+		}
+
+		/// <summary>
+		/// Indicates whether the string is well-formed by attempting to construct a DataUri with the string.
+		/// </summary>
+		public static bool IsWellFormed(string uri)
+		{
+			return dataUriRegex.IsMatch(uri);
 		}
 
 		//____________________________________________________________________

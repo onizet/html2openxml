@@ -92,8 +92,7 @@ namespace NotesFor.HtmlToOpenXml
 
 		private void ProcessBlockQuote(HtmlEnumerator en)
 		{
-			CompleteCurrentParagraph();
-			AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
+			CompleteCurrentParagraph(true);
 
 			// for nested paragraphs:
 			htmlStyles.Paragraph.BeginTag(en.CurrentTag, new ParagraphStyleId() { Val = htmlStyles.GetStyle("IntenseQuote") });
@@ -101,6 +100,8 @@ namespace NotesFor.HtmlToOpenXml
 			// if the style was not yet defined, we force the indentation
 			if (!htmlStyles.DoesStyleExists("IntenseQuote"))
 				htmlStyles.Paragraph.BeginTag(en.CurrentTag, new Indentation() { Left = "708" });
+
+			// TODO: handle attribute cite and create footnote
 		}
 
 		#endregion
@@ -115,13 +116,12 @@ namespace NotesFor.HtmlToOpenXml
 			if (styleAttributes.Count > 0)
 				htmlStyles.Runs.BeginTag(en.CurrentTag, styleAttributes.ToArray());
 
+			// Unsupported W3C attribute but claimed by users. Specified at <body> level, the page
+			// orientation is applied on the whole document
 			string orientation = en.StyleAttributes["page-orientation"];
 			if (orientation != null)
 			{
-				PageOrientationValues or = PageOrientationValues.Portrait;
-				if (String.Equals(orientation, "landscape", StringComparison.OrdinalIgnoreCase))
-					or = PageOrientationValues.Landscape;
-
+				PageOrientationValues or = ConverterUtility.ConvertToPageOrientation(orientation);
 				mainPart.Document.Body.Append(HtmlConverter.ChangePageOrientation(or));
 			}
 		}
@@ -184,42 +184,47 @@ namespace NotesFor.HtmlToOpenXml
 			// the paragraph, we don't want to apply the style on the old paragraph but on a new one.
 			if (en.Attributes.Count == 0 || (en.StyleAttributes["text-align"] == null && en.Attributes["align"] == null && en.StyleAttributes.GetAsBorder("border").IsEmpty))
 			{
-				CompleteCurrentParagraph();
-				Paragraph previousParagraph = currentParagraph;
-				currentParagraph = htmlStyles.Paragraph.NewParagraph();
+				// TODO: page-break-after is broken
 
 				List<OpenXmlElement> runStyleAttributes = new List<OpenXmlElement>();
 				bool newParagraph = ProcessContainerAttributes(en, runStyleAttributes);
+				Paragraph previousParagraph = CompleteCurrentParagraph(newParagraph);
 
 				if (runStyleAttributes.Count > 0)
 					htmlStyles.Runs.BeginTag(en.CurrentTag, runStyleAttributes);
 
 				// Any changes that requires a new paragraph?
-				if (!newParagraph && previousParagraph.HasChild<Run>())
+				if (newParagraph)
 				{
-					ProcessBr(en);
-					currentParagraph = previousParagraph;
-				}
-				else
-				{
-					if (newParagraph)
-					{
-						// Insert before the break, complete this paragraph and start a new one
-						this.paragraphs.Insert(this.paragraphs.Count - 1, currentParagraph);
-						AlternateProcessHtmlChunks(en, en.ClosingCurrentTag);
-						CompleteCurrentParagraph();
-						AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
-					}
-					else
-					{
-						AddParagraph(currentParagraph);
-					}
+					// Insert before the break, complete this paragraph and start a new one
+					this.paragraphs.Insert(this.paragraphs.Count - 1, currentParagraph);
+					AlternateProcessHtmlChunks(en, en.ClosingCurrentTag);
+					CompleteCurrentParagraph();
 				}
 			}
 			else
 			{
+				// treat div as a paragraph
 				ProcessParagraph(en);
 			}
+
+			// TODO: page orientation
+			/*string orientation = en.StyleAttributes["page-orientation"];
+			if (orientation != null)
+			{
+				PageOrientationValues or = ConverterUtility.ConvertToPageOrientation(orientation);
+
+				// we first ensure the previous page has the reverse orientation
+				PageOrientationValues flip = (PageOrientationValues)(~or & PageOrientationValues.Landscape);
+				//currentParagraph.InsertInProperties(p => p.SectionProperties = HtmlConverter.ChangePageOrientation(flip));
+				CompleteCurrentParagraph(true);
+
+				// now on the new paragraph, we set the wished orientation and once the <div> is closed, we flag it as LastRenderPageBreak element
+				// in order to force a new page, reverted on the initial orientation.
+				currentParagraph.InsertInProperties(p => p.SectionProperties = HtmlConverter.ChangePageOrientation(PageOrientationValues.Landscape));
+				AlternateProcessHtmlChunks(en, "</div>");
+				elements.Add(new LastRenderedPageBreak());
+			}*/
 		}
 
 		#endregion
@@ -280,11 +285,17 @@ namespace NotesFor.HtmlToOpenXml
 				) { Type = StyleValues.Paragraph, StyleId = clsName });
 			}
 
+			// support also style attributes for heading (in case of theme override)
+			List<OpenXmlElement> styleAttributes = new List<OpenXmlElement>();
+			htmlStyles.Paragraph.ProcessCommonAttributes(en, styleAttributes);
 
 			AlternateProcessHtmlChunks(en, "</h" + level + ">");
 			Paragraph p = new Paragraph(elements);
 			p.InsertInProperties(prop =>
 				prop.ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle(clsName, StyleValues.Paragraph) });
+
+			htmlStyles.Paragraph.ApplyTags(p);
+			htmlStyles.Paragraph.EndTag("<h" + level + ">");
 
 			this.elements.Clear();
 			AddParagraph(p);
@@ -299,16 +310,17 @@ namespace NotesFor.HtmlToOpenXml
 		{
 			// Insert an horizontal line as it stands in many emails.
 
-			CompleteCurrentParagraph();
+			Paragraph previousParagraph = CompleteCurrentParagraph(true);
 
 			UInt32 hrSize = 4U;
 
 			// If the previous paragraph contains a bottom border, we should toggle the size of this <hr> to 0U or 4U
 			// or Word will display only the last border.
 			// (see Remarks: http://msdn.microsoft.com/en-us/library/documentformat.openxml.wordprocessing.bottomborder%28office.14%29.aspx)
-			if (paragraphs.Count > 1)
+			if (paragraphs.Count > 2)
 			{
-				ParagraphProperties prop = paragraphs[paragraphs.Count - 2].GetFirstChild<ParagraphProperties>();
+				// TODO: check this!
+				ParagraphProperties prop = paragraphs[paragraphs.Count - 3].GetFirstChild<ParagraphProperties>();
 				if (prop != null)
 				{
 					ParagraphBorders borders = prop.GetFirstChild<ParagraphBorders>();
@@ -320,12 +332,15 @@ namespace NotesFor.HtmlToOpenXml
 				}
 			}
 
+			// if the previous paragraph has no children, it will be deleted in RemoveEmptyParagraphs()
+			// in order to kept the <hr>, we force an empty run
+			if (!previousParagraph.HasChildren)
+				previousParagraph.Append(new Run());
 
-			currentParagraph.InsertInProperties(prop => 
+			previousParagraph.InsertInProperties(prop => 
 				prop.ParagraphBorders = new ParagraphBorders {
 					BottomBorder = new BottomBorder() { Val = BorderValues.Single, Size = hrSize }
 				});
-			AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
 		}
 
 		#endregion
@@ -347,10 +362,9 @@ namespace NotesFor.HtmlToOpenXml
 
 		private void ProcessFigureCaption(HtmlEnumerator en)
 		{
-			this.CompleteCurrentParagraph();
+			this.CompleteCurrentParagraph(true);
 			EnsureCaptionStyle();
 
-			AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
 			currentParagraph.Append(
 					new ParagraphProperties {
 						ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle("caption", StyleValues.Paragraph) },
@@ -373,8 +387,7 @@ namespace NotesFor.HtmlToOpenXml
 				t.Text = " " + t.InnerText; // append a space after the numero of the picture
 			}
 
-			this.CompleteCurrentParagraph();
-			AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
+			this.CompleteCurrentParagraph(true);
 		}
 
 		#endregion
@@ -388,14 +401,16 @@ namespace NotesFor.HtmlToOpenXml
 			Drawing drawing = null;
 			wBorder border = new wBorder() { Val = BorderValues.None };
 			string src = en.Attributes["src"];
-			Uri uri;
+			Uri uri = null;
 
-			if (src != null && Uri.TryCreate(src, UriKind.RelativeOrAbsolute, out uri))
+			// Bug reported by Erik2014. Inline 64 bit images can be too big and Uri.TryCreate will fail silently with a SizeLimit error.
+			// To circumvent this buffer size, we will work either on the Uri, either on the original src.
+			if (src != null && (DataUri.IsWellFormed(src) || Uri.TryCreate(src, UriKind.RelativeOrAbsolute, out uri)))
 			{
 				string alt = en.Attributes["title"] ?? en.Attributes["alt"];
 				bool process = true;
 
-				if (!uri.IsAbsoluteUri && this.BaseImageUrl != null)
+				if (uri != null && !uri.IsAbsoluteUri && this.BaseImageUrl != null)
 					uri = new Uri(this.BaseImageUrl, uri);
 
 				Size preferredSize = Size.Empty;
@@ -450,14 +465,14 @@ namespace NotesFor.HtmlToOpenXml
 
 		private void ProcessLi(HtmlEnumerator en)
 		{
-			CompleteCurrentParagraph();
+			CompleteCurrentParagraph(false);
+			currentParagraph = htmlStyles.Paragraph.NewParagraph();
 
 			int numberingId = htmlStyles.NumberingList.ProcessItem(en);
 			int level = htmlStyles.NumberingList.LevelIndex;
 
 			// Save the new paragraph reference to support nested numbering list.
-			Paragraph p = htmlStyles.Paragraph.NewParagraph();
-			currentParagraph = p;
+			Paragraph p = currentParagraph;
 			currentParagraph.InsertInProperties(prop => {
 				prop.ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle("ListParagraph", StyleValues.Paragraph) };
 				prop.SpacingBetweenLines = new SpacingBetweenLines() { After = "0" };
@@ -491,6 +506,10 @@ namespace NotesFor.HtmlToOpenXml
 
 			if (!String.IsNullOrEmpty(att))
 			{
+				// handle link where the http:// is missing and that starts directly with www
+				if(att.StartsWith("www.", StringComparison.InvariantCultureIgnoreCase))
+					att = Uri.UriSchemeHttp + Uri.SchemeDelimiter + att;
+
 				// is it an anchor?
 				if (att[0] == '#' && att.Length > 1)
 				{
@@ -520,35 +539,37 @@ namespace NotesFor.HtmlToOpenXml
 
 			AlternateProcessHtmlChunks(en, "</a>");
 
-			if (elements.Count > 0)
+			if (elements.Count == 0) return;
+
+			// Let's see whether the link tag include an image inside its body.
+			// If so, the Hyperlink OpenXmlElement is lost and we'll keep only the images
+			// and applied a HyperlinkOnClick attribute.
+			List<OpenXmlElement> imageInLink = elements.FindAll(e => { return e.HasChild<Drawing>(); });
+			if (imageInLink.Count != 0)
 			{
-				// Let's see whether the link tag include an image inside its body.
-				// If so, the Hyperlink OpenXmlElement is lost and we'll keep only the images
-				// and applied a HyperlinkOnClick attribute.
-				List<OpenXmlElement> imageInLink = elements.FindAll(e => { return e.HasChild<Drawing>(); });
-				if (imageInLink.Count != 0)
+				for (int i = 0; i < imageInLink.Count; i++)
 				{
-					for (int i = 0; i < imageInLink.Count; i++)
-					{
-						// Retrieves the "alt" attribute of the image and apply it as the link's tooltip
-						Drawing d = imageInLink[i].GetFirstChild<Drawing>();
-						var enDp = d.Descendants<pic.NonVisualDrawingProperties>().GetEnumerator();
-						String alt;
-						if (enDp.MoveNext()) alt = enDp.Current.Description;
-						else alt = null;
+					// Retrieves the "alt" attribute of the image and apply it as the link's tooltip
+					Drawing d = imageInLink[i].GetFirstChild<Drawing>();
+					var enDp = d.Descendants<pic.NonVisualDrawingProperties>().GetEnumerator();
+					String alt;
+					if (enDp.MoveNext()) alt = enDp.Current.Description;
+					else alt = null;
 
-						d.InsertInDocProperties(
-							 new a.HyperlinkOnClick() { Id = h.Id ?? h.Anchor, Tooltip = alt });
-					}
-
-					CompleteCurrentParagraph();
-					AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
+					d.InsertInDocProperties(
+							new a.HyperlinkOnClick() { Id = h.Id ?? h.Anchor, Tooltip = alt });
 				}
-				else
-				{
-					// Append the processed elements and put them to the Run of the Hyperlink
-					h.Append(elements);
+			}
 
+			// Append the processed elements and put them to the Run of the Hyperlink
+			h.Append(elements);
+
+			// can't use GetFirstChild<Run> or we may find the one containing the image
+			foreach (var el in h.ChildElements)
+			{
+				Run run = el as Run;
+				if (run != null && !run.HasChild<Drawing>())
+				{
 					if (!htmlStyles.DoesStyleExists("Hyperlink"))
 					{
 						htmlStyles.AddStyle("Hyperlink", new Style(
@@ -558,15 +579,18 @@ namespace NotesFor.HtmlToOpenXml
 						) { Type = StyleValues.Character, StyleId = "Hyperlink" });
 					}
 
-					h.GetFirstChild<Run>().InsertInProperties(prop =>
+					run.InsertInProperties(prop =>
 						prop.RunStyle = new RunStyle() { Val = htmlStyles.GetStyle("Hyperlink", StyleValues.Character) });
-
-					this.elements.Clear();
-
-					// Append the hyperlink
-					elements.Add(h);
+					break;
 				}
 			}
+
+			this.elements.Clear();
+
+			// Append the hyperlink
+			elements.Add(h);
+
+			if (imageInLink.Count > 0) CompleteCurrentParagraph(true);
 		}
 
 		#endregion
@@ -584,8 +608,7 @@ namespace NotesFor.HtmlToOpenXml
 
 		private void ProcessParagraph(HtmlEnumerator en)
 		{
-			CompleteCurrentParagraph();
-			AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
+			CompleteCurrentParagraph(true);
 
 			// Respect this order: this is the way the browsers apply them
 			String attrValue = en.StyleAttributes["text-align"];
@@ -648,10 +671,6 @@ namespace NotesFor.HtmlToOpenXml
 				AddParagraph(currentTable);
 				tables.NewContext(currentTable);
 			}
-			else
-			{
-				AddParagraph(currentParagraph);
-			}
 
 			// Process the entire <pre> tag and append it to the document
 			List<OpenXmlElement> styleAttributes = new List<OpenXmlElement>();
@@ -668,8 +687,7 @@ namespace NotesFor.HtmlToOpenXml
 			if (RenderPreAsTable)
 				tables.CloseContext();
 
-			currentParagraph.Append(elements);
-			elements.Clear();
+			CompleteCurrentParagraph();
 		}
 
 		#endregion
@@ -710,9 +728,7 @@ namespace NotesFor.HtmlToOpenXml
 			if (newParagraph)
 			{
 				AlternateProcessHtmlChunks(en, en.ClosingCurrentTag);
-
-				CompleteCurrentParagraph();
-				AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
+				CompleteCurrentParagraph(true);
 			}
 		}
 
@@ -985,6 +1001,7 @@ namespace NotesFor.HtmlToOpenXml
 
 			tables.CurrentTable.Append(row);
 			tables.CellPosition = new Point(0, tables.CellPosition.Y + 1);
+			tables.IndexColumn = 0;
 		}
 
 		#endregion
@@ -1019,18 +1036,25 @@ namespace NotesFor.HtmlToOpenXml
 				}
 			}
 
+			// any code related to tables.IndexColumn is deal to handle row span (implemented by daviderapicavoli)
+			tables.IndexColumn++;
+
 			// fix an issue when specifying the RowSpan or ColSpan=1 (reported by imagremlin)
 			int? colspan = en.Attributes.GetAsInt("colspan");
 			if (colspan.HasValue && colspan.Value > 1)
 			{
 				properties.GridSpan = new GridSpan() { Val = colspan };
+				tables.IndexColumn += colspan.Value - 1;
 			}
 
 			int? rowspan = en.Attributes.GetAsInt("rowspan");
 			if (rowspan.HasValue && rowspan.Value > 1)
 			{
 				properties.VerticalMerge = new VerticalMerge() { Val = MergedCellValues.Restart };
-				tables.RowSpan[tables.CellPosition] = rowspan.Value - 1;
+
+				Point p = new Point(tables.CellPosition.X, tables.CellPosition.Y);
+				if (p.X > 0) p.X = tables.IndexColumn - 1;
+				tables.RowSpan[p] = rowspan.Value - 1;
 			}
 
 			htmlStyles.Runs.ProcessCommonAttributes(en, runStyleAttributes);
@@ -1153,10 +1177,8 @@ namespace NotesFor.HtmlToOpenXml
 
 		private void ProcessClosingBlockQuote(HtmlEnumerator en)
 		{
-			CompleteCurrentParagraph();
+			CompleteCurrentParagraph(true);
 			htmlStyles.Paragraph.BeginTag("<blockquote>");
-
-			AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
 		}
 
 		#endregion
@@ -1199,8 +1221,7 @@ namespace NotesFor.HtmlToOpenXml
 
 		private void ProcessClosingParagraph(HtmlEnumerator en)
 		{
-			CompleteCurrentParagraph();
-			AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
+			CompleteCurrentParagraph(true);
 
 			string tag = en.CurrentTag.Replace("/", "");
 			htmlStyles.Runs.EndTag(tag);

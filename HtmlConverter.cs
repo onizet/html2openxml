@@ -147,7 +147,8 @@ namespace NotesFor.HtmlToOpenXml
 					hasRuns = false;
 					for (int j = p.ChildElements.Count - 1; j >= 0; j--)
 					{
-						if (!(p.ChildElements[j] is ParagraphProperties))
+						ParagraphProperties prop = p.ChildElements[j] as ParagraphProperties;
+						if (prop == null || prop.SectionProperties != null)
 						{
 							hasRuns = true;
 							break;
@@ -175,10 +176,11 @@ namespace NotesFor.HtmlToOpenXml
 					Action<HtmlEnumerator> action;
 					if (knownTags.TryGetValue(en.CurrentTag, out action))
 					{
+						if (Logging.On) Logging.PrintVerbose(en.Current);
 						action(en);
 					}
 
-					// else unknow or not yet implemented - we ignore
+					// else unknown or not yet implemented - we ignore
 				}
 				else
 				{
@@ -445,21 +447,25 @@ namespace NotesFor.HtmlToOpenXml
 				if (imageObjId > 1) imageObjId++;
 			}
 
-
 			// Cache all the ImagePart processed to avoid downloading the same image.
-			CachedImagePart imagePart;
-			if (!knownImageParts.TryGetValue(imageUrl, out imagePart))
+			CachedImagePart imagePart = null;
+
+			// if imageUrl is null, we may consider imageSource is a DataUri.
+			// thus, no need to download and cache anything
+			if (imageUrl == null || !knownImageParts.TryGetValue(imageUrl, out imagePart))
 			{
 				HtmlImageInfo iinfo = new HtmlImageInfo() { Size = preferredSize };
-				ImageProvisioningProvider provider = new ImageProvisioningProvider(imageUrl, iinfo);
+				ImageProvisioningProvider provider = new ImageProvisioningProvider(this.WebProxy, iinfo);
 
-				if (this.ImageProcessing == ImageProcessing.AutomaticDownload && imageUrl.IsAbsoluteUri)
-					provider.DownloadData(this.WebProxy);
+				if (imageUrl == null)
+					provider.DownloadData(DataUri.Parse(imageSource));
+				else if (this.ImageProcessing == ImageProcessing.AutomaticDownload && imageUrl.IsAbsoluteUri)
+					provider.DownloadData(imageUrl);
 				else
 					// as HtmlImageInfo is a class, the EventArgs will act as a proxy
 					RaiseProvisionImage(new ProvisionImageEventArgs(imageUrl, iinfo));
 
-				if (iinfo.RawData == null || !provider.Provision()) return null;
+				if (iinfo.RawData == null || !provider.Provision(imageUrl)) return null;
 
 				ImagePart ipart = mainPart.AddImagePart(iinfo.Type.Value);
 				imagePart = new CachedImagePart() { Part = ipart };
@@ -472,7 +478,8 @@ namespace NotesFor.HtmlToOpenXml
 					outputStream.Seek(0L, SeekOrigin.Begin);
 				}
 
-				knownImageParts.Add(imageUrl, imagePart);
+				if (imageUrl != null) // don't need to cache inlined-image
+					knownImageParts.Add(imageUrl, imagePart);
 			}
 
 			if (preferredSize.IsEmpty)
@@ -649,11 +656,18 @@ namespace NotesFor.HtmlToOpenXml
 		/// <summary>
 		/// Push the elements members to the current paragraph and reset the elements collection.
 		/// </summary>
-		private void CompleteCurrentParagraph()
+		/// <param name="createNew">True to automatically create a new paragraph, stored in the instance member <see cref="currentParagraph"/>.</param>
+		/// <returns>Returns the completed paragraph.</returns>
+		private Paragraph CompleteCurrentParagraph(bool createNew = false)
 		{
-			this.currentParagraph.Append(elements);
 			htmlStyles.Paragraph.ApplyTags(currentParagraph);
+			this.currentParagraph.Append(elements);
 			elements.Clear();
+
+			Paragraph previousParagraph = currentParagraph;
+			if (createNew)
+				AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
+			return previousParagraph;
 		}
 
 		#endregion
@@ -724,9 +738,13 @@ namespace NotesFor.HtmlToOpenXml
 				attrValue = en.StyleAttributes["page-break-before"];
 				if (attrValue == "always")
 				{
-					paragraphs.Insert(paragraphs.Count - 1, new Paragraph(
+					elements.Add(
 						new Run(
-							new Break() { Type = BreakValues.Page })));
+							new Break() { Type = BreakValues.Page })
+					);
+					elements.Add(new Run(
+							new LastRenderedPageBreak())
+					);
 				}
 			}
 
@@ -738,14 +756,21 @@ namespace NotesFor.HtmlToOpenXml
 
 		#region ChangePageOrientation
 
+		/// <summary>
+		/// Generate the required OpenXml element for handling page orientation.
+		/// </summary>
 		private static SectionProperties ChangePageOrientation(PageOrientationValues orientation)
 		{
-			PageSize pageSize = new PageSize() { Width = (UInt32Value) 16838U, Height = (UInt32Value) 11906U, Orient = orientation };
+			PageSize pageSize = new PageSize() { Width = (UInt32Value) 16838U, Height = (UInt32Value) 11906U };
 			if (orientation == PageOrientationValues.Portrait)
 			{
 				UInt32Value swap = pageSize.Width;
 				pageSize.Width = pageSize.Height;
 				pageSize.Height = swap;
+			}
+			else
+			{
+				pageSize.Orient = orientation;
 			}
 
 			return new SectionProperties (
