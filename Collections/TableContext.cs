@@ -90,5 +90,10 @@ namespace NotesFor.HtmlToOpenXml
 		{
 			get { return current.Table; }
 		}
+
+		/// <summary>
+		/// Gets or sets the index of the current working column (used for RowSpan)
+		/// </summary>
+		public int IndexColumn { get; set; }
 	}
 }

@@ -258,6 +258,18 @@ namespace NotesFor.HtmlToOpenXml
 
 		#endregion
 
+		#region ConvertToPageOrientation
+
+		public static PageOrientationValues ConvertToPageOrientation(String orientation)
+		{
+			if (String.Equals(orientation, "landscape", StringComparison.OrdinalIgnoreCase))
+				return PageOrientationValues.Landscape;
+
+			return PageOrientationValues.Portrait;
+		}
+
+		#endregion
+
 		//____________________________________________________________________
 		//
 		// Private Implementation
