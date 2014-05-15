@@ -265,7 +265,8 @@ namespace NotesFor.HtmlToOpenXml
 					try
 					{
 						// Image format not recognized, try with .Net drawing API
-						return Bitmap.FromStream(imageStream).Size;
+						using (Image bitmap = Bitmap.FromStream(imageStream))
+                            return bitmap.Size;
 					}
 					catch (ArgumentException)
 					{

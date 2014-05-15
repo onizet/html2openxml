@@ -263,7 +263,7 @@ namespace NotesFor.HtmlToOpenXml
 		private void ProcessHeading(HtmlEnumerator en)
 		{
 			char level = en.Current[2];
-			string clsName = "Heading " + level;
+			string clsName = "heading " + level;
 
 			// ensure style exists or the heading will be displayed as a normal text
 			if (!htmlStyles.DoesStyleExists(clsName))
