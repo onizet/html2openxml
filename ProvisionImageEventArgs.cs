@@ -17,7 +17,7 @@ namespace NotesFor.HtmlToOpenXml
 	/// <summary>
 	/// The event arguments used for a ProvisionImage event.
 	/// </summary>
-	public class ProvisionImageEventArgs : EventArgs
+	public class ProvisionImageEventArgs : System.ComponentModel.CancelEventArgs
 	{
 		private HtmlImageInfo info;
 

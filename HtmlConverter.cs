@@ -459,11 +459,20 @@ namespace NotesFor.HtmlToOpenXml
 
 				if (imageUrl == null)
 					provider.DownloadData(DataUri.Parse(imageSource));
-				else if (this.ImageProcessing == ImageProcessing.AutomaticDownload && imageUrl.IsAbsoluteUri)
+                else if (this.ImageProcessing == ImageProcessing.ManualProvisioning)
+                {
+                    // as HtmlImageInfo is a class, the EventArgs will act as a proxy
+                    ProvisionImageEventArgs args = new ProvisionImageEventArgs(imageUrl, iinfo);
+                    RaiseProvisionImage(args);
+
+                    // did the user want to ignore this image?
+                    if (args.Cancel) return null;
+                }
+
+                // Automatic Processing or the user did not supply himself the image and did not cancel the provisioning.
+                // We download ourself the image.
+                if (iinfo.RawData == null && imageUrl.IsAbsoluteUri)
 					provider.DownloadData(imageUrl);
-				else
-					// as HtmlImageInfo is a class, the EventArgs will act as a proxy
-					RaiseProvisionImage(new ProvisionImageEventArgs(imageUrl, iinfo));
 
 				if (iinfo.RawData == null || !provider.Provision(imageUrl)) return null;
 
