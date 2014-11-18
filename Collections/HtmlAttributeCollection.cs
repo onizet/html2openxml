@@ -166,10 +166,10 @@ namespace NotesFor.HtmlToOpenXml
 		/// Gets an attribute representing the 4 border sides.
 		/// If a border style/color/width has been specified individually, it will override the grouped definition.
 		/// </summary>
-		/// <returns>If the attribute is misformed, the <see cref="Border.IsValid"/> property is set to false.</returns>
-		public Border GetAsBorder(String name)
+		/// <returns>If the attribute is misformed, the <see cref="HtmlBorder.IsValid"/> property is set to false.</returns>
+		public HtmlBorder GetAsBorder(String name)
 		{
-			Border border = new Border(GetAsSideBorder(name));
+			HtmlBorder border = new HtmlBorder(GetAsSideBorder(name));
 			SideBorder sb;
 
 			sb = GetAsSideBorder(name + "-top");
@@ -188,7 +188,7 @@ namespace NotesFor.HtmlToOpenXml
 		/// Gets an attribute representing a single border side.
 		/// If a border style/color/width has been specified individually, it will override the grouped definition.
 		/// </summary>
-		/// <returns>If the attribute is misformed, the <see cref="Border.IsValid"/> property is set to false.</returns>
+		/// <returns>If the attribute is misformed, the <see cref="HtmlBorder.IsValid"/> property is set to false.</returns>
 		public SideBorder GetAsSideBorder(String name)
 		{
 			string attrValue = this[name];

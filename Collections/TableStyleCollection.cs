@@ -89,8 +89,11 @@ namespace NotesFor.HtmlToOpenXml
 			List<OpenXmlElement> containerStyleAttributes = new List<OpenXmlElement>();
 
 			var colorValue = en.StyleAttributes.GetAsColor("background-color");
+
+            // "background-color" is also handled by RunStyleCollection which duplicate this attribute (bug #13212). Let's ignore it
+            if (!colorValue.IsEmpty && en.CurrentTag.Equals("<td>", StringComparison.InvariantCultureIgnoreCase)) colorValue = System.Drawing.Color.Empty;
 			if (colorValue.IsEmpty) colorValue = en.Attributes.GetAsColor("bgcolor");
-			if (!colorValue.IsEmpty)
+            if (!colorValue.IsEmpty)
 			{
 				containerStyleAttributes.Add(
 					new Shading() { Val = ShadingPatternValues.Clear, Color = "auto", Fill = colorValue.ToHexString() });
@@ -148,12 +151,12 @@ namespace NotesFor.HtmlToOpenXml
 				var mi = typeof(OpenXmlCompositeElement)
 					.GetMethod("GetSequenceNumber", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
 
-				// We use a dummy new RunProperties instance
-				getTagOrderHandler = (GetSequenceNumberHandler)
+                // We use a dummy new TableProperties instance
+                // Create a delegate to speed up the invocation to the GetSequenceNumber method
+                getTagOrderHandler = (GetSequenceNumberHandler)
 					Delegate.CreateDelegate(typeof(GetSequenceNumberHandler), new TableProperties(), mi, true);
 			}
 
-			// Create a delegate to speed up the invocation to the GetSequenceNumber method
 			return (int) getTagOrderHandler.DynamicInvoke(element);
 		}
 

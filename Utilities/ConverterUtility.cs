@@ -176,7 +176,7 @@ namespace NotesFor.HtmlToOpenXml
 			System.Drawing.Color color;
 
 			// Bug fixed by jairoXXX to support rgb(r,g,b) format
-			if (htmlColor.StartsWith("rgb(", StringComparison.InvariantCultureIgnoreCase))
+			if (htmlColor.StartsWith("rgb(", StringComparison.OrdinalIgnoreCase))
 			{
 				var colorStringArray = htmlColor.Substring(4, htmlColor.LastIndexOf(')') - 4).Split(',');
 

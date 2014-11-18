@@ -39,7 +39,7 @@ namespace NotesFor.HtmlToOpenXml
 
 		protected OpenXmlStyleCollectionBase()
 		{
-			tags = new Dictionary<String, Stack<ArraySegment<OpenXmlElement>>>();
+			tags = new Dictionary<String, Stack<ArraySegment<OpenXmlElement>>>(StringComparer.InvariantCultureIgnoreCase);
 		}
 
 		internal virtual void Reset()
@@ -120,41 +120,6 @@ namespace NotesFor.HtmlToOpenXml
 			{
 				Dictionary<String, OpenXmlElement> knonwTags = new Dictionary<String, OpenXmlElement>();
 				for (int i = 0; i < elements.Count; i++)
-					knonwTags.Add(elements[i].LocalName, elements[i]);
-
-				OpenXmlElement[] array;
-				foreach (TagsAtSameLevel tagOfSameLevel in enqueuedTags)
-				{
-					array = tagOfSameLevel.Array;
-					for (int i = 0; i < array.Length; i++)
-					{
-						if (!knonwTags.ContainsKey(array[i].LocalName))
-							knonwTags.Add(array[i].LocalName, array[i]);
-					}
-				}
-
-				array = new OpenXmlElement[knonwTags.Count];
-				knonwTags.Values.CopyTo(array, 0);
-				enqueuedTags.Push(new TagsAtSameLevel(array));
-			}
-		}
-
-		/// <summary>
-		/// Merge the properties with the tag of the previous level.
-		/// </summary>
-		/// <param name="name">The name of the tag.</param>
-		/// <param name="elements">The properties to apply to the next build run until the tag is popped out.</param>
-		public void MergeTag(string name, params OpenXmlElement[] elements)
-		{
-			Stack<TagsAtSameLevel> enqueuedTags;
-			if (!tags.TryGetValue(name, out enqueuedTags))
-			{
-				BeginTag(name, elements);
-			}
-			else
-			{
-				Dictionary<String, OpenXmlElement> knonwTags = new Dictionary<String, OpenXmlElement>();
-				for (int i = 0; i < elements.Length; i++)
 					knonwTags.Add(elements[i].LocalName, elements[i]);
 
 				OpenXmlElement[] array;

@@ -121,12 +121,12 @@ namespace NotesFor.HtmlToOpenXml
 			attrValue = en.Attributes["dir"];
 			if (attrValue != null)
 			{
-				if (attrValue.Equals("rtl", StringComparison.InvariantCultureIgnoreCase))
+				if (attrValue.Equals("rtl", StringComparison.OrdinalIgnoreCase))
 				{
 					styleAttributes.Add(new RightToLeftText());
 					containerStyleAttributes.Add(new Justification() { Val = JustificationValues.Right });
 				}
-				else if (attrValue.Equals("ltr", StringComparison.InvariantCultureIgnoreCase))
+				else if (attrValue.Equals("ltr", StringComparison.OrdinalIgnoreCase))
 				{
 					containerStyleAttributes.Add(new Justification() { Val = JustificationValues.Left });
 				}
@@ -141,12 +141,12 @@ namespace NotesFor.HtmlToOpenXml
 					ParagraphBorders borders = new ParagraphBorders();
 					if (border.Top.IsValid) borders.Append(
 						new TopBorder() { Val = border.Top.Style, Color = border.Top.Color.ToHexString(), Size = (uint) border.Top.Width.ValueInPx * 4, Space = 1U });
-					if (border.Right.IsValid) borders.Append(
+                    if (border.Left.IsValid) borders.Append(
+                        new LeftBorder() { Val = border.Left.Style, Color = border.Left.Color.ToHexString(), Size = (uint) border.Left.Width.ValueInPx * 4, Space = 1U });
+                    if (border.Bottom.IsValid) borders.Append(
+                        new BottomBorder() { Val = border.Bottom.Style, Color = border.Bottom.Color.ToHexString(), Size = (uint) border.Bottom.Width.ValueInPx * 4, Space = 1U });
+                    if (border.Right.IsValid) borders.Append(
 						new RightBorder() { Val = border.Right.Style, Color = border.Right.Color.ToHexString(), Size = (uint) border.Right.Width.ValueInPx * 4, Space = 1U });
-					if (border.Bottom.IsValid) borders.Append(
-						new BottomBorder() { Val = border.Bottom.Style, Color = border.Bottom.Color.ToHexString(), Size = (uint) border.Bottom.Width.ValueInPx * 4, Space = 1U });
-					if (border.Left.IsValid) borders.Append(
-						new LeftBorder() { Val = border.Left.Style, Color = border.Left.Color.ToHexString(), Size = (uint) border.Left.Width.ValueInPx * 4, Space = 1U });
 
 					containerStyleAttributes.Add(borders);
 					newParagraph = true;
@@ -221,12 +221,12 @@ namespace NotesFor.HtmlToOpenXml
 				var mi = typeof(OpenXmlCompositeElement)
 					.GetMethod("GetSequenceNumber", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
 
-				// We use a dummy new RunProperties instance
-				getTagOrderHandler = (GetSequenceNumberHandler)
+                // We use a dummy new ParagraphProperties instance
+                // Create a delegate to speed up the invocation to the GetSequenceNumber method
+                getTagOrderHandler = (GetSequenceNumberHandler)
 					Delegate.CreateDelegate(typeof(GetSequenceNumberHandler), new ParagraphProperties(), mi, true);
 			}
 
-			// Create a delegate to speed up the invocation to the GetSequenceNumber method
 			return (int) getTagOrderHandler.DynamicInvoke(element);
 		}
 

@@ -10,10 +10,10 @@
  * PARTICULAR PURPOSE.
  */
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
-using System.Collections.Generic;
 
 namespace NotesFor.HtmlToOpenXml
 {
@@ -177,8 +177,7 @@ namespace NotesFor.HtmlToOpenXml
 				}
 			}
 
-			if (lastAbsNumIndex == 0) numberingPart.Numbering.Append(absNumChildren);
-			else for (int i = 0; i < absNumChildren.Length; i++)
+			for (int i = 0; i < absNumChildren.Length; i++)
 				numberingPart.Numbering.InsertAt(absNumChildren[i], i + lastAbsNumIndex);
 
 			// initializes the lookup
@@ -213,7 +212,7 @@ namespace NotesFor.HtmlToOpenXml
 
 			// lookup for a predefined list style in the template collection
 			String type = en.StyleAttributes["list-style-type"];
-			bool orderedList = en.CurrentTag.Equals("<ol>", StringComparison.InvariantCultureIgnoreCase);
+			bool orderedList = en.CurrentTag.Equals("<ol>", StringComparison.OrdinalIgnoreCase);
 			if (type == null || !knonwAbsNumIds.TryGetValue(type.ToLowerInvariant(), out absNumId))
 			{
 				if (orderedList)

@@ -14,7 +14,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using DocumentFormat.OpenXml.Packaging;
-using System.Text.RegularExpressions;
 
 namespace NotesFor.HtmlToOpenXml
 {
@@ -24,7 +23,7 @@ namespace NotesFor.HtmlToOpenXml
 	sealed class ImageProvisioningProvider
 	{
 		// Map extension to ImagePartType
-		private static Dictionary<String, ImagePartType> knownExtensions = new Dictionary<String, ImagePartType>(StringComparer.InvariantCultureIgnoreCase) {
+		private static Dictionary<String, ImagePartType> knownExtensions = new Dictionary<String, ImagePartType>(StringComparer.OrdinalIgnoreCase) {
 			{ ".gif", ImagePartType.Gif },
 			{ ".bmp", ImagePartType.Bmp },
 			{ ".emf", ImagePartType.Emf },
@@ -94,15 +93,7 @@ namespace NotesFor.HtmlToOpenXml
 				return;
 			}
 
-			System.Net.WebClient webClient = new System.Net.WebClient();
-			if (proxy != null)
-			{
-				if (proxy.Credentials != null)
-					webClient.Credentials = proxy.Credentials;
-				if (proxy.Proxy != null)
-					webClient.Proxy = proxy.Proxy;
-			}
-
+            System.Net.WebClient webClient = new WebClientEx(proxy);
 			try
 			{
 				imageInfo.RawData = webClient.DownloadData(imageUrl);
@@ -278,14 +269,5 @@ namespace NotesFor.HtmlToOpenXml
 		}
 
 		#endregion
-
-		//____________________________________________________________________
-		//
-		// Public Properties
-
-		public HtmlImageInfo ImageInfo
-		{
-			get { return imageInfo; }
-		}
 	}
 }
