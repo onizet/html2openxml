@@ -10,6 +10,7 @@
  * PARTICULAR PURPOSE.
  */
 using System;
+using System.Collections.Generic;
 using DocumentFormat.OpenXml.Packaging;
 
 namespace NotesFor.HtmlToOpenXml
@@ -28,6 +29,14 @@ namespace NotesFor.HtmlToOpenXml
 			this.info = info;
 		}
 
+        public void Provision(byte[] data)
+        {
+            this.info.RawData = data;
+        }
+
+        //____________________________________________________________________
+        //
+
 		/// <summary>
 		/// Gets the value of the href tag.
 		/// </summary>
@@ -36,7 +45,8 @@ namespace NotesFor.HtmlToOpenXml
 		/// <summary>
 		/// Gets the styles definition part located inside MainDocumentPart.
 		/// </summary>
-		public byte[] Data
+        [Obsolete("Use Provision(data). Refactoring to match Coding Rule: 'Properties should not return arrays'.")]
+        public byte[] Data
 		{
 			get { return info.RawData; }
 			set { info.RawData = value; }

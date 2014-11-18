@@ -22,18 +22,12 @@ namespace NotesFor.HtmlToOpenXml
 	sealed class HtmlEnumerator : IEnumerator<String>
 	{
 		private static Regex
-			stripTagRegex,          // extract the name of a tag without its attributes but with the < >
-			lineBreakTrimRegex;		// remove carriage new lines.
+            stripTagRegex = new Regex(@"(</?\w+)");          // extract the name of a tag without its attributes but with the < >
 
 		private IEnumerator<String> en;
 		private String current, currentTag;
 		private HtmlAttributeCollection attributes, styleAttributes;
 
-		static HtmlEnumerator()
-		{
-			stripTagRegex = new Regex(@"(</?\w+)", RegexOptions.Compiled);
-			lineBreakTrimRegex = new Regex(@"\r?\n", RegexOptions.Compiled);
-		}
 
 		/// <summary>
 		/// Constructor.
@@ -184,7 +178,7 @@ namespace NotesFor.HtmlToOpenXml
 		/// </summary>
 		public bool IsSelfClosedTag
 		{
-			get { return this.IsCurrentHtmlTag && current.EndsWith("/>"); }
+			get { return this.IsCurrentHtmlTag && current.EndsWith("/>", StringComparison.Ordinal); }
 		}
 
 		/// <summary>

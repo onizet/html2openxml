@@ -23,21 +23,16 @@ namespace NotesFor.HtmlToOpenXml
 	/// <summary>
 	/// Represents a Html Border with the 4 sides.
 	/// </summary>
-	struct Border
+	struct HtmlBorder
 	{
 		private SideBorder[] sides;
 
 
-		public Border(SideBorder all)
+		public HtmlBorder(SideBorder all)
 		{
 			if (!all.IsValid) sides = null;
 			else this.sides = new[] { all, all, all, all };
 		}
-
-        public Border(SideBorder top, SideBorder right, SideBorder bottom, SideBorder left)
-        {
-            this.sides = new[] { top, right, bottom, left };
-        }
 
 		private void EnsureSides()
 		{
@@ -81,11 +76,6 @@ namespace NotesFor.HtmlToOpenXml
 		{
 			get { return sides == null ? SideBorder.Empty : sides[1]; }
 			set { EnsureSides(); sides[1] = value; }
-		}
-
-		public bool IsValid
-		{
-			get { return sides != null && Left.IsValid && Right.IsValid && Bottom.IsValid && Top.IsValid; }
 		}
 
 		/// <summary>

@@ -12,10 +12,11 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
 
 namespace NotesFor.HtmlToOpenXml
 {
-	using w = DocumentFormat.OpenXml.Wordprocessing;
+    using w = DocumentFormat.OpenXml.Wordprocessing;
 
 
 	/// <summary>
@@ -152,7 +153,7 @@ namespace NotesFor.HtmlToOpenXml
 
 		private string DebuggerDisplay
 		{
-			get { return String.Format("{{Border={0} {1} {2}}}", Style, Width.DebuggerDisplay, Color); }
+			get { return String.Format(CultureInfo.InvariantCulture, "{{Border={0} {1} {2}}}", Style, Width.DebuggerDisplay, Color); }
 		}
 	}
 }

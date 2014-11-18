@@ -62,14 +62,6 @@ namespace NotesFor.HtmlToOpenXml
 			@delegate(prop);
 		}
 
-		public static void InsertInProperties(this Table t, Action<TableProperties> @delegate)
-		{
-			TableProperties prop = t.GetFirstChild<TableProperties>();
-			if (prop == null) t.PrependChild<TableProperties>(prop = new TableProperties());
-
-			@delegate(prop);
-		}
-
 		public static void InsertInDocProperties(this Drawing d, params OpenXmlElement[] newChildren)
 		{
 			wp.Inline inline = d.GetFirstChild<wp.Inline>();
@@ -78,6 +70,17 @@ namespace NotesFor.HtmlToOpenXml
 			if (prop == null) inline.Append(prop = new wp.DocProperties());
 			prop.Append(newChildren);
 		}
+
+        public static bool Compare(this PageSize pageSize, PageOrientationValues orientation)
+        {
+            PageOrientationValues pageOrientation;
+
+            if (pageSize.Orient != null) pageOrientation = pageSize.Orient.Value;
+            else if (pageSize.Width > pageSize.Height) pageOrientation = PageOrientationValues.Landscape;
+            else pageOrientation = PageOrientationValues.Portrait;
+
+            return pageOrientation == orientation;
+        }
 
 		// needed since December 2009 CTP refactoring, where casting is not anymore an option
 

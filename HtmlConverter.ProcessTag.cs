@@ -118,12 +118,27 @@ namespace NotesFor.HtmlToOpenXml
 
 			// Unsupported W3C attribute but claimed by users. Specified at <body> level, the page
 			// orientation is applied on the whole document
-			string orientation = en.StyleAttributes["page-orientation"];
-			if (orientation != null)
+			string attr = en.StyleAttributes["page-orientation"];
+			if (attr != null)
 			{
-				PageOrientationValues or = ConverterUtility.ConvertToPageOrientation(orientation);
-				mainPart.Document.Body.Append(HtmlConverter.ChangePageOrientation(or));
-			}
+				PageOrientationValues orientation = ConverterUtility.ConvertToPageOrientation(attr);
+
+                SectionProperties sectionProperties = mainPart.Document.Body.GetFirstChild<SectionProperties>();
+                if (sectionProperties == null || sectionProperties.GetFirstChild<PageSize>() == null)
+                {
+                    mainPart.Document.Body.Append(HtmlConverter.ChangePageOrientation(orientation));
+                }
+                else
+                {
+                    PageSize pageSize = sectionProperties.GetFirstChild<PageSize>();
+                    if (!pageSize.Compare(orientation))
+                    {
+                        SectionProperties validSectionProp = ChangePageOrientation(orientation);
+                        if (pageSize != null) pageSize.Remove();
+                        sectionProperties.PrependChild(validSectionProp.GetFirstChild<PageSize>().CloneNode(true));
+                    }
+                }
+            }
 		}
 
 		#endregion
@@ -184,11 +199,9 @@ namespace NotesFor.HtmlToOpenXml
 			// the paragraph, we don't want to apply the style on the old paragraph but on a new one.
 			if (en.Attributes.Count == 0 || (en.StyleAttributes["text-align"] == null && en.Attributes["align"] == null && en.StyleAttributes.GetAsBorder("border").IsEmpty))
 			{
-				// TODO: page-break-after is broken
-
 				List<OpenXmlElement> runStyleAttributes = new List<OpenXmlElement>();
 				bool newParagraph = ProcessContainerAttributes(en, runStyleAttributes);
-				Paragraph previousParagraph = CompleteCurrentParagraph(newParagraph);
+				CompleteCurrentParagraph(newParagraph);
 
 				if (runStyleAttributes.Count > 0)
 					htmlStyles.Runs.BeginTag(en.CurrentTag, runStyleAttributes);
@@ -207,24 +220,6 @@ namespace NotesFor.HtmlToOpenXml
 				// treat div as a paragraph
 				ProcessParagraph(en);
 			}
-
-			// TODO: page orientation
-			/*string orientation = en.StyleAttributes["page-orientation"];
-			if (orientation != null)
-			{
-				PageOrientationValues or = ConverterUtility.ConvertToPageOrientation(orientation);
-
-				// we first ensure the previous page has the reverse orientation
-				PageOrientationValues flip = (PageOrientationValues)(~or & PageOrientationValues.Landscape);
-				//currentParagraph.InsertInProperties(p => p.SectionProperties = HtmlConverter.ChangePageOrientation(flip));
-				CompleteCurrentParagraph(true);
-
-				// now on the new paragraph, we set the wished orientation and once the <div> is closed, we flag it as LastRenderPageBreak element
-				// in order to force a new page, reverted on the initial orientation.
-				currentParagraph.InsertInProperties(p => p.SectionProperties = HtmlConverter.ChangePageOrientation(PageOrientationValues.Landscape));
-				AlternateProcessHtmlChunks(en, "</div>");
-				elements.Add(new LastRenderedPageBreak());
-			}*/
 		}
 
 		#endregion
@@ -279,7 +274,7 @@ namespace NotesFor.HtmlToOpenXml
 						KeepNext = new KeepNext(),
 						KeepLines = new KeepLines(),
 						SpacingBetweenLines = new SpacingBetweenLines(){ Before = "200", After = "0" },
-						OutlineLevel = new OutlineLevel() { Val = Convert.ToInt32(new String(level, 1)) - 1 /* outline starts at 0 */ }
+						OutlineLevel = new OutlineLevel() { Val = (int) Char.GetNumericValue(level) - 1 /* outline starts at 0 */ }
 					},
 					new StyleRunProperties(PredefinedStyles.ResourceManager.GetString(clsName))
 				) { Type = StyleValues.Paragraph, StyleId = clsName });
@@ -309,37 +304,42 @@ namespace NotesFor.HtmlToOpenXml
 		private void ProcessHorizontalLine(HtmlEnumerator en)
 		{
 			// Insert an horizontal line as it stands in many emails.
+            CompleteCurrentParagraph(true);
 
-			Paragraph previousParagraph = CompleteCurrentParagraph(true);
-
-			UInt32 hrSize = 4U;
-
-			// If the previous paragraph contains a bottom border, we should toggle the size of this <hr> to 0U or 4U
-			// or Word will display only the last border.
+			// If the previous paragraph contains a bottom border or is a Table, we add some spacing between the <hr>
+			// and the previous element or Word will display only the last border.
 			// (see Remarks: http://msdn.microsoft.com/en-us/library/documentformat.openxml.wordprocessing.bottomborder%28office.14%29.aspx)
-			if (paragraphs.Count > 2)
-			{
-				// TODO: check this!
-				ParagraphProperties prop = paragraphs[paragraphs.Count - 3].GetFirstChild<ParagraphProperties>();
-				if (prop != null)
-				{
-					ParagraphBorders borders = prop.GetFirstChild<ParagraphBorders>();
-					if (borders != null && borders.HasChild<BottomBorder>())
-					{
-						if (borders.GetFirstChild<BottomBorder>().Size == 4U) hrSize = 0U;
-						else hrSize = 4U;
-					}
-				}
+            if (paragraphs.Count > 2)
+            {
+                OpenXmlCompositeElement previousElement = paragraphs[paragraphs.Count - 2];
+                bool addSpacing = false;
+                ParagraphProperties prop = previousElement.GetFirstChild<ParagraphProperties>();
+                if (prop != null)
+                {
+                    if (prop.ParagraphBorders != null && prop.ParagraphBorders.BottomBorder != null
+                        && prop.ParagraphBorders.BottomBorder.Size > 0U)
+                            addSpacing = true;
+                }
+                else
+                {
+                    if (previousElement is Table)
+                        addSpacing = true;
+                }
+
+
+                if (addSpacing)
+                {
+                    currentParagraph.InsertInProperties(p => p.SpacingBetweenLines = new SpacingBetweenLines() { Before = "240" });
+                }
 			}
 
-			// if the previous paragraph has no children, it will be deleted in RemoveEmptyParagraphs()
+			// if this paragraph has no children, it will be deleted in RemoveEmptyParagraphs()
 			// in order to kept the <hr>, we force an empty run
-			if (!previousParagraph.HasChildren)
-				previousParagraph.Append(new Run());
+            currentParagraph.Append(new Run());
 
-			previousParagraph.InsertInProperties(prop => 
+            currentParagraph.InsertInProperties(prop => 
 				prop.ParagraphBorders = new ParagraphBorders {
-					BottomBorder = new BottomBorder() { Val = BorderValues.Single, Size = hrSize }
+					TopBorder = new TopBorder() { Val = BorderValues.Single, Size = 4U }
 				});
 		}
 
@@ -507,7 +507,7 @@ namespace NotesFor.HtmlToOpenXml
 			if (!String.IsNullOrEmpty(att))
 			{
 				// handle link where the http:// is missing and that starts directly with www
-				if(att.StartsWith("www.", StringComparison.InvariantCultureIgnoreCase))
+				if(att.StartsWith("www.", StringComparison.OrdinalIgnoreCase))
 					att = Uri.UriSchemeHttp + Uri.SchemeDelimiter + att;
 
 				// is it an anchor?
@@ -646,31 +646,37 @@ namespace NotesFor.HtmlToOpenXml
 			currentParagraph = htmlStyles.Paragraph.NewParagraph();
 
 			// Oftenly, <pre> tag are used to renders some code examples. They look better inside a table
-			if (this.RenderPreAsTable)
-			{
-				Table currentTable = new Table(
-					new TableProperties {
-						TableStyle = new TableStyle() { Val = htmlStyles.GetStyle("Table Grid", StyleValues.Paragraph) },
-						TableWidth = new TableWidth() { Type = TableWidthUnitValues.Pct, Width = "5000" }, // 100% * 50
-					},
-					new TableGrid(
-						new GridColumn() { Width = "5610" }),
-					new TableRow(
-						new TableCell(
-					// Ensure the border lines are visible (regardless of the style used)
-							new TableCellProperties {
-								 TableCellBorders = new TableCellBorders(
-									new TopBorder() { Val = BorderValues.Single },
-									new LeftBorder() { Val = BorderValues.Single },
-									new BottomBorder() { Val = BorderValues.Single },
-									new RightBorder() { Val = BorderValues.Single })
-							},
-							currentParagraph))
-				);
+            if (this.RenderPreAsTable)
+            {
+                Table currentTable = new Table(
+                    new TableProperties
+                    {
+                        TableStyle = new TableStyle() { Val = htmlStyles.GetStyle("Table Grid", StyleValues.Paragraph) },
+                        TableWidth = new TableWidth() { Type = TableWidthUnitValues.Pct, Width = "5000" }, // 100% * 50
+                    },
+                    new TableGrid(
+                        new GridColumn() { Width = "5610" }),
+                    new TableRow(
+                        new TableCell(
+                    // Ensure the border lines are visible (regardless of the style used)
+                            new TableCellProperties
+                            {
+                                TableCellBorders = new TableCellBorders(
+                                   new TopBorder() { Val = BorderValues.Single },
+                                   new LeftBorder() { Val = BorderValues.Single },
+                                   new BottomBorder() { Val = BorderValues.Single },
+                                   new RightBorder() { Val = BorderValues.Single })
+                            },
+                            currentParagraph))
+                );
 
-				AddParagraph(currentTable);
-				tables.NewContext(currentTable);
-			}
+                AddParagraph(currentTable);
+                tables.NewContext(currentTable);
+            }
+            else
+            {
+                AddParagraph(currentParagraph);
+            }
 
 			// Process the entire <pre> tag and append it to the document
 			List<OpenXmlElement> styleAttributes = new List<OpenXmlElement>();
@@ -1056,8 +1062,6 @@ namespace NotesFor.HtmlToOpenXml
 				if (p.X > 0) p.X = tables.IndexColumn - 1;
 				tables.RowSpan[p] = rowspan.Value - 1;
 			}
-
-			htmlStyles.Runs.ProcessCommonAttributes(en, runStyleAttributes);
 
 			// Manage vertical text (only for table cell)
 			string direction = en.StyleAttributes["writing-mode"];

@@ -135,11 +135,11 @@ namespace NotesFor.HtmlToOpenXml
 					.GetMethod("GetSequenceNumber", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
 
 				// We use a dummy new RunProperties instance
-				getTagOrderHandler = (GetSequenceNumberHandler)
+                // Create a delegate to speed up the invocation to the GetSequenceNumber method
+                getTagOrderHandler = (GetSequenceNumberHandler)
 					Delegate.CreateDelegate(typeof(GetSequenceNumberHandler), new RunProperties(), mi, true);
 			}
 
-			// Create a delegate to speed up the invocation to the GetSequenceNumber method
 			return (int) getTagOrderHandler.DynamicInvoke(element);
 		}
 

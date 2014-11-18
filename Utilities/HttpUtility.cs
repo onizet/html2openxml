@@ -83,7 +83,7 @@ namespace NotesFor.HtmlToOpenXml
 			if (s.IndexOf('&') < 0) return s;
 
 			StringBuilder sb = new StringBuilder();
-			StringWriter output = new StringWriter(sb);
+			StringWriter output = new StringWriter(sb, CultureInfo.InvariantCulture);
 			HtmlDecode(s, output);
 			return sb.ToString();
 		}

@@ -52,18 +52,6 @@ namespace NotesFor.HtmlToOpenXml
 
 		#endregion
 
-		#region PrintInfo
-
-		public static void PrintInfo(string msg)
-		{
-			if (!ValidateSettings(TraceEventType.Information))
-				return;
-
-			PrintLine(TraceEventType.Information, 0, msg);
-		}
-
-		#endregion
-
 		#region PrintVerbose
 
 		public static void PrintVerbose(string msg)
@@ -90,7 +78,7 @@ namespace NotesFor.HtmlToOpenXml
 				traceSource = new TraceSource(TraceSourceName);
 				enabled = traceSource.Switch.Level != SourceLevels.Off;
 			}
-			catch (Exception)
+			catch (System.Configuration.ConfigurationException)
 			{
 				// app.config has an error
 				enabled = false;

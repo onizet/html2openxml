@@ -9,7 +9,7 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
+using System.Collections.Specialized;
 using System.Net;
 
 namespace NotesFor.HtmlToOpenXml
@@ -19,6 +19,10 @@ namespace NotesFor.HtmlToOpenXml
     /// </summary>
     public sealed class WebProxy
     {
+        private CookieContainer cookies;
+        private WebHeaderCollection requestHeaders;
+
+
         /// <summary>
         /// Gets or sets the credentials to submit to the proxy server for authentication.
         /// </summary>
@@ -28,5 +32,21 @@ namespace NotesFor.HtmlToOpenXml
         /// Gets or sets the proxy access.
         /// </summary>
         public IWebProxy Proxy { get; set; }
+
+        /// <summary>
+        /// Gets or sets the collection of authorization ticket cookie (mainly for Claims authentication).
+        /// </summary>
+        public CookieContainer Cookies
+        {
+            get { return cookies ?? (cookies = new CookieContainer()); }
+        }
+
+        /// <summary>
+        /// Gets or sets the Http headers that will be sent when requesting an image.
+        /// </summary>
+        public WebHeaderCollection HttpRequestHeaders
+        {
+            get { return requestHeaders ?? (requestHeaders = new WebHeaderCollection()); }
+        }
     }
 }

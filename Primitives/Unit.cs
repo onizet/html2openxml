@@ -183,7 +183,7 @@ namespace NotesFor.HtmlToOpenXml
 
 		internal string DebuggerDisplay
 		{
-			get { return String.Format("{{Unit: {0} {1}}}", Value, Type); }
+            get { return String.Format(CultureInfo.InvariantCulture, "{{Unit: {0} {1}}}", Value, Type); }
 		}
 	}
 }

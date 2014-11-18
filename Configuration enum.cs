@@ -54,7 +54,7 @@ namespace NotesFor.HtmlToOpenXml
     /// <summary>
     /// Predefined quote style as defined by the browser (used for the &lt;q&gt; tag).
     /// </summary>
-    public sealed class QuoteChars
+    public struct QuoteChars
     {
         /// <summary>Internet Explorer style: « abc » </summary>
         public static readonly QuoteChars IE = new QuoteChars("« ", " »");
@@ -64,14 +64,14 @@ namespace NotesFor.HtmlToOpenXml
         public static readonly QuoteChars WebKit = new QuoteChars("\"", "\"");
         internal readonly String[] chars;
 
-		/// <summary>
-		/// Initializes a new instance of <see cref="QuoteChars"/> class.
-		/// </summary>
-		/// <param name="begin">The characters at the beginning of a quote.</param>
-		/// <param name="end">The characters at the end of a quote.</param>
+        /// <summary>
+        /// Initializes a new instance of <see cref="QuoteChars"/> class.
+        /// </summary>
+        /// <param name="begin">The characters at the beginning of a quote.</param>
+        /// <param name="end">The characters at the end of a quote.</param>
         public QuoteChars(String begin, String end)
-	    {
+        {
             this.chars = new String[] { begin, end };
-	    }
+        }
     }
 }

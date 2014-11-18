@@ -19,9 +19,10 @@ using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace NotesFor.HtmlToOpenXml
 {
-	using a = DocumentFormat.OpenXml.Drawing;
-	using pic = DocumentFormat.OpenXml.Drawing.Pictures;
-	using wp = DocumentFormat.OpenXml.Drawing.Wordprocessing;
+    using System.Globalization;
+    using a = DocumentFormat.OpenXml.Drawing;
+    using pic = DocumentFormat.OpenXml.Drawing.Pictures;
+    using wp = DocumentFormat.OpenXml.Drawing.Wordprocessing;
 
 
 	/// <summary>
@@ -50,10 +51,9 @@ namespace NotesFor.HtmlToOpenXml
 		private Int32 footnotesRef = 1, endnotesRef = 1, figCaptionRef = -1;
 		private Dictionary<String, Action<HtmlEnumerator>> knownTags;
 		private Dictionary<Uri, CachedImagePart> knownImageParts;
-		private List<String> bookmarks;
 		private TableContext tables;
 		private HtmlDocumentStyle htmlStyles;
-		private uint drawingObjId, imageObjId = UInt32.MinValue;
+		private uint drawingObjId, imageObjId;
 		private Uri baseImageUri;
 
 
@@ -65,6 +65,8 @@ namespace NotesFor.HtmlToOpenXml
 		/// <remarks>We preload some configuration from inside the document such as style, bookmarks,...</remarks>
 		public HtmlConverter(MainDocumentPart mainPart)
 		{
+            if (mainPart == null) throw new ArgumentNullException("mainPart");
+
 			this.mainPart = mainPart;
 			this.RenderPreAsTable = true;
 			this.ImageProcessing = ImageProcessing.AutomaticDownload;
@@ -78,7 +80,7 @@ namespace NotesFor.HtmlToOpenXml
 		/// Start the parse processing.
 		/// </summary>
 		/// <returns>Returns a list of parsed paragraph.</returns>
-		public IList<OpenXmlCompositeElement> Parse(String html)
+        public IList<OpenXmlCompositeElement> Parse(String html)
 		{
 			if (String.IsNullOrEmpty(html))
 				return new Paragraph[0];
@@ -117,6 +119,31 @@ namespace NotesFor.HtmlToOpenXml
 
 			return paragraphs;
 		}
+
+        /// <summary>
+		/// Start the parse processing and append the converted paragraphs into the Body of the document.
+		/// </summary>
+        public void ParseHtml(String html)
+        {
+            // This method exists because we may ensure the SectionProperties remains the last element of the body.
+            // It's mandatory when dealing with page orientation
+
+            var paragraphs = Parse(html);
+
+            Body body = mainPart.Document.Body;
+            SectionProperties sectionProperties = mainPart.Document.Body.GetLastChild<SectionProperties>();
+
+            for (int i = 0; i < paragraphs.Count; i++)
+                body.Append(paragraphs[i]);
+
+            // Push the sectionProperties as the last element of the Body
+            // (required by OpenXml schema to avoid the bad formatting of the document)
+            if (sectionProperties != null)
+            {
+                sectionProperties.Remove();
+                body.Append(sectionProperties);
+            }
+        }
 
 		#region RemoveEmptyParagraphs
 
@@ -463,7 +490,7 @@ namespace NotesFor.HtmlToOpenXml
                 {
                     // as HtmlImageInfo is a class, the EventArgs will act as a proxy
                     ProvisionImageEventArgs args = new ProvisionImageEventArgs(imageUrl, iinfo);
-                    RaiseProvisionImage(args);
+                    OnProvisionImage(args);
 
                     // did the user want to ignore this image?
                     if (args.Cancel) return null;
@@ -553,7 +580,7 @@ namespace NotesFor.HtmlToOpenXml
 		{
 			// A complete list of HTML tags can be found here: http://www.w3schools.com/tags/default.asp
 
-			var knownTags = new Dictionary<String, Action<HtmlEnumerator>>(StringComparer.InvariantCultureIgnoreCase) {
+			var knownTags = new Dictionary<String, Action<HtmlEnumerator>>(StringComparer.OrdinalIgnoreCase) {
 				{ "<a>", ProcessLink },
 				{ "<abbr>" , ProcessAcronym },
 				{ "<acronym>" , ProcessAcronym },
@@ -640,26 +667,6 @@ namespace NotesFor.HtmlToOpenXml
 
 		#endregion
 
-		#region Bookmarks
-
-		private List<String> Bookmarks
-		{
-			get
-			{
-				if (bookmarks == null)
-				{
-					bookmarks = new List<String>();
-					var en = mainPart.Document.Body.Descendants<BookmarkStart>().GetEnumerator();
-					while (en.MoveNext())
-						bookmarks.Add(en.Current.Name.Value);
-					bookmarks.Sort(StringComparer.Ordinal);
-				}
-				return bookmarks;
-			}
-		}
-
-		#endregion
-
 		#region CompleteCurrentParagraph
 
 		/// <summary>
@@ -741,7 +748,6 @@ namespace NotesFor.HtmlToOpenXml
 					paragraphs.Add(new Paragraph(
 						new Run(
 							new Break() { Type = BreakValues.Page })));
-					newParagraph = true;
 				}
 
 				attrValue = en.StyleAttributes["page-break-before"];
@@ -755,6 +761,17 @@ namespace NotesFor.HtmlToOpenXml
 							new LastRenderedPageBreak())
 					);
 				}
+			}
+
+            // support left and right padding
+            var padding = en.StyleAttributes.GetAsMargin("padding");
+            if (!padding.IsEmpty && (padding.Left.IsValid || padding.Right.IsValid))
+			{
+                Indentation indentation = new Indentation();
+                if (padding.Left.Value > 0) indentation.Left = padding.Left.ValueInDxa.ToString(CultureInfo.InvariantCulture);
+                if (padding.Right.Value > 0) indentation.Right = padding.Right.ValueInDxa.ToString(CultureInfo.InvariantCulture);
+
+			    currentParagraph.InsertInProperties(prop => prop.Indentation = indentation);
 			}
 
 			newParagraph |= htmlStyles.Paragraph.ProcessCommonAttributes(en, styleAttributes);
@@ -795,14 +812,14 @@ namespace NotesFor.HtmlToOpenXml
 
 		#endregion
 
-		// Events
+        // Events
 
-		#region RaiseProvisionImage
+        #region OnProvisionImage
 
-		/// <summary>
+        /// <summary>
 		/// Raises the ProvisionImage event.
 		/// </summary>
-		protected virtual void RaiseProvisionImage(ProvisionImageEventArgs e)
+		protected virtual void OnProvisionImage(ProvisionImageEventArgs e)
 		{
 			if (ProvisionImage != null) ProvisionImage(this, e);
 		}

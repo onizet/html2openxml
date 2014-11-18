@@ -15,6 +15,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 
@@ -56,8 +57,7 @@ namespace NotesFor.HtmlToOpenXml
                     }
                     catch (ArgumentException e)
                     {
-                        string newMessage = string.Format("{0} file: '{1}' ", errorMessage, path);
-
+                        string newMessage = String.Format(CultureInfo.CurrentCulture, "{0} file: '{1}' ", errorMessage, path);
                         throw new ArgumentException(newMessage, "path", e);
                     }
                 }
@@ -144,17 +144,6 @@ namespace NotesFor.HtmlToOpenXml
                 bytes[sizeof(short) - 1 - i] = binaryReader.ReadByte();
             }
             return BitConverter.ToInt16(bytes, 0);
-        }
-
-        private static ushort ReadLittleEndianUInt16(BinaryReader binaryReader)
-        {
-            byte[] bytes = new byte[sizeof(ushort)];
-
-            for (int i = 0; i < sizeof(ushort); i += 1)
-            {
-                bytes[sizeof(ushort) - 1 - i] = binaryReader.ReadByte();
-            }
-            return BitConverter.ToUInt16(bytes, 0);
         }
 
         private static int ReadLittleEndianInt32(BinaryReader binaryReader)
