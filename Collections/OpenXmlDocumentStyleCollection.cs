@@ -36,7 +36,7 @@ namespace NotesFor.HtmlToOpenXml
 		{
 			// we'll use Binary Search algorithm because the collection is sorted (we inherits from SortedList)
 			IList<String> keys = this.Keys;
-			int low = 1, hi = keys.Count - 1, mid;
+			int low = 0, hi = keys.Count - 1, mid;
 
 			while (low <= hi)
 			{
