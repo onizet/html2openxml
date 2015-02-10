@@ -48,6 +48,8 @@ namespace NotesFor.HtmlToOpenXml
 
 			// Remove tabs and whitespace at the beginning of the lines
 			html = Regex.Replace(html, @"^\s+", String.Empty, RegexOptions.Multiline);
+			// and now at the end of the lines
+			html = Regex.Replace(html, @"\s+$", String.Empty, RegexOptions.Multiline);
 
 			// Replace xml header by xml tag for further processing
 			html = Regex.Replace(html, @"<\?xml:namespace.+?>", "<xml>", RegexOptions.Singleline| RegexOptions.IgnoreCase);
