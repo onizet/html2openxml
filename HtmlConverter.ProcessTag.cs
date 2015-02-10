@@ -1202,7 +1202,9 @@ namespace NotesFor.HtmlToOpenXml
 
 		private void ProcessClosingTag(HtmlEnumerator en)
 		{
-			htmlStyles.Runs.EndTag(en.CurrentTag.Replace("/", ""));
+			string openingTag = en.CurrentTag.Replace("/", "");
+			htmlStyles.Runs.EndTag(openingTag);
+			htmlStyles.Paragraph.EndTag(openingTag);
 		}
 
 		#endregion
