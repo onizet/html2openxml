@@ -154,9 +154,11 @@ namespace NotesFor.HtmlToOpenXml
 			String[] names = str.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
 			for (int i = 0; i < names.Length; i++)
 			{
+                String fontName = names[i];
 				try
 				{
-					return new System.Drawing.FontFamily(names[i]);
+                    if (fontName[0] == '\'' && fontName[fontName.Length-1] == '\'') fontName = fontName.Substring(1, fontName.Length - 2);
+					return new System.Drawing.FontFamily(fontName);
 				}
 				catch (ArgumentException)
 				{
