@@ -272,7 +272,7 @@ namespace NotesFor.HtmlToOpenXml
 			// in case a margin has been specifically specified, we need to create a new list template
 			// on the fly with a different AbsNumId, in order to let Word doesn't merge the style with its predecessor.
 			Margin margin = en.StyleAttributes.GetAsMargin("margin");
-			if (margin.Left.IsValid && margin.Left.Value > 0 && margin.Left.Type == UnitMetric.Pixel)
+			if (margin.Left.Value > 0 && margin.Left.Type == UnitMetric.Pixel)
 			{
 				Numbering numbering = mainPart.NumberingDefinitionsPart.Numbering;
 				foreach (AbstractNum absNum in numbering.Elements<AbstractNum>())

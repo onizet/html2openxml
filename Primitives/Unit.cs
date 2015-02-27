@@ -23,6 +23,8 @@ namespace NotesFor.HtmlToOpenXml
 	{
 		/// <summary>Represents an empty unit (not defined).</summary>
 		public static readonly Unit Empty = new Unit();
+        /// <summary>Represents an Auto unit.</summary>
+        public static readonly Unit Auto = new Unit(UnitMetric.Auto, 0L);
 
 		private UnitMetric type;
 		private double value;
@@ -53,8 +55,8 @@ namespace NotesFor.HtmlToOpenXml
 			}
 			if (digitLength == -1)
 			{
-				// No digits in the width, we ignore this style
-				return Unit.Empty;
+                // No digits in the width, we ignore this style
+                return str == "auto"? Unit.Auto : Unit.Empty;
 			}
 
 			UnitMetric type;
@@ -105,6 +107,7 @@ namespace NotesFor.HtmlToOpenXml
 
 			switch (type)
 			{
+                case UnitMetric.Auto:
 				case UnitMetric.Percent: return 0L; // not applicable
 				case UnitMetric.Emus: return (long) value;
 				case UnitMetric.Inch: return (long) (value * 914400L);
@@ -181,9 +184,17 @@ namespace NotesFor.HtmlToOpenXml
 			get { return this.Type != UnitMetric.Unknown; }
 		}
 
+        /// <summary>
+        /// Gets whether the unit is well formed and not absolute nor auto.
+        /// </summary>
+        public bool IsFixed
+        {
+            get { return this.IsValid && (this.Type != UnitMetric.Auto && this.Type != UnitMetric.Auto); }
+        }
+
 		internal string DebuggerDisplay
 		{
             get { return String.Format(CultureInfo.InvariantCulture, "{{Unit: {0} {1}}}", Value, Type); }
 		}
-	}
+    }
 }
