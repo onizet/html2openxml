@@ -9,7 +9,7 @@ RC=rc
 RCFLAGS=/usesourcepath
 
 # Source dirs
-SRCDIR=.
+SRCDIR=./Trunk
 PROPDIR=$(SRCDIR)/Properties
 COLLDIR=$(SRCDIR)/Collections
 UTILDIR=$(SRCDIR)/Utilities
