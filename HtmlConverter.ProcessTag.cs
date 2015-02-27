@@ -235,7 +235,7 @@ namespace NotesFor.HtmlToOpenXml
 			if (attrValue != null)
 			{
 				Unit fontSize = ConverterUtility.ConvertToFontSize(attrValue);
-				if (fontSize.IsValid)
+                if (fontSize.IsFixed)
 					styleAttributes.Add(new FontSize { Val = (fontSize.ValueInPoint * 2).ToString(CultureInfo.InvariantCulture) });
 			}
 
@@ -420,11 +420,11 @@ namespace NotesFor.HtmlToOpenXml
 				if (!hu.IsValid) hu = en.StyleAttributes.GetAsUnit("height");
 
 				// % is not supported
-				if (wu.IsValid && wu.Value > 0 && wu.Type != UnitMetric.Percent)
+				if (wu.IsFixed && wu.Value > 0)
 				{
 					preferredSize.Width = wu.ValueInPx;
 				}
-				if (hu.IsValid && hu.Value > 0 && wu.Type != UnitMetric.Percent)
+                if (hu.IsFixed && hu.Value > 0)
 				{
 					// Image perspective skewed. Bug fixed by ddeforge on http://html2openxml.codeplex.com/discussions/350500
 					preferredSize.Height = hu.ValueInPx;
@@ -847,24 +847,36 @@ namespace NotesFor.HtmlToOpenXml
 			{
 				Margin margin = en.StyleAttributes.GetAsMargin("margin");
 
-				if (margin.IsValid)
-				{
-					// OpenXml doesn't support table margin in Percent, but Html does
-					// the margin part has been implemented by Olek (patch #8457)
+				// OpenXml doesn't support table margin in Percent, but Html does
+				// the margin part has been implemented by Olek (patch #8457)
 
-					TableCellMarginDefault cellMargin = new TableCellMarginDefault();
-					if (margin.Left.IsValid && margin.Left.Type != UnitMetric.Percent)
-						cellMargin.TableCellLeftMargin = new TableCellLeftMargin() { Type = TableWidthValues.Dxa, Width = (short) margin.Left.ValueInDxa };
-					if (margin.Right.IsValid && margin.Right.Type != UnitMetric.Percent)
-						cellMargin.TableCellRightMargin = new TableCellRightMargin() { Type = TableWidthValues.Dxa, Width = (short) margin.Right.ValueInDxa };
-					if (margin.Top.IsValid && margin.Top.Type != UnitMetric.Percent)
-						cellMargin.TopMargin = new TopMargin() { Type = TableWidthUnitValues.Dxa, Width = margin.Top.ValueInDxa.ToString(CultureInfo.InvariantCulture) };
-					if (margin.Bottom.IsValid && margin.Bottom.Type != UnitMetric.Percent)
-						cellMargin.BottomMargin = new BottomMargin() { Type = TableWidthUnitValues.Dxa, Width = margin.Bottom.ValueInDxa.ToString(CultureInfo.InvariantCulture) };
+				TableCellMarginDefault cellMargin = new TableCellMarginDefault();
+                if (margin.Left.IsFixed)
+					cellMargin.TableCellLeftMargin = new TableCellLeftMargin() { Type = TableWidthValues.Dxa, Width = (short) margin.Left.ValueInDxa };
+                if (margin.Right.IsFixed)
+					cellMargin.TableCellRightMargin = new TableCellRightMargin() { Type = TableWidthValues.Dxa, Width = (short) margin.Right.ValueInDxa };
+                if (margin.Top.IsFixed)
+					cellMargin.TopMargin = new TopMargin() { Type = TableWidthUnitValues.Dxa, Width = margin.Top.ValueInDxa.ToString(CultureInfo.InvariantCulture) };
+                if (margin.Bottom.IsFixed)
+					cellMargin.BottomMargin = new BottomMargin() { Type = TableWidthUnitValues.Dxa, Width = margin.Bottom.ValueInDxa.ToString(CultureInfo.InvariantCulture) };
 
-					if (cellMargin.HasChildren)
-						properties.TableCellMarginDefault = cellMargin;
-				}
+                // Align table according to the margin 'auto' as it stands in Html
+                if (margin.Left.Type == UnitMetric.Auto || margin.Right.Type == UnitMetric.Auto)
+                {
+                    TableRowAlignmentValues justification;
+
+                    if (margin.Left.Type == UnitMetric.Auto && margin.Right.Type == UnitMetric.Auto)
+                        justification = TableRowAlignmentValues.Center;
+                    else if (margin.Left.Type == UnitMetric.Auto)
+                        justification = TableRowAlignmentValues.Right;
+                    else
+                        justification = TableRowAlignmentValues.Left;
+
+                    properties.TableJustification = new TableJustification() { Val = justification };
+                }
+
+				if (cellMargin.HasChildren)
+					properties.TableCellMarginDefault = cellMargin;
 			}
 
 			int? spacing = en.Attributes.GetAsInt("cellspacing");
@@ -985,17 +997,14 @@ namespace NotesFor.HtmlToOpenXml
 			Unit unit = en.StyleAttributes.GetAsUnit("height");
 			if (!unit.IsValid) unit = en.Attributes.GetAsUnit("height");
 
-			if (unit.IsValid)
+			switch (unit.Type)
 			{
-				switch (unit.Type)
-				{
-					case UnitMetric.Point:
-						properties.Append(new TableRowHeight() { HeightType = HeightRuleValues.AtLeast, Val = (uint) (unit.Value * 20) });
-						break;
-					case UnitMetric.Pixel:
-						properties.Append(new TableRowHeight() { HeightType = HeightRuleValues.AtLeast, Val = (uint) unit.ValueInDxa });
-						break;
-				}
+				case UnitMetric.Point:
+					properties.Append(new TableRowHeight() { HeightType = HeightRuleValues.AtLeast, Val = (uint) (unit.Value * 20) });
+					break;
+				case UnitMetric.Pixel:
+					properties.Append(new TableRowHeight() { HeightType = HeightRuleValues.AtLeast, Val = (uint) unit.ValueInDxa });
+					break;
 			}
 
 			TableRow row = new TableRow();
@@ -1026,20 +1035,17 @@ namespace NotesFor.HtmlToOpenXml
 			Unit unit = en.StyleAttributes.GetAsUnit("width");
 			if (!unit.IsValid) unit = en.Attributes.GetAsUnit("width");
 
-			if (unit.IsValid)
+			switch (unit.Type)
 			{
-				switch (unit.Type)
-				{
-					case UnitMetric.Percent:
-						properties.TableCellWidth = new TableCellWidth() { Type = TableWidthUnitValues.Pct, Width = (unit.Value * 50).ToString(CultureInfo.InvariantCulture) };
-						break;
-					case UnitMetric.Point:
-						properties.TableCellWidth = new TableCellWidth() { Type = TableWidthUnitValues.Dxa, Width = (unit.Value * 20).ToString(CultureInfo.InvariantCulture) };
-						break;
-					case UnitMetric.Pixel:
-						properties.TableCellWidth = new TableCellWidth() { Type = TableWidthUnitValues.Dxa, Width = (unit.Value).ToString(CultureInfo.InvariantCulture) };
-						break;
-				}
+				case UnitMetric.Percent:
+					properties.TableCellWidth = new TableCellWidth() { Type = TableWidthUnitValues.Pct, Width = (unit.Value * 50).ToString(CultureInfo.InvariantCulture) };
+					break;
+				case UnitMetric.Point:
+					properties.TableCellWidth = new TableCellWidth() { Type = TableWidthUnitValues.Dxa, Width = (unit.Value * 20).ToString(CultureInfo.InvariantCulture) };
+					break;
+				case UnitMetric.Pixel:
+					properties.TableCellWidth = new TableCellWidth() { Type = TableWidthUnitValues.Dxa, Width = (unit.Value).ToString(CultureInfo.InvariantCulture) };
+					break;
 			}
 
 			// any code related to tables.IndexColumn is deal to handle row span (implemented by daviderapicavoli)

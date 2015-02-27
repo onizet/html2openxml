@@ -116,7 +116,7 @@ namespace NotesFor.HtmlToOpenXml
 					styleAttributes.Add(new RunFonts() { Ascii = font.Family.Name, HighAnsi = font.Family.Name });
 
 				// size are half-point font size
-				if (font.Size.IsValid)
+                if (font.Size.IsFixed)
 					styleAttributes.Add(new FontSize() { Val = (font.Size.ValueInPoint * 2).ToString(CultureInfo.InvariantCulture) });
 			}
 		}

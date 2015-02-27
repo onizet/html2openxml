@@ -184,18 +184,18 @@ namespace NotesFor.HtmlToOpenXml
 			Margin margin = en.StyleAttributes.GetAsMargin("margin");
 			if (!margin.IsEmpty)
 			{
-				if (margin.Top.IsValid || margin.Bottom.IsValid)
+                if (margin.Top.IsFixed || margin.Bottom.IsFixed)
 				{
 					SpacingBetweenLines spacing = new SpacingBetweenLines();
-					if (margin.Top.IsValid) spacing.Before = margin.Top.ValueInDxa.ToString(CultureInfo.InvariantCulture);
-					if (margin.Bottom.IsValid) spacing.After = margin.Bottom.ValueInDxa.ToString(CultureInfo.InvariantCulture);
+                    if (margin.Top.IsFixed) spacing.Before = margin.Top.ValueInDxa.ToString(CultureInfo.InvariantCulture);
+                    if (margin.Bottom.IsFixed) spacing.After = margin.Bottom.ValueInDxa.ToString(CultureInfo.InvariantCulture);
 					containerStyleAttributes.Add(spacing);
 				}
-				if (margin.Left.IsValid || margin.Right.IsValid)
+                if (margin.Left.IsFixed || margin.Right.IsFixed)
 				{
 					Indentation indentation = new Indentation();
-					if (margin.Left.IsValid) indentation.Left = margin.Left.ValueInDxa.ToString(CultureInfo.InvariantCulture);
-					if (margin.Right.IsValid) indentation.Right = margin.Right.ValueInDxa.ToString(CultureInfo.InvariantCulture);
+                    if (margin.Left.IsFixed) indentation.Left = margin.Left.ValueInDxa.ToString(CultureInfo.InvariantCulture);
+                    if (margin.Right.IsFixed) indentation.Right = margin.Right.ValueInDxa.ToString(CultureInfo.InvariantCulture);
 					containerStyleAttributes.Add(indentation);
 				}
 			}

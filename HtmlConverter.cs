@@ -765,7 +765,7 @@ namespace NotesFor.HtmlToOpenXml
 
             // support left and right padding
             var padding = en.StyleAttributes.GetAsMargin("padding");
-            if (!padding.IsEmpty && (padding.Left.IsValid || padding.Right.IsValid))
+            if (!padding.IsEmpty && (padding.Left.IsFixed || padding.Right.IsFixed))
 			{
                 Indentation indentation = new Indentation();
                 if (padding.Left.Value > 0) indentation.Left = padding.Left.ValueInDxa.ToString(CultureInfo.InvariantCulture);

@@ -32,6 +32,9 @@ namespace NotesFor.HtmlToOpenXml
 		Pixel,
 
 		// this value is not parsed but can be used internally
-		Emus
+		Emus,
+
+        /// <summary>Not convertible to any other units.</summary>
+        Auto
 	}
 }

@@ -89,7 +89,7 @@ namespace NotesFor.HtmlToOpenXml
 			return new SideBorder(
 				borderStyle == w.BorderValues.Nil? w.BorderValues.Single : borderStyle,
 				borderColor.IsEmpty? Color.Black : borderColor,
-				borderWidth.IsValid? borderWidth : new Unit(UnitMetric.Pixel, 4));
+				borderWidth.IsFixed? borderWidth : new Unit(UnitMetric.Pixel, 4));
 		}
 
 		internal static Unit ParseWidth(String borderWidth)
