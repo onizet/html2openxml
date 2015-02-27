@@ -1,25 +1,38 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HtmlToOpenXml", "HtmlToOpenXml.csproj", "{EF700F30-C9BB-49A6-912C-E3B77857B514}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HtmlToOpenXml", "Trunk\HtmlToOpenXml.csproj", "{EF700F30-C9BB-49A6-912C-E3B77857B514}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HtmlToOpenXml.2.5", "HtmlToOpenXml.2.5.csproj", "{3D8B42D5-B1D4-46F4-B0B5-08093A11B661}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HtmlToOpenXml.2.5 - ClientProfile", "Trunk\HtmlToOpenXml.2.5 - ClientProfile.csproj", "{AEC9F5C3-A85C-4033-B4C9-3E6CBAF7D7E0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HtmlToOpenXml.4", "Trunk\HtmlToOpenXml.4.csproj", "{3D8B42D5-B1D4-46F4-B0B5-08093A11B661}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Nuget", "Nuget", "{E279A3FB-C025-4F67-B29F-8CDD4930CDAD}"
+	ProjectSection(SolutionItems) = preProject
+		Nuget\Html2OpenXml.nuspec = Nuget\Html2OpenXml.nuspec
+		Nuget\html2openxml.png = Nuget\html2openxml.png
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(TeamFoundationVersionControl) = preSolution
-		SccNumberOfProjects = 2
+		SccNumberOfProjects = 3
 		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
 		SccTeamFoundationServer = https://tfs.codeplex.com/tfs/tfs08
-		SccProjectUniqueName0 = HtmlToOpenXml.csproj
-		SccProjectName0 = .
+		SccProjectUniqueName0 = Trunk\\HtmlToOpenXml.csproj
+		SccProjectName0 = Trunk
 		SccAuxPath0 = https://tfs.codeplex.com/tfs/tfs08
-		SccLocalPath0 = .
+		SccLocalPath0 = Trunk
 		SccProvider0 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccProjectUniqueName1 = HtmlToOpenXml.2.5.csproj
-		SccProjectName1 = .
+		SccProjectUniqueName1 = Trunk\\HtmlToOpenXml.2.5\u0020-\u0020ClientProfile.csproj
+		SccProjectName1 = Trunk
 		SccAuxPath1 = https://tfs.codeplex.com/tfs/tfs08
-		SccLocalPath1 = .
+		SccLocalPath1 = Trunk
 		SccProvider1 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
+		SccProjectUniqueName2 = Trunk\\HtmlToOpenXml.4.csproj
+		SccProjectName2 = Trunk
+		SccAuxPath2 = https://tfs.codeplex.com/tfs/tfs08
+		SccLocalPath2 = Trunk
+		SccProvider2 = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,6 +43,10 @@ Global
 		{EF700F30-C9BB-49A6-912C-E3B77857B514}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EF700F30-C9BB-49A6-912C-E3B77857B514}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EF700F30-C9BB-49A6-912C-E3B77857B514}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AEC9F5C3-A85C-4033-B4C9-3E6CBAF7D7E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AEC9F5C3-A85C-4033-B4C9-3E6CBAF7D7E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AEC9F5C3-A85C-4033-B4C9-3E6CBAF7D7E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AEC9F5C3-A85C-4033-B4C9-3E6CBAF7D7E0}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3D8B42D5-B1D4-46F4-B0B5-08093A11B661}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3D8B42D5-B1D4-46F4-B0B5-08093A11B661}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3D8B42D5-B1D4-46F4-B0B5-08093A11B661}.Release|Any CPU.ActiveCfg = Release|Any CPU
