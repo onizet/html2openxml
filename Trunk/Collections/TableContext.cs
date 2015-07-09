@@ -79,7 +79,7 @@ namespace NotesFor.HtmlToOpenXml
 		}
 
 		/// <summary>
-		/// Gets the concurrent remaining row span foreach columns.
+		/// Gets the concurrent remaining row span foreach columns (key: cell with rowSpan attribute, value: length of the span).
 		/// </summary>
 		public SortedList<Point, Int32> RowSpan
 		{

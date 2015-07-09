@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
+using System.Linq;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -783,23 +784,42 @@ namespace NotesFor.HtmlToOpenXml
 			TableProperties properties = new TableProperties();
 			Table currentTable = new Table(properties);
 
+			string classValue = en.Attributes["class"];
+			if (classValue != null)
+			{
+				classValue = htmlStyles.GetStyle(classValue, StyleValues.Table, ignoreCase: true);
+				if (classValue != null)
+					properties.TableStyle = new TableStyle() { Val = classValue };
+			}
+
 			int? border = en.Attributes.GetAsInt("border");
 			if (border.HasValue && border.Value > 0)
 			{
-				// If the border has been specified, we display the Table Grid style which display
-				// its grid lines. Otherwise the default table style hides the grid lines.
-				if (htmlStyles.DoesStyleExists("Table Grid"))
-					properties.TableStyle = new TableStyle() { Val = htmlStyles.GetStyle("Table Grid", StyleValues.Paragraph) };
-				else
+				bool handleBorders = true;
+				if (classValue != null)
 				{
-					properties.TableBorders = new TableBorders() {
-						TopBorder = new TopBorder { Val = BorderValues.Single },
-						LeftBorder = new LeftBorder { Val = BorderValues.Single },
-						RightBorder = new RightBorder { Val = BorderValues.Single },
-						BottomBorder = new BottomBorder { Val = BorderValues.Single },
-						InsideHorizontalBorder = new InsideHorizontalBorder { Val = BorderValues.Single },
-						InsideVerticalBorder = new InsideVerticalBorder { Val = BorderValues.Single }
-					};
+					Style s = mainPart.StyleDefinitionsPart.Styles.Elements<Style>().FirstOrDefault(e => e.StyleName.Val == classValue);
+					if (s.StyleTableProperties.TableBorders != null) handleBorders = false;
+				}
+
+				if (handleBorders)
+				{
+					// If the border has been specified, we display the Table Grid style which display
+					// its grid lines. Otherwise the default table style hides the grid lines.
+					if (htmlStyles.DoesStyleExists("Table Grid"))
+						properties.TableStyle = new TableStyle() { Val = htmlStyles.GetStyle("Table Grid", StyleValues.Paragraph) };
+					else
+					{
+						uint borderSize = border.Value > 1? (uint) new Unit(UnitMetric.Pixel, border.Value).ValueInDxa : 1;
+						properties.TableBorders = new TableBorders() {
+							TopBorder = new TopBorder { Val = BorderValues.Single, Size = borderSize },
+							LeftBorder = new LeftBorder { Val = BorderValues.Single, Size = borderSize },
+							RightBorder = new RightBorder { Val = BorderValues.Single, Size = borderSize },
+							BottomBorder = new BottomBorder { Val = BorderValues.Single, Size = borderSize },
+							InsideHorizontalBorder = new InsideHorizontalBorder { Val = BorderValues.Single, Size = borderSize },
+							InsideVerticalBorder = new InsideVerticalBorder { Val = BorderValues.Single, Size = borderSize }
+						};
+					}
 				}
 			}
 
@@ -823,14 +843,6 @@ namespace NotesFor.HtmlToOpenXml
 				// Use Auto=0 instead of Pct=auto
 				// bug reported by scarhand (https://html2openxml.codeplex.com/workitem/12494)
 				properties.TableWidth = new TableWidth() { Type = TableWidthUnitValues.Auto, Width = "0" };
-			}
-
-			string classValue = en.Attributes["class"];
-			if (classValue != null)
-			{
-				classValue = htmlStyles.GetStyle(classValue, StyleValues.Table, ignoreCase: true);
-				if (classValue != null)
-					properties.TableStyle = new TableStyle() { Val = classValue };
 			}
 
 			string align = en.Attributes["align"];
@@ -899,9 +911,13 @@ namespace NotesFor.HtmlToOpenXml
 				// Okay we will insert nested table but beware the paragraph inside TableCell should contains at least 1 run.
 
 				TableCell currentCell = tables.CurrentTable.GetLastChild<TableRow>().GetLastChild<TableCell>();
-				if (elements.Count == 0) elements.Add(new Run(new Text("")));
-				currentCell.Append(new Paragraph(elements), currentTable);
-				elements.Clear();
+				// don't add an empty paragraph if not required (bug #13608 by zanjo)
+				if (elements.Count == 0) currentCell.Append(currentTable);
+				else
+				{
+					currentCell.Append(new Paragraph(elements), currentTable);
+					elements.Clear();
+				}
 			}
 			else
 			{
@@ -1332,6 +1348,7 @@ namespace NotesFor.HtmlToOpenXml
 					if (position.Y == rowIndex) continue;
 
 					row.InsertAt<TableCell>(new TableCell(new TableCellProperties {
+												TableCellWidth = new TableCellWidth() { Width = "0" },
 												VerticalMerge = new VerticalMerge() },
 											new Paragraph()),
 						position.X);
