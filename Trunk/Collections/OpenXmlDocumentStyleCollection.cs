@@ -41,7 +41,8 @@ namespace NotesFor.HtmlToOpenXml
 			while (low <= hi)
 			{
 				mid = low + (hi - low) / 2;
-				int rc = String.Compare(name, keys[mid], StringComparison.OrdinalIgnoreCase);
+                // Do not use Ordinal for string comparison to avoid the '_' character not being considered (bug #13776 reported by giorand)
+				int rc = String.Compare(name, keys[mid], System.Globalization.CultureInfo.CurrentCulture, System.Globalization.CompareOptions.IgnoreCase);
 				if (rc == 0)
 				{
 					style = this.Values[mid];
