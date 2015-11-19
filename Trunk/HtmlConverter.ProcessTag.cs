@@ -1054,13 +1054,13 @@ namespace NotesFor.HtmlToOpenXml
 			switch (unit.Type)
 			{
 				case UnitMetric.Percent:
-					properties.TableCellWidth = new TableCellWidth() { Type = TableWidthUnitValues.Pct, Width = (unit.Value * 50).ToString(CultureInfo.InvariantCulture) };
+                    properties.TableCellWidth = new TableCellWidth() { Type = TableWidthUnitValues.Pct, Width = (unit.ValueInDxa * 50).ToString(CultureInfo.InvariantCulture) };
 					break;
 				case UnitMetric.Point:
-					properties.TableCellWidth = new TableCellWidth() { Type = TableWidthUnitValues.Dxa, Width = (unit.Value * 20).ToString(CultureInfo.InvariantCulture) };
+                    properties.TableCellWidth = new TableCellWidth() { Type = TableWidthUnitValues.Dxa, Width = (unit.ValueInDxa * 20).ToString(CultureInfo.InvariantCulture) };
 					break;
 				case UnitMetric.Pixel:
-					properties.TableCellWidth = new TableCellWidth() { Type = TableWidthUnitValues.Dxa, Width = (unit.Value).ToString(CultureInfo.InvariantCulture) };
+					properties.TableCellWidth = new TableCellWidth() { Type = TableWidthUnitValues.Dxa, Width = (unit.ValueInDxa).ToString(CultureInfo.InvariantCulture) };
 					break;
 			}
 
