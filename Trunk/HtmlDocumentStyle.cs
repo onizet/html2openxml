@@ -21,6 +21,8 @@ namespace NotesFor.HtmlToOpenXml
 	/// </summary>
 	public sealed class HtmlDocumentStyle
 	{
+        internal enum KnownStyles { Hyperlink, Caption }
+
 		/// <summary>
 		/// Occurs when a Style is missing in the MainDocumentPart but will be used during the conversion process.
 		/// </summary>
@@ -32,7 +34,6 @@ namespace NotesFor.HtmlToOpenXml
         private NumberingListStyleCollection listStyle;
 		private OpenXmlDocumentStyleCollection knownStyles;
 		private MainDocumentPart mainPart;
-
 
 
 		internal HtmlDocumentStyle(MainDocumentPart mainPart)
@@ -150,6 +151,49 @@ namespace NotesFor.HtmlToOpenXml
 		}
 
 		#endregion
+
+        #region EnsureKnownStyle
+
+        /// <summary>
+        /// Ensure the specified style exists in the document.
+        /// </summary>
+        internal void EnsureKnownStyle(KnownStyles styleName)
+        {
+            if (styleName == KnownStyles.Hyperlink)
+            {
+                if (!this.DoesStyleExists("Hyperlink"))
+                {
+                    this.AddStyle("Hyperlink", new Style(
+                        new StyleName() { Val = "Hyperlink" },
+                        new UnhideWhenUsed(),
+                        new StyleRunProperties(PredefinedStyles.HyperLink)
+                    ) { Type = StyleValues.Character, StyleId = "Hyperlink" });
+                }
+            }
+            else if (styleName == KnownStyles.Caption)
+            {
+                if (this.DoesStyleExists("caption"))
+                    return;
+
+                String normalStyleName = this.GetStyle("Normal", StyleValues.Paragraph);
+                Style style = new Style(
+                    new StyleName { Val = "caption" },
+                    new BasedOn { Val = normalStyleName },
+                    new NextParagraphStyle { Val = normalStyleName },
+                    new UnhideWhenUsed(),
+                    new PrimaryStyle(),
+                    new StyleParagraphProperties
+                    {
+                        SpacingBetweenLines = new SpacingBetweenLines { Line = "240", LineRule = LineSpacingRuleValues.Auto }
+                    },
+                    new StyleRunProperties(PredefinedStyles.Caption)
+                ) { Type = StyleValues.Paragraph, StyleId = "Caption" };
+
+                this.AddStyle("caption", style);
+            }
+        }
+
+        #endregion
 
 		//____________________________________________________________________
 		//

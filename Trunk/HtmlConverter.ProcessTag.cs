@@ -364,7 +364,7 @@ namespace NotesFor.HtmlToOpenXml
 		private void ProcessFigureCaption(HtmlEnumerator en)
 		{
 			this.CompleteCurrentParagraph(true);
-			EnsureCaptionStyle();
+            htmlStyles.EnsureKnownStyle(HtmlDocumentStyle.KnownStyles.Caption);
 
 			currentParagraph.Append(
 					new ParagraphProperties {
@@ -571,15 +571,7 @@ namespace NotesFor.HtmlToOpenXml
 				Run run = el as Run;
 				if (run != null && !run.HasChild<Drawing>())
 				{
-					if (!htmlStyles.DoesStyleExists("Hyperlink"))
-					{
-						htmlStyles.AddStyle("Hyperlink", new Style(
-							new StyleName() { Val = "Hyperlink" },
-							new UnhideWhenUsed(),
-							new StyleRunProperties(PredefinedStyles.HyperLink)
-						) { Type = StyleValues.Character, StyleId = "Hyperlink" });
-					}
-
+                    htmlStyles.EnsureKnownStyle(HtmlDocumentStyle.KnownStyles.Hyperlink);
 					run.InsertInProperties(prop =>
 						prop.RunStyle = new RunStyle() { Val = htmlStyles.GetStyle("Hyperlink", StyleValues.Character) });
 					break;
@@ -896,8 +888,17 @@ namespace NotesFor.HtmlToOpenXml
 				properties.TableCellSpacing = new TableCellSpacing { Type = TableWidthUnitValues.Dxa, Width = spacing.Value.ToString(CultureInfo.InvariantCulture) };
 
 			int? padding = en.Attributes.GetAsInt("cellpadding");
-			if (padding.HasValue)
-				properties.TableIndentation = new TableIndentation { Type = TableWidthUnitValues.Dxa, Width = padding.Value };
+            if (padding.HasValue)
+            {
+                int paddingDxa = (int) new Unit(UnitMetric.Pixel, padding.Value).ValueInDxa;
+
+                properties.TableIndentation = new TableIndentation { Type = TableWidthUnitValues.Dxa, Width = paddingDxa };
+                TableCellMarginDefault cellMargin = new TableCellMarginDefault();
+                cellMargin.TableCellLeftMargin = new TableCellLeftMargin() { Type = TableWidthValues.Dxa, Width = (short) paddingDxa };
+                cellMargin.TableCellRightMargin = new TableCellRightMargin() { Type = TableWidthValues.Dxa, Width = (short) paddingDxa };
+                cellMargin.TopMargin = new TopMargin() { Type = TableWidthUnitValues.Dxa, Width = paddingDxa.ToString(CultureInfo.InvariantCulture) };
+                cellMargin.BottomMargin = new BottomMargin() { Type = TableWidthUnitValues.Dxa, Width = paddingDxa.ToString(CultureInfo.InvariantCulture) };
+            }
 
 			List<OpenXmlElement> runStyleAttributes = new List<OpenXmlElement>();
 			htmlStyles.Tables.ProcessCommonAttributes(en, runStyleAttributes);
@@ -991,7 +992,7 @@ namespace NotesFor.HtmlToOpenXml
 			else
 				this.paragraphs.Add(legend);
 
-			EnsureCaptionStyle();
+            htmlStyles.EnsureKnownStyle(HtmlDocumentStyle.KnownStyles.Caption);
 		}
 
 		#endregion
