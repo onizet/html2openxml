@@ -23,6 +23,7 @@ namespace NotesFor.HtmlToOpenXml
     using a = DocumentFormat.OpenXml.Drawing;
     using pic = DocumentFormat.OpenXml.Drawing.Pictures;
     using wp = DocumentFormat.OpenXml.Drawing.Wordprocessing;
+using System.Text.RegularExpressions;
 
 
 	/// <summary>
@@ -110,8 +111,8 @@ namespace NotesFor.HtmlToOpenXml
 			HtmlEnumerator en = new HtmlEnumerator(html);
 			ProcessHtmlChunks(en, null);
 
-			if (elements.Count > 0)
-				this.currentParagraph.Append(elements);
+            if (elements.Count > 0)
+                this.currentParagraph.Append(elements);
 
 			// As the Parse method is public, to avoid changing the type of the return value, I use this proxy
 			// that will allow me to call the recursive method RemoveEmptyParagraphs with no major changes, impacting the client.
@@ -303,17 +304,19 @@ namespace NotesFor.HtmlToOpenXml
 				// The footnotesRef Id is a required field and should be unique. You can assign yourself some hard-coded
 				// value but that's absolutely not safe. We will loop through the existing Footnote
 				// to retrieve the highest Id.
-				foreach (var p in fpart.Footnotes.Elements<Footnote>())
+				foreach (var fn in fpart.Footnotes.Elements<Footnote>())
 				{
-					if (p.Id.HasValue && p.Id > footnotesRef) footnotesRef = (int) p.Id.Value;
+					if (fn.Id.HasValue && fn.Id > footnotesRef) footnotesRef = (int) fn.Id.Value;
 				}
 				footnotesRef++;
 			}
 
+
 			Run markerRun;
+            Paragraph p;
 			fpart.Footnotes.Append(
 				new Footnote(
-					new Paragraph(
+					p = new Paragraph(
 						new ParagraphProperties {
 							ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle("footnote text", StyleValues.Paragraph) }
 						},
@@ -323,11 +326,37 @@ namespace NotesFor.HtmlToOpenXml
 							},
 							new FootnoteReferenceMark()),
 						new Run(
-				// Word insert automatically a space before the definition to separate the reference number
-				// with its description
-							new Text(" " + description) { Space = SpaceProcessingModeValues.Preserve })
+				        // Word insert automatically a space before the definition to separate the
+                        // reference number with its description
+							new Text(" ") { Space = SpaceProcessingModeValues.Preserve })
 					)
 				) { Id = footnotesRef });
+
+
+            // Description in footnote reference can be plain text or a web protocols/file share (like \\server01)
+            Uri uriReference;
+            Regex linkRegex = new Regex(@"^((https?|ftps?|mailto|file)://|[\\]{2})(?:[\w][\w.-]?)");
+            if (linkRegex.IsMatch(description) && Uri.TryCreate(description, UriKind.Absolute, out uriReference))
+            {
+                HyperlinkRelationship extLink = fpart.AddHyperlinkRelationship(uriReference, true);
+                var h = new Hyperlink(
+                    ) { History = true, Id = extLink.Id };
+
+                htmlStyles.EnsureKnownStyle(HtmlDocumentStyle.KnownStyles.Hyperlink);
+
+                h.Append(new Run(
+                    new RunProperties {
+                        RunStyle = new RunStyle() { Val = htmlStyles.GetStyle("Hyperlink", StyleValues.Character) }
+                    },
+                    new Text(description)));
+                p.Append(h);
+            }
+            else
+            {
+                p.Append(new Run(
+                    new Text(description) { Space = SpaceProcessingModeValues.Preserve }));
+            }
+
 
 			if (!htmlStyles.DoesStyleExists("footnote reference"))
 			{
@@ -696,34 +725,6 @@ namespace NotesFor.HtmlToOpenXml
 		public void RefreshStyles()
 		{
 			htmlStyles.PrepareStyles(mainPart);
-		}
-
-		#endregion
-
-		#region EnsureCaptionStyle
-
-		/// <summary>
-		/// Ensure the 'caption' style exists in the document.
-		/// </summary>
-		private void EnsureCaptionStyle()
-		{
-			if (htmlStyles.DoesStyleExists("caption"))
-				return;
-
-			String normalStyleName = htmlStyles.GetStyle("Normal", StyleValues.Paragraph);
-			Style style = new Style(
-				new StyleName { Val = "caption" },
-				new BasedOn { Val = normalStyleName },
-				new NextParagraphStyle { Val = normalStyleName },
-				new UnhideWhenUsed(),
-				new PrimaryStyle(),
-				new StyleParagraphProperties {
-					SpacingBetweenLines = new SpacingBetweenLines { Line = "240", LineRule = LineSpacingRuleValues.Auto }
-				},
-				new StyleRunProperties(PredefinedStyles.Caption)
-			) { Type = StyleValues.Paragraph, StyleId = "Caption" };
-
-			htmlStyles.AddStyle("caption", style);
 		}
 
 		#endregion
