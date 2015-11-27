@@ -885,19 +885,19 @@ namespace NotesFor.HtmlToOpenXml
 
 			int? spacing = en.Attributes.GetAsInt("cellspacing");
 			if (spacing.HasValue)
-				properties.TableCellSpacing = new TableCellSpacing { Type = TableWidthUnitValues.Dxa, Width = spacing.Value.ToString(CultureInfo.InvariantCulture) };
+                properties.TableCellSpacing = new TableCellSpacing { Type = TableWidthUnitValues.Dxa, Width = new Unit(UnitMetric.Pixel, spacing.Value).ValueInDxa.ToString(CultureInfo.InvariantCulture) };
 
 			int? padding = en.Attributes.GetAsInt("cellpadding");
             if (padding.HasValue)
             {
                 int paddingDxa = (int) new Unit(UnitMetric.Pixel, padding.Value).ValueInDxa;
 
-                properties.TableIndentation = new TableIndentation { Type = TableWidthUnitValues.Dxa, Width = paddingDxa };
                 TableCellMarginDefault cellMargin = new TableCellMarginDefault();
                 cellMargin.TableCellLeftMargin = new TableCellLeftMargin() { Type = TableWidthValues.Dxa, Width = (short) paddingDxa };
                 cellMargin.TableCellRightMargin = new TableCellRightMargin() { Type = TableWidthValues.Dxa, Width = (short) paddingDxa };
                 cellMargin.TopMargin = new TopMargin() { Type = TableWidthUnitValues.Dxa, Width = paddingDxa.ToString(CultureInfo.InvariantCulture) };
                 cellMargin.BottomMargin = new BottomMargin() { Type = TableWidthUnitValues.Dxa, Width = paddingDxa.ToString(CultureInfo.InvariantCulture) };
+                properties.TableCellMarginDefault = cellMargin;
             }
 
 			List<OpenXmlElement> runStyleAttributes = new List<OpenXmlElement>();
