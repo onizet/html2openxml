@@ -176,13 +176,15 @@ namespace NotesFor.HtmlToOpenXml
 					if (className != null)
 					{
 						containerStyleAttributes.Add(new ParagraphStyleId() { Val = className });
+                        newParagraph = true;
 						break;
 					}
 				}
 			}
 
 			Margin margin = en.StyleAttributes.GetAsMargin("margin");
-			if (!margin.IsEmpty)
+            Indentation indentation = null;
+            if (!margin.IsEmpty)
 			{
                 if (margin.Top.IsFixed || margin.Bottom.IsFixed)
 				{
@@ -193,12 +195,21 @@ namespace NotesFor.HtmlToOpenXml
 				}
                 if (margin.Left.IsFixed || margin.Right.IsFixed)
 				{
-					Indentation indentation = new Indentation();
+					indentation = new Indentation();
                     if (margin.Left.IsFixed) indentation.Left = margin.Left.ValueInDxa.ToString(CultureInfo.InvariantCulture);
                     if (margin.Right.IsFixed) indentation.Right = margin.Right.ValueInDxa.ToString(CultureInfo.InvariantCulture);
 					containerStyleAttributes.Add(indentation);
 				}
 			}
+
+            // implemented by giorand (feature #13787)
+            Unit textIndent = en.StyleAttributes.GetAsUnit("text-indent");
+            if (textIndent.IsValid && (en.CurrentTag == "<p>" || en.CurrentTag == "<div>"))
+            {
+                if (indentation == null) indentation = new Indentation();
+                indentation.FirstLine = textIndent.ValueInDxa.ToString(CultureInfo.InvariantCulture);
+                containerStyleAttributes.Add(indentation);
+            }
 
 			this.BeginTag(en.CurrentTag, containerStyleAttributes);
 
