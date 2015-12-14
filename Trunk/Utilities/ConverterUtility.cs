@@ -138,9 +138,11 @@ namespace NotesFor.HtmlToOpenXml
 			if (html == null) return null;
 			switch (html.ToLowerInvariant())
 			{
+                case "700":
 				case "bold": return FontWeight.Bold;
 				case "bolder": return FontWeight.Bolder;
-				case "normal": return FontWeight.Normal;
+                case "400":
+                case "normal": return FontWeight.Normal;
 				default: return null;
 			}
 		}

@@ -1205,7 +1205,7 @@ namespace NotesFor.HtmlToOpenXml
 		private void ProcessClosingBlockQuote(HtmlEnumerator en)
 		{
 			CompleteCurrentParagraph(true);
-			htmlStyles.Paragraph.BeginTag("<blockquote>");
+			htmlStyles.Paragraph.EndTag("<blockquote>");
 		}
 
 		#endregion
