@@ -25,7 +25,7 @@ namespace NotesFor.HtmlToOpenXml
 		{
 			public Table Table;
 			public Point CellPosition;
-			public SortedList<Point, Int32> RowSpan;
+            public HtmlTableSpanCollection RowSpan;
 		}
 		private Stack<Tuple> tables = new Stack<Tuple>(5);
 		private Tuple current;
@@ -45,7 +45,7 @@ namespace NotesFor.HtmlToOpenXml
 			if (this.current != null)
 				tables.Push(current);
 
-			current = new Tuple() { Table = table, CellPosition = Point.Empty, RowSpan = new SortedList<Point, Int32>(this) };
+            current = new Tuple() { Table = table, CellPosition = Point.Empty, RowSpan = new HtmlTableSpanCollection() };
 		}
 
 		public void CloseContext()
@@ -81,7 +81,7 @@ namespace NotesFor.HtmlToOpenXml
 		/// <summary>
 		/// Gets the concurrent remaining row span foreach columns (key: cell with rowSpan attribute, value: length of the span).
 		/// </summary>
-		public SortedList<Point, Int32> RowSpan
+        public HtmlTableSpanCollection RowSpan
 		{
 			get { return current.RowSpan; }
 		}
@@ -90,10 +90,5 @@ namespace NotesFor.HtmlToOpenXml
 		{
 			get { return current.Table; }
 		}
-
-		/// <summary>
-		/// Gets or sets the index of the current working column (used for RowSpan)
-		/// </summary>
-		public int IndexColumn { get; set; }
 	}
 }

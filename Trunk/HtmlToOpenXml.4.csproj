@@ -54,6 +54,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Collections\HtmlTableSpanCollection.cs" />
     <Compile Include="Collections\OpenXmlDocumentStyleCollection.cs" />
     <Compile Include="Configuration enum.cs" />
     <Compile Include="HtmlConverter.ProcessTag.cs" />
@@ -63,6 +64,7 @@
     <Compile Include="Primitives\FontWeight.cs" />
     <Compile Include="Primitives\HtmlFont.cs" />
     <Compile Include="Primitives\HtmlImageInfo.cs" />
+    <Compile Include="Primitives\HtmlTableSpan.cs" />
     <Compile Include="Properties\PredefinedStyles.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

@@ -14,8 +14,7 @@ namespace Demo
         static void Main(string[] args)
         {
             const string filename = "test.docx";
-			string html = Demo.Properties.Resources.RowSpan;//Advanced_Table;
-
+            string html = Demo.Properties.Resources.CompleteRunTest;
             if (File.Exists(filename)) File.Delete(filename);
 
             using (MemoryStream generatedDocument = new MemoryStream())
