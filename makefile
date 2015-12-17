@@ -47,6 +47,7 @@ FILES_SRC= \
 	$(SRCDIR)/ProvisionImageEventArgs.cs \
 	$(COLLDIR)/RunStyleCollection.cs \
 	$(COLLDIR)/HtmlAttributeCollection.cs \
+	$(COLLDIR)/HtmlTableSpanCollection.cs \
 	$(COLLDIR)/OpenXmlStyleCollectionBase.cs \
 	$(COLLDIR)/OpenXmlDocumentStyleCollection.cs \
 	$(COLLDIR)/NumberingListStyleCollection.cs \
@@ -71,6 +72,7 @@ FILES_SRC= \
 	$(PRIMDIR)/HtmlImageInfo.cs \
 	$(PRIMDIR)/DataUri.cs \
 	$(PRIMDIR)/HtmlBorder.cs \
+	$(PRIMDIR)/HtmlTableSpan.cs \
 	$(SRCDIR)/Configuration\ enum.cs
 
 PREDEFSTYLES=$(PROPDIR)/PredefinedStyles

@@ -41,8 +41,8 @@ namespace NotesFor.HtmlToOpenXml
 								 RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
 			// Removes tabs and whitespace inside and before|next the line-breaking tags (p, div, br and body)
-            // to preserve first whitespaces on the beginning of a 'pre' tag, we use 'p ' tag to exclude matching <pre> (by giorand, bug #13799)
-            html = Regex.Replace(html, @"(\s*)(</?(p |div|br|body)[^>]*/?>)(\s*)", "$2", RegexOptions.Multiline| RegexOptions.IgnoreCase);
+            // to preserve first whitespaces on the beginning of a 'pre' tag, we use '\bp\b' tag to exclude matching <pre> (by giorand, bug #13800)
+            html = Regex.Replace(html, @"(\s*)(</?(\bp\b|div|br|body)[^>]*/?>)(\s*)", "$2", RegexOptions.Multiline| RegexOptions.IgnoreCase);
 
 			// Preserves whitespaces inside Pre tags.
 			html = Regex.Replace(html, "(<pre.*?>)(.+?)</pre>", PreserveWhitespacesInPre, RegexOptions.Singleline| RegexOptions.IgnoreCase);
@@ -81,8 +81,8 @@ namespace NotesFor.HtmlToOpenXml
 		{
 			// Convert new lines in <pre> to <br> tags for easier processing
 			string innerHtml = Regex.Replace(match.Groups[2].Value, "\r?\n", "<br>");
-			// Remove any whitespace at the beginning or end of the pre
-			innerHtml = Regex.Replace(innerHtml, "^<br>|<br>$", String.Empty);
+			// Remove any whitespace at the end of the pre
+			innerHtml = Regex.Replace(innerHtml, @"(<br>|\s+)$", String.Empty);
 			return match.Groups[1].Value + innerHtml + "</pre>";
 		}
 

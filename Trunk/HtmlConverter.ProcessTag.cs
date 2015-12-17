@@ -1033,7 +1033,6 @@ namespace NotesFor.HtmlToOpenXml
 
 			tables.CurrentTable.Append(row);
 			tables.CellPosition = new Point(0, tables.CellPosition.Y + 1);
-			tables.IndexColumn = 0;
 		}
 
 		#endregion
@@ -1045,6 +1044,8 @@ namespace NotesFor.HtmlToOpenXml
 			if (!tables.HasContext) return;
 
 			TableCellProperties properties = new TableCellProperties();
+            // in Html, table cell are vertically centered by default
+            properties.TableCellVerticalAlignment = new TableCellVerticalAlignment() { Val = TableVerticalAlignmentValues.Center };
 
 			List<OpenXmlElement> styleAttributes = new List<OpenXmlElement>();
 			List<OpenXmlElement> runStyleAttributes = new List<OpenXmlElement>();
@@ -1065,15 +1066,11 @@ namespace NotesFor.HtmlToOpenXml
 					break;
 			}
 
-			// any code related to tables.IndexColumn is deal to handle row span (implemented by daviderapicavoli)
-			tables.IndexColumn++;
-
 			// fix an issue when specifying the RowSpan or ColSpan=1 (reported by imagremlin)
 			int? colspan = en.Attributes.GetAsInt("colspan");
 			if (colspan.HasValue && colspan.Value > 1)
 			{
 				properties.GridSpan = new GridSpan() { Val = colspan };
-				tables.IndexColumn += colspan.Value - 1;
 			}
 
 			int? rowspan = en.Attributes.GetAsInt("rowspan");
@@ -1081,9 +1078,17 @@ namespace NotesFor.HtmlToOpenXml
 			{
 				properties.VerticalMerge = new VerticalMerge() { Val = MergedCellValues.Restart };
 
-				Point p = new Point(tables.CellPosition.X, tables.CellPosition.Y);
-				if (p.X > 0) p.X = tables.IndexColumn - 1;
-				tables.RowSpan[p] = rowspan.Value - 1;
+				Point p = tables.CellPosition;
+                int mx = p.X, shift = 0;
+                // if there is already a running rowSpan on a left-sided column, we have to shift this position
+                foreach (var rs in tables.RowSpan)
+                    if (rs.CellOrigin.Y < p.Y && rs.CellOrigin.X <= p.X + shift) shift++;
+
+                p.Offset(shift, 0);
+                tables.RowSpan.Add(new HtmlTableSpan(p) {
+                    RowSpan = rowspan.Value - 1,
+                    ColSpan = colspan.HasValue && rowspan.Value > 1 ? colspan.Value : 0
+                });
 			}
 
 			// Manage vertical text (only for table cell)
@@ -1142,7 +1147,7 @@ namespace NotesFor.HtmlToOpenXml
 				htmlStyles.Runs.BeginTag(en.CurrentTag, runStyleAttributes.ToArray());
 
 			TableCell cell = new TableCell();
-			if (properties.HasChildren) cell.AppendChild(properties);
+			if (properties.HasChildren) cell.TableCellProperties = properties;
 
 			tables.CurrentTable.GetLastChild<TableRow>().Append(cell);
 
@@ -1345,19 +1350,45 @@ namespace NotesFor.HtmlToOpenXml
 
 				for (int i = 0; i < tables.RowSpan.Count; i++)
 				{
-					Point position = tables.RowSpan.Keys[i];
-					if (position.Y == rowIndex) continue;
+					HtmlTableSpan tspan = tables.RowSpan[i];
+					if (tspan.CellOrigin.Y == rowIndex) continue;
 
-					row.InsertAt<TableCell>(new TableCell(new TableCellProperties {
-												TableCellWidth = new TableCellWidth() { Width = "0" },
-												VerticalMerge = new VerticalMerge() },
-											new Paragraph()),
-						position.X);
+                    TableCell emptyCell = new TableCell(new TableCellProperties {
+								            TableCellWidth = new TableCellWidth() { Width = "0" },
+								            VerticalMerge = new VerticalMerge() },
+							            new Paragraph());
 
-					int span = tables.RowSpan[position];
-					if (span == 1) { tables.RowSpan.RemoveAt(i); i--; }
-					else tables.RowSpan[position] = span - 1;
-				}
+                    tspan.RowSpan--;
+                    if (tspan.RowSpan == 0) { tables.RowSpan.RemoveAt(i); i--; }
+
+                    // in case of both colSpan + rowSpan on the same cell, we have to reverberate the rowSpan on the next columns too
+                    if (tspan.ColSpan > 0) emptyCell.TableCellProperties.GridSpan = new GridSpan() { Val = tspan.ColSpan };
+
+                    TableCell cell = row.GetFirstChild<TableCell>();
+                    if (tspan.CellOrigin.X == 0 || cell == null)
+                    {
+                        row.InsertAt(emptyCell, 0);
+                        continue;
+                    }
+
+                    // find the good column position, taking care of eventual colSpan
+                    int columnIndex = 0;
+                    do
+                    {
+                        GridSpan gspan = null;
+                        if (cell.TableCellProperties != null)
+                            gspan = cell.TableCellProperties.GetFirstChild<GridSpan>();
+
+                        if (gspan != null) columnIndex += gspan.Val;
+                        else columnIndex++;
+
+                        if (columnIndex >= tspan.CellOrigin.X) break;
+                    }
+                    while ((cell = cell.NextSibling<TableCell>()) != null);
+
+                    if (cell == null) row.AppendChild(emptyCell);
+                    else row.InsertAfter<TableCell>(emptyCell, cell);
+                }
 			}
 
 			htmlStyles.Tables.EndTag("<tr>");

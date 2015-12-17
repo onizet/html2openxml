@@ -67,13 +67,11 @@ namespace Demo.Properties {
         ///    &lt;title&gt;&lt;/title&gt;
         ///&lt;/head&gt;
         ///&lt;body&gt;
-        ///
-        ///&lt;table style=&quot;border-width: 0px; border-style: solid; width: 90%;&quot; border=&quot;0&quot; cellspacing=&quot;0&quot; cellpadding=&quot;2&quot; align=&quot;center&quot;&gt;
-        ///&lt;tbody&gt;
-        ///    &lt;tr align=&quot;center&quot;&gt;
-        ///        &lt;td&gt;&lt;span style=&quot;background-color: #ffffff;&quot;&gt;Reviewed by: ________________________________&lt;/span&gt;&lt;/td&gt;
-        ///        &lt;td&gt;&lt;span style=&quot;background-color: #ffffff;&quot;&gt;Acceptance: ________________________________&lt;/span&gt;&lt;/td&gt;
-        ///    &lt;/tr [rest of string was truncated]&quot;;.
+        ///    &lt;table align=&quot;center&quot; border=&quot;1&quot;&gt;
+        ///    &lt;tbody&gt;
+        ///        &lt;tr&gt;
+        ///            &lt;td align=&quot;center&quot; style=&quot;background-color: rgb(135,206,235);&quot; colspan=&quot;2&quot;&gt;&lt;strong&gt;&lt;span style=&quot;font-size: 13px; font-family: tahoma;&quot;&gt;Change Type&lt;/span&gt;&lt;/strong&gt;&lt;/td&gt;
+        ///            &lt;td align=&quot;center&quot; style=&quot;background-color: rgb(135,206,235);&quot;&gt;&lt;strong&gt;&lt;span style=&quot;font-size: 13px; font-family: tahoma;&quot;&gt;Change Risk&lt; [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string Advanced_Table {
             get {
@@ -128,26 +126,24 @@ namespace Demo.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &lt;html&gt;
-        ///&lt;head&gt;
-        ///    &lt;style type=&quot;text/css&quot; media=&quot;screen,print&quot;&gt;
-        ///        .divPageBreak
-        ///        {
-        ///            page-break-after: always;
-        ///            display: block;
-        ///            clear: both;
-        ///        }
-        ///        table, td
-        ///        {
-        ///            border: 1px solid black;
-        ///            border-collapse: collapse;
-        ///        }
-        ///    &lt;/style&gt;
-        ///&lt;/head&gt;
-        ///&lt;body&gt;
-        ///    &lt;div class=&quot;divPageBreak&quot;&gt;
-        ///        &lt;p class=&quot;Paragraph&quot; style=&quot;margin: 0cm 0cm 10pt;&quot;&gt;
-        ///            &lt;span lang=&quot;EN-US&quot; style=&quot;font-size: 10pt; font-fami [rest of string was truncated]&quot;;.
+        ///   Looks up a localized string similar to &lt;p&gt;$#Candidate Code#$&lt;/p&gt;
+        ///&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+        ///&lt;h3&gt;Hello dude&lt;/h3&gt;
+        ///&lt;span class=&quot;MyClass&quot;&gt;bonjour je suis du texte en mauve.&lt;/span&gt;
+        ///&lt;table width=&quot;396&quot; style=&quot;width: 396px; height: 125px; margin-right: auto; margin-left: auto;&quot; border=&quot;1&quot;&gt;
+        ///&lt;tbody&gt;
+        ///&lt;tr&gt;
+        ///&lt;td border=&quot;1&quot;&gt;&amp;nbsp;saa&lt;/td&gt;
+        ///&lt;td border=&quot;1&quot;&gt;&amp;nbsp;fdgdfg&lt;/td&gt;
+        ///&lt;td border=&quot;1&quot;&gt;&amp;nbsp;fdg&lt;/td&gt;
+        ///&lt;td border=&quot;1&quot;&gt;&amp;nbsp;fdgfdg&lt;/td&gt;
+        ///&lt;td border=&quot;1&quot;&gt;&amp;nbsp;&lt;/td&gt;
+        ///&lt;/tr&gt;
+        ///&lt;tr&gt;
+        ///&lt;td border=&quot;1&quot;&gt;&amp;nbsp;&lt;/td&gt;
+        ///&lt;td border=&quot;1&quot;&gt;&amp;nbsp;&lt;/td&gt;
+        ///&lt;td border=&quot;1&quot;&gt;&amp;nbsp;&lt;/td&gt;
+        ///&lt;td bo [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string Demo2 {
             get {
