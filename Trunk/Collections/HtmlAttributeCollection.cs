@@ -34,9 +34,9 @@ namespace NotesFor.HtmlToOpenXml
 (?<tag>\w+)=(?<val>\w+)
 |
 # single tag (with no value): contenteditable
-\b(?<tag>\w+)\b", RegexOptions.Compiled | RegexOptions.IgnorePatternWhitespace);
+\b(?<tag>\w+)\b", RegexOptions.IgnorePatternWhitespace);
 
-		private static Regex stripStyleAttributesRegex = new Regex(@"(?<name>.+?):\s*(?<val>[^;]+);*\s*", RegexOptions.Compiled);
+        private static Regex stripStyleAttributesRegex = new Regex(@"(?<name>.+?):\s*(?<val>[^;]+);*\s*");
 
 		private StringDictionary attributes;
 
@@ -82,7 +82,9 @@ namespace NotesFor.HtmlToOpenXml
 			HtmlAttributeCollection collection = new HtmlAttributeCollection();
 			if (String.IsNullOrEmpty(htmlTag)) return collection;
 
-			MatchCollection matches = stripStyleAttributesRegex.Matches(htmlTag);
+            // Encoded ':' and ';' characters are valid for browser but not handled by the regex (bug #13812 reported by robin391)
+            // ex= <span style="text-decoration&#58;underline&#59;color:red">
+			MatchCollection matches = stripStyleAttributesRegex.Matches(HttpUtility.HtmlDecode(htmlTag));
 			foreach (Match m in matches)
 				collection.attributes[m.Groups["name"].Value] = m.Groups["val"].Value;
 
