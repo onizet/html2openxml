@@ -58,7 +58,7 @@ namespace NotesFor.HtmlToOpenXml
 					if (!String.Equals(style.StyleName.Val, name, StringComparison.OrdinalIgnoreCase))
 						style = firstFoundStyle;
 
-					return true;
+                    return style.Type.Equals<StyleValues>(styleType);
 				}
 				else if (rc < 0) hi = mid - 1;
 				else low = mid + 1;
