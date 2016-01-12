@@ -408,7 +408,7 @@ namespace NotesFor.HtmlToOpenXml
 			// To circumvent this buffer size, we will work either on the Uri, either on the original src.
 			if (src != null && (DataUri.IsWellFormed(src) || Uri.TryCreate(src, UriKind.RelativeOrAbsolute, out uri)))
 			{
-				string alt = en.Attributes["title"] ?? en.Attributes["alt"];
+				string alt = (en.Attributes["title"] ?? en.Attributes["alt"]) ?? String.Empty;
 				bool process = true;
 
 				if (uri != null && !uri.IsAbsoluteUri && this.BaseImageUrl != null)
@@ -790,8 +790,12 @@ namespace NotesFor.HtmlToOpenXml
 				bool handleBorders = true;
 				if (classValue != null)
 				{
-					Style s = mainPart.StyleDefinitionsPart.Styles.Elements<Style>().FirstOrDefault(e => e.StyleName.Val == classValue);
-					if (s.StyleTableProperties.TableBorders != null) handleBorders = false;
+                    String styleId = this.htmlStyles.GetStyle(classValue, StyleValues.Table, true);
+					if (styleId != null)
+                    {
+                        var s = mainPart.StyleDefinitionsPart.Styles.Elements<Style>().First(e => e.StyleId == styleId);
+                        if (s.StyleTableProperties.TableBorders != null) handleBorders = false;
+                    }
 				}
 
 				if (handleBorders)
@@ -1288,27 +1292,29 @@ namespace NotesFor.HtmlToOpenXml
 
 			TableRow row = tables.CurrentTable.GetFirstChild<TableRow>();
 			// Is this a misformed or empty table?
-			if (row == null) return;
+            if (row != null)
+            {
+                // Count the number of tableCell and add as much GridColumn as we need.
+                TableGrid grid = new TableGrid();
+                for (int i = 0; i < row.ChildElements.Count; i++)
+                {
+                    if (row.ChildElements[i] is TableCell)
+                    {
+                        grid.Append(new GridColumn());
 
-			// Count the number of tableCell and add as much GridColumn as we need.
-			TableGrid grid = new TableGrid();
-			for (int i = 0; i < row.ChildElements.Count; i++)
-			{
-				if (row.ChildElements[i] is TableCell)
-				{
-					grid.Append(new GridColumn());
+                        // If that column contains some span, we need to count them also
+                        GridSpan span = row.ChildElements[i].GetFirstChild<GridSpan>();
+                        if (span != null)
+                        {
+                            for (int j = span.Val; j > 0; j++)
+                                grid.Append(new GridColumn());
+                        }
+                    }
+                }
 
-					// If that column contains some span, we need to count them also
-					GridSpan span = row.ChildElements[i].GetFirstChild<GridSpan>();
-					if (span != null)
-					{
-						for (int j = span.Val; j > 0; j++)
-							grid.Append(new GridColumn());
-					}
-				}
-			}
+                tables.CurrentTable.InsertAt<TableGrid>(grid, 1);
+            }
 
-			tables.CurrentTable.InsertAt<TableGrid>(grid, 1);
 			tables.CloseContext();
 
 			if (!tables.HasContext)
