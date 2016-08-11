@@ -180,40 +180,56 @@ namespace NotesFor.HtmlToOpenXml
 			System.Drawing.Color color;
 
 			// Bug fixed by jairoXXX to support rgb(r,g,b) format
-			if (htmlColor.StartsWith("rgb(", StringComparison.OrdinalIgnoreCase))
+			if (htmlColor.StartsWith("rgb", StringComparison.OrdinalIgnoreCase))
 			{
-				var colorStringArray = htmlColor.Substring(4, htmlColor.LastIndexOf(')') - 4).Split(',');
+                int startIndex = htmlColor.IndexOf('(', 3), endIndex = htmlColor.LastIndexOf(')');
+                if (startIndex >=  3 && endIndex > -1)
+                {
+                    var colorStringArray = htmlColor.Substring(startIndex + 1, endIndex - startIndex - 1).Split(',');
+                    if (colorStringArray.Length >= 3)
+                    {
+                        return System.Drawing.Color.FromArgb(
+                            colorStringArray.Length == 3? 255 : Int32.Parse(colorStringArray[0], NumberStyles.Integer, CultureInfo.InvariantCulture),
+                            Int32.Parse(colorStringArray[colorStringArray.Length - 3], NumberStyles.Integer, CultureInfo.InvariantCulture),
+                            Int32.Parse(colorStringArray[colorStringArray.Length - 2], NumberStyles.Integer, CultureInfo.InvariantCulture),
+                            Int32.Parse(colorStringArray[colorStringArray.Length - 1], NumberStyles.Integer, CultureInfo.InvariantCulture));
+                    }
+                }
+            }
 
-				return System.Drawing.Color.FromArgb(
-					Int32.Parse(colorStringArray[0], NumberStyles.Integer, CultureInfo.InvariantCulture),
-					Int32.Parse(colorStringArray[1], NumberStyles.Integer, CultureInfo.InvariantCulture),
-					Int32.Parse(colorStringArray[2], NumberStyles.Integer, CultureInfo.InvariantCulture));
-			}
-
-			// The Html allows to write color in hexa without the preceding '#'
-			// I just ensure it's a correct hexadecimal value (length=6 and first character should be
-			// a digit or an hexa letter)
-			if (htmlColor.Length == 6 && (Char.IsDigit(htmlColor[0]) || (htmlColor[0] >= 'a' && htmlColor[0] <= 'f')
-				|| (htmlColor[0] >= 'A' && htmlColor[0] <= 'F')))
-			{
-				try
-				{
-					color = System.Drawing.Color.FromArgb(
-						Convert.ToInt32(htmlColor.Substring(0, 2), 16),
-						Convert.ToInt32(htmlColor.Substring(2, 2), 16),
-						Convert.ToInt32(htmlColor.Substring(4, 2), 16));
-				}
-				catch (System.FormatException)
-				{
-					// If the conversion failed, that should be a named color
-					// Let the framework dealing with it
-					color = System.Drawing.ColorTranslator.FromHtml(htmlColor);
-				}
-			}
-			else
-			{
-				color = System.Drawing.ColorTranslator.FromHtml(htmlColor);
-			}
+            try
+            {
+                // The Html allows to write color in hexa without the preceding '#'
+                // I just ensure it's a correct hexadecimal value (length=6 and first character should be
+                // a digit or an hexa letter)
+                if (htmlColor.Length == 6 && (Char.IsDigit(htmlColor[0]) || (htmlColor[0] >= 'a' && htmlColor[0] <= 'f')
+                    || (htmlColor[0] >= 'A' && htmlColor[0] <= 'F')))
+                {
+                    try
+                    {
+                        color = System.Drawing.Color.FromArgb(
+                            Convert.ToInt32(htmlColor.Substring(0, 2), 16),
+                            Convert.ToInt32(htmlColor.Substring(2, 2), 16),
+                            Convert.ToInt32(htmlColor.Substring(4, 2), 16));
+                    }
+                    catch (System.FormatException)
+                    {
+                        // If the conversion failed, that should be a named color
+                        // Let the framework dealing with it
+                        color = System.Drawing.ColorTranslator.FromHtml(htmlColor);
+                    }
+                }
+                else
+                {
+                    color = System.Drawing.ColorTranslator.FromHtml(htmlColor);
+                }
+            }
+            catch (Exception exc)
+            {
+                if (exc.InnerException is System.FormatException)
+                    return System.Drawing.Color.Empty;
+                throw;
+            }
 
 			return color;
 		}
