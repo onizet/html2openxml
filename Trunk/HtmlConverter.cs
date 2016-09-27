@@ -12,18 +12,19 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
+using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace NotesFor.HtmlToOpenXml
 {
-    using System.Globalization;
     using a = DocumentFormat.OpenXml.Drawing;
     using pic = DocumentFormat.OpenXml.Drawing.Pictures;
     using wp = DocumentFormat.OpenXml.Drawing.Wordprocessing;
-using System.Text.RegularExpressions;
+
 
 
 	/// <summary>
@@ -254,7 +255,12 @@ using System.Text.RegularExpressions;
 					tables.CurrentTable.Append(row = new TableRow());
 					tables.CellPosition = new Point(0, tables.CellPosition.Y + 1);
 				}
-				row.GetLastChild<TableCell>().Append(element);
+                TableCell cell = row.GetLastChild<TableCell>();
+                if (cell == null) // ensure cell exists (issue #13982 reported by Willu)
+                {
+                    row.Append(cell = new TableCell());
+                }
+                cell.Append(element);
 			}
 			else
 				this.paragraphs.Add(element);
@@ -613,7 +619,9 @@ using System.Text.RegularExpressions;
 				{ "<a>", ProcessLink },
 				{ "<abbr>" , ProcessAcronym },
 				{ "<acronym>" , ProcessAcronym },
-				{ "<b>", ProcessBold },
+                { "<article>" , ProcessDiv },
+                { "<aside>" , ProcessDiv },
+                { "<b>", ProcessBold },
                 { "<blockquote>", ProcessBlockQuote },
 				{ "<body>", ProcessBody },
 				{ "<br>", ProcessBr },
@@ -643,7 +651,8 @@ using System.Text.RegularExpressions;
 				{ "<pre>", ProcessPre },
                 { "<q>", ProcessQuote },
 				{ "<span>", ProcessSpan },
-				{ "<s>", ProcessStrike },
+                { "<section>" , ProcessDiv },
+                { "<s>", ProcessStrike },
 				{ "<strike>", ProcessStrike },
 				{ "<strong>", ProcessBold },
 				{ "<sub>", ProcessSubscript },
@@ -660,7 +669,9 @@ using System.Text.RegularExpressions;
 				{ "<xml>", ProcessXmlDataIsland },
 
 				// closing tag
-				{ "</b>", ProcessClosingTag },
+                { "</article>" , ProcessClosingDiv },
+                { "</aside>" , ProcessClosingDiv },
+                { "</b>", ProcessClosingTag },
                 { "</blockquote>", ProcessClosingBlockQuote },
 				{ "</body>", ProcessClosingTag },
 				{ "</cite>", ProcessClosingTag },
@@ -676,7 +687,8 @@ using System.Text.RegularExpressions;
                 { "</q>", ProcessClosingQuote },
 				{ "</span>", ProcessClosingTag },
 				{ "</s>", ProcessClosingTag },
-				{ "</strike>", ProcessClosingTag },
+                { "</section>" , ProcessClosingDiv },
+                { "</strike>", ProcessClosingTag },
 				{ "</strong>", ProcessClosingTag },
 				{ "</sub>", ProcessClosingTag },
 				{ "</sup>", ProcessClosingTag },
