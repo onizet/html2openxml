@@ -9,7 +9,7 @@ Depends on either the [OpenXml SDK 2.0](http://www.microsoft.com/en-us/download/
 * [Documentation](https://github.com/onizet/html2openxml/wiki)
 * [How to deliver a generated DOCX from server Asp.Net/SharePoint?](https://github.com/onizet/html2openxml/wiki/Serves-a-generated-docx-from-the-server)
 * [Prevent Document Edition](https://github.com/onizet/html2openxml/wiki/Prevent-Document-Edition)
-* [Convert dotx to docx](Convert-dotx-to-docx)
+* [Convert dotx to docx](https://github.com/onizet/html2openxml/wiki/Convert-.dotx-to-.docx)
 
 ### Supported Html tags
 Refer to [w3schools’ tag](http://www.w3schools.com/tags/default.asp) list to see their meaning
