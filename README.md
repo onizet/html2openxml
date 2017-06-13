@@ -4,15 +4,14 @@ Httml2OpenXml is a small .Net library that convert simple or advanced HTML to pl
 
 Depends on either the [OpenXml SDK 2.0](http://www.microsoft.com/en-us/download/details.aspx?id=5124) and .Net 3.5 or [OpenXml SDK 2.5](http://www.microsoft.com/en-us/download/details.aspx?id=30425) and .Net 4.0.
 
-## See Also
+### See Also
 
 * [Documentation](https://github.com/onizet/html2openxml/wiki)
-* [How to deliver a generated DOCX from server Asp.Net/SharePoint?](Serves-a-generated-docx-from-the-server)
-* [Prevent Document Edition](Prevent-Document-Edition)
+* [How to deliver a generated DOCX from server Asp.Net/SharePoint?](https://github.com/onizet/html2openxml/wiki/Serves-a-generated-docx-from-the-server)
+* [Prevent Document Edition](https://github.com/onizet/html2openxml/wiki/Prevent-Document-Edition)
 * [Convert dotx to docx](Convert-dotx-to-docx)
-* [Future Plans](roadmap)
 
-## Supported Html tags
+### Supported Html tags
 Refer to [w3schools’ tag](http://www.w3schools.com/tags/default.asp) list to see their meaning
 *	&lt;a&gt;
 *	&lt;h1-h6&gt;
@@ -31,7 +30,7 @@ Refer to [w3schools’ tag](http://www.w3schools.com/tags/default.asp) list to s
 
 Javascript (&lt;script&gt;), CSS &lt;style&gt;, &lt;meta&gt; and other not supported tags does not generate an error but are **ignored**.
 
-## Tolerance for bad formed HTML
+### Tolerance for bad formed HTML
 The parsing of the Html is done using a custom Regex-based enumerator. These are supported:
 
 <table>
@@ -58,9 +57,14 @@ The parsing of the Html is done using a custom Regex-based enumerator. These are
 </tr>
 </table>
 
-## Acknowledgements
+### Acknowledgements
 
 Thank you to all contributors that share their bug fixes: scwebgroup, ddforge, daviderapicavoli, worstenbrood, jodybullen, BenBurns, OleK, scarhand, imagremlin, antgraf, mdeclercq, pauldbentley, xjpmauricio, jairoXXX, giorand, bostjanKlemenc, AaronLS.
 And thanks to David Podhola for the Nuget package.
 
 Logo provided with the permission of [Enhanced Labs Design Studio](http://www.enhancedlabs.com).
+
+### Support
+
+This project is open source and I do my best to support it in my spare time. I'm always happy to receive Pull Request and grateful for the time you have taken
+If you have questions, don't hesitate to get in touch with me!
