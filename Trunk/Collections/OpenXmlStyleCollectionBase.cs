@@ -120,7 +120,8 @@ namespace NotesFor.HtmlToOpenXml
 			{
 				Dictionary<String, OpenXmlElement> knonwTags = new Dictionary<String, OpenXmlElement>();
 				for (int i = 0; i < elements.Count; i++)
-					knonwTags.Add(elements[i].LocalName, elements[i]);
+                        if (!knonwTags.ContainsKey(elements[i].LocalName))                        
+                            knonwTags.Add(elements[i].LocalName, elements[i]);                       
 
 				OpenXmlElement[] array;
 				foreach (TagsAtSameLevel tagOfSameLevel in enqueuedTags)
