@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26403.7
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Nuget", "Nuget", "{E279A3FB-C025-4F67-B29F-8CDD4930CDAD}"
+	ProjectSection(SolutionItems) = preProject
+		Nuget\Html2OpenXml.nuspec = Nuget\Html2OpenXml.nuspec
+		Nuget\html2openxml.png = Nuget\html2openxml.png
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HtmlToOpenXml", "Html2OpenXml\HtmlToOpenXml.csproj", "{EF700F30-C9BB-49A6-912C-E3B77857B514}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HtmlToOpenXml.4", "Html2OpenXml\HtmlToOpenXml.4.csproj", "{3D8B42D5-B1D4-46F4-B0B5-08093A11B661}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HtmlToOpenXml.2.5 - ClientProfile", "Html2OpenXml\HtmlToOpenXml.2.5 - ClientProfile.csproj", "{AEC9F5C3-A85C-4033-B4C9-3E6CBAF7D7E0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EF700F30-C9BB-49A6-912C-E3B77857B514}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EF700F30-C9BB-49A6-912C-E3B77857B514}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EF700F30-C9BB-49A6-912C-E3B77857B514}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EF700F30-C9BB-49A6-912C-E3B77857B514}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D8B42D5-B1D4-46F4-B0B5-08093A11B661}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D8B42D5-B1D4-46F4-B0B5-08093A11B661}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D8B42D5-B1D4-46F4-B0B5-08093A11B661}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D8B42D5-B1D4-46F4-B0B5-08093A11B661}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AEC9F5C3-A85C-4033-B4C9-3E6CBAF7D7E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AEC9F5C3-A85C-4033-B4C9-3E6CBAF7D7E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AEC9F5C3-A85C-4033-B4C9-3E6CBAF7D7E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AEC9F5C3-A85C-4033-B4C9-3E6CBAF7D7E0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
