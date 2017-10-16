@@ -1,4 +1,4 @@
-﻿/* Copyright (C) Olivier Nizet http://html2openxml.codeplex.com - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -15,7 +15,7 @@ using System.Globalization;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
 
-namespace NotesFor.HtmlToOpenXml
+namespace HtmlToOpenXml
 {
 	using TagsAtSameLevel = System.ArraySegment<DocumentFormat.OpenXml.OpenXmlElement>;
 
@@ -23,7 +23,7 @@ namespace NotesFor.HtmlToOpenXml
 	sealed class RunStyleCollection : OpenXmlStyleCollectionBase
 	{
 		private HtmlDocumentStyle documentStyle;
-		private static GetSequenceNumberHandler getTagOrderHandler;
+		private readonly static GetSequenceNumberHandler getTagOrderHandler = CreateTagOrderDelegate<RunProperties>();
 
 
 		internal RunStyleCollection(HtmlDocumentStyle documentStyle)
@@ -58,6 +58,7 @@ namespace NotesFor.HtmlToOpenXml
 		/// <summary>
 		/// Converts some common styling attributes to their OpenXml equivalence.
 		/// </summary>
+        /// <param name="en">The Html parser.</param>
 		/// <param name="styleAttributes">The collection of attributes where to store new discovered attributes.</param>
 		public void ProcessCommonAttributes(HtmlEnumerator en, IList<OpenXmlElement> styleAttributes)
 		{
@@ -72,7 +73,7 @@ namespace NotesFor.HtmlToOpenXml
 			if (!colorValue.IsEmpty)
 			{
 				// change the way the background-color renders. It now uses Shading instead of Highlight.
-				// Changes brought by Wude on http://notesforhtml2openxml.codeplex.com/discussions/277570
+				// Changes brought by Wude on http://html2openxml.codeplex.com/discussions/277570
 				styleAttributes.Add(new Shading { Val = ShadingPatternValues.Clear, Fill = colorValue.ToHexString() });
 			}
 
@@ -113,7 +114,7 @@ namespace NotesFor.HtmlToOpenXml
 					styleAttributes.Add(new SmallCaps());
 
 				if (font.Family != null)
-					styleAttributes.Add(new RunFonts() { Ascii = font.Family.Name, HighAnsi = font.Family.Name });
+					styleAttributes.Add(new RunFonts() { Ascii = font.Family, HighAnsi = font.Family });
 
 				// size are half-point font size
                 if (font.Size.IsFixed)
@@ -121,37 +122,24 @@ namespace NotesFor.HtmlToOpenXml
 			}
 		}
 
-		#endregion
+        #endregion
 
-		#region GetTagOrder
-		
-		protected override int GetTagOrder(OpenXmlElement element)
-		{
-			// I don't want to hard-code the sequence number of the child elements of a RunProperties.
-			// I prefer relying on the OpenXml API and use a bit Reflection.
-			if (getTagOrderHandler == null)
-			{
-				var mi = typeof(OpenXmlCompositeElement)
-					.GetMethod("GetSequenceNumber", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        #region GetTagOrder
 
-				// We use a dummy new RunProperties instance
-                // Create a delegate to speed up the invocation to the GetSequenceNumber method
-                getTagOrderHandler = (GetSequenceNumberHandler)
-					Delegate.CreateDelegate(typeof(GetSequenceNumberHandler), new RunProperties(), mi, true);
-			}
+        protected override int GetTagOrder(OpenXmlElement element)
+        {
+            return (int) getTagOrderHandler.DynamicInvoke(element);
+        }
 
-			return (int) getTagOrderHandler.DynamicInvoke(element);
-		}
+        #endregion
 
-		#endregion
+        //____________________________________________________________________
+        //
+        // Properties
 
-		//____________________________________________________________________
-		//
-		// Properties
-
-		/// <summary>
-		/// Gets the default StyleId to apply on the any new runs.
-		/// </summary>
-		internal String DefaultRunStyle { get; set; }
+        /// <summary>
+        /// Gets the default StyleId to apply on the any new runs.
+        /// </summary>
+        internal String DefaultRunStyle { get; set; }
 	}
 }

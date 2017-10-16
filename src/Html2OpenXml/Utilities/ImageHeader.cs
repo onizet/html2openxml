@@ -1,4 +1,4 @@
-﻿/* Copyright (C) Olivier Nizet http://html2openxml.codeplex.com - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -19,7 +19,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 
-namespace NotesFor.HtmlToOpenXml
+namespace HtmlToOpenXml
 {
     /// <summary>
     /// Taken from http://stackoverflow.com/questions/111345/getting-image-dimensions-without-reading-the-entire-file/111349
@@ -39,12 +39,12 @@ namespace NotesFor.HtmlToOpenXml
             { new byte[] { 0xff, 0xd8 }, DecodeJfif }, 
         };
 
-        /// <summary>        
-        /// Gets the dimensions of an image.        
-        /// </summary>        
-        /// <param name="path">The path of the image to get the dimensions of.</param>        
-        /// <returns>The dimensions of the specified image.</returns>        
-        /// <exception cref="ArgumentException">The image was of an unrecognised format.</exception>        
+        /// <summary>
+        /// Gets the dimensions of an image.
+        /// </summary>
+        /// <param name="path">The path of the image to get the dimensions of.</param>
+        /// <returns>The dimensions of the specified image.</returns>
+        /// <exception cref="ArgumentException">The image was of an unrecognised format.</exception>
         public static Size GetDimensions(string path)
         {
             try
@@ -64,12 +64,13 @@ namespace NotesFor.HtmlToOpenXml
             }
             catch (ArgumentException)
             {
+#if FEATURE_DRAWING
                 //do it the old fashioned way
-
                 using (Bitmap b = new Bitmap(path))
-                {
                     return b.Size;
-                }              
+#else
+                return Size.Empty;
+#endif
             }
         }
 
@@ -98,11 +99,11 @@ namespace NotesFor.HtmlToOpenXml
 			return new Size(width, height);
 		}
 
-        /// <summary>        
-        /// Gets the dimensions of an image.        
-        /// </summary>        
-        /// <returns>The dimensions of the specified image.</returns>        
-        /// <exception cref="ArgumentException">The image was of an unrecognised format.</exception>            
+        /// <summary>
+        /// Gets the dimensions of an image.
+        /// </summary>
+        /// <returns>The dimensions of the specified image.</returns>
+        /// <exception cref="ArgumentException">The image was of an unrecognised format.</exception>
         public static Size GetDimensions(BinaryReader binaryReader)
         {
             int maxMagicBytesLength = imageFormatDecoders.Keys.OrderByDescending(x => x.Length).First().Length;

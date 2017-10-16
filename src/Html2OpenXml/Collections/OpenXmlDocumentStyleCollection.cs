@@ -1,4 +1,4 @@
-﻿/* Copyright (C) Olivier Nizet http://html2openxml.codeplex.com - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -13,7 +13,7 @@ using System;
 using System.Collections.Generic;
 using DocumentFormat.OpenXml.Wordprocessing;
 
-namespace NotesFor.HtmlToOpenXml
+namespace HtmlToOpenXml
 {
 	/// <summary>
 	/// Typed collection that holds the Style of a document and their name.
@@ -42,7 +42,7 @@ namespace NotesFor.HtmlToOpenXml
 			{
 				mid = low + (hi - low) / 2;
                 // Do not use Ordinal for string comparison to avoid the '_' character not being considered (bug #13776 reported by giorand)
-				int rc = String.Compare(name, keys[mid], System.Globalization.CultureInfo.CurrentCulture, System.Globalization.CompareOptions.IgnoreCase);
+                int rc = String.Compare(name, keys[mid], StringComparison.CurrentCultureIgnoreCase);
 				if (rc == 0)
 				{
 					style = this.Values[mid];

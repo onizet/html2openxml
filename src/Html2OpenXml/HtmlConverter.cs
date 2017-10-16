@@ -1,4 +1,4 @@
-﻿/* Copyright (C) Olivier Nizet http://html2openxml.codeplex.com - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -19,7 +19,7 @@ using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 
-namespace NotesFor.HtmlToOpenXml
+namespace HtmlToOpenXml
 {
     using a = DocumentFormat.OpenXml.Drawing;
     using pic = DocumentFormat.OpenXml.Drawing.Pictures;
@@ -516,14 +516,15 @@ namespace NotesFor.HtmlToOpenXml
 			// thus, no need to download and cache anything
 			if (imageUrl == null || !knownImageParts.TryGetValue(imageUrl, out imagePart))
 			{
-				HtmlImageInfo iinfo = new HtmlImageInfo() { Size = preferredSize };
-				ImageProvisioningProvider provider = new ImageProvisioningProvider(this.WebProxy, iinfo);
+				HtmlImageInfo iinfo = null;
+				ImageProvisioningProvider provider = new ImageProvisioningProvider(this.WebProxy, preferredSize);
 
 				if (imageUrl == null)
-					provider.DownloadData(DataUri.Parse(imageSource));
+                    iinfo = provider.DownloadData(DataUri.Parse(imageSource));
                 else if (this.ImageProcessing == ImageProcessing.ManualProvisioning)
                 {
                     // as HtmlImageInfo is a class, the EventArgs will act as a proxy
+                    iinfo = new HtmlImageInfo() { Size = preferredSize };
                     ProvisionImageEventArgs args = new ProvisionImageEventArgs(imageUrl, iinfo);
                     OnProvisionImage(args);
 
@@ -533,10 +534,10 @@ namespace NotesFor.HtmlToOpenXml
 
                 // Automatic Processing or the user did not supply himself the image and did not cancel the provisioning.
                 // We download ourself the image.
-                if (iinfo.RawData == null && imageUrl.IsAbsoluteUri)
-					provider.DownloadData(imageUrl);
+                if (iinfo == null || (iinfo.RawData == null && imageUrl.IsAbsoluteUri))
+                    iinfo = provider.DownloadData(imageUrl);
 
-				if (iinfo.RawData == null || !provider.Provision(imageUrl)) return null;
+				if (iinfo == null || !provider.Provision(imageUrl)) return null;
 
 				ImagePart ipart = mainPart.AddImagePart(iinfo.Type.Value);
 				imagePart = new CachedImagePart() { Part = ipart };

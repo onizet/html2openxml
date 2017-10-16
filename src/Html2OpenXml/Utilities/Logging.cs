@@ -1,4 +1,4 @@
-﻿/* Copyright (C) Olivier Nizet http://html2openxml.codeplex.com - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -13,12 +13,12 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 
-namespace NotesFor.HtmlToOpenXml
+namespace HtmlToOpenXml
 {
-	/// <summary>
-	/// Logging class to trace debugging information during the conversion process.
-	/// </summary>
-	static class Logging
+    /// <summary>
+    /// Logging class to trace debugging information during the conversion process.
+    /// </summary>
+    static class Logging
 	{
 		private const string TraceSourceName = "html2openxml";
 		private static TraceSource traceSource;
@@ -73,28 +73,33 @@ namespace NotesFor.HtmlToOpenXml
 		/// </summary>
 		private static void Initialize()
 		{
-			try
+#if NET_CORE
+            traceSource = new TraceSource(TraceSourceName);
+			enabled = traceSource.Switch.Level != SourceLevels.Off;
+#else
+            try
 			{
 				traceSource = new TraceSource(TraceSourceName);
 				enabled = traceSource.Switch.Level != SourceLevels.Off;
 			}
-			catch (System.Configuration.ConfigurationException)
-			{
-				// app.config has an error
-				enabled = false;
+            catch (System.Configuration.ConfigurationException)
+            {
+                // app.config has an error
+                enabled = false;
 			}
 
-			if (enabled)
+            if (enabled)
 			{
 				AppDomain appDomain = AppDomain.CurrentDomain;
 				appDomain.DomainUnload += OnDomainUnload;
 				appDomain.ProcessExit += OnDomainUnload;
 			}
-		}
+#endif
+        }
 
-		#endregion
+        #endregion
 
-		#region PrintLine
+        #region PrintLine
 
 		/// <summary>
 		/// Core method to write in the log.
@@ -102,14 +107,12 @@ namespace NotesFor.HtmlToOpenXml
 		private static void PrintLine(TraceEventType eventType, int id, string msg)
 		{
 			if (!ValidateSettings(eventType)) return;
-			int threadId = System.Threading.Thread.CurrentThread.ManagedThreadId;
-			string str = string.Concat("[", threadId.ToString("d4", CultureInfo.InvariantCulture), "] ");
-			traceSource.TraceEvent(eventType, id, string.Concat(str, msg));
+			traceSource.TraceEvent(eventType, id, msg);
 		}
 
-		#endregion
+        #endregion
 
-		#region OnDomainUnload
+        #region OnDomainUnload
 
 		/// <summary>
 		/// Event handler to close properly the trace source when the program is shut down.
@@ -120,9 +123,9 @@ namespace NotesFor.HtmlToOpenXml
 			enabled = false;
 		}
 
-		#endregion
+        #endregion
 
-		#region ValidateSettings
+        #region ValidateSettings
 
 		/// <summary>
 		/// Ensure the type of event should be traced, regarding the configuration.
@@ -137,7 +140,7 @@ namespace NotesFor.HtmlToOpenXml
 			return true;
 		}
 
-		#endregion
+        #endregion
 
 		//____________________________________________________________________
 		//

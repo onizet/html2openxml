@@ -1,4 +1,4 @@
-﻿/* Copyright (C) Olivier Nizet http://html2openxml.codeplex.com - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -10,11 +10,11 @@
  * PARTICULAR PURPOSE.
  */
 using System;
-using System.Collections.Specialized;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
-namespace NotesFor.HtmlToOpenXml
+namespace HtmlToOpenXml
 {
 	using w = DocumentFormat.OpenXml.Wordprocessing;
 
@@ -38,13 +38,13 @@ namespace NotesFor.HtmlToOpenXml
 
         private static Regex stripStyleAttributesRegex = new Regex(@"(?<name>.+?):\s*(?<val>[^;]+);*\s*");
 
-		private StringDictionary attributes;
+		private Dictionary<string, string> attributes;
 
 
 
 		private HtmlAttributeCollection()
 		{
-			this.attributes = new StringDictionary();
+			this.attributes = new Dictionary<string, string>();
 		}
 
 		public static HtmlAttributeCollection Parse(String htmlTag)
@@ -104,7 +104,11 @@ namespace NotesFor.HtmlToOpenXml
 		/// </summary>
 		public String this[String name]
 		{
-			get { return attributes[name]; }
+			get
+            {
+                string value;
+                return attributes.TryGetValue(name, out value)? value : null;
+            }
 		}
 
 		/// <summary>
@@ -124,13 +128,13 @@ namespace NotesFor.HtmlToOpenXml
 		/// Gets an attribute representing a color (named color, hexadecimal or hexadecimal 
 		/// without the preceding # character).
 		/// </summary>
-		public System.Drawing.Color GetAsColor(String name)
+		public HtmlColor GetAsColor(String name)
 		{
 			string attrValue = this[name];
 			if (attrValue != null)
-				return ConverterUtility.ConvertToForeColor(attrValue);
+				return HtmlColor.Parse(attrValue);
 
-			return System.Drawing.Color.Empty;
+			return HtmlColor.Empty;
 		}
 
 		/// <summary>
@@ -164,12 +168,12 @@ namespace NotesFor.HtmlToOpenXml
 			return margin;
 		}
 
-		/// <summary>
-		/// Gets an attribute representing the 4 border sides.
-		/// If a border style/color/width has been specified individually, it will override the grouped definition.
-		/// </summary>
-		/// <returns>If the attribute is misformed, the <see cref="HtmlBorder.IsValid"/> property is set to false.</returns>
-		public HtmlBorder GetAsBorder(String name)
+        /// <summary>
+        /// Gets an attribute representing the 4 border sides.
+        /// If a border style/color/width has been specified individually, it will override the grouped definition.
+        /// </summary>
+        /// <returns>If the attribute is misformed, the <see cref="HtmlBorder.IsEmpty"/> property is set to false.</returns>
+        public HtmlBorder GetAsBorder(String name)
 		{
 			HtmlBorder border = new HtmlBorder(GetAsSideBorder(name));
 			SideBorder sb;
@@ -186,12 +190,12 @@ namespace NotesFor.HtmlToOpenXml
 			return border;
 		}
 
-		/// <summary>
-		/// Gets an attribute representing a single border side.
-		/// If a border style/color/width has been specified individually, it will override the grouped definition.
-		/// </summary>
-		/// <returns>If the attribute is misformed, the <see cref="HtmlBorder.IsValid"/> property is set to false.</returns>
-		public SideBorder GetAsSideBorder(String name)
+        /// <summary>
+        /// Gets an attribute representing a single border side.
+        /// If a border style/color/width has been specified individually, it will override the grouped definition.
+        /// </summary>
+        /// <returns>If the attribute is misformed, the <see cref="HtmlBorder.IsEmpty"/> property is set to false.</returns>
+        public SideBorder GetAsSideBorder(String name)
 		{
 			string attrValue = this[name];
 			SideBorder border = SideBorder.Parse(attrValue);

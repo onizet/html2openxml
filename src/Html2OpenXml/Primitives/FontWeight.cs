@@ -1,4 +1,4 @@
-﻿/* Copyright (C) Olivier Nizet http://html2openxml.codeplex.com - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -11,7 +11,7 @@
  */
 using System;
 
-namespace NotesFor.HtmlToOpenXml
+namespace HtmlToOpenXml
 {
 	/// <summary>
 	/// Specifies how thick or thin characters in text should be displayed.

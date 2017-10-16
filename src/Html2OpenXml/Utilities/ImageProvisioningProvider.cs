@@ -1,4 +1,4 @@
-﻿/* Copyright (C) Olivier Nizet http://html2openxml.codeplex.com - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -15,7 +15,7 @@ using System.Drawing;
 using System.IO;
 using DocumentFormat.OpenXml.Packaging;
 
-namespace NotesFor.HtmlToOpenXml
+namespace HtmlToOpenXml
 {
 	/// <summary>
 	/// Download and provison the metadata of a requested image.
@@ -23,7 +23,7 @@ namespace NotesFor.HtmlToOpenXml
 	sealed class ImageProvisioningProvider
 	{
 		// Map extension to ImagePartType
-		private static Dictionary<String, ImagePartType> knownExtensions = new Dictionary<String, ImagePartType>(StringComparer.OrdinalIgnoreCase) {
+		private static readonly Dictionary<String, ImagePartType> knownExtensions = new Dictionary<String, ImagePartType>(StringComparer.OrdinalIgnoreCase) {
 			{ ".gif", ImagePartType.Gif },
 			{ ".bmp", ImagePartType.Bmp },
 			{ ".emf", ImagePartType.Emf },
@@ -37,14 +37,15 @@ namespace NotesFor.HtmlToOpenXml
 			{ ".wmf", ImagePartType.Wmf }
 		};
 
-		private WebProxy proxy;
+		private readonly WebProxy proxy;
+        private readonly Size preferredSize;
 		private HtmlImageInfo imageInfo;
 
 
-		public ImageProvisioningProvider(WebProxy proxy, HtmlImageInfo image)
+		public ImageProvisioningProvider(WebProxy proxy, Size preferredSize)
 		{
 			this.proxy = proxy;
-			this.imageInfo = image;
+			this.preferredSize = preferredSize;
 		}
 
 		//____________________________________________________________________
@@ -56,7 +57,7 @@ namespace NotesFor.HtmlToOpenXml
 		/// <summary>
 		/// Download the remote or local image located at the specified url.
 		/// </summary>
-		public void DownloadData(Uri imageUrl)
+		public HtmlImageInfo DownloadData(Uri imageUrl)
 		{
 			// is it a local path?
 			if (imageUrl.IsFile)
@@ -66,64 +67,59 @@ namespace NotesFor.HtmlToOpenXml
 
 				try
 				{
-					// just read the picture from the file system
-					imageInfo.RawData = File.ReadAllBytes(localPath);
+                    // just read the picture from the file system
+                    imageInfo = new HtmlImageInfo();
+                    imageInfo.RawData = File.ReadAllBytes(localPath);
 				}
-				catch (IOException exc)
-				{
-					if (Logging.On) Logging.PrintError("ImageDownloader.DownloadData(\"" + localPath + "\")", exc);
-				}
-				catch (SystemException exc)
+				catch (Exception exc)
 				{
 					if (Logging.On) Logging.PrintError("ImageDownloader.DownloadData(\"" + localPath + "\")", exc);
 
-					if (exc is UnauthorizedAccessException || exc is System.Security.SecurityException || exc is NotSupportedException)
-						return;
+					if (exc is IOException || exc is UnauthorizedAccessException || exc is System.Security.SecurityException || exc is NotSupportedException)
+						return null;
 					throw;
 				}
 
-				return;
+				return imageInfo;
 			}
 
 			// data inline, encoded in base64
 			if (imageUrl.Scheme == "data")
 			{
 				DataUri dataUri = DataUri.Parse(imageUrl.OriginalString);
-				DownloadData(dataUri);
-				return;
+				return DownloadData(dataUri);
 			}
 
-            System.Net.WebClient webClient = new WebClientEx(proxy);
-			try
-			{
-				imageInfo.RawData = webClient.DownloadData(imageUrl);
+            var response = BackChannels.CreateWebRequest(imageUrl, proxy);
+            if (response != null)
+            {
+                imageInfo.RawData = response.Body;
 
-				// For requested url with no filename, we need to read the media mime type if provided
-				imageInfo.Type = InspectMimeType(webClient);
-			}
-			catch (System.Net.WebException exc)
-			{
-				if (Logging.On) Logging.PrintError("ImageDownloader.DownloadData(\"" + imageUrl.AbsoluteUri + "\")", exc);
-			}
-		}
+                // For requested url with no filename, we need to read the media mime type if provided
+                imageInfo.Type = InspectMimeType(response.ContentType);
+            }
+
+            return imageInfo;
+        }
 
 		#endregion
 
 		#region DownloadData
 
 		/// <summary>
-		/// Decrypt the given DataUri.
+		/// Decrypt the given inline DataUri.
 		/// </summary>
-		public void DownloadData(DataUri dataUri)
+		public HtmlImageInfo DownloadData(DataUri dataUri)
 		{
-			if (dataUri != null)
-			{
-				ImagePartType type;
-				if (knownContentType.TryGetValue(dataUri.Mime, out type))
-					imageInfo.Type = type;
+            if (dataUri == null)
+                return null;
 
-				imageInfo.RawData = dataUri.Data;
-			}
+			ImagePartType type;
+			if (knownContentType.TryGetValue(dataUri.Mime, out type))
+				imageInfo.Type = type;
+
+			imageInfo.RawData = dataUri.Data;
+            return imageInfo;
 		}
 
 		#endregion
@@ -183,20 +179,9 @@ namespace NotesFor.HtmlToOpenXml
 		/// Inspect the response headers of a web request and decode the mime type if provided
 		/// </summary>
 		/// <returns>Returns the extension of the image if provideds.</returns>
-		private static ImagePartType? InspectMimeType(System.Net.WebClient webClient)
+		private static ImagePartType? InspectMimeType(string contentType)
 		{
-			String contentType;
-			try
-			{
-				var headers = webClient.ResponseHeaders;
-				contentType = headers[System.Net.HttpResponseHeader.ContentType];
-			}
-			catch (InvalidOperationException)
-			{
-				// the protocol used doesn't allow response headers
-				return null;
-			}
-
+    		// can be null when the protocol used doesn't allow response headers
 			if (contentType == null) return null;
 
 			ImagePartType type;
@@ -253,21 +238,11 @@ namespace NotesFor.HtmlToOpenXml
 				}
 				catch (ArgumentException)
 				{
-					try
-					{
-						// Image format not recognized, try with .Net drawing API
-						using (Image bitmap = Bitmap.FromStream(imageStream))
-                            return bitmap.Size;
-					}
-					catch (ArgumentException)
-					{
-						// Still not recognized
-						return Size.Empty;
-					}
-				}
+                    return Size.Empty;
+                }
 			}
-		}
+        }
 
-		#endregion
+        #endregion
 	}
 }

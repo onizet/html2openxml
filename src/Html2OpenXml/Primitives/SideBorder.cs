@@ -1,4 +1,4 @@
-﻿/* Copyright (C) Olivier Nizet http://html2openxml.codeplex.com - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -14,7 +14,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
 
-namespace NotesFor.HtmlToOpenXml
+namespace HtmlToOpenXml
 {
     using w = DocumentFormat.OpenXml.Wordprocessing;
 
@@ -29,11 +29,11 @@ namespace NotesFor.HtmlToOpenXml
 		public static readonly SideBorder Empty = new SideBorder();
 
 		private w.BorderValues style;
-		private Color color;
+		private HtmlColor color;
 		private Unit size;
 
 
-		public SideBorder(w.BorderValues style, Color color, Unit size)
+		public SideBorder(w.BorderValues style, HtmlColor color, Unit size)
 		{
 			this.style = style;
 			this.color = color;
@@ -54,7 +54,7 @@ namespace NotesFor.HtmlToOpenXml
 
 			// Initialize default values
 			Unit borderWidth = Unit.Empty;
-			Color borderColor = Color.Empty;
+			HtmlColor borderColor = HtmlColor.Empty;
 			w.BorderValues borderStyle = w.BorderValues.Nil;
 
 			// Now try to guess the values with their permutation
@@ -82,13 +82,13 @@ namespace NotesFor.HtmlToOpenXml
 
 			// find width
 			if(borderParts.Count > 0)
-				borderColor = ConverterUtility.ConvertToForeColor(borderParts[0]);
+				borderColor = HtmlColor.Parse(borderParts[0]);
 
 			// returns the instance with default value if needed.
 			// These value are the ones used by the browser, i.e: solid 3px black
 			return new SideBorder(
 				borderStyle == w.BorderValues.Nil? w.BorderValues.Single : borderStyle,
-				borderColor.IsEmpty? Color.Black : borderColor,
+				borderColor.IsEmpty? HtmlColor.Black : borderColor,
 				borderWidth.IsFixed? borderWidth : new Unit(UnitMetric.Pixel, 4));
 		}
 
@@ -128,7 +128,7 @@ namespace NotesFor.HtmlToOpenXml
 		/// <summary>
 		/// Gets or sets the color of the border.
 		/// </summary>
-		public Color Color
+		public HtmlColor Color
 		{
 			get { return color; }
 			set { color = value; }

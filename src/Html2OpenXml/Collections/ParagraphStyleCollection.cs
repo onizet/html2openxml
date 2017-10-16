@@ -1,4 +1,4 @@
-/* Copyright (C) Olivier Nizet http://html2openxml.codeplex.com - All Rights Reserved
+/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -15,7 +15,7 @@ using System.Globalization;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
 
-namespace NotesFor.HtmlToOpenXml
+namespace HtmlToOpenXml
 {
 	using TagsAtSameLevel = System.ArraySegment<DocumentFormat.OpenXml.OpenXmlElement>;
 
@@ -23,10 +23,10 @@ namespace NotesFor.HtmlToOpenXml
 	sealed class ParagraphStyleCollection : OpenXmlStyleCollectionBase
 	{
 		private HtmlDocumentStyle documentStyle;
-		private static GetSequenceNumberHandler getTagOrderHandler;
+        private readonly static GetSequenceNumberHandler getTagOrderHandler = CreateTagOrderDelegate<ParagraphProperties>();
 
 
-		internal ParagraphStyleCollection(HtmlDocumentStyle documentStyle)
+        internal ParagraphStyleCollection(HtmlDocumentStyle documentStyle)
 		{
 			this.documentStyle = documentStyle;
 		}
@@ -84,8 +84,12 @@ namespace NotesFor.HtmlToOpenXml
 			{
 				try
 				{
-					var ci = System.Globalization.CultureInfo.GetCultureInfo(attrValue);
-					bool rtl = ci.TextInfo.IsRightToLeft;
+#if !NET_CORE
+                    var ci = System.Globalization.CultureInfo.GetCultureInfo(attrValue);
+#else
+                    var ci = new System.Globalization.CultureInfo(attrValue);
+#endif
+                    bool rtl = ci.TextInfo.IsRightToLeft;
 
 					Languages lang = new Languages() { Val = ci.TwoLetterISOLanguageName };
 					if (rtl)
@@ -100,9 +104,10 @@ namespace NotesFor.HtmlToOpenXml
 					containerStyleAttributes.Add(new ParagraphMarkRunProperties(lang));
 					containerStyleAttributes.Add(new BiDi() { Val = OnOffValue.FromBoolean(rtl) });
 				}
-				catch (ArgumentException)
+				catch (ArgumentException exc)
 				{
-					// lang not valid, ignore it
+                    // lang not valid, ignore it
+                    if (Logging.On) Logging.PrintError($"lang attribute {attrValue} not recognized: " + exc.Message, exc);
 				}
 			}
 
@@ -219,37 +224,24 @@ namespace NotesFor.HtmlToOpenXml
 			return newParagraph;
 		}
 
-		#endregion
+        #endregion
 
-		#region GetTagOrder
+        #region GetTagOrder
 
-		protected override int GetTagOrder(OpenXmlElement element)
-		{
-			// I don't want to hard-code the sequence number of the child elements of a RunProperties.
-			// I prefer relying on the OpenXml API and use a bit Reflection.
-			if (getTagOrderHandler == null)
-			{
-				var mi = typeof(OpenXmlCompositeElement)
-					.GetMethod("GetSequenceNumber", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        protected override int GetTagOrder(OpenXmlElement element)
+        {
+            return (int) getTagOrderHandler.DynamicInvoke(element);
+        }
 
-                // We use a dummy new ParagraphProperties instance
-                // Create a delegate to speed up the invocation to the GetSequenceNumber method
-                getTagOrderHandler = (GetSequenceNumberHandler)
-					Delegate.CreateDelegate(typeof(GetSequenceNumberHandler), new ParagraphProperties(), mi, true);
-			}
+        #endregion
 
-			return (int) getTagOrderHandler.DynamicInvoke(element);
-		}
+        //____________________________________________________________________
+        //
+        // Properties
 
-		#endregion
-
-		//____________________________________________________________________
-		//
-		// Properties
-
-		/// <summary>
-		/// Gets the default StyleId to apply on the any new paragraph.
-		/// </summary>
-		internal String DefaultParagraphStyle { get; set; }
+        /// <summary>
+        /// Gets the default StyleId to apply on the any new paragraph.
+        /// </summary>
+        internal String DefaultParagraphStyle { get; set; }
 	}
 }

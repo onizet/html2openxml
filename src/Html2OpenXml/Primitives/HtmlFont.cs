@@ -1,4 +1,4 @@
-﻿/* Copyright (C) Olivier Nizet http://html2openxml.codeplex.com - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -10,27 +10,25 @@
  * PARTICULAR PURPOSE.
  */
 using System;
-using System.Collections.Generic;
-using System.Drawing;
 
-namespace NotesFor.HtmlToOpenXml
+namespace HtmlToOpenXml
 {
-	/// <summary>
-	/// Represents a Html font (15px arial,sans-serif).
-	/// </summary>
-	struct HtmlFont
+    /// <summary>
+    /// Represents a Html font (15px arial,sans-serif).
+    /// </summary>
+    struct HtmlFont
 	{
 		/// <summary>Represents an empty font (not defined).</summary>
 		public static readonly HtmlFont Empty = new HtmlFont(FontStyle.Normal, FontVariant.Normal, FontWeight.Normal, Unit.Empty, null);
 
 		private FontStyle style;
 		private FontVariant variant;
-		private FontFamily family;
+		private string family;
 		private FontWeight weight;
 		private Unit size;
 
 
-		public HtmlFont(FontStyle style, FontVariant variant, FontWeight weight, Unit size, FontFamily family)
+		public HtmlFont(FontStyle style, FontVariant variant, FontWeight weight, Unit size, string family)
 		{
 			this.style = style;
 			this.variant = variant;
@@ -101,7 +99,7 @@ namespace NotesFor.HtmlToOpenXml
 		/// <summary>
 		/// Gets or sets the name of this font.
 		/// </summary>
-		public FontFamily Family
+		public string Family
 		{
 			get { return family; }
 			set { family = value; }

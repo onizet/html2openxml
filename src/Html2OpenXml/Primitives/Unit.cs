@@ -1,4 +1,4 @@
-﻿/* Copyright (C) Olivier Nizet http://html2openxml.codeplex.com - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -10,16 +10,15 @@
  * PARTICULAR PURPOSE.
  */
 using System;
-using System.ComponentModel;
 using System.Globalization;
 
-namespace NotesFor.HtmlToOpenXml
+namespace HtmlToOpenXml
 {
 	/// <summary>
 	/// Represents a Html Unit (ie: 120px, 10em, ...).
 	/// </summary>
 	[System.Diagnostics.DebuggerDisplay("{DebuggerDisplay,nq}")]
-	public struct Unit
+	struct Unit
 	{
 		/// <summary>Represents an empty unit (not defined).</summary>
 		public static readonly Unit Empty = new Unit();
@@ -42,7 +41,7 @@ namespace NotesFor.HtmlToOpenXml
 		{
 			if (str == null) return Unit.Empty;
 
-			str = str.Trim().ToLower(CultureInfo.InvariantCulture);
+			str = str.Trim().ToLowerInvariant();
 			int length = str.Length;
 			int digitLength = -1;
 			for (int i = 0; i < length; i++)
@@ -69,8 +68,7 @@ namespace NotesFor.HtmlToOpenXml
 			double value;
 			try
 			{
-				TypeConverter converter = new DoubleConverter();
-				value = (double) converter.ConvertFromString(null, CultureInfo.InvariantCulture, v);
+				value = Convert.ToDouble(v, CultureInfo.InvariantCulture);
 
 				if (value < Int16.MinValue || value > Int16.MaxValue)
 					return Unit.Empty;

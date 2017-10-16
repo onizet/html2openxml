@@ -1,4 +1,4 @@
-/* Copyright (C) Olivier Nizet http://html2openxml.codeplex.com - All Rights Reserved
+/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -18,7 +18,7 @@ using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 
-namespace NotesFor.HtmlToOpenXml
+namespace HtmlToOpenXml
 {
 	using a = DocumentFormat.OpenXml.Drawing;
 	using pic = DocumentFormat.OpenXml.Drawing.Pictures;
@@ -243,7 +243,7 @@ namespace NotesFor.HtmlToOpenXml
 			attrValue = en.Attributes["face"];
 			if (attrValue != null)
 			{
-				// Set HightAnsi. Bug fixed by xjpmauricio on http://html2openxml.codeplex.com/discussions/285439
+				// Set HightAnsi. Bug fixed by xjpmauricio on github.com/onizet/html2openxml/discussions/285439
 				// where characters with accents were always using fallback font
 				styleAttributes.Add(new RunFonts { Ascii = attrValue, HighAnsi = attrValue });
 			}
@@ -427,7 +427,7 @@ namespace NotesFor.HtmlToOpenXml
 				}
                 if (hu.IsFixed && hu.Value > 0)
 				{
-					// Image perspective skewed. Bug fixed by ddeforge on http://html2openxml.codeplex.com/discussions/350500
+					// Image perspective skewed. Bug fixed by ddeforge on github.com/onizet/html2openxml/discussions/350500
 					preferredSize.Height = hu.ValueInPx;
 				}
 
@@ -509,7 +509,7 @@ namespace NotesFor.HtmlToOpenXml
 			{
 				// handle link where the http:// is missing and that starts directly with www
 				if(att.StartsWith("www.", StringComparison.OrdinalIgnoreCase))
-					att = Uri.UriSchemeHttp + Uri.SchemeDelimiter + att;
+					att = "http://" + att;
 
 				// is it an anchor?
 				if (att[0] == '#' && att.Length > 1)
@@ -1425,14 +1425,14 @@ namespace NotesFor.HtmlToOpenXml
 			for (int i=0; i<cell.ChildElements.Count; )
 			{
 				Paragraph p = cell.ChildElements[i] as Paragraph;
-				// care of hyperlinks as they are not inside Run (bug reported by mdeclercq http://html2openxml.codeplex.com/workitem/11162)
+				// care of hyperlinks as they are not inside Run (bug reported by mdeclercq github.com/onizet/html2openxml/workitem/11162)
 				if (p != null && !p.HasChild<Run>() && !p.HasChild<Hyperlink>()) p.Remove();
 				else i++;
 			}
 
 			// We add this paragraph regardless it has elements or not. A TableCell requires at least a Paragraph, as the last child of
 			// of a table cell.
-			// additional check for a proper cleaning (reported by antgraf http://html2openxml.codeplex.com/discussions/272744)
+			// additional check for a proper cleaning (reported by antgraf github.com/onizet/html2openxml/discussions/272744)
 			if (!(cell.LastChild is Paragraph) || elements.Count > 0) cell.Append(new Paragraph(elements));
 
 			htmlStyles.Tables.ApplyTags(cell);

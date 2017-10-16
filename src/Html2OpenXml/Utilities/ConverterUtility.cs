@@ -1,4 +1,4 @@
-﻿/* Copyright (C) Olivier Nizet http://html2openxml.codeplex.com - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -13,7 +13,7 @@ using System;
 using System.Globalization;
 using DocumentFormat.OpenXml.Wordprocessing;
 
-namespace NotesFor.HtmlToOpenXml
+namespace HtmlToOpenXml
 {
 	/// <summary>
 	/// Provides some utilies methods for translating Http attributes to OpenXml elements.
@@ -151,7 +151,7 @@ namespace NotesFor.HtmlToOpenXml
 
 		#region ConvertToFontFamily
 
-		public static System.Drawing.FontFamily ConvertToFontFamily(string str)
+		public static string ConvertToFontFamily(string str)
 		{
 			String[] names = str.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
 			for (int i = 0; i < names.Length; i++)
@@ -160,7 +160,7 @@ namespace NotesFor.HtmlToOpenXml
 				try
 				{
                     if (fontName[0] == '\'' && fontName[fontName.Length-1] == '\'') fontName = fontName.Substring(1, fontName.Length - 2);
-					return new System.Drawing.FontFamily(fontName);
+					return fontName;
 				}
 				catch (ArgumentException)
 				{
@@ -169,69 +169,6 @@ namespace NotesFor.HtmlToOpenXml
 			}
 
 			return null;
-		}
-
-		#endregion
-
-		#region ConvertToForeColor
-
-		public static System.Drawing.Color ConvertToForeColor(string htmlColor)
-		{
-			System.Drawing.Color color;
-
-			// Bug fixed by jairoXXX to support rgb(r,g,b) format
-			if (htmlColor.StartsWith("rgb", StringComparison.OrdinalIgnoreCase))
-			{
-                int startIndex = htmlColor.IndexOf('(', 3), endIndex = htmlColor.LastIndexOf(')');
-                if (startIndex >=  3 && endIndex > -1)
-                {
-                    var colorStringArray = htmlColor.Substring(startIndex + 1, endIndex - startIndex - 1).Split(',');
-                    if (colorStringArray.Length >= 3)
-                    {
-                        return System.Drawing.Color.FromArgb(
-                            colorStringArray.Length == 3? 255 : Int32.Parse(colorStringArray[0], NumberStyles.Integer, CultureInfo.InvariantCulture),
-                            Int32.Parse(colorStringArray[colorStringArray.Length - 3], NumberStyles.Integer, CultureInfo.InvariantCulture),
-                            Int32.Parse(colorStringArray[colorStringArray.Length - 2], NumberStyles.Integer, CultureInfo.InvariantCulture),
-                            Int32.Parse(colorStringArray[colorStringArray.Length - 1], NumberStyles.Integer, CultureInfo.InvariantCulture));
-                    }
-                }
-            }
-
-            try
-            {
-                // The Html allows to write color in hexa without the preceding '#'
-                // I just ensure it's a correct hexadecimal value (length=6 and first character should be
-                // a digit or an hexa letter)
-                if (htmlColor.Length == 6 && (Char.IsDigit(htmlColor[0]) || (htmlColor[0] >= 'a' && htmlColor[0] <= 'f')
-                    || (htmlColor[0] >= 'A' && htmlColor[0] <= 'F')))
-                {
-                    try
-                    {
-                        color = System.Drawing.Color.FromArgb(
-                            Convert.ToInt32(htmlColor.Substring(0, 2), 16),
-                            Convert.ToInt32(htmlColor.Substring(2, 2), 16),
-                            Convert.ToInt32(htmlColor.Substring(4, 2), 16));
-                    }
-                    catch (System.FormatException)
-                    {
-                        // If the conversion failed, that should be a named color
-                        // Let the framework dealing with it
-                        color = System.Drawing.ColorTranslator.FromHtml(htmlColor);
-                    }
-                }
-                else
-                {
-                    color = System.Drawing.ColorTranslator.FromHtml(htmlColor);
-                }
-            }
-            catch (Exception exc)
-            {
-                if (exc.InnerException is System.FormatException)
-                    return System.Drawing.Color.Empty;
-                throw;
-            }
-
-			return color;
 		}
 
 		#endregion
@@ -286,40 +223,6 @@ namespace NotesFor.HtmlToOpenXml
 				return PageOrientationValues.Landscape;
 
 			return PageOrientationValues.Portrait;
-		}
-
-		#endregion
-
-		//____________________________________________________________________
-		//
-		// Private Implementation
-
-		static readonly char[] hexDigits = {
-         '0', '1', '2', '3', '4', '5', '6', '7',
-         '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
-
-
-		#region Color ToHexString
-
-		/// <summary>
-		/// Convert a .Net Color to a hex string.
-		/// </summary>
-		public static string ToHexString(this System.Drawing.Color color)
-		{
-			// http://www.cambiaresearch.com/c4/24c09e15-2941-4ad2-8695-00b1b4029f4d/Convert-dotnet-Color-to-Hex-String.aspx
-
-			byte[] bytes = new byte[3];
-			bytes[0] = color.R;
-			bytes[1] = color.G;
-			bytes[2] = color.B;
-			char[] chars = new char[bytes.Length * 2];
-			for (int i = 0; i < bytes.Length; i++)
-			{
-				int b = bytes[i];
-				chars[i * 2] = hexDigits[b >> 4];
-				chars[i * 2 + 1] = hexDigits[b & 0xF];
-			}
-			return new string(chars);
 		}
 
 		#endregion

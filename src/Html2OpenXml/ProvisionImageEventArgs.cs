@@ -1,4 +1,4 @@
-﻿/* Copyright (C) Olivier Nizet http://html2openxml.codeplex.com - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -10,10 +10,9 @@
  * PARTICULAR PURPOSE.
  */
 using System;
-using System.Collections.Generic;
 using DocumentFormat.OpenXml.Packaging;
 
-namespace NotesFor.HtmlToOpenXml
+namespace HtmlToOpenXml
 {
 	/// <summary>
 	/// The event arguments used for a ProvisionImage event.
@@ -29,6 +28,9 @@ namespace NotesFor.HtmlToOpenXml
 			this.info = info;
 		}
 
+        /// <summary>
+        /// Sets the binary content of the image, provided by yourself.
+        /// </summary>
         public void Provision(byte[] data)
         {
             this.info.RawData = data;

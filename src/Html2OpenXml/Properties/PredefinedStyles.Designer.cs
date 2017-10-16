@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace NotesFor.HtmlToOpenXml {
+namespace HtmlToOpenXml {
     using System;
     
     
@@ -22,7 +22,7 @@ namespace NotesFor.HtmlToOpenXml {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    internal class PredefinedStyles {
+    internal partial class PredefinedStyles {
         
         private static global::System.Resources.ResourceManager resourceMan;
         
@@ -30,20 +30,6 @@ namespace NotesFor.HtmlToOpenXml {
         
         [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal PredefinedStyles() {
-        }
-        
-        /// <summary>
-        ///   Returns the cached ResourceManager instance used by this class.
-        /// </summary>
-        [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Resources.ResourceManager ResourceManager {
-            get {
-                if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("NotesFor.HtmlToOpenXml.Properties.PredefinedStyles", typeof(PredefinedStyles).Assembly);
-                    resourceMan = temp;
-                }
-                return resourceMan;
-            }
         }
         
         /// <summary>

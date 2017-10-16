@@ -1,4 +1,4 @@
-﻿/* Copyright (C) Olivier Nizet http://html2openxml.codeplex.com - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -14,7 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace NotesFor.HtmlToOpenXml
+namespace HtmlToOpenXml
 {
     /// <summary>
     /// Specifies the position of an acronym or abbreviation in the resulting conversion.
@@ -41,7 +41,7 @@ namespace NotesFor.HtmlToOpenXml
         /// </summary>
         Ignore,
         /// <summary>
-        /// The image will be downloaded using a classic <see cref="System.Net.WebClient"/>. The src attribute should
+        /// The image will be downloaded using a classic Http request. The src attribute should
         /// point on an absolute uri.
         /// </summary>
         AutomaticDownload,
