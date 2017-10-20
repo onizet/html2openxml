@@ -130,11 +130,7 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public HtmlColor GetAsColor(String name)
 		{
-			string attrValue = this[name];
-			if (attrValue != null)
-				return HtmlColor.Parse(attrValue);
-
-			return HtmlColor.Empty;
+			return HtmlColor.Parse(this[name]);
 		}
 
 		/// <summary>

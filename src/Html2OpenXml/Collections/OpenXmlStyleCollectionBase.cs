@@ -218,14 +218,7 @@ namespace HtmlToOpenXml
 
 #endregion
 
-        /// <summary>
-        /// Resolve the element order of the children of RunProperties or ParagraphProperties.
-        /// </summary>
-        /// <param name="element">The child item to look up.</param>
-        /// <returns>Returns the order of the child.</returns>
-        protected abstract int GetTagOrder(OpenXmlElement element);
-
-#region GetTagOrder
+        #region GetTagOrder
 
         protected static GetSequenceNumberHandler CreateTagOrderDelegate<T>()
             where T : OpenXmlCompositeElement, new()
@@ -233,7 +226,7 @@ namespace HtmlToOpenXml
             // I don't want to hard-code the sequence number of the child elements of a RunProperties.
             // I prefer relying on the OpenXml API and use a bit Reflection.
 #if FEATURE_REFLECTION
-            var mi = typeof(OpenXmlCompositeElement).GetElementType()
+            var mi = typeof(OpenXmlCompositeElement)
                 .GetMethod("GetSequenceNumber", BindingFlags.Instance | BindingFlags.NonPublic);
 
             // We use a dummy new RunProperties instance
@@ -250,6 +243,13 @@ namespace HtmlToOpenXml
 #endif
         }
 
-#endregion
+        #endregion
+
+        /// <summary>
+        /// Resolve the element order of the children of RunProperties or ParagraphProperties.
+        /// </summary>
+        /// <param name="element">The child item to look up.</param>
+        /// <returns>Returns the order of the child.</returns>
+        protected abstract int GetTagOrder(OpenXmlElement element);
     }
 }

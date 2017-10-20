@@ -1,0 +1,97 @@
+﻿  <ul>
+      <li>Coffee</li>
+      <li>Tea</li>
+      <li>Milk</li>
+    </ul>
+
+<!--<br class="ibp-rteFontSize-5"/><span style="font-size: 16px">My Text </span></div>
+
+<table class="Standard_Table" cellspacing="0" cellpadding="0">
+<thead>
+    <tr style="font-weight: bold;">
+    <td style="width: 16%; background-color: #ffff99;">Column 1</td>
+    <td style="width: 16%; background-color: #ffff99;">Column 2</td>
+    <td style="width: 16%; background-color: #ffff99;">Column 3</td>
+    <td style="width: 16%; background-color: #ffff99;">Column 4</td>
+    <td style="width: 16%; background-color: #ffff99;">Column 5</td>
+    <td style="width: 16%; background-color: #ffff99;">Column 6</td>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="width: 16%;">Row 1</td>
+<td style="width: 16%;">141,481</td>
+<td style="width: 16%;">483</td>
+<td style="width: 16%;">-1,432</td>
+<td style="width: 16%;">-5</td> <td style="width: 16%;">-1 %</td>
+</tr>
+</tbody>
+</table>-->
+<ol style="list-style-type: upper-alpha">
+    <li>This is H1
+        <ol style="list-style-type: decimal">
+            <li>This is H2</li>
+            <li>Another H2</li>
+        </ol>
+    </li>
+    <li>This is another H1
+        <ol style="list-style-type: decimal">
+            <li>This is H2</li>
+            <li>Another H2</li>
+        </ol>
+    </li>
+    <li>Last H1
+        <ol style="list-style-type: decimal">
+            <li>This is H2</li>
+            <li>Another H2</li>
+        </ol>
+    </li>
+</ol>
+
+<div style="page-orientation: landscape"></div>
+
+      Looks how cool is <font size="x-large"><b>Open Xml</b></font>.
+      Now with <font color="red"><u>HtmlToOpenXml</u></font>, it nevers been so easy to convert html.
+      <p>
+           If you like it, add me a rating on <a href="http://notesforhtml2openxml.codeplex.com">codeplex</a>
+      </p>
+      <hr>
+      <pre lang="fr-FR" class="c#">public void SetContentType(System.Web.HttpRequest request, System.Web.HttpResponse response, String reportName)
+{
+	if (request.Browser.Browser.Contains(&quot;IE&quot;))
+	{
+		<span style="color:Green">// Replace the %20 to obtain a clean name when saving the file from Word.</span>
+		encodedFilename =
+		  Uri.EscapeDataString(Path.GetFileNameWithoutExtension(encodedFilename)).Replace(&quot;%20&quot;, &quot; &quot;)
+			+ Path.GetExtension(encodedFilename);
+	}
+}</pre>
+
+<div style="page-orientation2: portrait"></div>
+
+    <p>An ordered list:</p>
+    <ol>
+      <li>Coffee</li>
+      <li>Tea</li>
+      <li>Milk
+        <ul>
+          <li>Coffee</li>
+          <li>Tea
+            <ol>
+                <li>Earl Grey</li>
+                <li>Green</li>
+                <li>Rosboh</li>
+            </ol>
+          </li>
+          <li>Milk</li>
+        </ul>
+      </li>
+      <li>Wine</li>
+    </ol>
+
+    <p>An unordered list:</p>
+    <ul>
+      <li>Coffee</li>
+      <li>Tea</li>
+      <li>Milk</li>
+    </ul>

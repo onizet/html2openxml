@@ -5,7 +5,7 @@ using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Validation;
 using DocumentFormat.OpenXml.Wordprocessing;
-using NotesFor.HtmlToOpenXml;
+using HtmlToOpenXml;
 
 namespace Demo
 {
@@ -14,7 +14,7 @@ namespace Demo
         static void Main(string[] args)
         {
             const string filename = "test.docx";
-            string html = Demo.Properties.Resources.CompleteRunTest;
+            string html = ResourceHelper.GetString("Resources.CompleteRunTest.html");
             if (File.Exists(filename)) File.Delete(filename);
 
             using (MemoryStream generatedDocument = new MemoryStream())
@@ -22,8 +22,7 @@ namespace Demo
                 // Uncomment and comment the second using() to open an existing template document
                 // instead of creating it from scratch.
 
-                byte[] data = Demo.Properties.Resources.template;
-                generatedDocument.Write(data, 0, data.Length);
+                using (var buffer = ResourceHelper.GetStream("Resources.template.docx")) buffer.CopyToAsync(generatedDocument);
                 generatedDocument.Position = 0L;
                 using (WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true))
                 //using (WordprocessingDocument package = WordprocessingDocument.Create(generatedDocument, WordprocessingDocumentType.Document))

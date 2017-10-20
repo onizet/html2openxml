@@ -3,7 +3,6 @@ using System.Collections.Generic;
 
 namespace HtmlToOpenXml
 {
-#if !FEATURE_DRAWING
     /// <summary>
     /// Helper class to translate a named color to its ARGB representation.
     /// </summary>
@@ -168,5 +167,4 @@ namespace HtmlToOpenXml
             return colors;
         }
     }
-#endif
 }

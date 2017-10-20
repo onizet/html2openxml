@@ -17,7 +17,7 @@ namespace HtmlToOpenXml
     /// <summary>
     /// Represents an ARGB color.
     /// </summary>
-    struct HtmlColor
+    public struct HtmlColor
     {
         private static readonly char[] hexDigits = {
          '0', '1', '2', '3', '4', '5', '6', '7',
@@ -33,11 +33,18 @@ namespace HtmlToOpenXml
         public static readonly HtmlColor Black = FromArgb(0, 0, 0);
 
 
+        /// <summary>
+        /// Try to parse a value (RGB(A) or HSL(A), hexadecimal, or named color) to its RGB representation.
+        /// </summary>
+        /// <param name="htmlColor">The color to parse.</param>
+        /// <returns>Returns <see cref="HtmlColor.Empty"/> if parsing failed.</returns>
         public static HtmlColor Parse(string htmlColor)
         {
-            HtmlColor color = new HtmlColor();
+            if (string.IsNullOrEmpty(htmlColor))
+                return HtmlColor.Empty;
 
             // Bug fixed by jairoXXX to support rgb(r,g,b) format
+            // RGB or RGBA
             if (htmlColor.StartsWith("rgb", StringComparison.OrdinalIgnoreCase))
             {
                 int startIndex = htmlColor.IndexOf('(', 3), endIndex = htmlColor.LastIndexOf(')');
@@ -46,58 +53,62 @@ namespace HtmlToOpenXml
                     var colorStringArray = htmlColor.Substring(startIndex + 1, endIndex - startIndex - 1).Split(',');
                     if (colorStringArray.Length >= 3)
                     {
-                        color = FromArgb(
-                            colorStringArray.Length == 3 ? (byte)255 : Byte.Parse(colorStringArray[0], NumberStyles.Integer, CultureInfo.InvariantCulture),
+                        return FromArgb(
+                            colorStringArray.Length == 3 ? 1.0: double.Parse(colorStringArray[0], CultureInfo.InvariantCulture),
                             Byte.Parse(colorStringArray[colorStringArray.Length - 3], NumberStyles.Integer, CultureInfo.InvariantCulture),
                             Byte.Parse(colorStringArray[colorStringArray.Length - 2], NumberStyles.Integer, CultureInfo.InvariantCulture),
                             Byte.Parse(colorStringArray[colorStringArray.Length - 1], NumberStyles.Integer, CultureInfo.InvariantCulture)
                         );
-                        return color;
                     }
                 }
             }
 
-            try
+            // HSL or HSLA
+            if (htmlColor.StartsWith("hsl", StringComparison.OrdinalIgnoreCase))
             {
-                // The Html allows to write color in hexa without the preceding '#'
-                // I just ensure it's a correct hexadecimal value (length=6 and first character should be
-                // a digit or an hexa letter)
-                if (htmlColor.Length == 6 && (Char.IsDigit(htmlColor[0]) || (htmlColor[0] >= 'a' && htmlColor[0] <= 'f')
-                    || (htmlColor[0] >= 'A' && htmlColor[0] <= 'F')))
+                int startIndex = htmlColor.IndexOf('(', 3), endIndex = htmlColor.LastIndexOf(')');
+                if (startIndex >= 3 && endIndex > -1)
                 {
-                    try
+                    var colorStringArray = htmlColor.Substring(startIndex + 1, endIndex - startIndex - 1).Split(',');
+                    if (colorStringArray.Length >= 3)
                     {
-                        color = FromArgb(255,
-                            Convert.ToByte(htmlColor.Substring(0, 2), 16),
-                            Convert.ToByte(htmlColor.Substring(2, 2), 16),
-                            Convert.ToByte(htmlColor.Substring(4, 2), 16));
+                        return FromHsl(
+                            colorStringArray.Length == 3 ? 255d: double.Parse(colorStringArray[0], CultureInfo.InvariantCulture),
+                            double.Parse(colorStringArray[colorStringArray.Length - 3], CultureInfo.InvariantCulture),
+                            double.Parse(colorStringArray[colorStringArray.Length - 2], CultureInfo.InvariantCulture),
+                            double.Parse(colorStringArray[colorStringArray.Length - 1], CultureInfo.InvariantCulture)
+                        );
                     }
-                    catch (System.FormatException)
-                    {
-                        // If the conversion failed, that should be a named color
-                        // Let the framework dealing with it
-                        color = HtmlColor.Empty;
-                    }
-                }
-
-                if (color.IsEmpty)
-                {
-#if FEATURE_DRAWING
-                    var nativeColor = System.Drawing.ColorTranslator.FromHtml(htmlColor);
-                    color = FromArgb(nativeColor.A, nativeColor.B, nativeColor.G, nativeColor.B);
-#else
-                    color = HtmlColorTranslator.FromHtml(htmlColor);
-#endif
                 }
             }
-            catch (Exception exc)
+
+            // Is it in hexa? Note: we no more accept hexa value without preceding the '#'
+            if (htmlColor[0] == '#' && (htmlColor.Length == 7 || htmlColor.Length == 4))
             {
-                if (exc.InnerException is System.FormatException)
-                    return HtmlColor.Empty;
-                throw;
+                try
+                {
+                    if (htmlColor.Length == 7)
+                    {
+                        return FromArgb(
+                            Convert.ToByte(htmlColor.Substring(1, 2), 16),
+                            Convert.ToByte(htmlColor.Substring(3, 2), 16),
+                            Convert.ToByte(htmlColor.Substring(5, 2), 16));
+                    }
+
+                    // #0FF --> #00FFFF
+                    return FromArgb(
+                            Convert.ToByte(new string(htmlColor[1], 2), 16),
+                            Convert.ToByte(new string(htmlColor[2], 2), 16),
+                            Convert.ToByte(new string(htmlColor[3], 2), 16));
+                }
+                catch (System.FormatException)
+                {
+                    // If the conversion failed, that should be a named color
+                    // Let's the framework dealing with it
+                }
             }
 
-            return color;
+            return HtmlColorTranslator.FromHtml(htmlColor);
         }
 
         /// <summary>
@@ -108,21 +119,107 @@ namespace HtmlToOpenXml
         /// <param name="blue">The blue component.</param>
         public static HtmlColor FromArgb(byte red, byte green, byte blue)
         {
-            return FromArgb(255, red, green, blue);
+            return FromArgb(0d, red, green, blue);
         }
 
         /// <summary>
         /// Creates a <see cref="HtmlColor"/> structure from the four ARGB component values.
         /// </summary>
-        /// <param name="alpha">The alpha component.</param>
-        /// <param name="red">The red component.</param>
-        /// <param name="green">The green component.</param>
-        /// <param name="blue">The blue component.</param>
-        public static HtmlColor FromArgb(byte alpha, byte red, byte green, byte blue)
+        /// <param name="alpha">The alpha component (0.0-1.0).</param>
+        /// <param name="red">The red component (0-255).</param>
+        /// <param name="green">The green component (0-255).</param>
+        /// <param name="blue">The blue component (0-255).</param>
+        public static HtmlColor FromArgb(double alpha, byte red, byte green, byte blue)
         {
+            if (alpha < 0.0 || alpha > 1.0)
+                throw new ArgumentOutOfRangeException(nameof(alpha), alpha, "Alpha should be comprised between 0.0 and 1.0");
+
             return new HtmlColor() {
                 A = alpha, R = red, G = green, B = blue
             };
+        }
+
+        /// <summary>
+        /// Convert a color using the HSL to RGB.
+        /// </summary>
+        /// <param name="alpha">The alpha component (0.0-1.0).</param>
+        /// <param name="hue">The Hue component (0.0 - 1.0).</param>
+        /// <param name="saturation">The saturation component (0.0 - 1.0).</param>
+        /// <param name="luminosity">The luminosity component (0.0 - 1.0).</param>
+        public static HtmlColor FromHsl(double alpha, double hue, double saturation, double luminosity)
+        {
+            if (0 > alpha || 255 < alpha)
+            {
+                throw new ArgumentOutOfRangeException(nameof(alpha), alpha, "Alpha should be comprised between 0.0 and 1.0");
+            }
+            if (0f > hue || 360f < hue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(hue), hue, "Hue should be comprised between 0° and 360°");
+            }
+            if (0f > saturation || 1f < saturation)
+            {
+                throw new ArgumentOutOfRangeException(nameof(saturation), saturation, "Saturation should be comprised between 0.0 and 1.0");
+            }
+            if (0f > luminosity || 1f < luminosity)
+            {
+                throw new ArgumentOutOfRangeException(nameof(luminosity), luminosity, "Brightness should be comprised between 0.0 and 1.0");
+            }
+
+            if (0 == saturation)
+            {
+                return HtmlColor.FromArgb(alpha, Convert.ToByte(luminosity * 255),
+                  Convert.ToByte(luminosity * 255), Convert.ToByte(luminosity * 255));
+            }
+
+            double fMax, fMid, fMin;
+            int iSextant;
+
+            if (0.5 < luminosity)
+            {
+                fMax = luminosity - (luminosity * saturation) + saturation;
+                fMin = luminosity + (luminosity * saturation) - saturation;
+            }
+            else
+            {
+                fMax = luminosity + (luminosity * saturation);
+                fMin = luminosity - (luminosity * saturation);
+            }
+
+            iSextant = (int) Math.Floor(hue / 60f);
+            if (300f <= hue)
+            {
+                hue -= 360f;
+            }
+            hue /= 60f;
+            hue -= 2f * (float) Math.Floor(((iSextant + 1f) % 6f) / 2f);
+            if (0 == iSextant % 2)
+            {
+                fMid = hue * (fMax - fMin) + fMin;
+            }
+            else
+            {
+                fMid = fMin - hue * (fMax - fMin);
+            }
+
+            byte iMax = Convert.ToByte(fMax * 255);
+            byte iMid = Convert.ToByte(fMid * 255);
+            byte iMin = Convert.ToByte(fMin * 255);
+
+            switch (iSextant)
+            {
+                case 1:
+                    return HtmlColor.FromArgb(alpha, iMid, iMax, iMin);
+                case 2:
+                    return HtmlColor.FromArgb(alpha, iMin, iMax, iMid);
+                case 3:
+                    return HtmlColor.FromArgb(alpha, iMin, iMid, iMax);
+                case 4:
+                    return HtmlColor.FromArgb(alpha, iMid, iMin, iMax);
+                case 5:
+                    return HtmlColor.FromArgb(alpha, iMax, iMin, iMid);
+                default:
+                    return HtmlColor.FromArgb(alpha, iMax, iMid, iMin);
+            }
         }
 
         /// <summary>
@@ -154,11 +251,19 @@ namespace HtmlToOpenXml
             return new string(chars);
         }
 
+        /// <summary>
+        /// Gets a representation of this color expressed in ARGB.
+        /// </summary>
+        public override string ToString()
+        {
+            return String.Format("A: {0:#0.##} R: {1:#0##} G: {2:#0##} B: {3:#0##}", this.A, this.R, this.G, this.B);
+        }
+
         //____________________________________________________________________
         //
 
         /// <summary>Gets the alpha component value of this color structure.</summary>
-        public byte A { get; set; }
+        public double A { get; set; }
         /// <summary>Gets the red component value of this cColor structure.</summary>
         public byte R { get; set; }
         /// <summary>Gets the green component value of this color structure.</summary>
