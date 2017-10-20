@@ -51,14 +51,20 @@ namespace HtmlToOpenXml
                 if (startIndex >= 3 && endIndex > -1)
                 {
                     var colorStringArray = htmlColor.Substring(startIndex + 1, endIndex - startIndex - 1).Split(',');
-                    if (colorStringArray.Length >= 3)
+                    if (colorStringArray.Length < 3) return HtmlColor.Empty;
+
+                    try
                     {
                         return FromArgb(
-                            colorStringArray.Length == 3 ? 1.0: double.Parse(colorStringArray[0], CultureInfo.InvariantCulture),
-                            Byte.Parse(colorStringArray[colorStringArray.Length - 3], NumberStyles.Integer, CultureInfo.InvariantCulture),
-                            Byte.Parse(colorStringArray[colorStringArray.Length - 2], NumberStyles.Integer, CultureInfo.InvariantCulture),
-                            Byte.Parse(colorStringArray[colorStringArray.Length - 1], NumberStyles.Integer, CultureInfo.InvariantCulture)
+                            colorStringArray.Length == 3 ? 1.0: double.Parse(colorStringArray[3], CultureInfo.InvariantCulture),
+                            Byte.Parse(colorStringArray[0], NumberStyles.Integer, CultureInfo.InvariantCulture),
+                            Byte.Parse(colorStringArray[1], NumberStyles.Integer, CultureInfo.InvariantCulture),
+                            Byte.Parse(colorStringArray[2], NumberStyles.Integer, CultureInfo.InvariantCulture)
                         );
+                    }
+                    catch (FormatException)
+                    {
+                        return HtmlColor.Empty;
                     }
                 }
             }
@@ -70,14 +76,20 @@ namespace HtmlToOpenXml
                 if (startIndex >= 3 && endIndex > -1)
                 {
                     var colorStringArray = htmlColor.Substring(startIndex + 1, endIndex - startIndex - 1).Split(',');
-                    if (colorStringArray.Length >= 3)
+                    if (colorStringArray.Length < 3) return HtmlColor.Empty;
+
+                    try
                     {
                         return FromHsl(
-                            colorStringArray.Length == 3 ? 255d: double.Parse(colorStringArray[0], CultureInfo.InvariantCulture),
-                            double.Parse(colorStringArray[colorStringArray.Length - 3], CultureInfo.InvariantCulture),
-                            double.Parse(colorStringArray[colorStringArray.Length - 2], CultureInfo.InvariantCulture),
-                            double.Parse(colorStringArray[colorStringArray.Length - 1], CultureInfo.InvariantCulture)
+                            colorStringArray.Length == 3 ? 1d: double.Parse(colorStringArray[3], CultureInfo.InvariantCulture),
+                            double.Parse(colorStringArray[0], CultureInfo.InvariantCulture),
+                            ParsePercent(colorStringArray[1]),
+                            ParsePercent(colorStringArray[2])
                         );
+                    }
+                    catch (FormatException)
+                    {
+                        return HtmlColor.Empty;
                     }
                 }
             }
@@ -109,6 +121,18 @@ namespace HtmlToOpenXml
             }
 
             return HtmlColorTranslator.FromHtml(htmlColor);
+        }
+
+        /// <summary>
+        /// Convert a potential percentage value to its numeric representation.
+        /// Saturation and Lightness can contains both a percentage value or a value comprised between 0.0 and 1.0. 
+        /// </summary>
+        private static double ParsePercent (string value)
+        {
+            if (value.IndexOf('%') > -1)
+                return double.Parse(value.Replace('%', ' '), CultureInfo.InvariantCulture) / 100d;
+
+            return double.Parse(value, CultureInfo.InvariantCulture);
         }
 
         /// <summary>
@@ -148,22 +172,17 @@ namespace HtmlToOpenXml
         /// <param name="luminosity">The luminosity component (0.0 - 1.0).</param>
         public static HtmlColor FromHsl(double alpha, double hue, double saturation, double luminosity)
         {
-            if (0 > alpha || 255 < alpha)
-            {
+            if (alpha < 0.0 || alpha > 1.0)
                 throw new ArgumentOutOfRangeException(nameof(alpha), alpha, "Alpha should be comprised between 0.0 and 1.0");
-            }
-            if (0f > hue || 360f < hue)
-            {
+
+            if (hue < 0 || hue > 360)
                 throw new ArgumentOutOfRangeException(nameof(hue), hue, "Hue should be comprised between 0° and 360°");
-            }
-            if (0f > saturation || 1f < saturation)
-            {
+
+            if (saturation < 0 || saturation > 1)
                 throw new ArgumentOutOfRangeException(nameof(saturation), saturation, "Saturation should be comprised between 0.0 and 1.0");
-            }
-            if (0f > luminosity || 1f < luminosity)
-            {
+
+            if (luminosity < 0 || luminosity > 1)
                 throw new ArgumentOutOfRangeException(nameof(luminosity), luminosity, "Brightness should be comprised between 0.0 and 1.0");
-            }
 
             if (0 == saturation)
             {
