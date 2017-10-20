@@ -173,7 +173,9 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public bool IsCurrentHtmlTag
 		{
-			get { return current[0] == '<'; }
+			get { return current[0] == '<' 
+				// ensure we have not match a false tag like '< p >'
+				&& current.Length > 1 && char.IsLetter(current[1]); }
 		}
 
 		/// <summary>
