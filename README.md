@@ -33,6 +33,7 @@ Refer to [w3schools’ tag](http://www.w3schools.com/tags/default.asp) list to s
 *	&lt;ul&gt;, &lt;ol&gt; and &lt;li&gt;
 *	&lt;dd&gt; and &lt;dt&gt;
 * &lt;q&gt; and &lt;blockquote&gt; (since 1.5)
+* &lt;article&gt;, &lt;aside&gt;, &lt;section&gt; are considered like &lt;div&gt;
 
 Javascript (&lt;script&gt;), CSS &lt;style&gt;, &lt;meta&gt; and other not supported tags does not generate an error but are **ignored**.
 
@@ -55,7 +56,7 @@ The parsing of the Html is done using a custom Regex-based enumerator. These are
 </tr>
 <tr>
   <td>Color</td>
-  <td>red, #ff0000, ff0000, rgb(255,0,0) are all the red color</td>
+  <td>red, #ff0000, #f00, rgb(255,0,0,.5), hsl(0, 100%, 50%) are all the red color</td>
 </tr>
 <tr>
   <td>Attributes</td>
