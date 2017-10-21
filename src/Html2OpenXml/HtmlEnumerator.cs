@@ -175,7 +175,7 @@ namespace HtmlToOpenXml
 		{
 			get { return current[0] == '<' 
 				// ensure we have not match a false tag like '< p >'
-				&& current.Length > 1 && char.IsLetter(current[1]); }
+				&& current.Length > 1 && !char.IsWhiteSpace(current[1]); }
 		}
 
 		/// <summary>
