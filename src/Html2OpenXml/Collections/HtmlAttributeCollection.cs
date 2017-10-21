@@ -26,6 +26,7 @@ namespace HtmlToOpenXml
 	{
 		// This regex split the attributes. This line is valid and all the attributes are well discovered:
 		// <table border="1" contenteditable style="text-align: center; color: #ff00e6" cellpadding=0 cellspacing='0' align="center">
+		// RegexOptions.Singleline stands for dealing with attributes that contain newline (typically for base64 image, see issue #8)
 		private static Regex stripAttributesRegex = new Regex(@"
 #tag and its value surrounded by "" or '
 ((?<tag>\w+)=(?<sep>""|')\s*(?<val>\#?.*?)(\k<sep>|>))
@@ -34,7 +35,7 @@ namespace HtmlToOpenXml
 (?<tag>\w+)=(?<val>\w+)
 |
 # single tag (with no value): contenteditable
-\b(?<tag>\w+)\b", RegexOptions.IgnorePatternWhitespace);
+\b(?<tag>\w+)\b", RegexOptions.IgnorePatternWhitespace| RegexOptions.Singleline);
 
         private static Regex stripStyleAttributesRegex = new Regex(@"(?<name>.+?):\s*(?<val>[^;]+);*\s*");
 
