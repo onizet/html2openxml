@@ -45,16 +45,16 @@ namespace HtmlToOpenXml
 
             // Bug fixed by jairoXXX to support rgb(r,g,b) format
             // RGB or RGBA
-            if (htmlColor.StartsWith("rgb", StringComparison.OrdinalIgnoreCase))
+            try
             {
-                int startIndex = htmlColor.IndexOf('(', 3), endIndex = htmlColor.LastIndexOf(')');
-                if (startIndex >= 3 && endIndex > -1)
+                if (htmlColor.StartsWith("rgb", StringComparison.OrdinalIgnoreCase))
                 {
-                    var colorStringArray = htmlColor.Substring(startIndex + 1, endIndex - startIndex - 1).Split(',');
-                    if (colorStringArray.Length < 3) return HtmlColor.Empty;
-
-                    try
+                    int startIndex = htmlColor.IndexOf('(', 3), endIndex = htmlColor.LastIndexOf(')');
+                    if (startIndex >= 3 && endIndex > -1)
                     {
+                        var colorStringArray = htmlColor.Substring(startIndex + 1, endIndex - startIndex - 1).Split(',');
+                        if (colorStringArray.Length < 3) return HtmlColor.Empty;
+
                         return FromArgb(
                             colorStringArray.Length == 3 ? 1.0: double.Parse(colorStringArray[3], CultureInfo.InvariantCulture),
                             Byte.Parse(colorStringArray[0], NumberStyles.Integer, CultureInfo.InvariantCulture),
@@ -62,24 +62,17 @@ namespace HtmlToOpenXml
                             Byte.Parse(colorStringArray[2], NumberStyles.Integer, CultureInfo.InvariantCulture)
                         );
                     }
-                    catch (FormatException)
-                    {
-                        return HtmlColor.Empty;
-                    }
                 }
-            }
 
-            // HSL or HSLA
-            if (htmlColor.StartsWith("hsl", StringComparison.OrdinalIgnoreCase))
-            {
-                int startIndex = htmlColor.IndexOf('(', 3), endIndex = htmlColor.LastIndexOf(')');
-                if (startIndex >= 3 && endIndex > -1)
+                // HSL or HSLA
+                if (htmlColor.StartsWith("hsl", StringComparison.OrdinalIgnoreCase))
                 {
-                    var colorStringArray = htmlColor.Substring(startIndex + 1, endIndex - startIndex - 1).Split(',');
-                    if (colorStringArray.Length < 3) return HtmlColor.Empty;
-
-                    try
+                    int startIndex = htmlColor.IndexOf('(', 3), endIndex = htmlColor.LastIndexOf(')');
+                    if (startIndex >= 3 && endIndex > -1)
                     {
+                        var colorStringArray = htmlColor.Substring(startIndex + 1, endIndex - startIndex - 1).Split(',');
+                        if (colorStringArray.Length < 3) return HtmlColor.Empty;
+
                         return FromHsl(
                             colorStringArray.Length == 3 ? 1d: double.Parse(colorStringArray[3], CultureInfo.InvariantCulture),
                             double.Parse(colorStringArray[0], CultureInfo.InvariantCulture),
@@ -87,17 +80,10 @@ namespace HtmlToOpenXml
                             ParsePercent(colorStringArray[2])
                         );
                     }
-                    catch (FormatException)
-                    {
-                        return HtmlColor.Empty;
-                    }
                 }
-            }
 
-            // Is it in hexa? Note: we no more accept hexa value without preceding the '#'
-            if (htmlColor[0] == '#' && (htmlColor.Length == 7 || htmlColor.Length == 4))
-            {
-                try
+                // Is it in hexa? Note: we no more accept hexa value without preceding the '#'
+                if (htmlColor[0] == '#' && (htmlColor.Length == 7 || htmlColor.Length == 4))
                 {
                     if (htmlColor.Length == 7)
                     {
@@ -113,11 +99,12 @@ namespace HtmlToOpenXml
                             Convert.ToByte(new string(htmlColor[2], 2), 16),
                             Convert.ToByte(new string(htmlColor[3], 2), 16));
                 }
-                catch (System.FormatException)
-                {
-                    // If the conversion failed, that should be a named color
-                    // Let's the framework dealing with it
-                }
+            }
+            catch (Exception exc)
+            {
+                if (exc is FormatException || exc is OverflowException || exc is ArgumentOutOfRangeException)
+                    return HtmlColor.Empty;
+                throw;
             }
 
             return HtmlColorTranslator.FromHtml(htmlColor);
@@ -246,7 +233,7 @@ namespace HtmlToOpenXml
         /// </summary>
         public bool Equals(HtmlColor color)
         {
-            return color.A == A && color.R == A && color.G == A && color.B == A;
+            return color.A == A && color.R == R && color.G == G && color.B == B;
         }
 
         /// <summary>
