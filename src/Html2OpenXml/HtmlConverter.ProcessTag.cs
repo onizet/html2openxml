@@ -84,7 +84,11 @@ namespace HtmlToOpenXml
 
 		private void ProcessBold(HtmlEnumerator en)
 		{
-			htmlStyles.Runs.BeginTag(en.CurrentTag, new Bold());
+            List<OpenXmlElement> styleAttributes = new List<OpenXmlElement>() { new Bold() };
+            ProcessContainerAttributes(en, styleAttributes);
+
+            if (styleAttributes.Count > 0)
+                htmlStyles.Runs.MergeTag(en.CurrentTag, styleAttributes);
 		}
 
 		#endregion
@@ -457,8 +461,12 @@ namespace HtmlToOpenXml
 
 		private void ProcessItalic(HtmlEnumerator en)
 		{
-			htmlStyles.Runs.BeginTag(en.CurrentTag, new Italic());
-		}
+            List<OpenXmlElement> styleAttributes = new List<OpenXmlElement>() { new Italic() };
+            ProcessContainerAttributes(en, styleAttributes);
+
+            if (styleAttributes.Count > 0)
+                htmlStyles.Runs.MergeTag(en.CurrentTag, styleAttributes);
+        }
 
 		#endregion
 
@@ -764,7 +772,11 @@ namespace HtmlToOpenXml
 
 		private void ProcessUnderline(HtmlEnumerator en)
 		{
-			htmlStyles.Runs.BeginTag(en.CurrentTag, new Underline { Val = UnderlineValues.Single });
+            List<OpenXmlElement> styleAttributes = new List<OpenXmlElement>() { new Underline { Val = UnderlineValues.Single } };
+            ProcessContainerAttributes(en, styleAttributes);
+
+            if (styleAttributes.Count > 0)
+                htmlStyles.Runs.MergeTag(en.CurrentTag, styleAttributes);
 		}
 
 		#endregion
