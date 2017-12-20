@@ -539,6 +539,9 @@ namespace HtmlToOpenXml
 				return;
 			}
 
+			att = en.Attributes["title"];
+			if (!String.IsNullOrEmpty(att)) h.Tooltip = att;
+
 			AlternateProcessHtmlChunks(en, "</a>");
 
 			if (elements.Count == 0) return;
