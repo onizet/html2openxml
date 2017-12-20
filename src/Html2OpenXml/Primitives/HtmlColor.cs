@@ -17,7 +17,7 @@ namespace HtmlToOpenXml
     /// <summary>
     /// Represents an ARGB color.
     /// </summary>
-    public struct HtmlColor
+    struct HtmlColor
     {
         private static readonly char[] hexDigits = {
          '0', '1', '2', '3', '4', '5', '6', '7',
@@ -116,10 +116,13 @@ namespace HtmlToOpenXml
         /// </summary>
         private static double ParsePercent (string value)
         {
+            double parsedValue;
             if (value.IndexOf('%') > -1)
-                return double.Parse(value.Replace('%', ' '), CultureInfo.InvariantCulture) / 100d;
+                parsedValue = double.Parse(value.Replace('%', ' '), CultureInfo.InvariantCulture) / 100d;
+            else
+                parsedValue = double.Parse(value, CultureInfo.InvariantCulture);
 
-            return double.Parse(value, CultureInfo.InvariantCulture);
+            return Math.Min(1, Math.Max(0, parsedValue));
         }
 
         /// <summary>
@@ -130,7 +133,7 @@ namespace HtmlToOpenXml
         /// <param name="blue">The blue component.</param>
         public static HtmlColor FromArgb(byte red, byte green, byte blue)
         {
-            return FromArgb(0d, red, green, blue);
+            return FromArgb(1d, red, green, blue);
         }
 
         /// <summary>
@@ -154,7 +157,7 @@ namespace HtmlToOpenXml
         /// Convert a color using the HSL to RGB.
         /// </summary>
         /// <param name="alpha">The alpha component (0.0-1.0).</param>
-        /// <param name="hue">The Hue component (0.0 - 1.0).</param>
+        /// <param name="hue">The Hue component (0.0 - 360.0).</param>
         /// <param name="saturation">The saturation component (0.0 - 1.0).</param>
         /// <param name="luminosity">The luminosity component (0.0 - 1.0).</param>
         public static HtmlColor FromHsl(double alpha, double hue, double saturation, double luminosity)
