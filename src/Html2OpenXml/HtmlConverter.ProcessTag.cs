@@ -80,19 +80,6 @@ namespace HtmlToOpenXml
 
 		#endregion
 
-		#region ProcessBold
-
-		private void ProcessBold(HtmlEnumerator en)
-		{
-            List<OpenXmlElement> styleAttributes = new List<OpenXmlElement>() { new Bold() };
-            ProcessContainerAttributes(en, styleAttributes);
-
-            if (styleAttributes.Count > 0)
-                htmlStyles.Runs.MergeTag(en.CurrentTag, styleAttributes);
-		}
-
-		#endregion
-
 		#region ProcessBlockQuote
 
 		private void ProcessBlockQuote(HtmlEnumerator en)
@@ -161,7 +148,7 @@ namespace HtmlToOpenXml
 
 		private void ProcessCite(HtmlEnumerator en)
 		{
-			htmlStyles.Runs.BeginTag(en.CurrentTag, new RunStyle() { Val = htmlStyles.GetStyle("Quote", StyleValues.Character) });
+			ProcessHtmlElement<RunStyle>(en, new RunStyle() { Val = htmlStyles.GetStyle("Quote", StyleValues.Character) });
 		}
 
 		#endregion
@@ -363,6 +350,25 @@ namespace HtmlToOpenXml
 
 		#endregion
 
+		#region ProcessHtmlElement
+
+		private void ProcessHtmlElement<T>(HtmlEnumerator en) where T: OpenXmlLeafElement, new()
+		{
+			ProcessHtmlElement<T>(en, new T());
+		}
+
+		/// <summary>
+		/// Generic handler for processing style on any Html element.
+		/// </summary>
+		private void ProcessHtmlElement<T>(HtmlEnumerator en, OpenXmlLeafElement style) where T: OpenXmlLeafElement
+		{
+			List<OpenXmlElement> styleAttributes = new List<OpenXmlElement>() { style };
+			ProcessContainerAttributes(en, styleAttributes);
+			htmlStyles.Runs.MergeTag(en.CurrentTag, styleAttributes);
+		}
+
+		#endregion
+
 		#region ProcessFigureCaption
 
 		private void ProcessFigureCaption(HtmlEnumerator en)
@@ -454,19 +460,6 @@ namespace HtmlToOpenXml
 				elements.Add(run);
 			}
 		}
-
-		#endregion
-
-		#region ProcessItalic
-
-		private void ProcessItalic(HtmlEnumerator en)
-		{
-            List<OpenXmlElement> styleAttributes = new List<OpenXmlElement>() { new Italic() };
-            ProcessContainerAttributes(en, styleAttributes);
-
-            if (styleAttributes.Count > 0)
-                htmlStyles.Runs.MergeTag(en.CurrentTag, styleAttributes);
-        }
 
 		#endregion
 
@@ -706,14 +699,14 @@ namespace HtmlToOpenXml
 			// The browsers render the quote tag between a kind of separators.
 			// We add the Quote style to the nested runs to match more Word.
 
-			htmlStyles.Runs.BeginTag(en.CurrentTag, new RunStyle() { Val = htmlStyles.GetStyle("Quote", StyleValues.Character) });
-
 			Run run = new Run(
 				new Text(" " + HtmlStyles.QuoteCharacters.chars[0]) { Space = SpaceProcessingModeValues.Preserve }
 			);
 
 			htmlStyles.Runs.ApplyTags(run);
 			elements.Add(run);
+
+			ProcessHtmlElement<RunStyle>(en, new RunStyle() { Val = htmlStyles.GetStyle("Quote", StyleValues.Character) });
 		}
 
 		#endregion
@@ -741,20 +734,11 @@ namespace HtmlToOpenXml
 
 		#endregion
 
-		#region ProcessStrike
-
-		private void ProcessStrike(HtmlEnumerator en)
-		{
-			htmlStyles.Runs.BeginTag(en.CurrentTag, new Strike());
-		}
-
-		#endregion
-
 		#region ProcessSubscript
 
 		private void ProcessSubscript(HtmlEnumerator en)
 		{
-			htmlStyles.Runs.BeginTag(en.CurrentTag, new VerticalTextAlignment() { Val = VerticalPositionValues.Subscript });
+			ProcessHtmlElement<VerticalTextAlignment>(en, new VerticalTextAlignment() { Val = VerticalPositionValues.Subscript });
 		}
 
 		#endregion
@@ -763,7 +747,7 @@ namespace HtmlToOpenXml
 
 		private void ProcessSuperscript(HtmlEnumerator en)
 		{
-			htmlStyles.Runs.BeginTag(en.CurrentTag, new VerticalTextAlignment() { Val = VerticalPositionValues.Superscript });
+			ProcessHtmlElement<VerticalTextAlignment>(en, new VerticalTextAlignment() { Val = VerticalPositionValues.Superscript });
 		}
 
 		#endregion
@@ -772,11 +756,7 @@ namespace HtmlToOpenXml
 
 		private void ProcessUnderline(HtmlEnumerator en)
 		{
-            List<OpenXmlElement> styleAttributes = new List<OpenXmlElement>() { new Underline { Val = UnderlineValues.Single } };
-            ProcessContainerAttributes(en, styleAttributes);
-
-            if (styleAttributes.Count > 0)
-                htmlStyles.Runs.MergeTag(en.CurrentTag, styleAttributes);
+			ProcessHtmlElement<Underline>(en, new Underline() { Val = UnderlineValues.Single });
 		}
 
 		#endregion
