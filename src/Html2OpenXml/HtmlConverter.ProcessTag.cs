@@ -301,7 +301,7 @@ namespace HtmlToOpenXml
 			// If the previous paragraph contains a bottom border or is a Table, we add some spacing between the <hr>
 			// and the previous element or Word will display only the last border.
 			// (see Remarks: http://msdn.microsoft.com/en-us/library/documentformat.openxml.wordprocessing.bottomborder%28office.14%29.aspx)
-            if (paragraphs.Count > 2)
+            if (paragraphs.Count >= 2)
             {
                 OpenXmlCompositeElement previousElement = paragraphs[paragraphs.Count - 2];
                 bool addSpacing = false;

@@ -67,9 +67,7 @@ namespace HtmlToOpenXml
 		/// <remarks>We preload some configuration from inside the document such as style, bookmarks,...</remarks>
 		public HtmlConverter(MainDocumentPart mainPart)
 		{
-            if (mainPart == null) throw new ArgumentNullException("mainPart");
-
-			this.mainPart = mainPart;
+			this.mainPart = mainPart ?? throw new ArgumentNullException("mainPart");
 			this.RenderPreAsTable = true;
 			this.ImageProcessing = ImageProcessing.AutomaticDownload;
 			this.knownTags = InitKnownTags();
@@ -213,10 +211,10 @@ namespace HtmlToOpenXml
 				}
 				else
 				{
-					// apply the previously discovered style
 					Run run = new Run(
 						new Text(HttpUtility.HtmlDecode(en.Current)) { Space = SpaceProcessingModeValues.Preserve }
 					);
+					// apply the previously discovered style
 					htmlStyles.Runs.ApplyTags(run);
 					elements.Add(run);
 				}
@@ -715,17 +713,14 @@ namespace HtmlToOpenXml
 		/// Push the elements members to the current paragraph and reset the elements collection.
 		/// </summary>
 		/// <param name="createNew">True to automatically create a new paragraph, stored in the instance member <see cref="currentParagraph"/>.</param>
-		/// <returns>Returns the completed paragraph.</returns>
-		private Paragraph CompleteCurrentParagraph(bool createNew = false)
+		private void CompleteCurrentParagraph(bool createNew = false)
 		{
 			htmlStyles.Paragraph.ApplyTags(currentParagraph);
 			this.currentParagraph.Append(elements);
 			elements.Clear();
 
-			Paragraph previousParagraph = currentParagraph;
-			if (createNew)
+			if (createNew && currentParagraph.ChildElements.Count > 0)
 				AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
-			return previousParagraph;
 		}
 
 		#endregion
