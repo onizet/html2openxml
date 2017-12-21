@@ -4,8 +4,11 @@ using HtmlToOpenXml;
 
 namespace HtmlToOpenXml.Tests
 {
+    /// <summary>
+    /// Tests Html color style attribute.
+    /// </summary>
     [TestFixture]
-    public class HtmlColorTests
+    public class ColorTests
     {
         [TestCase("", 0, 0, 0, 0d)]
         [TestCase("#F00", 255, 0, 0, 1d)]
@@ -24,10 +27,13 @@ namespace HtmlToOpenXml.Tests
         public void ParseColor(string htmlColor, byte red, byte green, byte blue, double alpha)
         {
             var color = HtmlColor.Parse(htmlColor);
-            Assert.That(color.R, Is.EqualTo(red));
-            Assert.That(color.B, Is.EqualTo(blue));
-            Assert.That(color.G, Is.EqualTo(green));
-            Assert.That(color.A, Is.EqualTo(alpha));
+
+            Assert.Multiple(() => {
+                Assert.That(color.R, Is.EqualTo(red));
+                Assert.That(color.B, Is.EqualTo(blue));
+                Assert.That(color.G, Is.EqualTo(green));
+                Assert.That(color.A, Is.EqualTo(alpha));
+            });
         }
 
         [Test]

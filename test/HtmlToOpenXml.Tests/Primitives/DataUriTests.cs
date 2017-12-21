@@ -4,6 +4,9 @@ using HtmlToOpenXml;
 
 namespace HtmlToOpenXml.Tests
 {
+    /// <summary>
+    /// Tests inline image (base 64).
+    /// </summary>
     [TestFixture]
     public class DataUriTests
     {
