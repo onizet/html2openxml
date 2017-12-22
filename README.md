@@ -4,6 +4,10 @@ Httml2OpenXml is a small .Net library that convert simple or advanced HTML to pl
 
 Depends on either the [OpenXml SDK 2.0](http://www.microsoft.com/en-us/download/details.aspx?id=5124) and .Net 3.5 or [OpenXml SDK 2.5](http://www.microsoft.com/en-us/download/details.aspx?id=30425) and .Net 4.0.
 
+> Looking for .Net core version? Take a look at the [dev branch](https://github.com/onizet/html2openxml/tree/dev).
+>
+> Some help in fixing bugs or testing is always welcome :)
+
 ### See Also
 
 * [Documentation](https://github.com/onizet/html2openxml/wiki)
