@@ -2,23 +2,25 @@
 [![License MSPL](https://img.shields.io/badge/license-MSPL-green.svg)](https://github.com/onizet/html2openxml/blob/master/License.txtl)
 [![NuGet](https://img.shields.io/nuget/dt/HtmlToOpenXml.dll.svg)]()
 
-## What is Html2OpenXml?
+# What is Html2OpenXml?
 
-Httml2OpenXml is a small .Net library that convert simple or advanced HTML to plain OpenXml components. This program has started in 2009, initially to convert user's comments from SharePoint to Word.
+Html2OpenXml is a small .Net library that convert simple or advanced HTML to plain OpenXml components. This program has started in 2009, initially to convert user's comments from SharePoint to Word.
 
 This library supports both **.NetCore (netstandard1.4)** and **.Net Framework 3.5, 4.0 and 4.6**.
 
-Depends on either the [DocumentFormat.OpenXml](https://www.nuget.org/packages/DocumentFormat.OpenXml/).
+Depends on [DocumentFormat.OpenXml](https://www.nuget.org/packages/DocumentFormat.OpenXml/).
 
-### See Also
+## See Also
 
 * [Documentation](https://github.com/onizet/html2openxml/wiki)
 * [How to deliver a generated DOCX from server Asp.Net/SharePoint?](https://github.com/onizet/html2openxml/wiki/Serves-a-generated-docx-from-the-server)
 * [Prevent Document Edition](https://github.com/onizet/html2openxml/wiki/Prevent-Document-Edition)
 * [Convert dotx to docx](https://github.com/onizet/html2openxml/wiki/Convert-.dotx-to-.docx)
 
-### Supported Html tags
+## Supported Html tags
+
 Refer to [w3schools’ tag](http://www.w3schools.com/tags/default.asp) list to see their meaning
+
 *	&lt;a&gt;
 *	&lt;h1-h6&gt;
 *	&lt;abbr&gt; and &lt;acronym&gt;
@@ -37,41 +39,26 @@ Refer to [w3schools’ tag](http://www.w3schools.com/tags/default.asp) list to s
 
 Javascript (&lt;script&gt;), CSS &lt;style&gt;, &lt;meta&gt; and other not supported tags does not generate an error but are **ignored**.
 
-### Tolerance for bad formed HTML
+## Tolerance for bad formed HTML
+
 The parsing of the Html is done using a custom Regex-based enumerator. These are supported:
 
-<table>
-<tr><th></th><th>samples</th></tr>
-<tr>
-  <td>Ignore case</td>
-  <td>&lt;span&gt;Some text&lt;SPAN&gt;</td>
-</tr>
-<tr>
-  <td>Missing closing tag or invalid tag position</td>
-  <td>&lt;i&gt;Here&lt;b&gt; is &lt;/i&gt; some&lt;/b&gt; bad formed html.</td>
-</tr>
-<tr>
-  <td>no need to be XHTML compliant</td>
-  <td>Both &lt;br&gt; and &lt;br/&gt; are valid</td>
-</tr>
-<tr>
-  <td>Color</td>
-  <td>red, #ff0000, #f00, rgb(255,0,0,.5), hsl(0, 100%, 50%) are all the red color</td>
-</tr>
-<tr>
-  <td>Attributes</td>
-  <td>&lt;table id=table1&gt; or &lt;table id="table1"&gt;</td>
-</tr>
-</table>
+|   | samples |
+| ------------- | ------------- |
+| Ignore case | &lt;span&gt;Some text&lt;SPAN&gt; |
+| Missing closing tag or invalid tag position | &lt;i&gt;Here&lt;b&gt; is &lt;/i&gt; some&lt;/b&gt; bad formed html. |
+| no need to be XHTML compliant | Both &lt;br&gt; and &lt;br/&gt; are valid |
+| Color | red, #ff0000, #f00, rgb(255,0,0,.5), hsl(0, 100%, 50%) are all the red color |
+| Attributes | &lt;table id=table1&gt; or &lt;table id="table1"&gt; |
 
-### Acknowledgements
+## Acknowledgements
 
 Thank you to all contributors that share their bug fixes: scwebgroup, ddforge, daviderapicavoli, worstenbrood, jodybullen, BenBurns, OleK, scarhand, imagremlin, antgraf, mdeclercq, pauldbentley, xjpmauricio, jairoXXX, giorand, bostjanKlemenc, AaronLS.
 And thanks to David Podhola for the Nuget package.
 
 Logo provided with the permission of [Enhanced Labs Design Studio](http://www.enhancedlabs.com).
 
-### Support
+## Support
 
 This project is open source and I do my best to support it in my spare time. I'm always happy to receive Pull Request and grateful for the time you have taken
 If you have questions, don't hesitate to get in touch with me!
