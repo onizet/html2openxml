@@ -90,8 +90,12 @@ namespace HtmlToOpenXml
 
 			var colorValue = en.StyleAttributes.GetAsColor("background-color");
 
-            // "background-color" is also handled by RunStyleCollection which duplicate this attribute (bug #13212). Let's ignore it
-            if (!colorValue.IsEmpty && en.CurrentTag.Equals("<td>", StringComparison.OrdinalIgnoreCase)) colorValue = HtmlColor.Empty;
+            // "background-color" is also handled by RunStyleCollection which duplicate this attribute (bug #13212). 
+			// Also apply on <th> (issue #20).
+            if (!colorValue.IsEmpty &&
+				(en.CurrentTag.Equals("<td>", StringComparison.OrdinalIgnoreCase)
+				 || en.CurrentTag.Equals("<th>", StringComparison.OrdinalIgnoreCase)))
+				colorValue = HtmlColor.Empty;
 			if (colorValue.IsEmpty) colorValue = en.Attributes.GetAsColor("bgcolor");
             if (!colorValue.IsEmpty)
 			{
