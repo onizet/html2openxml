@@ -101,7 +101,7 @@ namespace HtmlToOpenXml
             else
             {
                 // for nested paragraphs:
-                htmlStyles.Paragraph.BeginTag(en.CurrentTag, new ParagraphStyleId() { Val = htmlStyles.GetStyle("IntenseQuote") });
+                htmlStyles.Paragraph.BeginTag(en.CurrentTag, new ParagraphStyleId() { Val = blockQuoteStyle });
             }
 
 			// TODO: handle attribute cite and create footnote
