@@ -342,6 +342,9 @@ namespace HtmlToOpenXml
             Regex linkRegex = new Regex(@"^((https?|ftps?|mailto|file)://|[\\]{2})(?:[\w][\w.-]?)");
             if (linkRegex.IsMatch(description) && Uri.TryCreate(description, UriKind.Absolute, out uriReference))
             {
+                // when URI references a network server (ex: \\server01), System.IO.Packaging is not resolving the correct URI and this leads
+                // to a bad-formed XML not recognized by Word. To enforce the "original URI", a fresh new instance must be created
+                uriReference = new Uri(uriReference.AbsoluteUri, UriKind.Absolute);
                 HyperlinkRelationship extLink = fpart.AddHyperlinkRelationship(uriReference, true);
                 var h = new Hyperlink(
                     ) { History = true, Id = extLink.Id };
