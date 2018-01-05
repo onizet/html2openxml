@@ -656,7 +656,6 @@ namespace HtmlToOpenXml
                 { "</article>", ProcessClosingDiv },
                 { "</aside>", ProcessClosingDiv },
                 { "</b>", ProcessClosingTag },
-                { "</blockquote>", ProcessClosingBlockQuote },
 				{ "</body>", ProcessClosingTag },
 				{ "</cite>", ProcessClosingTag },
 				{ "</del>", ProcessClosingTag },
