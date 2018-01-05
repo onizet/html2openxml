@@ -777,6 +777,7 @@ namespace HtmlToOpenXml
 				bool handleBorders = true;
 				if (classValue != null)
 				{
+					// check whether the style in use have borders
                     String styleId = this.htmlStyles.GetStyle(classValue, StyleValues.Table, true);
 					if (styleId != null)
                     {
@@ -791,14 +792,26 @@ namespace HtmlToOpenXml
 				{
 					uint borderSize = border.Value > 1? (uint) new Unit(UnitMetric.Pixel, border.Value).ValueInDxa : 1;
 					properties.TableBorders = new TableBorders() {
-						TopBorder = new TopBorder { Val = BorderValues.Single, Size = borderSize },
-						LeftBorder = new LeftBorder { Val = BorderValues.Single, Size = borderSize },
-						RightBorder = new RightBorder { Val = BorderValues.Single, Size = borderSize },
-						BottomBorder = new BottomBorder { Val = BorderValues.Single, Size = borderSize },
+						TopBorder = new TopBorder { Val = BorderValues.None },
+						LeftBorder = new LeftBorder { Val = BorderValues.None },
+						RightBorder = new RightBorder { Val = BorderValues.None },
+						BottomBorder = new BottomBorder { Val = BorderValues.None },
 						InsideHorizontalBorder = new InsideHorizontalBorder { Val = BorderValues.Single, Size = borderSize },
 						InsideVerticalBorder = new InsideVerticalBorder { Val = BorderValues.Single, Size = borderSize }
 					};
 				}
+			}
+			// is the border=0? If so, we remove the border regardless the style in use
+			else if (border == 0)
+			{
+				properties.TableBorders = new TableBorders() {
+					TopBorder = new TopBorder { Val = BorderValues.None },
+					LeftBorder = new LeftBorder { Val = BorderValues.None },
+					RightBorder = new RightBorder { Val = BorderValues.None },
+					BottomBorder = new BottomBorder { Val = BorderValues.None },
+					InsideHorizontalBorder = new InsideHorizontalBorder { Val = BorderValues.None },
+					InsideVerticalBorder = new InsideVerticalBorder { Val = BorderValues.None }
+				};
 			}
 
 			Unit unit = en.StyleAttributes.GetAsUnit("width");
@@ -1112,7 +1125,7 @@ namespace HtmlToOpenXml
 				properties.TableCellMargin = cellMargin;
 			}
 
-			htmlStyles.Tables.ProcessCommonAttributes(en, styleAttributes);
+			htmlStyles.Tables.ProcessCommonAttributes(en, runStyleAttributes);
 			if (styleAttributes.Count > 0)
 				htmlStyles.Tables.BeginTag(en.CurrentTag, styleAttributes);
 			if (runStyleAttributes.Count > 0)
