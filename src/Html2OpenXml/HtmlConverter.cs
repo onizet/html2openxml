@@ -322,11 +322,11 @@ namespace HtmlToOpenXml
 				new Footnote(
 					p = new Paragraph(
 						new ParagraphProperties {
-							ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle("footnote text", StyleValues.Paragraph) }
+							ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle("FootnoteText", StyleValues.Paragraph) }
 						},
 						markerRun = new Run(
 							new RunProperties {
-								RunStyle = new RunStyle() { Val = htmlStyles.GetStyle("footnote reference", StyleValues.Character) }
+								RunStyle = new RunStyle() { Val = htmlStyles.GetStyle("FootnoteReference", StyleValues.Character) }
 							},
 							new FootnoteReferenceMark()),
 						new Run(
@@ -346,8 +346,6 @@ namespace HtmlToOpenXml
                 var h = new Hyperlink(
                     ) { History = true, Id = extLink.Id };
 
-                htmlStyles.EnsureKnownStyle(HtmlDocumentStyle.KnownStyles.Hyperlink);
-
                 h.Append(new Run(
                     new RunProperties {
                         RunStyle = new RunStyle() { Val = htmlStyles.GetStyle("Hyperlink", StyleValues.Character) }
@@ -361,14 +359,6 @@ namespace HtmlToOpenXml
                     new Text(description) { Space = SpaceProcessingModeValues.Preserve }));
             }
 
-
-			if (!htmlStyles.DoesStyleExists("footnote reference"))
-			{
-				// Force the superscript style because if the footnote text style does not exists,
-				// the rendering will be awful.
-				markerRun.InsertInProperties(prop =>
-					prop.VerticalTextAlignment = new VerticalTextAlignment() { Val = VerticalPositionValues.Superscript });
-			}
 			fpart.Footnotes.Save();
 
 			return footnotesRef;
@@ -430,11 +420,11 @@ namespace HtmlToOpenXml
 				new Endnote(
 					new Paragraph(
 						new ParagraphProperties {
-							ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle("endnote text", StyleValues.Paragraph) }
+							ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle("EndnoteText", StyleValues.Paragraph) }
 						},
 						markerRun = new Run(
 							new RunProperties {
-								RunStyle = new RunStyle() { Val = htmlStyles.GetStyle("endnote reference", StyleValues.Character) }
+								RunStyle = new RunStyle() { Val = htmlStyles.GetStyle("EndnoteReference", StyleValues.Character) }
 							},
 							new FootnoteReferenceMark()),
 						new Run(
@@ -443,14 +433,6 @@ namespace HtmlToOpenXml
 							new Text(" " + description) { Space = SpaceProcessingModeValues.Preserve })
 					)
 				) { Id = endnotesRef });
-
-			if (!htmlStyles.DoesStyleExists("endnote reference"))
-			{
-				// Force the superscript style because if the footnote text style does not exists,
-				// the rendering will be awful.
-				markerRun.InsertInProperties(prop => 
-					prop.VerticalTextAlignment = new VerticalTextAlignment() { Val = VerticalPositionValues.Superscript });
-			}
 
 			fpart.Endnotes.Save();
 

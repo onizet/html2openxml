@@ -21,8 +21,6 @@ namespace HtmlToOpenXml
 	/// </summary>
 	public sealed class HtmlDocumentStyle
 	{
-        internal enum KnownStyles { Hyperlink, Caption }
-
 		/// <summary>
 		/// Occurs when a Style is missing in the MainDocumentPart but will be used during the conversion process.
 		/// </summary>
@@ -110,8 +108,11 @@ namespace HtmlToOpenXml
 			{
 				if (!knownStyles.TryGetValue(name, out style))
 				{
-					if (StyleMissing != null) StyleMissing(this, new StyleEventArgs(name, mainPart, styleType));
-					return name;
+					if (!EnsureKnownStyle(name, out style))
+					{
+						StyleMissing?.Invoke(this, new StyleEventArgs(name, mainPart, styleType));
+						return name;
+					}
 				}
 
 				if (styleType == StyleValues.Character && !style.Type.Equals<StyleValues>(StyleValues.Character))
@@ -155,42 +156,15 @@ namespace HtmlToOpenXml
         #region EnsureKnownStyle
 
         /// <summary>
-        /// Ensure the specified style exists in the document.
+        /// Try to insert the style in the document if it is a known style.
         /// </summary>
-        internal void EnsureKnownStyle(KnownStyles styleName)
+        private bool EnsureKnownStyle(string styleName, out Style style)
         {
-            if (styleName == KnownStyles.Hyperlink)
-            {
-                if (!this.DoesStyleExists("Hyperlink"))
-                {
-                    this.AddStyle("Hyperlink", new Style(
-                        new StyleName() { Val = "Hyperlink" },
-                        new UnhideWhenUsed(),
-                        new StyleRunProperties(PredefinedStyles.HyperLink)
-                    ) { Type = StyleValues.Character, StyleId = "Hyperlink" });
-                }
-            }
-            else if (styleName == KnownStyles.Caption)
-            {
-                if (this.DoesStyleExists("caption"))
-                    return;
-
-                String normalStyleName = this.GetStyle("Normal", StyleValues.Paragraph);
-                Style style = new Style(
-                    new StyleName { Val = "caption" },
-                    new BasedOn { Val = normalStyleName },
-                    new NextParagraphStyle { Val = normalStyleName },
-                    new UnhideWhenUsed(),
-                    new PrimaryStyle(),
-                    new StyleParagraphProperties
-                    {
-                        SpacingBetweenLines = new SpacingBetweenLines { Line = "240", LineRule = LineSpacingRuleValues.Auto }
-                    },
-                    new StyleRunProperties(PredefinedStyles.Caption)
-                ) { Type = StyleValues.Paragraph, StyleId = "Caption" };
-
-                this.AddStyle("caption", style);
-            }
+			style = null;
+			string xml = PredefinedStyles.GetOuterXml(styleName);
+			if (xml == null) return false;
+			this.AddStyle(styleName, style = new Style(xml));
+			return true;
         }
 
         #endregion

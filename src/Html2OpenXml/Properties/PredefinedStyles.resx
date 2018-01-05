@@ -118,61 +118,304 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Caption" xml:space="preserve">
-    <value>&lt;w:rPr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"&gt;&lt;w:b /&gt;&lt;w:bCs /&gt;&lt;w:color w:val="4F81BD" w:themeColor="accent1" /&gt;&lt;w:sz w:val="18" /&gt;&lt;w:szCs w:val="18" /&gt;&lt;/w:rPr&gt;</value>
+    <value><![CDATA[<w:style w:type="paragraph" w:styleId="Caption" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:name w:val="caption" />
+  <w:basedOn w:val="Normal" />
+  <w:next w:val="Normal" />
+  <w:unhideWhenUsed />
+  <w:qFormat />
+  <w:pPr>
+    <w:spacing w:after="200" w:line="240" w:lineRule="auto" />
+  </w:pPr>
+  <w:rPr>
+    <w:b />
+    <w:bCs />
+    <w:color w:val="5B9BD5" w:themeColor="accent1" />
+    <w:sz w:val="18" />
+    <w:szCs w:val="18" />
+  </w:rPr>
+</w:style>]]></value>
   </data>
-  <data name="Heading 1" xml:space="preserve">
-    <value>&lt;w:rPr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"&gt;
-    &lt;w:rFonts w:asciiTheme="majorHAnsi" w:hAnsiTheme="majorHAnsi" w:eastAsiaTheme="majorEastAsia" w:cstheme="majorBidi" /&gt;
-    &lt;w:b /&gt;
-    &lt;w:bCs /&gt;
-    &lt;w:color w:val="365F91" w:themeColor="accent1" w:themeShade="BF" /&gt;
-    &lt;w:sz w:val="28" /&gt;
-    &lt;w:szCs w:val="28" /&gt;
-  &lt;/w:rPr&gt;</value>
+  <data name="EndnoteText" xml:space="preserve">
+   <value><![CDATA[<w:style w:type="paragraph" w:styleId="EndnoteText" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:name w:val="endnote text" />
+  <w:basedOn w:val="Normal" />
+  <w:semiHidden />
+  <w:unhideWhenUsed />
+  <w:pPr>
+    <w:spacing w:after="0" w:line="240" w:lineRule="auto" />
+  </w:pPr>
+  <w:rPr>
+    <w:sz w:val="20" />
+    <w:szCs w:val="20" />
+  </w:rPr>
+</w:style>]]></value>
   </data>
-  <data name="Heading 2" xml:space="preserve">
-    <value>&lt;w:rPr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"&gt;
-    &lt;w:rFonts w:asciiTheme="majorHAnsi" w:hAnsiTheme="majorHAnsi" w:eastAsiaTheme="majorEastAsia" w:cstheme="majorBidi" /&gt;
-    &lt;w:b /&gt;
-    &lt;w:bCs /&gt;
-    &lt;w:color w:val="4F81BD" w:themeColor="accent1" /&gt;
-    &lt;w:sz w:val="26" /&gt;
-    &lt;w:szCs w:val="26" /&gt;
-  &lt;/w:rPr&gt;</value>
+  <data name="EndnoteReference" xml:space="preserve">
+   <value><![CDATA[<w:style w:type="character" w:styleId="EndnoteReference" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:name w:val="endnote reference" />
+  <w:basedOn w:val="DefaultParagraphFont" />
+  <w:semiHidden />
+  <w:unhideWhenUsed />
+  <w:rPr>
+    <w:vertAlign w:val="superscript" />
+  </w:rPr>
+</w:style>]]></value>
   </data>
-  <data name="Heading 3" xml:space="preserve">
-    <value>&lt;w:rPr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"&gt;
-    &lt;w:rFonts w:asciiTheme="majorHAnsi" w:hAnsiTheme="majorHAnsi" w:eastAsiaTheme="majorEastAsia" w:cstheme="majorBidi" /&gt;
-    &lt;w:b /&gt;
-    &lt;w:bCs /&gt;
-    &lt;w:color w:val="4F81BD" w:themeColor="accent1" /&gt;
-  &lt;/w:rPr&gt;</value>
+  <data name="FootnoteText" xml:space="preserve">
+   <value><![CDATA[<w:style w:type="paragraph" w:styleId="FootnoteText" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:name w:val="footnote text" />
+  <w:basedOn w:val="Normal" />
+  <w:semiHidden />
+  <w:unhideWhenUsed />
+  <w:pPr>
+    <w:spacing w:after="0" w:line="240" w:lineRule="auto" />
+  </w:pPr>
+  <w:rPr>
+    <w:sz w:val="20" />
+    <w:szCs w:val="20" />
+  </w:rPr>
+</w:style>]]></value>
   </data>
-  <data name="Heading 4" xml:space="preserve">
-    <value>&lt;w:rPr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"&gt;
-    &lt;w:rFonts w:asciiTheme="majorHAnsi" w:hAnsiTheme="majorHAnsi" w:eastAsiaTheme="majorEastAsia" w:cstheme="majorBidi" /&gt;
-    &lt;w:b /&gt;
-    &lt;w:bCs /&gt;
-    &lt;w:i /&gt;
-    &lt;w:iCs /&gt;
-    &lt;w:color w:val="4F81BD" w:themeColor="accent1" /&gt;
-  &lt;/w:rPr&gt;</value>
+  <data name="FootnoteReference" xml:space="preserve">
+   <value><![CDATA[<w:style w:type="character" w:styleId="FootnoteReference" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:name w:val="footnote reference" />
+  <w:basedOn w:val="DefaultParagraphFont" />
+  <w:semiHidden />
+  <w:unhideWhenUsed />
+  <w:rPr>
+    <w:vertAlign w:val="superscript" />
+  </w:rPr>
+</w:style>]]></value>
   </data>
-  <data name="Heading 5" xml:space="preserve">
-    <value>&lt;w:rPr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"&gt;
-    &lt;w:rFonts w:asciiTheme="majorHAnsi" w:hAnsiTheme="majorHAnsi" w:eastAsiaTheme="majorEastAsia" w:cstheme="majorBidi" /&gt;
-    &lt;w:color w:val="243F60" w:themeColor="accent1" w:themeShade="7F" /&gt;
-  &lt;/w:rPr&gt;</value>
+  <data name="Heading1" xml:space="preserve">
+    <value><![CDATA[<w:style w:type="paragraph" w:styleId="Heading1" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:name w:val="heading 1" />
+  <w:basedOn w:val="Normal" />
+  <w:next w:val="Normal" />
+  <w:link w:val="Heading1Char" />
+  <w:qFormat />
+  <w:pPr>
+    <w:keepNext />
+    <w:keepLines />
+    <w:spacing w:before="480" w:after="0" />
+    <w:outlineLvl w:val="0" />
+  </w:pPr>
+  <w:rPr>
+    <w:rFonts w:asciiTheme="majorHAnsi" w:hAnsiTheme="majorHAnsi" w:eastAsiaTheme="majorEastAsia" w:cstheme="majorBidi" />
+    <w:b />
+    <w:bCs />
+    <w:color w:val="2E74B5" w:themeColor="accent1" w:themeShade="BF" />
+    <w:sz w:val="28" />
+    <w:szCs w:val="28" />
+  </w:rPr>
+</w:style>]]></value>
   </data>
-  <data name="Heading 6" xml:space="preserve">
-    <value>&lt;w:rPr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"&gt;
-    &lt;w:rFonts w:asciiTheme="majorHAnsi" w:hAnsiTheme="majorHAnsi" w:eastAsiaTheme="majorEastAsia" w:cstheme="majorBidi" /&gt;
-    &lt;w:i /&gt;
-    &lt;w:iCs /&gt;
-    &lt;w:color w:val="243F60" w:themeColor="accent1" w:themeShade="7F" /&gt;
-  &lt;/w:rPr&gt;</value>
+  <data name="Heading2" xml:space="preserve">
+    <value><![CDATA[<w:style w:type="paragraph" w:styleId="Heading2" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:name w:val="heading 2" />
+  <w:basedOn w:val="Normal" />
+  <w:next w:val="Normal" />
+  <w:link w:val="Heading2Char" />
+  <w:unhideWhenUsed />
+  <w:qFormat />
+  <w:pPr>
+    <w:keepNext />
+    <w:keepLines />
+    <w:spacing w:before="200" w:after="0" />
+    <w:outlineLvl w:val="1" />
+  </w:pPr>
+  <w:rPr>
+    <w:rFonts w:asciiTheme="majorHAnsi" w:hAnsiTheme="majorHAnsi" w:eastAsiaTheme="majorEastAsia" w:cstheme="majorBidi" />
+    <w:b />
+    <w:bCs />
+    <w:color w:val="5B9BD5" w:themeColor="accent1" />
+    <w:sz w:val="26" />
+    <w:szCs w:val="26" />
+  </w:rPr>
+</w:style>]]></value>
   </data>
-  <data name="HyperLink" xml:space="preserve">
-    <value>&lt;w:rPr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"&gt;&lt;w:color w:val="0000FF" w:themeColor="hyperlink" /&gt;&lt;w:u w:val="single" /&gt;&lt;/w:rPr&gt;</value>
+  <data name="Heading3" xml:space="preserve">
+    <value><![CDATA[<w:style w:type="paragraph" w:styleId="Heading3" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:name w:val="heading 3" />
+  <w:basedOn w:val="Normal" />
+  <w:next w:val="Normal" />
+  <w:link w:val="Heading3Char" />
+  <w:unhideWhenUsed />
+  <w:qFormat />
+  <w:pPr>
+    <w:keepNext />
+    <w:keepLines />
+    <w:spacing w:before="200" w:after="0" />
+    <w:outlineLvl w:val="2" />
+  </w:pPr>
+  <w:rPr>
+    <w:rFonts w:asciiTheme="majorHAnsi" w:hAnsiTheme="majorHAnsi" w:eastAsiaTheme="majorEastAsia" w:cstheme="majorBidi" />
+    <w:b />
+    <w:bCs />
+    <w:color w:val="5B9BD5" w:themeColor="accent1" />
+  </w:rPr>
+</w:style>]]></value>
+  </data>
+  <data name="Heading4" xml:space="preserve">
+    <value><![CDATA[<w:style w:type="paragraph" w:styleId="Heading4" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:name w:val="heading 4" />
+  <w:basedOn w:val="Normal" />
+  <w:next w:val="Normal" />
+  <w:link w:val="Heading4Char" />
+  <w:unhideWhenUsed />
+  <w:qFormat />
+  <w:pPr>
+    <w:keepNext />
+    <w:keepLines />
+    <w:spacing w:before="200" w:after="0" />
+    <w:outlineLvl w:val="3" />
+  </w:pPr>
+  <w:rPr>
+    <w:rFonts w:asciiTheme="majorHAnsi" w:hAnsiTheme="majorHAnsi" w:eastAsiaTheme="majorEastAsia" w:cstheme="majorBidi" />
+    <w:b />
+    <w:bCs />
+    <w:i />
+    <w:iCs />
+    <w:color w:val="5B9BD5" w:themeColor="accent1" />
+  </w:rPr>
+</w:style>]]></value>
+  </data>
+  <data name="Heading5" xml:space="preserve">
+    <value><![CDATA[<w:style w:type="paragraph" w:styleId="Heading5" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:name w:val="heading 5" />
+  <w:basedOn w:val="Normal" />
+  <w:next w:val="Normal" />
+  <w:link w:val="Heading5Char" />
+  <w:unhideWhenUsed />
+  <w:qFormat />
+  <w:pPr>
+    <w:keepNext />
+    <w:keepLines />
+    <w:spacing w:before="200" w:after="0" />
+    <w:outlineLvl w:val="4" />
+  </w:pPr>
+  <w:rPr>
+    <w:rFonts w:asciiTheme="majorHAnsi" w:hAnsiTheme="majorHAnsi" w:eastAsiaTheme="majorEastAsia" w:cstheme="majorBidi" />
+    <w:color w:val="1F4D78" w:themeColor="accent1" w:themeShade="7F" />
+  </w:rPr>
+</w:style>]]></value>
+  </data>
+  <data name="Heading6" xml:space="preserve">
+    <value><![CDATA[<w:style w:type="paragraph" w:styleId="Heading6" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:name w:val="heading 6" />
+  <w:basedOn w:val="Normal" />
+  <w:next w:val="Normal" />
+  <w:link w:val="Heading6Char" />
+  <w:unhideWhenUsed />
+  <w:qFormat />
+  <w:pPr>
+    <w:keepNext />
+    <w:keepLines />
+    <w:spacing w:before="200" w:after="0" />
+    <w:outlineLvl w:val="5" />
+  </w:pPr>
+  <w:rPr>
+    <w:rFonts w:asciiTheme="majorHAnsi" w:hAnsiTheme="majorHAnsi" w:eastAsiaTheme="majorEastAsia" w:cstheme="majorBidi" />
+    <w:i />
+    <w:iCs />
+    <w:color w:val="1F4D78" w:themeColor="accent1" w:themeShade="7F" />
+  </w:rPr>
+</w:style>]]></value>
+  </data>
+  <data name="Hyperlink" xml:space="preserve">
+    <value><![CDATA[<w:style w:type="character" w:styleId="Hyperlink" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:name w:val="Hyperlink" />
+  <w:unhideWhenUsed />
+  <w:rPr>
+    <w:color w:val="0000FF" w:themeColor="hyperlink" />
+    <w:u w:val="single" />
+  </w:rPr>
+</w:style>]]></value>
+  </data>
+  <data name="IntenseQuote" xml:space="preserve">
+    <value><![CDATA[<w:style xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:type="paragraph" w:styleId="IntenseQuote">
+  <w:name w:val="Intense Quote" />
+  <w:basedOn w:val="Normal" />
+  <w:next w:val="Normal" />
+  <w:link w:val="IntenseQuoteChar" />
+  <w:qFormat />
+  <w:pPr>
+    <w:pBdr>
+      <w:top w:val="single" w:color="5B9BD5" w:themeColor="accent1" w:sz="4" w:space="10" />
+      <w:bottom w:val="single" w:color="5B9BD5" w:themeColor="accent1" w:sz="4" w:space="10" />
+    </w:pBdr>
+    <w:spacing w:before="360" w:after="360" />
+    <w:ind w:left="864" w:right="864" />
+    <w:jc w:val="center" />
+  </w:pPr>
+  <w:rPr>
+    <w:i />
+    <w:iCs />
+    <w:color w:val="5B9BD5" w:themeColor="accent1" />
+  </w:rPr>
+</w:style>]]></value>
+  </data>
+  <data name="ListParagraph" xml:space="preserve">
+    <value><![CDATA[<w:style w:type="paragraph" w:styleId="ListParagraph" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:name w:val="List Paragraph" />
+  <w:basedOn w:val="Normal" />
+  <w:qFormat />
+  <w:pPr>
+    <w:ind w:left="720" />
+    <w:contextualSpacing />
+  </w:pPr>
+</w:style>]]></value>
+  </data>
+  <data name="Quote" xml:space="preserve">
+    <value><![CDATA[<w:style w:type="paragraph" w:styleId="Quote" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:name w:val="Quote" />
+  <w:basedOn w:val="Normal" />
+  <w:next w:val="Normal" />
+  <w:link w:val="QuoteChar" />
+  <w:qFormat />
+  <w:rPr>
+    <w:i />
+    <w:iCs />
+    <w:color w:val="000000" w:themeColor="text1" />
+  </w:rPr>
+</w:style>]]></value>
+  </data>
+  <data name="QuoteChar" xml:space="preserve">
+    <value><![CDATA[<w:style w:type="character" w:styleId="QuoteChar" w:customStyle="1" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:name w:val="Quote Char" />
+  <w:link w:val="Quote" />
+  <w:rPr>
+    <w:i />
+    <w:iCs />
+    <w:color w:val="000000" w:themeColor="text1" />
+  </w:rPr>
+</w:style>]]></value>
+  </data>
+  <data name="TableGrid" xml:space="preserve">
+   <value><![CDATA[<w:style w:type="table" w:styleId="TableGrid" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:name w:val="Table Grid" />
+  <w:basedOn w:val="TableNormal" />
+  <w:pPr>
+    <w:spacing w:after="0" w:line="240" w:lineRule="auto" />
+  </w:pPr>
+  <w:tblPr>
+    <w:tblInd w:w="0" w:type="dxa" />
+    <w:tblBorders>
+      <w:top w:val="single" w:color="auto" w:sz="4" w:space="0" />
+      <w:left w:val="single" w:color="auto" w:sz="4" w:space="0" />
+      <w:bottom w:val="single" w:color="auto" w:sz="4" w:space="0" />
+      <w:right w:val="single" w:color="auto" w:sz="4" w:space="0" />
+      <w:insideH w:val="single" w:color="auto" w:sz="4" w:space="0" />
+      <w:insideV w:val="single" w:color="auto" w:sz="4" w:space="0" />
+    </w:tblBorders>
+    <w:tblCellMar>
+      <w:top w:w="0" w:type="dxa" />
+      <w:left w:w="108" w:type="dxa" />
+      <w:bottom w:w="0" w:type="dxa" />
+      <w:right w:w="108" w:type="dxa" />
+    </w:tblCellMar>
+  </w:tblPr>
+</w:style>]]></value>
   </data>
 </root>

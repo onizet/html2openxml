@@ -43,22 +43,19 @@ namespace HtmlToOpenXml
 
 			if (elements.Count > 0 && elements[0] is Run)
 			{
-				string defaultRefStyle, runStyle;
+				string runStyle;
 				FootnoteEndnoteReferenceType reference;
 
 				if (this.AcronymPosition == AcronymPosition.PageEnd)
 				{
 					reference = new FootnoteReference() { Id = AddFootnoteReference(title) };
-					defaultRefStyle = "footnote text";
-					runStyle = "footnote reference";
+					runStyle = "FootnoteReference";
 				}
 				else
 				{
 					reference = new EndnoteReference() { Id = AddEndnoteReference(title) };
-					defaultRefStyle = "endnote text";
-					runStyle = "endnote reference";
+					runStyle = "EndnoteReference";
 				}
-
 
 				Run run;
 				elements.Add(
@@ -67,14 +64,6 @@ namespace HtmlToOpenXml
 							RunStyle = new RunStyle() { Val = htmlStyles.GetStyle(runStyle, StyleValues.Character) }
 						},
 						reference));
-
-				if (!htmlStyles.DoesStyleExists(defaultRefStyle))
-				{
-					// Force the superscript style because if the footnote text style does not exists,
-					// the rendering will be awful.
-					run.InsertInProperties(prop =>
-						prop.VerticalTextAlignment = new VerticalTextAlignment() { Val = VerticalPositionValues.Superscript });
-				}
 			}
 		}
 
@@ -88,10 +77,6 @@ namespace HtmlToOpenXml
 
 			// for nested paragraphs:
 			htmlStyles.Paragraph.BeginTag(en.CurrentTag, new ParagraphStyleId() { Val = htmlStyles.GetStyle("IntenseQuote") });
-
-			// if the style was not yet defined, we force the indentation
-			if (!htmlStyles.DoesStyleExists("IntenseQuote"))
-				htmlStyles.Paragraph.BeginTag(en.CurrentTag, new Indentation() { Left = "708" });
 
 			// TODO: handle attribute cite and create footnote
 		}
@@ -250,36 +235,15 @@ namespace HtmlToOpenXml
 		private void ProcessHeading(HtmlEnumerator en)
 		{
 			char level = en.Current[2];
-			string clsName = "heading " + level;
 
-			// ensure style exists or the heading will be displayed as a normal text
-			if (!htmlStyles.DoesStyleExists(clsName))
-			{
-				String normalStyleName = htmlStyles.GetStyle("Normal", StyleValues.Paragraph);
-				htmlStyles.AddStyle(clsName, new Style(
-					new StyleName() { Val = clsName },
-					new BasedOn() { Val = normalStyleName },
-					new NextParagraphStyle() { Val = normalStyleName },
-					new UnhideWhenUsed(),
-					new PrimaryStyle(),
-					new StyleParagraphProperties() {
-						KeepNext = new KeepNext(),
-						KeepLines = new KeepLines(),
-						SpacingBetweenLines = new SpacingBetweenLines(){ Before = "200", After = "0" },
-						OutlineLevel = new OutlineLevel() { Val = (int) Char.GetNumericValue(level) - 1 /* outline starts at 0 */ }
-					},
-					new StyleRunProperties(PredefinedStyles.ResourceManager.GetString(clsName))
-				) { Type = StyleValues.Paragraph, StyleId = clsName });
-			}
-
-			// support also style attributes for heading (in case of theme override)
+			// support also style attributes for heading (in case of css override)
 			List<OpenXmlElement> styleAttributes = new List<OpenXmlElement>();
 			htmlStyles.Paragraph.ProcessCommonAttributes(en, styleAttributes);
 
 			AlternateProcessHtmlChunks(en, "</h" + level + ">");
 			Paragraph p = new Paragraph(elements);
 			p.InsertInProperties(prop =>
-				prop.ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle(clsName, StyleValues.Paragraph) });
+				prop.ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle("Heading" + level, StyleValues.Paragraph) });
 
 			htmlStyles.Paragraph.ApplyTags(p);
 			htmlStyles.Paragraph.EndTag("<h" + level + ">");
@@ -374,11 +338,10 @@ namespace HtmlToOpenXml
 		private void ProcessFigureCaption(HtmlEnumerator en)
 		{
 			this.CompleteCurrentParagraph(true);
-            htmlStyles.EnsureKnownStyle(HtmlDocumentStyle.KnownStyles.Caption);
 
 			currentParagraph.Append(
 					new ParagraphProperties {
-						ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle("caption", StyleValues.Paragraph) },
+						ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle("Caption", StyleValues.Paragraph) },
 						KeepNext = new KeepNext()
 					},
 					new Run(
@@ -575,7 +538,6 @@ namespace HtmlToOpenXml
 				Run run = el as Run;
 				if (run != null && !run.HasChild<Drawing>())
 				{
-                    htmlStyles.EnsureKnownStyle(HtmlDocumentStyle.KnownStyles.Hyperlink);
 					run.InsertInProperties(prop =>
 						prop.RunStyle = new RunStyle() { Val = htmlStyles.GetStyle("Hyperlink", StyleValues.Character) });
 					break;
@@ -646,11 +608,10 @@ namespace HtmlToOpenXml
             if (this.RenderPreAsTable)
             {
                 Table currentTable = new Table(
-                    new TableProperties
-                    {
-                        TableStyle = new TableStyle() { Val = htmlStyles.GetStyle("Table Grid", StyleValues.Paragraph) },
-                        TableWidth = new TableWidth() { Type = TableWidthUnitValues.Pct, Width = "5000" }, // 100% * 50
-                    },
+                    new TableProperties (
+                        new TableStyle() { Val = htmlStyles.GetStyle("TableGrid", StyleValues.Table) },
+                        new TableWidth() { Type = TableWidthUnitValues.Pct, Width = "5000" } // 100% * 50
+					),
                     new TableGrid(
                         new GridColumn() { Width = "5610" }),
                     new TableRow(
@@ -768,7 +729,9 @@ namespace HtmlToOpenXml
 
 		private void ProcessTable(HtmlEnumerator en)
 		{
-			TableProperties properties = new TableProperties();
+			TableProperties properties = new TableProperties(
+				new TableStyle() { Val = htmlStyles.GetStyle("TableGrid", StyleValues.Table) }
+			);
 			Table currentTable = new Table(properties);
 
 			string classValue = en.Attributes["class"];
@@ -776,7 +739,7 @@ namespace HtmlToOpenXml
 			{
 				classValue = htmlStyles.GetStyle(classValue, StyleValues.Table, ignoreCase: true);
 				if (classValue != null)
-					properties.TableStyle = new TableStyle() { Val = classValue };
+					properties.TableStyle.Val = classValue;
 			}
 
 			int? border = en.Attributes.GetAsInt("border");
@@ -793,24 +756,19 @@ namespace HtmlToOpenXml
                     }
 				}
 
-				if (handleBorders)
+				// If the border has been specified, we display the Table Grid style which display
+				// its grid lines. Otherwise the default table style hides the grid lines.
+				if (handleBorders && properties.TableStyle.Val != "TableGrid")
 				{
-					// If the border has been specified, we display the Table Grid style which display
-					// its grid lines. Otherwise the default table style hides the grid lines.
-					if (htmlStyles.DoesStyleExists("Table Grid"))
-						properties.TableStyle = new TableStyle() { Val = htmlStyles.GetStyle("Table Grid", StyleValues.Paragraph) };
-					else
-					{
-						uint borderSize = border.Value > 1? (uint) new Unit(UnitMetric.Pixel, border.Value).ValueInDxa : 1;
-						properties.TableBorders = new TableBorders() {
-							TopBorder = new TopBorder { Val = BorderValues.Single, Size = borderSize },
-							LeftBorder = new LeftBorder { Val = BorderValues.Single, Size = borderSize },
-							RightBorder = new RightBorder { Val = BorderValues.Single, Size = borderSize },
-							BottomBorder = new BottomBorder { Val = BorderValues.Single, Size = borderSize },
-							InsideHorizontalBorder = new InsideHorizontalBorder { Val = BorderValues.Single, Size = borderSize },
-							InsideVerticalBorder = new InsideVerticalBorder { Val = BorderValues.Single, Size = borderSize }
-						};
-					}
+					uint borderSize = border.Value > 1? (uint) new Unit(UnitMetric.Pixel, border.Value).ValueInDxa : 1;
+					properties.TableBorders = new TableBorders() {
+						TopBorder = new TopBorder { Val = BorderValues.Single, Size = borderSize },
+						LeftBorder = new LeftBorder { Val = BorderValues.Single, Size = borderSize },
+						RightBorder = new RightBorder { Val = BorderValues.Single, Size = borderSize },
+						BottomBorder = new BottomBorder { Val = BorderValues.Single, Size = borderSize },
+						InsideHorizontalBorder = new InsideHorizontalBorder { Val = BorderValues.Single, Size = borderSize },
+						InsideVerticalBorder = new InsideVerticalBorder { Val = BorderValues.Single, Size = borderSize }
+					};
 				}
 			}
 
@@ -941,27 +899,15 @@ namespace HtmlToOpenXml
 
 			ProcessHtmlChunks(en, "</caption>");
 
-			var runStyleId = htmlStyles.GetStyle("Subtle Reference", StyleValues.Character);
 			var legend = new Paragraph(
 					new ParagraphProperties {
-						ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle("caption", StyleValues.Paragraph) },
-						ParagraphMarkRunProperties = new ParagraphMarkRunProperties(
-							new RunStyle() { Val = runStyleId })
+						ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle("Caption", StyleValues.Paragraph) }
 					},
 					new Run(
-						new RunProperties {
-							RunStyle = new RunStyle() { Val = runStyleId }
-						},
 						new FieldChar() { FieldCharType = FieldCharValues.Begin }),
 					new Run(
-						new RunProperties {
-							RunStyle = new RunStyle() { Val = runStyleId }
-						},
 						new FieldCode(" SEQ TABLE \\* ARABIC ") { Space = SpaceProcessingModeValues.Preserve }),
 					new Run(
-						new RunProperties {
-							RunStyle = new RunStyle() { Val = runStyleId }
-						},
 						new FieldChar() { FieldCharType = FieldCharValues.End })
 				);
 			legend.Append(elements);
@@ -990,8 +936,6 @@ namespace HtmlToOpenXml
 				this.paragraphs.Insert(this.paragraphs.Count - 1, legend);
 			else
 				this.paragraphs.Add(legend);
-
-            htmlStyles.EnsureKnownStyle(HtmlDocumentStyle.KnownStyles.Caption);
 		}
 
 		#endregion
