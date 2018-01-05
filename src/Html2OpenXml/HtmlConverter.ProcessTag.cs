@@ -470,8 +470,7 @@ namespace HtmlToOpenXml
 			Paragraph p = currentParagraph;
 			currentParagraph.InsertInProperties(prop => {
 				prop.ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle("ListParagraph", StyleValues.Paragraph) };
-				prop.SpacingBetweenLines = new SpacingBetweenLines() { After = "0" };
-				prop.Indentation = new Indentation() { Hanging = "357", Left = (level * 357).ToString(CultureInfo.InvariantCulture) };
+				prop.Indentation = level < 2? null : new Indentation() { Left = (level * 780).ToString(CultureInfo.InvariantCulture) };
 				prop.NumberingProperties = new NumberingProperties {
 					NumberingLevelReference = new NumberingLevelReference() { Val = level - 1 },
 					NumberingId = new NumberingId() { Val = numberingId }
