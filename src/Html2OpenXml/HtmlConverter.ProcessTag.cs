@@ -86,12 +86,15 @@ namespace HtmlToOpenXml
 		{
 			CompleteCurrentParagraph(true);
 
-			// for nested paragraphs:
-			htmlStyles.Paragraph.BeginTag(en.CurrentTag, new ParagraphStyleId() { Val = htmlStyles.GetStyle("IntenseQuote") });
-
-			// if the style was not yet defined, we force the indentation
-			if (!htmlStyles.DoesStyleExists("IntenseQuote"))
-				htmlStyles.Paragraph.BeginTag(en.CurrentTag, new Indentation() { Left = "708" });
+            if (htmlStyles.DoesStyleExists("IntenseQuote"))
+            {
+                htmlStyles.Paragraph.BeginTag(en.CurrentTag, new ParagraphStyleId() { Val = htmlStyles.GetStyle("IntenseQuote") });
+            }
+            else
+            {
+                // if the style was not yet defined, we force the indentation
+                htmlStyles.Paragraph.BeginTag(en.CurrentTag, new Indentation() { Left = "708" });
+            }
 
 			// TODO: handle attribute cite and create footnote
 		}
