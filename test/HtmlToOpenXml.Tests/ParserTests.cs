@@ -129,6 +129,20 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(elements[0].ChildElements.Count, Is.EqualTo(1));
                 Assert.IsNull(elements[0].FirstChild.GetFirstChild<RunProperties>());
             });
+
+            elements = converter.Parse(" <3");
+            Assert.Multiple(() => {
+                Assert.That(elements.Count, Is.EqualTo(1));
+                Assert.That(elements[0].ChildElements.Count, Is.EqualTo(1));
+                Assert.IsNull(elements[0].FirstChild.GetFirstChild<RunProperties>());
+            });
+        }
+
+        [Test]
+        public void ParseNewlineFlow ()
+        {
+            // the new line should generate a space between "bold" and "text"
+            var elements = converter.Parse(" <span>This is a <b>bold\n</b>text</span>");
         }
     }
 }
