@@ -226,5 +226,29 @@ namespace HtmlToOpenXml
 		}
 
 		#endregion
+
+		#region ConvertToTextDecoration
+
+		public static TextDecoration ConvertToTextDecoration(string html)
+        {
+			// this style could take multiple values separated by a space
+			// ex: text-decoration: blink underline;
+
+			TextDecoration decoration = TextDecoration.None;
+
+			if (html == null) return decoration;
+			foreach (string part in html.ToLowerInvariant().Split(' '))
+			{
+				switch (part)
+				{
+					case "underline": decoration |= TextDecoration.Underline; break;
+					case "line-through": decoration |= TextDecoration.LineThrough; break;
+					default: break; // blink and overline are not supported
+				}
+			}
+			return decoration;
+		}
+
+		#endregion
 	}
 }

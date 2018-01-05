@@ -77,12 +77,12 @@ namespace HtmlToOpenXml
 				styleAttributes.Add(new Shading { Val = ShadingPatternValues.Clear, Fill = colorValue.ToHexString() });
 			}
 
-			string attrValue = en.StyleAttributes["text-decoration"];
-			if (attrValue == "underline")
+			var decorations = ConverterUtility.ConvertToTextDecoration(en.StyleAttributes["text-decoration"]);
+			if ((decorations & TextDecoration.Underline) != 0)
 			{
 				styleAttributes.Add(new Underline { Val = UnderlineValues.Single });
 			}
-			else if (attrValue == "line-through")
+			if ((decorations & TextDecoration.LineThrough) != 0)
 			{
 				styleAttributes.Add(new Strike());
 			}
