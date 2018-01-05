@@ -75,10 +75,40 @@ namespace HtmlToOpenXml
 		{
 			CompleteCurrentParagraph(true);
 
-			// for nested paragraphs:
+			string tagName = en.CurrentTag;
+			string cite = en.Attributes["cite"];
+
 			htmlStyles.Paragraph.BeginTag(en.CurrentTag, new ParagraphStyleId() { Val = htmlStyles.GetStyle("IntenseQuote") });
 
-			// TODO: handle attribute cite and create footnote
+			AlternateProcessHtmlChunks(en, en.ClosingCurrentTag);
+
+			if (cite != null)
+			{
+				string runStyle;
+				FootnoteEndnoteReferenceType reference;
+
+				if (this.AcronymPosition == AcronymPosition.PageEnd)
+				{
+					reference = new FootnoteReference() { Id = AddFootnoteReference(cite) };
+					runStyle = "FootnoteReference";
+				}
+				else
+				{
+					reference = new EndnoteReference() { Id = AddEndnoteReference(cite) };
+					runStyle = "EndnoteReference";
+				}
+
+				Run run;
+				elements.Add(
+					run = new Run(
+						new RunProperties {
+							RunStyle = new RunStyle() { Val = htmlStyles.GetStyle(runStyle, StyleValues.Character) }
+						},
+						reference));
+			}
+
+			CompleteCurrentParagraph(true);
+			htmlStyles.Paragraph.EndTag(tagName);
 		}
 
 		#endregion
