@@ -61,35 +61,35 @@ namespace HtmlToOpenXml
 				// should be the size and the family (in that order). Others are set to their default values
 				font.size = ReadFontSize(fontParts[0]);
 				if (!font.size.IsValid) return HtmlFont.Empty;
-				font.family = ConverterUtility.ConvertToFontFamily(fontParts[1]);
+				font.family = Converter.ToFontFamily(fontParts[1]);
 				return font;
 			}
 
 			int index = 0;
 
-			FontStyle? style = ConverterUtility.ConvertToFontStyle(fontParts[index]);
+			FontStyle? style = Converter.ToFontStyle(fontParts[index]);
 			if (style.HasValue) { font.style = style.Value; index++; }
 
 			if (index + 2 > fontParts.Length) return HtmlFont.Empty;
-			FontVariant? variant = ConverterUtility.ConvertToFontVariant(fontParts[index]);
+			FontVariant? variant = Converter.ToFontVariant(fontParts[index]);
 			if (variant.HasValue) { font.variant = variant.Value; index++; }
 
 			if (index + 2 > fontParts.Length) return HtmlFont.Empty;
-			FontWeight? weight = ConverterUtility.ConvertToFontWeight(fontParts[index]);
+			FontWeight? weight = Converter.ToFontWeight(fontParts[index]);
 			if (weight.HasValue) { font.weight = weight.Value; index++; }
 
 			if (fontParts.Length - index < 2) return HtmlFont.Empty;
 			font.size = ReadFontSize(fontParts[fontParts.Length - 2]);
 			if (!font.size.IsValid) return HtmlFont.Empty;
 
-			font.family = ConverterUtility.ConvertToFontFamily(fontParts[fontParts.Length - 1]);
+			font.family = Converter.ToFontFamily(fontParts[fontParts.Length - 1]);
 
 			return font;
 		}
 
 		private static Unit ReadFontSize(string str)
 		{
-			Unit size = ConverterUtility.ConvertToFontSize(str);
+			Unit size = Converter.ToFontSize(str);
 			return size; // % and ratio font-size/line-height are not supported
 		}
 

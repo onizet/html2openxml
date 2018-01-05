@@ -18,14 +18,14 @@ namespace HtmlToOpenXml
 	/// <summary>
 	/// Provides some utilies methods for translating Http attributes to OpenXml elements.
 	/// </summary>
-	static class ConverterUtility
+	static class Converter
 	{
-		#region FormatParagraphAlign
+		#region ToParagraphAlign
 
 		/// <summary>
 		/// Convert the Html text align attribute (horizontal alignement) to its corresponding OpenXml value.
 		/// </summary>
-		public static JustificationValues? FormatParagraphAlign(string htmlAlign)
+		public static JustificationValues? ToParagraphAlign(string htmlAlign)
 		{
 			if (htmlAlign == null) return null;
 			switch (htmlAlign.ToLowerInvariant())
@@ -41,12 +41,12 @@ namespace HtmlToOpenXml
 
 		#endregion
 
-		#region FormatVAlign
+		#region ToVAlign
 
 		/// <summary>
 		/// Convert the Html vertical-align attribute to its corresponding OpenXml value.
 		/// </summary>
-		public static TableVerticalAlignmentValues? FormatVAlign(string htmlAlign)
+		public static TableVerticalAlignmentValues? ToVAlign(string htmlAlign)
 		{
 			if (htmlAlign == null) return null;
 			switch (htmlAlign.ToLowerInvariant())
@@ -61,12 +61,12 @@ namespace HtmlToOpenXml
 
 		#endregion
 
-		#region ConvertToFontSize
+		#region ToFontSize
 
 		/// <summary>
 		/// Convert Html regular font-size to OpenXml font value (expressed in point).
 		/// </summary>
-		public static Unit ConvertToFontSize(string htmlSize)
+		public static Unit ToFontSize(string htmlSize)
 		{
 			if (htmlSize == null) return Unit.Empty;
 			switch (htmlSize.ToLowerInvariant())
@@ -99,9 +99,9 @@ namespace HtmlToOpenXml
 
 		#endregion
 
-		#region ConvertToFontVariant
+		#region ToFontVariant
 
-		public static FontVariant? ConvertToFontVariant(string html)
+		public static FontVariant? ToFontVariant(string html)
 		{
 			if (html == null) return null;
 
@@ -115,9 +115,9 @@ namespace HtmlToOpenXml
 
 		#endregion
 
-		#region ConvertToFontStyle
+		#region ToFontStyle
 
-		public static FontStyle? ConvertToFontStyle(string html)
+		public static FontStyle? ToFontStyle(string html)
 		{
 			if (html == null) return null;
 			switch (html.ToLowerInvariant())
@@ -131,9 +131,9 @@ namespace HtmlToOpenXml
 
 		#endregion
 
-		#region ConvertToFontWeight
+		#region ToFontWeight
 
-		public static FontWeight? ConvertToFontWeight(string html)
+		public static FontWeight? ToFontWeight(string html)
 		{
 			if (html == null) return null;
 			switch (html.ToLowerInvariant())
@@ -149,9 +149,9 @@ namespace HtmlToOpenXml
 
 		#endregion
 
-		#region ConvertToFontFamily
+		#region ToFontFamily
 
-		public static string ConvertToFontFamily(string str)
+		public static string ToFontFamily(string str)
 		{
 			String[] names = str.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
 			for (int i = 0; i < names.Length; i++)
@@ -173,9 +173,9 @@ namespace HtmlToOpenXml
 
 		#endregion
 
-		#region ConvertToBorderStyle
+		#region ToBorderStyle
 
-		public static BorderValues ConvertToBorderStyle(string borderStyle)
+		public static BorderValues ToBorderStyle(string borderStyle)
 		{
 			if (borderStyle == null) return BorderValues.Nil;
 			switch (borderStyle.ToLowerInvariant())
@@ -193,9 +193,9 @@ namespace HtmlToOpenXml
 
 		#endregion
 
-		#region ConvertToUnitMetric
+		#region ToUnitMetric
 
-		public static UnitMetric ConvertToUnitMetric(String type)
+		public static UnitMetric ToUnitMetric(String type)
 		{
 			if (type == null) return UnitMetric.Unknown;
 			switch (type.ToLowerInvariant())
@@ -215,9 +215,9 @@ namespace HtmlToOpenXml
 
 		#endregion
 
-		#region ConvertToPageOrientation
+		#region ToPageOrientation
 
-		public static PageOrientationValues ConvertToPageOrientation(String orientation)
+		public static PageOrientationValues ToPageOrientation(String orientation)
 		{
 			if (String.Equals(orientation, "landscape", StringComparison.OrdinalIgnoreCase))
 				return PageOrientationValues.Landscape;
@@ -227,9 +227,9 @@ namespace HtmlToOpenXml
 
 		#endregion
 
-		#region ConvertToTextDecoration
+		#region ToTextDecoration
 
-		public static TextDecoration ConvertToTextDecoration(string html)
+		public static TextDecoration ToTextDecoration(string html)
         {
 			// this style could take multiple values separated by a space
 			// ex: text-decoration: blink underline;

@@ -107,7 +107,7 @@ namespace HtmlToOpenXml
 			if (htmlAlign == null) htmlAlign = en.Attributes["valign"];
 			if (htmlAlign != null)
 			{
-				TableVerticalAlignmentValues? valign = ConverterUtility.FormatVAlign(htmlAlign);
+				TableVerticalAlignmentValues? valign = Converter.ToVAlign(htmlAlign);
 				if (valign.HasValue)
 					containerStyleAttributes.Add(new TableCellVerticalAlignment() { Val = valign });
 			}
@@ -116,7 +116,7 @@ namespace HtmlToOpenXml
 			if (htmlAlign == null) htmlAlign = en.Attributes["align"];
 			if (htmlAlign != null)
 			{
-				JustificationValues? halign = ConverterUtility.FormatParagraphAlign(htmlAlign);
+				JustificationValues? halign = Converter.ToParagraphAlign(htmlAlign);
 				if (halign.HasValue)
 					this.BeginTagForParagraph(en.CurrentTag, new KeepNext(), new Justification { Val = halign });
 			}

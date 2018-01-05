@@ -60,7 +60,7 @@ namespace HtmlToOpenXml
 
 			UnitMetric type;
 			if (digitLength < length - 1)
-				type = ConverterUtility.ConvertToUnitMetric(str.Substring(digitLength + 1).Trim());
+				type = Converter.ToUnitMetric(str.Substring(digitLength + 1).Trim());
 			else
 				type = UnitMetric.Pixel;
 

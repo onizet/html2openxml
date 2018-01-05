@@ -204,7 +204,7 @@ namespace HtmlToOpenXml
 			var color = GetAsColor(name + "-color");
 			if (!color.IsEmpty) border.Color = color;
 
-			var style = ConverterUtility.ConvertToBorderStyle(this[name + "-style"]);
+			var style = Converter.ToBorderStyle(this[name + "-style"]);
 			if (style != w.BorderValues.Nil) border.Style = style;
 
 			return border;
@@ -229,25 +229,25 @@ namespace HtmlToOpenXml
 			string attrValue = this[name + "-style"];
 			if (attrValue != null)
 			{
-				var style = ConverterUtility.ConvertToFontStyle(attrValue);
+				var style = Converter.ToFontStyle(attrValue);
 				if (style.HasValue) font.Style = style.Value;
 			}
 			attrValue = this[name + "-variant"];
 			if (attrValue != null)
 			{
-				var variant = ConverterUtility.ConvertToFontVariant(attrValue);
+				var variant = Converter.ToFontVariant(attrValue);
 				if (variant.HasValue) font.Variant = variant.Value;
 			}
 			attrValue = this[name + "-weight"];
 			if (attrValue != null)
 			{
-				var weight = ConverterUtility.ConvertToFontWeight(attrValue);
+				var weight = Converter.ToFontWeight(attrValue);
 				if (weight.HasValue) font.Weight = weight.Value;
 			}
 			attrValue = this[name + "-family"];
 			if (attrValue != null)
 			{
-				font.Family = ConverterUtility.ConvertToFontFamily(attrValue);
+				font.Family = Converter.ToFontFamily(attrValue);
 			}
 			Unit unit = this.GetAsUnit(name + "-size");
 			if (unit.IsValid) font.Size = unit;

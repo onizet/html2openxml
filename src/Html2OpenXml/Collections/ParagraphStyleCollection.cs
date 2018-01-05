@@ -115,7 +115,7 @@ namespace HtmlToOpenXml
 			attrValue = en.StyleAttributes["text-align"];
 			if (attrValue != null && en.CurrentTag != "<font>")
 			{
-				JustificationValues? align = ConverterUtility.FormatParagraphAlign(attrValue);
+				JustificationValues? align = Converter.ToParagraphAlign(attrValue);
 				if (align.HasValue)
 				{
 					containerStyleAttributes.Add(new Justification { Val = align });

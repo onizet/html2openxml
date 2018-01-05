@@ -62,7 +62,7 @@ namespace HtmlToOpenXml
 			// handle border style
 			for (int i = 0; i < borderParts.Count; i++)
 			{
-				borderStyle = ConverterUtility.ConvertToBorderStyle(borderParts[i]);
+				borderStyle = Converter.ToBorderStyle(borderParts[i]);
 				if (borderStyle != w.BorderValues.Nil)
 				{
 					borderParts.RemoveAt(i); // no need to process this part anymore

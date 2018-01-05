@@ -77,7 +77,7 @@ namespace HtmlToOpenXml
 				styleAttributes.Add(new Shading { Val = ShadingPatternValues.Clear, Fill = colorValue.ToHexString() });
 			}
 
-			var decorations = ConverterUtility.ConvertToTextDecoration(en.StyleAttributes["text-decoration"]);
+			var decorations = Converter.ToTextDecoration(en.StyleAttributes["text-decoration"]);
 			if ((decorations & TextDecoration.Underline) != 0)
 			{
 				styleAttributes.Add(new Underline { Val = UnderlineValues.Single });

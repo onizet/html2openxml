@@ -113,7 +113,7 @@ namespace HtmlToOpenXml
 			string attr = en.StyleAttributes["page-orientation"];
 			if (attr != null)
 			{
-				PageOrientationValues orientation = ConverterUtility.ConvertToPageOrientation(attr);
+				PageOrientationValues orientation = Converter.ToPageOrientation(attr);
 
                 SectionProperties sectionProperties = mainPart.Document.Body.GetFirstChild<SectionProperties>();
                 if (sectionProperties == null || sectionProperties.GetFirstChild<PageSize>() == null)
@@ -226,7 +226,7 @@ namespace HtmlToOpenXml
 			string attrValue = en.Attributes["size"];
 			if (attrValue != null)
 			{
-				Unit fontSize = ConverterUtility.ConvertToFontSize(attrValue);
+				Unit fontSize = Converter.ToFontSize(attrValue);
                 if (fontSize.IsFixed)
 					styleAttributes.Add(new FontSize { Val = (fontSize.ValueInPoint * 2).ToString(CultureInfo.InvariantCulture) });
 			}
@@ -613,7 +613,7 @@ namespace HtmlToOpenXml
 
 			if (attrValue != null)
 			{
-				JustificationValues? align = ConverterUtility.FormatParagraphAlign(attrValue);
+				JustificationValues? align = Converter.ToParagraphAlign(attrValue);
 				if (align.HasValue)
 				{
 					currentParagraph.InsertInProperties(prop => prop.Justification = new Justification { Val = align });
@@ -839,7 +839,7 @@ namespace HtmlToOpenXml
 			string align = en.Attributes["align"];
 			if (align != null)
 			{
-				JustificationValues? halign = ConverterUtility.FormatParagraphAlign(align);
+				JustificationValues? halign = Converter.ToParagraphAlign(align);
 				if (halign.HasValue)
 					properties.TableJustification = new TableJustification() { Val = halign.Value.ToTableRowAlignment() };
 			}
@@ -969,7 +969,7 @@ namespace HtmlToOpenXml
 
 			if (att != null)
 			{
-				JustificationValues? align = ConverterUtility.FormatParagraphAlign(att);
+				JustificationValues? align = Converter.ToParagraphAlign(att);
 				if (align.HasValue)
 					legend.InsertInProperties(prop => prop.Justification = new Justification { Val = align } );
 			}
