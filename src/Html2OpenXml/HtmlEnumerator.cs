@@ -139,7 +139,7 @@ namespace HtmlToOpenXml
 			bool success;
 
 			// Ignore empty lines
-			while ((success = en.MoveNext()) && (current = en.Current.Trim('\r')).Length == 0) ;
+			while ((success = en.MoveNext()) && (current = en.Current.Trim('\n', '\r')).Length == 0) ;
 
 			if (success && tag != null)
 				return !current.Equals(tag, StringComparison.CurrentCultureIgnoreCase);
@@ -174,8 +174,8 @@ namespace HtmlToOpenXml
 		public bool IsCurrentHtmlTag
 		{
 			get { return current[0] == '<' 
-				// ensure we have not match a false tag like '< p >' nor '<3'
-				&& current.Length > 1 && (char.IsLetter(current[1]) || current[1] == '/'); }
+				// ensure we have not match a false tag like '< p >'
+				&& current.Length > 1 && !char.IsWhiteSpace(current[1]); }
 		}
 
 		/// <summary>
