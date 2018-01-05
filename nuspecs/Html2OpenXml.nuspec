@@ -11,7 +11,7 @@
     <description>A library to convert simple or advanced html to plain OpenXml document</description>
     <releaseNotes>Initial release of the package.</releaseNotes>
     <copyright>Copyright 2009-2017</copyright>
-    <tags>office openxml</tags>
+    <tags>office openxml netcore</tags>
     <iconUrl>https://github.com/onizet/html2openxml/raw/dev/docs/images/Home_h2oxnuget.png</iconUrl>
     <dependencies>
       <group targetFramework="net40">
@@ -20,7 +20,7 @@
       <group targetFramework="net35">
         <dependency id="DocumentFormat.OpenXml" version="1.0.0" />
       </group>
-      <group targetFramework="netcore45">
+      <group targetFramework="netstandard1.4">
         <dependency id="DocumentFormat.OpenXml" version="2.7.1" />
       </group>
     </dependencies>
