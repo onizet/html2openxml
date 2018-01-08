@@ -11,7 +11,6 @@
  */
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using DocumentFormat.OpenXml;
@@ -1017,7 +1016,7 @@ namespace HtmlToOpenXml
 				htmlStyles.Runs.BeginTag(en.CurrentTag, runStyleAttributes.ToArray());
 
 			tables.CurrentTable.Append(row);
-			tables.CellPosition = new Point(0, tables.CellPosition.Y + 1);
+			tables.CellPosition = new CellPosition(tables.CellPosition.Row + 1, 0);
 		}
 
 		#endregion
@@ -1063,13 +1062,13 @@ namespace HtmlToOpenXml
 			{
 				properties.VerticalMerge = new VerticalMerge() { Val = MergedCellValues.Restart };
 
-				Point p = tables.CellPosition;
-                int mx = p.X, shift = 0;
+				var p = tables.CellPosition;
+                int shift = 0;
                 // if there is already a running rowSpan on a left-sided column, we have to shift this position
                 foreach (var rs in tables.RowSpan)
-                    if (rs.CellOrigin.Y < p.Y && rs.CellOrigin.X <= p.X + shift) shift++;
+                    if (rs.CellOrigin.Row < p.Row && rs.CellOrigin.Column <= p.Column + shift) shift++;
 
-                p.Offset(shift, 0);
+                p.Offset(0, shift);
                 tables.RowSpan.Add(new HtmlTableSpan(p) {
                     RowSpan = rowspan.Value - 1,
                     ColSpan = colspan.HasValue && rowspan.Value > 1 ? colspan.Value : 0
@@ -1333,12 +1332,12 @@ namespace HtmlToOpenXml
 			// Add empty columns to fill rowspan
 			if (tables.RowSpan.Count > 0)
 			{
-				int rowIndex = tables.CellPosition.Y;
+				int rowIndex = tables.CellPosition.Row;
 
 				for (int i = 0; i < tables.RowSpan.Count; i++)
 				{
 					HtmlTableSpan tspan = tables.RowSpan[i];
-					if (tspan.CellOrigin.Y == rowIndex) continue;
+					if (tspan.CellOrigin.Row == rowIndex) continue;
 
                     TableCell emptyCell = new TableCell(new TableCellProperties {
 								            TableCellWidth = new TableCellWidth() { Width = "0" },
@@ -1352,7 +1351,7 @@ namespace HtmlToOpenXml
                     if (tspan.ColSpan > 0) emptyCell.TableCellProperties.GridSpan = new GridSpan() { Val = tspan.ColSpan };
 
                     TableCell cell = row.GetFirstChild<TableCell>();
-                    if (tspan.CellOrigin.X == 0 || cell == null)
+                    if (tspan.CellOrigin.Column == 0 || cell == null)
                     {
                         row.InsertAt(emptyCell, 0);
                         continue;
@@ -1369,7 +1368,7 @@ namespace HtmlToOpenXml
                         if (gspan != null) columnIndex += gspan.Val;
                         else columnIndex++;
 
-                        if (columnIndex >= tspan.CellOrigin.X) break;
+                        if (columnIndex >= tspan.CellOrigin.Column) break;
                     }
                     while ((cell = cell.NextSibling<TableCell>()) != null);
 
@@ -1424,8 +1423,8 @@ namespace HtmlToOpenXml
 			htmlStyles.Tables.EndTag(openingTag);
 			htmlStyles.Runs.EndTag(openingTag);
 
-			Point pos = tables.CellPosition;
-			pos.X++;
+			var pos = tables.CellPosition;
+			pos.Column++;
 			tables.CellPosition = pos;
 		}
 

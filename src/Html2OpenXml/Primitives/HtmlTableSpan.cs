@@ -11,17 +11,16 @@
  */
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 
 namespace HtmlToOpenXml
 {
     sealed class HtmlTableSpan : IComparable<HtmlTableSpan>
     {
-        public Point CellOrigin;
+        public CellPosition CellOrigin;
         public int RowSpan;
         public int ColSpan;
 
-        public HtmlTableSpan(Point origin)
+        public HtmlTableSpan(CellPosition origin)
         {
             this.CellOrigin = origin;
         }
@@ -29,9 +28,9 @@ namespace HtmlToOpenXml
         public int CompareTo(HtmlTableSpan other)
         {
             if (other == null) return -1;
-            int rc = this.CellOrigin.Y.CompareTo(other.CellOrigin.Y);
+            int rc = this.CellOrigin.Row.CompareTo(other.CellOrigin.Row);
             if (rc != 0) return rc;
-            return this.CellOrigin.X.CompareTo(other.CellOrigin.X);
+            return this.CellOrigin.Column.CompareTo(other.CellOrigin.Column);
         }
     }
 }

@@ -11,7 +11,6 @@
  */
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -251,7 +250,7 @@ namespace HtmlToOpenXml
 				if (row == null)
 				{
 					tables.CurrentTable.Append(row = new TableRow());
-					tables.CellPosition = new Point(0, tables.CellPosition.Y + 1);
+					tables.CellPosition = new CellPosition(tables.CellPosition.Column + 1, 0);
 				}
                 TableCell cell = row.GetLastChild<TableCell>();
                 if (cell == null) // ensure cell exists (issue #13982 reported by Willu)

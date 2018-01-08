@@ -66,7 +66,7 @@ namespace HtmlToOpenXml
 		/// <summary>
 		/// Gets or sets the width and height (in pixels) of the image as it should be displayed in the document.
 		/// </summary>
-		public System.Drawing.Size ImageSize
+		public Size ImageSize
 		{
 			get { return info.Size; }
 			set { info.Size = value; }

@@ -10,7 +10,6 @@
  * PARTICULAR PURPOSE.
  */
 using System;
-using System.Drawing;
 using DocumentFormat.OpenXml.Packaging;
 
 namespace HtmlToOpenXml

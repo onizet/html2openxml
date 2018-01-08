@@ -11,7 +11,6 @@
  */
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml
@@ -19,12 +18,12 @@ namespace HtmlToOpenXml
 	/// <summary>
 	/// Holds the tables in the order we discover them (to support nested tables).
 	/// </summary>
-	sealed class TableContext : IComparer<Point>
+	sealed class TableContext : IComparer<CellPosition>
 	{
 		sealed class Tuple
 		{
 			public Table Table;
-			public Point CellPosition;
+			public CellPosition CellPosition;
             public HtmlTableSpanCollection RowSpan;
 		}
 		private Stack<Tuple> tables = new Stack<Tuple>(5);
@@ -34,10 +33,10 @@ namespace HtmlToOpenXml
 
 		// IComparer<Point> Implementation
 
-		int IComparer<Point>.Compare(Point x, Point y)
+		int IComparer<CellPosition>.Compare(CellPosition x, CellPosition y)
 		{
 			// Only interested in the column part.
-			return x.X.CompareTo(y.X);
+			return x.Column.CompareTo(y.Column);
 		}
 
 		public void NewContext(Table table)
@@ -45,7 +44,7 @@ namespace HtmlToOpenXml
 			if (this.current != null)
 				tables.Push(current);
 
-            current = new Tuple() { Table = table, CellPosition = Point.Empty, RowSpan = new HtmlTableSpanCollection() };
+            current = new Tuple() { Table = table, CellPosition = CellPosition.Empty, RowSpan = new HtmlTableSpanCollection() };
 		}
 
 		public void CloseContext()
@@ -72,7 +71,7 @@ namespace HtmlToOpenXml
 		/// Gets or sets the position of the current processed cell in a table.
 		/// Origins is at the top left corner.
 		/// </summary>
-		public Point CellPosition
+		public CellPosition CellPosition
 		{
 			get { return current.CellPosition; }
 			set { current.CellPosition = value; }

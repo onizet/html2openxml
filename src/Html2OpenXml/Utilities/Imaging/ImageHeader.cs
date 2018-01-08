@@ -14,7 +14,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -64,13 +63,7 @@ namespace HtmlToOpenXml
             }
             catch (ArgumentException)
             {
-#if FEATURE_DRAWING
-                //do it the old fashioned way
-                using (Bitmap b = new Bitmap(path))
-                    return b.Size;
-#else
                 return Size.Empty;
-#endif
             }
         }
 
