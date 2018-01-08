@@ -17,7 +17,7 @@ namespace HtmlToOpenXml
 	/// <summary>
 	/// The event arguments used for a ProvisionImage event.
 	/// </summary>
-	public class ProvisionImageEventArgs : System.ComponentModel.CancelEventArgs
+	public class ProvisionImageEventArgs : System.EventArgs
 	{
 		private HtmlImageInfo info;
 
@@ -45,16 +45,6 @@ namespace HtmlToOpenXml
 		public Uri ImageUrl { get; private set; }
 
 		/// <summary>
-		/// Gets the styles definition part located inside MainDocumentPart.
-		/// </summary>
-        [Obsolete("Use Provision(data). Refactoring to match Coding Rule: 'Properties should not return arrays'.")]
-        public byte[] Data
-		{
-			get { return info.RawData; }
-			set { info.RawData = value; }
-		}
-
-		/// <summary>
 		/// Gets or sets the format of the image.
 		/// </summary>
 		public ImagePartType? ImageExtension
@@ -71,5 +61,10 @@ namespace HtmlToOpenXml
 			get { return info.Size; }
 			set { info.Size = value; }
 		}
+
+		/// <summary>
+		/// Assigns to true to ignore this image.
+		/// </summary>
+		public bool Cancel { get; set; }
 	}
 }

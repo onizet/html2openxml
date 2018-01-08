@@ -1,5 +1,4 @@
-﻿using System.ComponentModel;
-using System.Resources;
+﻿using System.Resources;
 using System.Reflection;
 
 namespace HtmlToOpenXml
