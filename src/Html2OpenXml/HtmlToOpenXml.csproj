@@ -7,17 +7,27 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <AssemblyName>HtmlToOpenXml</AssemblyName>
     <RootNamespace>HtmlToOpenXml</RootNamespace>
+    <PackageId>HtmlToOpenXml.dll</PackageId>
+    <Version>2.0.0</Version>
     <PackageIconUrl>https://github.com/onizet/html2openxml/raw/dev/docs/images/Home_h2oxnuget.png</PackageIconUrl>
-    <Copyright>Copyright 2009-2017</Copyright>
-    <PackageReleaseNotes></PackageReleaseNotes>
+    <Copyright>Copyright 2009-2018</Copyright>
+    <PackageReleaseNotes>For long-time follower, this is the next major release version since 1.6.
+This brings .Net Core support
+- better inline styling
+- numbering list with nested list is more stable
+- allow parsing unit with decimals
+- color can be either rgb(a), hsl(a), hex or named color.
+- parser is more stable
+
+For nuget follower, this is a huge improvement since only v1.5 was published.
+You can see release note here: https://github.com/onizet/html2openxml/releases
+    </PackageReleaseNotes>
     <PackageTags>office openxml netcore html</PackageTags>
     <AssemblyVersion>2.0.0.0</AssemblyVersion>
     <PackageLicenseUrl>https://github.com/onizet/html2openxml/blob/master/License.txt</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/onizet/html2openxml</PackageProjectUrl>
     <RepositoryUrl></RepositoryUrl>
     <Description>A library to convert simple or advanced html to plain OpenXml document</Description>
-    <Version>2.0.0</Version>
-    <PackageId>HtmlToOpenXml</PackageId>
     <Authors>Olivier Nizet</Authors>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>HtmlToOpenXml.snk</AssemblyOriginatorKeyFile>
