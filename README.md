@@ -1,22 +1,26 @@
-## What is Html2OpenXml?
+[![Latest version](https://img.shields.io/nuget/v/HtmlToOpenXml.dll.svg)](https://www.nuget.org/packages/HtmlToOpenXml.dll)
+[![License MSPL](https://img.shields.io/badge/license-MSPL-green.svg)](https://github.com/onizet/html2openxml/blob/master/License.txtl)
+[![NuGet](https://img.shields.io/nuget/dt/HtmlToOpenXml.dll.svg)]()
 
-Httml2OpenXml is a small .Net library that convert simple or advanced HTML to plain OpenXml components. This program has started in 2009, initially to convert user's comments from SharePoint to Word.
+# What is Html2OpenXml?
 
-Depends on either the [OpenXml SDK 2.0](http://www.microsoft.com/en-us/download/details.aspx?id=5124) and .Net 3.5 or [OpenXml SDK 2.5](http://www.microsoft.com/en-us/download/details.aspx?id=30425) and .Net 4.0.
+Html2OpenXml is a small .Net library that convert simple or advanced HTML to plain OpenXml components. This program has started in 2009, initially to convert user's comments from SharePoint to Word.
 
-> Looking for .Net core version? Take a look at the [dev branch](https://github.com/onizet/html2openxml/tree/dev).
->
-> Some help in fixing bugs or testing is always welcome :)
+This library supports both **.NetCore (netstandard1.4)** and **.Net Framework 3.5, 4.0 and 4.6**.
 
-### See Also
+Depends on [DocumentFormat.OpenXml](https://www.nuget.org/packages/DocumentFormat.OpenXml/).
+
+## See Also
 
 * [Documentation](https://github.com/onizet/html2openxml/wiki)
 * [How to deliver a generated DOCX from server Asp.Net/SharePoint?](https://github.com/onizet/html2openxml/wiki/Serves-a-generated-docx-from-the-server)
 * [Prevent Document Edition](https://github.com/onizet/html2openxml/wiki/Prevent-Document-Edition)
 * [Convert dotx to docx](https://github.com/onizet/html2openxml/wiki/Convert-.dotx-to-.docx)
 
-### Supported Html tags
+## Supported Html tags
+
 Refer to [w3schools’ tag](http://www.w3schools.com/tags/default.asp) list to see their meaning
+
 *	&lt;a&gt;
 *	&lt;h1-h6&gt;
 *	&lt;abbr&gt; and &lt;acronym&gt;
@@ -31,44 +35,30 @@ Refer to [w3schools’ tag](http://www.w3schools.com/tags/default.asp) list to s
 *	&lt;ul&gt;, &lt;ol&gt; and &lt;li&gt;
 *	&lt;dd&gt; and &lt;dt&gt;
 * &lt;q&gt; and &lt;blockquote&gt; (since 1.5)
+* &lt;article&gt;, &lt;aside&gt;, &lt;section&gt; are considered like &lt;div&gt;
 
 Javascript (&lt;script&gt;), CSS &lt;style&gt;, &lt;meta&gt; and other not supported tags does not generate an error but are **ignored**.
 
-### Tolerance for bad formed HTML
+## Tolerance for bad formed HTML
+
 The parsing of the Html is done using a custom Regex-based enumerator. These are supported:
 
-<table>
-<tr><th></th><th>samples</th></tr>
-<tr>
-  <td>Ignore case</td>
-  <td>&lt;span&gt;Some text&lt;SPAN&gt;</td>
-</tr>
-<tr>
-  <td>Missing closing tag or invalid tag position</td>
-  <td>&lt;i&gt;Here&lt;b&gt; is &lt;/i&gt; some&lt;/b&gt; bad formed html.</td>
-</tr>
-<tr>
-  <td>no need to be XHTML compliant</td>
-  <td>Both &lt;br&gt; and &lt;br/&gt; are valid</td>
-</tr>
-<tr>
-  <td>Color</td>
-  <td>red, #ff0000, ff0000, rgb(255,0,0) are all the red color</td>
-</tr>
-<tr>
-  <td>Attributes</td>
-  <td>&lt;table id=table1&gt; or &lt;table id="table1"&gt;</td>
-</tr>
-</table>
+|   | samples |
+| ------------- | ------------- |
+| Ignore case | &lt;span&gt;Some text&lt;SPAN&gt; |
+| Missing closing tag or invalid tag position | &lt;i&gt;Here&lt;b&gt; is &lt;/i&gt; some&lt;/b&gt; bad formed html. |
+| no need to be XHTML compliant | Both &lt;br&gt; and &lt;br/&gt; are valid |
+| Color | red, #ff0000, #f00, rgb(255,0,0,.5), hsl(0, 100%, 50%) are all the red color |
+| Attributes | &lt;table id=table1&gt; or &lt;table id="table1"&gt; |
 
-### Acknowledgements
+## Acknowledgements
 
 Thank you to all contributors that share their bug fixes: scwebgroup, ddforge, daviderapicavoli, worstenbrood, jodybullen, BenBurns, OleK, scarhand, imagremlin, antgraf, mdeclercq, pauldbentley, xjpmauricio, jairoXXX, giorand, bostjanKlemenc, AaronLS.
 And thanks to David Podhola for the Nuget package.
 
 Logo provided with the permission of [Enhanced Labs Design Studio](http://www.enhancedlabs.com).
 
-### Support
+## Support
 
 This project is open source and I do my best to support it in my spare time. I'm always happy to receive Pull Request and grateful for the time you have taken
 If you have questions, don't hesitate to get in touch with me!
