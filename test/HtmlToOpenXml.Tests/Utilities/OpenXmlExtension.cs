@@ -9,14 +9,10 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
 using DocumentFormat.OpenXml;
-using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml.Tests
 {
-	using wp = DocumentFormat.OpenXml.Drawing.Wordprocessing;
-
 	/// <summary>
 	/// Helper class that provide some extension methods to OpenXml SDK.
 	/// </summary>

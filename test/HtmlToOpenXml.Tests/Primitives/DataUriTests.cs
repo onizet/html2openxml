@@ -1,6 +1,4 @@
-using System;
 using NUnit.Framework;
-using HtmlToOpenXml;
 
 namespace HtmlToOpenXml.Tests
 {

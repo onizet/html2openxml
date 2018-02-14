@@ -519,7 +519,7 @@ namespace HtmlToOpenXml
                 if (iinfo == null || (iinfo.RawData == null && imageUrl.IsAbsoluteUri))
                     iinfo = provider.DownloadData(imageUrl);
 
-				if (iinfo == null || !provider.Provision(imageUrl)) return null;
+				if (!ImageProvisioningProvider.Provision(iinfo,imageUrl)) return null;
 
 				ImagePart ipart = mainPart.AddImagePart(iinfo.Type.Value);
 				imagePart = new CachedImagePart() { Part = ipart };
