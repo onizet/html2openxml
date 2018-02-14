@@ -1,9 +1,7 @@
-using System;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using NUnit.Framework;
-using HtmlToOpenXml;
 
 namespace HtmlToOpenXml.Tests
 {
