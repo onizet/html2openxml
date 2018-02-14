@@ -127,9 +127,9 @@ namespace HtmlToOpenXml
 		/// <summary>
 		/// Discover the metadata of the image.
 		/// </summary>
-		public bool Provision(Uri imageUrl)
+		public static bool Provision(HtmlImageInfo imageInfo, Uri imageUrl)
 		{
-			if (imageInfo.RawData == null) return false;
+			if (imageInfo?.RawData == null) return false;
 
 			if (!imageInfo.Type.HasValue)
 				imageInfo.Type = GetImagePartTypeForImageUrl(imageUrl);
