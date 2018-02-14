@@ -1272,28 +1272,21 @@ namespace HtmlToOpenXml
 
 			TableRow row = tables.CurrentTable.GetFirstChild<TableRow>();
 			// Is this a misformed or empty table?
-            if (row != null)
-            {
-                // Count the number of tableCell and add as much GridColumn as we need.
-                TableGrid grid = new TableGrid();
-                for (int i = 0; i < row.ChildElements.Count; i++)
-                {
-                    if (row.ChildElements[i] is TableCell)
-                    {
-                        grid.Append(new GridColumn());
+			if (row != null)
+			{
+				// Count the number of tableCell and add as much GridColumn as we need.
+				TableGrid grid = new TableGrid();
+				foreach (TableCell cell in row.Elements<TableCell>())
+				{
+					// If that column contains some span, we need to count them also
+					int count = cell.TableCellProperties?.GridSpan?.Val ?? 1;
+					for (int i=0; i<count; i++) {
+						grid.Append(new GridColumn());
+					}
+				}
 
-                        // If that column contains some span, we need to count them also
-                        GridSpan span = row.ChildElements[i].GetFirstChild<GridSpan>();
-                        if (span != null)
-                        {
-                            for (int j = span.Val; j > 0; j++)
-                                grid.Append(new GridColumn());
-                        }
-                    }
-                }
-
-                tables.CurrentTable.InsertAt<TableGrid>(grid, 1);
-            }
+				tables.CurrentTable.InsertAt<TableGrid>(grid, 1);
+			}
 
 			tables.CloseContext();
 
@@ -1359,18 +1352,11 @@ namespace HtmlToOpenXml
 
                     // find the good column position, taking care of eventual colSpan
                     int columnIndex = 0;
-                    do
+                    while (columnIndex < tspan.CellOrigin.Column)
                     {
-                        GridSpan gspan = null;
-                        if (cell.TableCellProperties != null)
-                            gspan = cell.TableCellProperties.GetFirstChild<GridSpan>();
-
-                        if (gspan != null) columnIndex += gspan.Val;
-                        else columnIndex++;
-
-                        if (columnIndex >= tspan.CellOrigin.Column) break;
+                        columnIndex += cell.TableCellProperties?.GridSpan?.Val ?? 1;
                     }
-                    while ((cell = cell.NextSibling<TableCell>()) != null);
+                    //while ((cell = cell.NextSibling<TableCell>()) != null);
 
                     if (cell == null) row.AppendChild(emptyCell);
                     else row.InsertAfter<TableCell>(emptyCell, cell);
