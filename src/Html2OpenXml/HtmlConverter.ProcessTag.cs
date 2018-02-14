@@ -440,6 +440,15 @@ namespace HtmlToOpenXml
 					border.Color = attrBorder.Color.ToHexString();
 					border.Size = (uint) attrBorder.Width.ValueInPx * 4;
 				}
+				else
+				{
+					var attrBorderWidth = en.Attributes.GetAsUnit("border");
+					if (attrBorderWidth.IsValid)
+					{
+						border.Val = BorderValues.Single;
+						border.Size = (uint) attrBorderWidth.ValueInPx * 4;
+					}
+				}
 
 				if (process)
 					drawing = AddImagePart(uri, src, alt, preferredSize);
