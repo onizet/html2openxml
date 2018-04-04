@@ -1,5 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
+﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
   <PropertyGroup>
     <TargetFrameworks Condition="'$(OS)' != 'Windows_NT'">netstandard1.4</TargetFrameworks>
     <TargetFrameworks Condition="'$(OS)' == 'Windows_NT'">net35;net40;net46;netstandard1.4</TargetFrameworks>
@@ -8,7 +7,7 @@
     <AssemblyName>HtmlToOpenXml</AssemblyName>
     <RootNamespace>HtmlToOpenXml</RootNamespace>
     <PackageId>HtmlToOpenXml.dll</PackageId>
-    <Version>2.0.1</Version>
+    <Version>2.0.1.1</Version>
     <PackageIconUrl>https://github.com/onizet/html2openxml/raw/dev/docs/images/Home_h2oxnuget.png</PackageIconUrl>
     <Copyright>Copyright 2009-2018</Copyright>
     <PackageReleaseNotes>For long-time follower, this is the next major release version since 1.6.
@@ -31,26 +30,31 @@ You can see release note here: https://github.com/onizet/html2openxml/releases
     <AssemblyVersion>2.0.0.0</AssemblyVersion>
     <PackageLicenseUrl>https://github.com/onizet/html2openxml/blob/master/License.txt</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/onizet/html2openxml</PackageProjectUrl>
-    <RepositoryUrl></RepositoryUrl>
+    <RepositoryUrl>
+    </RepositoryUrl>
     <Description>A library to convert simple or advanced html to plain OpenXml document</Description>
     <Authors>Olivier Nizet</Authors>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>HtmlToOpenXml.snk</AssemblyOriginatorKeyFile>
     <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
+    <FileVersion>2.0.1.1</FileVersion>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
+    <OldToolsVersion>2.0</OldToolsVersion>
+    <ProjectGuid>{47B5D391-1B58-4162-9380-AB7D3BE6511A}</ProjectGuid>
   </PropertyGroup>
-
   <!--
     Since this project supports multiple configurations which don't all have the same surface area, the following define
     constants are used to conditionally compile features:
     FEATURE_NETHTTP                  : System.Net.WebClient is available in the platform
     FEATURE_REFLECTION               : System.Reflections is using Pre .NetCore API
   -->
-
   <ItemGroup Condition=" '$(TargetFramework)' == 'net35' OR '$(TargetFramework)' == 'net40' OR '$(TargetFramework)' == 'net46' ">
     <Reference Include="System" />
     <Reference Include="System.Core" />
   </ItemGroup>
-
   <!-- .NET Framework < 4.6 -->
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net35' OR '$(TargetFramework)' == 'net40' ">
     <DefineConstants>$(DefineConstants);FEATURE_NETHTTP;FEATURE_REFLECTION</DefineConstants>
@@ -62,17 +66,20 @@ You can see release note here: https://github.com/onizet/html2openxml/releases
   <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard1.4' ">
     <DefineConstants>$(DefineConstants);NET_CORE</DefineConstants>
   </PropertyGroup>
-
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="DocumentFormat.OpenXml" Version="2.7.2" />
   </ItemGroup>
-
   <ItemGroup Condition="'$(TargetFramework)' == 'net46'">
     <PackageReference Include="System.Net.Http">
       <Version>4.3.0</Version>
     </PackageReference>
   </ItemGroup>
-
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.4'">
     <PackageReference Include="System.Net.Http">
       <Version>4.3.0</Version>
@@ -81,5 +88,4 @@ You can see release note here: https://github.com/onizet/html2openxml/releases
       <Version>4.3.0</Version>
     </PackageReference>
   </ItemGroup>
-
 </Project>

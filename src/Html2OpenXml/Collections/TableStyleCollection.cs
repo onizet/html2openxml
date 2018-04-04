@@ -90,11 +90,17 @@ namespace HtmlToOpenXml
 
 			var colorValue = en.StyleAttributes.GetAsColor("background-color");
 
+		    if (colorValue.IsEmpty)    //We do a first try, if it's empty the background-color, I try it with background
+		    {
+		        colorValue = en.StyleAttributes.GetAsColor("background");
+		    }
+
+            //
             // "background-color" is also handled by RunStyleCollection which duplicate this attribute (bug #13212). 
-			// Also apply on <th> (issue #20).
-			// As on 05 Jan 2018, the duplication was due to the wrong argument passed during the td/th processing.
-			// It was the runStyle and not the containerStyle that was provided. The code has been removed as no more useful
-			if (colorValue.IsEmpty) colorValue = en.Attributes.GetAsColor("bgcolor");
+            // Also apply on <th> (issue #20).
+            // As on 05 Jan 2018, the duplication was due to the wrong argument passed during the td/th processing.
+            // It was the runStyle and not the containerStyle that was provided. The code has been removed as no more useful
+            if (colorValue.IsEmpty) colorValue = en.Attributes.GetAsColor("bgcolor");
             if (!colorValue.IsEmpty)
 			{
 				containerStyleAttributes.Add(
