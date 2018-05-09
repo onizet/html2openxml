@@ -1,5 +1,5 @@
 [![Latest version](https://img.shields.io/nuget/v/HtmlToOpenXml.dll.svg)](https://www.nuget.org/packages/HtmlToOpenXml.dll)
-[![License MSPL](https://img.shields.io/badge/license-MSPL-green.svg)](https://github.com/onizet/html2openxml/blob/master/License.txtl)
+[![License MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/onizet/html2openxml/blob/master/LICENSE)
 [![NuGet](https://img.shields.io/nuget/dt/HtmlToOpenXml.dll.svg)]()
 
 # What is Html2OpenXml?
