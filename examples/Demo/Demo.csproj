@@ -1,23 +1,22 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
   <PropertyGroup>
     <TargetFrameworks Condition="'$(OS)' != 'Windows_NT'">netcoreapp1.1</TargetFrameworks>
     <TargetFrameworks Condition="'$(OS)' == 'Windows_NT'">net35;net40;net46;netstandard1.4</TargetFrameworks>
     <OutputType>Exe</OutputType>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
+    <OldToolsVersion>2.0</OldToolsVersion>
   </PropertyGroup>
-
-
   <ItemGroup>
     <PackageReference Include="System.Diagnostics.Process" Version="4.3.0" />
     <PackageReference Include="DocumentFormat.OpenXml" Version="2.7.2" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\src\Html2OpenXml\HtmlToOpenXml.csproj" />
   </ItemGroup>
-
   <ItemGroup>
     <EmbeddedResource Include="Resources\*" />
   </ItemGroup>
-
 </Project>
