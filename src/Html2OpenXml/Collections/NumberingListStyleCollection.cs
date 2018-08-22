@@ -20,17 +20,16 @@ namespace HtmlToOpenXml
 	sealed class NumberingListStyleCollection
 	{
 		private MainDocumentPart mainPart;
-		private int nextInstanceID, absNumId, levelDepth;
+		private int nextInstanceID, levelDepth;
 		private bool firstItem;
 		private Dictionary<String, Int32> knonwAbsNumIds;
-		private Stack<Int32> numInstances;
+		private Stack<KeyValuePair<Int32, int>> numInstances;
 
 
 		public NumberingListStyleCollection(MainDocumentPart mainPart)
 		{
 			this.mainPart = mainPart;
-			this.absNumId = -1;
-			this.numInstances = new Stack<Int32>();
+			this.numInstances = new Stack<KeyValuePair<Int32, int>>();
 			InitNumberingIds();
 		}
 
@@ -197,7 +196,7 @@ namespace HtmlToOpenXml
 			{
 				if (inst.NumberID.Value > nextInstanceID) nextInstanceID = inst.NumberID;
 			}
-			numInstances.Push(nextInstanceID);
+			numInstances.Push(new KeyValuePair<int, int>(nextInstanceID, -1));
 
 			numberingPart.Numbering.Save();
 		}
@@ -208,7 +207,8 @@ namespace HtmlToOpenXml
 
 		public void BeginList(HtmlEnumerator en)
 		{
-			int prevAbsNumId = absNumId;
+			int prevAbsNumId = numInstances.Peek().Value;
+			var absNumId = -1;
 
 			// lookup for a predefined list style in the template collection
 			String type = en.StyleAttributes["list-style-type"];
@@ -244,7 +244,7 @@ namespace HtmlToOpenXml
 					) { NumberID = currentInstanceId });
 			}
 
-			numInstances.Push(currentInstanceId);
+			numInstances.Push(new KeyValuePair<int, int>(currentInstanceId, absNumId));
 		}
 
 		#endregion
@@ -277,7 +277,7 @@ namespace HtmlToOpenXml
 				Numbering numbering = mainPart.NumberingDefinitionsPart.Numbering;
 				foreach (AbstractNum absNum in numbering.Elements<AbstractNum>())
 				{
-					if (absNum.AbstractNumberId == absNumId)
+					if (absNum.AbstractNumberId == numInstances.Peek().Value)
 					{
 						Level lvl = absNum.GetFirstChild<Level>();
 						Int32 currentNumId = ++nextInstanceID;
@@ -367,7 +367,7 @@ namespace HtmlToOpenXml
 		/// </summary>
 		private Int32 InstanceID
 		{
-			get { return this.numInstances.Peek(); }
+			get { return this.numInstances.Peek().Key; }
 		}
 	}
 }
