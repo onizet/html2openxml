@@ -53,7 +53,7 @@ The parsing of the Html is done using a custom Regex-based enumerator. These are
 
 ## Acknowledgements
 
-Thank you to all contributors that share their bug fixes: scwebgroup, ddforge, daviderapicavoli, worstenbrood, jodybullen, BenBurns, OleK, scarhand, imagremlin, antgraf, mdeclercq, pauldbentley, xjpmauricio, jairoXXX, giorand, bostjanKlemenc, AaronLS.
+Thank you to all contributors that share their bug fixes: scwebgroup, ddforge, daviderapicavoli, worstenbrood, jodybullen, BenBurns, OleK, scarhand, imagremlin, antgraf, mdeclercq, pauldbentley, xjpmauricio, jairoXXX, giorand, bostjanKlemenc, AaronLS, taishmanov.
 And thanks to David Podhola for the Nuget package.
 
 Logo provided with the permission of [Enhanced Labs Design Studio](http://www.enhancedlabs.com).

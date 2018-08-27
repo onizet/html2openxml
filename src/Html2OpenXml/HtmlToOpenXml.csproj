@@ -8,10 +8,13 @@
     <AssemblyName>HtmlToOpenXml</AssemblyName>
     <RootNamespace>HtmlToOpenXml</RootNamespace>
     <PackageId>HtmlToOpenXml.dll</PackageId>
-    <Version>2.0.1</Version>
+    <Version>2.0.2</Version>
     <PackageIconUrl>https://github.com/onizet/html2openxml/raw/dev/docs/images/Home_h2oxnuget.png</PackageIconUrl>
     <Copyright>Copyright 2009-2018</Copyright>
     <PackageReleaseNotes>For long-time follower, this is the next major release version since 1.6.
+2.0.2
+- fix nested list numbering
+
 2.0.1
 - fix manual provisioning of images
 - img respect both border attribute and border style attribute 
