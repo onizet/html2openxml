@@ -194,7 +194,7 @@ namespace HtmlToOpenXml
                         openXmlElement = firstChild;
                     }
 #if FEATURE_REFLECTION
-                    else if (!type.IsInstanceOfType(tag))
+                    else if (!type.IsInstanceOfType(firstChild))
 #else
                     else if (!type.GetTypeInfo().IsAssignableFrom(tag.GetType().GetTypeInfo()))
 #endif
