@@ -8,10 +8,14 @@
     <AssemblyName>HtmlToOpenXml</AssemblyName>
     <RootNamespace>HtmlToOpenXml</RootNamespace>
     <PackageId>HtmlToOpenXml.dll</PackageId>
-    <Version>2.0.2</Version>
-    <PackageIconUrl>https://github.com/onizet/html2openxml/raw/dev/docs/images/Home_h2oxnuget.png</PackageIconUrl>
+    <Version>2.0.3</Version>
+    <PackageIconUrl>https://github.com/onizet/html2openxml/raw/master/docs/images/Home_h2oxnuget.png</PackageIconUrl>
     <Copyright>Copyright 2009-2018</Copyright>
     <PackageReleaseNotes>For long-time follower, this is the next major release version since 1.6.
+2.0.3
+- optimize number of nested list numbering (thanks to BenGraf)
+- fix an issue where some styles weren't being applied
+
 2.0.2
 - fix nested list numbering
 
@@ -32,7 +36,7 @@ You can see release note here: https://github.com/onizet/html2openxml/releases
     </PackageReleaseNotes>
     <PackageTags>office openxml netcore html</PackageTags>
     <AssemblyVersion>2.0.0.0</AssemblyVersion>
-    <PackageLicenseUrl>https://github.com/onizet/html2openxml/blob/master/License.txt</PackageLicenseUrl>
+    <PackageLicense>https://raw.githubusercontent.com/onizet/html2openxml/master/LICENSE</PackageLicense>
     <PackageProjectUrl>https://github.com/onizet/html2openxml</PackageProjectUrl>
     <RepositoryUrl></RepositoryUrl>
     <Description>A library to convert simple or advanced html to plain OpenXml document</Description>
