@@ -1,0 +1,14 @@
+language: csharp
+solution: HtmlToOpenXml.sln
+matrix:
+  include:
+    - dotnet: 2.1.502
+      mono: none
+      env: DOTNETCORE=2  # optional, can be used to take different code paths in your script
+    - mono: latest
+install:
+  - nuget restore HtmlToOpenXml.sln
+  - nuget install NUnit.Console -Version 3.9.0 -OutputDirectory testrunner
+script:
+  - msbuild /p:Configuration=Release HtmlToOpenXml.sln
+  - mono ./testrunner/NUnit.ConsoleRunner.3.9.0/tools/nunit3-console.exe ./test/HtmlToOpenXml.Tests/bin/Release/
