@@ -227,18 +227,15 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public static Size GetImageSize(Stream imageStream)
 		{
-			// Read only the size of the image using a little API found on codeproject.
-			using (BinaryReader breader = new BinaryReader(imageStream))
-			{
-				try
-				{
-					return ImageHeader.GetDimensions(breader);
-				}
-				catch (ArgumentException)
-				{
-                    return Size.Empty;
-                }
-			}
+            // Read only the size of the image using a little API found on codeproject.
+            try
+            {
+                return ImageHeader.GetDimensions(imageStream);
+            }
+            catch (ArgumentException)
+            {
+                return Size.Empty;
+            }
         }
 
         #endregion

@@ -14,9 +14,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace HtmlToOpenXml
 {
@@ -27,95 +27,97 @@ namespace HtmlToOpenXml
     /// </summary>
     public static class ImageHeader
     {
-        const string errorMessage = "Could not recognise image format.";
+        // https://en.wikipedia.org/wiki/List_of_file_signatures
 
-        private static Dictionary<byte[], Func<BinaryReader, Size>> imageFormatDecoders = new Dictionary<byte[], Func<BinaryReader, Size>>()
-        { 
-            { new byte[] { 0x42, 0x4D }, DecodeBitmap }, 
-            { new byte[] { 0x47, 0x49, 0x46, 0x38, 0x37, 0x61 }, DecodeGif }, 
-            { new byte[] { 0x47, 0x49, 0x46, 0x38, 0x39, 0x61 }, DecodeGif }, 
-            { new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }, DecodePng },
-            { new byte[] { 0xff, 0xd8 }, DecodeJfif }, 
+        enum FileType { Unrecognized, Bitmap, Gif, Png, Jpeg }
+
+        private static readonly byte[] pngSignatureBytes = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
+
+        private static Dictionary<byte[], FileType> imageFormatDecoders = new Dictionary<byte[], FileType>()
+        {
+            { new byte[] { 0x42, 0x4D }, FileType.Bitmap },
+            { Encoding.UTF8.GetBytes("GIF87a"), FileType.Gif },
+            { Encoding.UTF8.GetBytes("GIF89a"), FileType.Gif }, // animated gif
+            { pngSignatureBytes, FileType.Png },
+            { new byte[] { 0xff, 0xd8 }, FileType.Jpeg }
         };
+
+        private static readonly int MaxMagicBytesLength = imageFormatDecoders
+            .Keys.OrderByDescending(x => x.Length).First().Length;
 
         /// <summary>
         /// Gets the dimensions of an image.
         /// </summary>
-        /// <param name="path">The path of the image to get the dimensions of.</param>
+        /// <param name="stream">The content of the image.</param>
         /// <returns>The dimensions of the specified image.</returns>
         /// <exception cref="ArgumentException">The image was of an unrecognised format.</exception>
-        public static Size GetDimensions(string path)
+        public static Size GetDimensions(Stream stream)
         {
-            try
+            using (SequentialBinaryReader reader = new SequentialBinaryReader(stream))
             {
-                using (BinaryReader binaryReader = new BinaryReader(File.OpenRead(path)))
+                FileType type = DetectFileType (reader);
+                stream.Seek(0L, SeekOrigin.Begin);
+                switch (type)
                 {
-                    try
-                    {
-                        return GetDimensions(binaryReader);
-                    }
-                    catch (ArgumentException e)
-                    {
-                        string newMessage = String.Format(CultureInfo.CurrentCulture, "{0} file: '{1}' ", errorMessage, path);
-                        throw new ArgumentException(newMessage, "path", e);
-                    }
+                    case FileType.Bitmap: return DecodeBitmap(reader);
+                    case FileType.Gif: return DecodeGif(reader);
+                    case FileType.Jpeg: return DecodeJfif(reader);
+                    case FileType.Png: return DecodePng(reader);
+                    default: return Size.Empty;
                 }
-            }
-            catch (ArgumentException)
-            {
-                return Size.Empty;
             }
         }
 
-		/// <summary>
-		/// Resize an image keeping its aspect ratio.
-		/// </summary>
-		public static Size KeepAspectRatio(Size actualSize, Size preferredSize)
-		{
-			int width, height;
+        /// <summary>
+        /// Resize an image keeping its aspect ratio.
+        /// </summary>
+        public static Size KeepAspectRatio(Size actualSize, Size preferredSize)
+        {
+            int width, height;
 
-			// Resize by the highest difference ratio between constrained dimension and real one.
-			bool forceResizeByWidth = preferredSize.Height <= 0 && preferredSize.Width > 0;
-			bool forceResizeByHeight = preferredSize.Width <= 0 && preferredSize.Height > 0;
-			if (forceResizeByWidth || (!forceResizeByHeight &&
-				Math.Abs(preferredSize.Width - actualSize.Width) > Math.Abs(preferredSize.Height - actualSize.Height)))
-			{
-				width = preferredSize.Width;
-				height = (int) (((float) actualSize.Height / actualSize.Width) * width);
-			}
-			else
-			{
-				height = preferredSize.Height;
-				width = (int) (((float) actualSize.Width / actualSize.Height) * height);
-			}
+            // Resize by the highest difference ratio between constrained dimension and real one.
+            bool forceResizeByWidth = preferredSize.Height <= 0 && preferredSize.Width > 0;
+            bool forceResizeByHeight = preferredSize.Width <= 0 && preferredSize.Height > 0;
+            if (forceResizeByWidth || (!forceResizeByHeight &&
+                Math.Abs(preferredSize.Width - actualSize.Width) > Math.Abs(preferredSize.Height - actualSize.Height)))
+            {
+                width = preferredSize.Width;
+                height = (int) (((float) actualSize.Height / actualSize.Width) * width);
+            }
+            else
+            {
+                height = preferredSize.Height;
+                width = (int) (((float) actualSize.Width / actualSize.Height) * height);
+            }
 
-			return new Size(width, height);
-		}
+            return new Size(width, height);
+        }
 
         /// <summary>
-        /// Gets the dimensions of an image.
+        /// Examines the a file's first bytes and estimates the file's type.
         /// </summary>
-        /// <returns>The dimensions of the specified image.</returns>
-        /// <exception cref="ArgumentException">The image was of an unrecognised format.</exception>
-        public static Size GetDimensions(BinaryReader binaryReader)
+        private static FileType DetectFileType (SequentialBinaryReader reader)
         {
-            int maxMagicBytesLength = imageFormatDecoders.Keys.OrderByDescending(x => x.Length).First().Length;
-            byte[] magicBytes = new byte[maxMagicBytesLength];
-            for (int i = 0; i < maxMagicBytesLength; i += 1)
+            byte[] magicBytes = new byte[MaxMagicBytesLength];
+            for (int i = 0; i < MaxMagicBytesLength; i += 1)
             {
-                magicBytes[i] = binaryReader.ReadByte();
+                magicBytes[i] = reader.ReadByte();
                 foreach (var kvPair in imageFormatDecoders)
                 {
                     if (StartsWith(magicBytes, kvPair.Key))
                     {
-                        return kvPair.Value(binaryReader);
+                        return kvPair.Value;
                     }
                 }
             }
 
-            throw new ArgumentException(errorMessage, "binaryReader");
+            return FileType.Unrecognized;
         }
 
+        /// <summary>
+        /// Determines whether the beginning of this byte array instance matches the specified byte array.
+        /// </summary>
+        /// <returns>Returns true if the first array starts with the bytes of the second array.</returns>
         private static bool StartsWith(byte[] thisBytes, byte[] thatBytes)
         {
             for (int i = 0; i < thatBytes.Length; i += 1)
@@ -129,76 +131,101 @@ namespace HtmlToOpenXml
             return true;
         }
 
-        private static short ReadLittleEndianInt16(BinaryReader binaryReader)
+        private static Size DecodeBitmap(SequentialBinaryReader reader)
         {
-            byte[] bytes = new byte[sizeof(short)];
+            var magicNumber = reader.ReadUInt16();
 
-            for (int i = 0; i < sizeof(short); i += 1)
+            // skip past the rest of the file header
+            reader.Skip(4 + 2 + 2 + 4);
+
+            int headerSize = reader.ReadInt32();
+            int width, height;
+
+            // We expect the header size to be either 40 (BITMAPINFOHEADER) or 12 (BITMAPCOREHEADER)
+            if (headerSize == 40)
             {
-                bytes[sizeof(short) - 1 - i] = binaryReader.ReadByte();
+                // BITMAPINFOHEADER
+                width = reader.ReadInt32();
+                height = Math.Abs(reader.ReadInt32());
             }
-            return BitConverter.ToInt16(bytes, 0);
-        }
-
-        private static int ReadLittleEndianInt32(BinaryReader binaryReader)
-        {
-            byte[] bytes = new byte[sizeof(int)];
-            for (int i = 0; i < sizeof(int); i += 1)
+            else if (headerSize == 12)
             {
-                bytes[sizeof(int) - 1 - i] = binaryReader.ReadByte();
+                width = reader.ReadInt16();
+                height = reader.ReadInt16();
             }
-            return BitConverter.ToInt32(bytes, 0);
-        }
-
-        private static Size DecodeBitmap(BinaryReader binaryReader)
-        {
-            binaryReader.ReadBytes(16);
-            int width = binaryReader.ReadInt32();
-            int height = binaryReader.ReadInt32();
-            return new Size(width, height);
-        }
-
-        private static Size DecodeGif(BinaryReader binaryReader)
-        {
-            int width = binaryReader.ReadInt16();
-            int height = binaryReader.ReadInt16();
-            return new Size(width, height);
-        }
-
-        private static Size DecodePng(BinaryReader binaryReader)
-        {
-            binaryReader.ReadBytes(8);
-            int width = ReadLittleEndianInt32(binaryReader);
-            int height = ReadLittleEndianInt32(binaryReader);
-            return new Size(width, height);
-        }
-
-        private static Size DecodeJfif(BinaryReader binaryReader)
-        {
-            while (binaryReader.ReadByte() == 0xff)
+            else
             {
-                byte marker = binaryReader.ReadByte();
-                short chunkLength = ReadLittleEndianInt16(binaryReader);
-                if (marker == 0xc0)
+                // Unexpected DIB header size
+                return Size.Empty;
+            }
+
+            return new Size(width, height);
+        }
+
+        private static Size DecodeGif(SequentialBinaryReader reader)
+        {
+            // 3 - signature: "GIF"
+            // 3 - version: either "87a" or "89a"
+            reader.Skip(6);
+
+            int width = reader.ReadInt16();
+            int height = reader.ReadInt16();
+            return new Size(width, height);
+        }
+
+        private static Size DecodeJfif(SequentialBinaryReader reader)
+        {
+            reader.IsBigEndian = true;
+            var magicNumber = reader.ReadUInt16(); // first two bytes should be JPEG magic number
+
+            do
+            {
+                // Find next segment marker. Markers are zero or more 0xFF bytes, followed
+                // by a 0xFF and then a byte not equal to 0x00 or 0xFF.
+                byte segmentIdentifier = reader.ReadByte();
+                byte segmentType = reader.ReadByte();
+
+                // Read until we have a 0xFF byte followed by a byte that is not 0xFF or 0x00
+                while (segmentIdentifier != 0xFF || segmentType == 0xFF || segmentType == 0)
                 {
-                    binaryReader.ReadByte();
-                    int height = ReadLittleEndianInt16(binaryReader);
-                    int width = ReadLittleEndianInt16(binaryReader);
-                    return new Size(width, height);
+                    segmentIdentifier = segmentType;
+                    segmentType = reader.ReadByte();
                 }
 
-                if (chunkLength < 0)
+                if (segmentType == 0xD9) // EOF?
+                    return Size.Empty;
+
+                // next 2-bytes are <segment-size>: [high-byte] [low-byte]
+                var segmentLength = (int)reader.ReadUInt16();
+
+                // segment length includes size bytes, so subtract two
+                segmentLength -= 2;
+
+                if (segmentType == 0xC0 || segmentType == 0xC2)
                 {
-                    ushort uchunkLength = (ushort)chunkLength;
-                    binaryReader.ReadBytes(uchunkLength - 2);
+                    reader.ReadByte(); // bits/sample, usually 8
+                    int height = (int) reader.ReadUInt16();
+                    int width = (int) reader.ReadUInt16();
+                    return new Size(width, height);
                 }
                 else
                 {
-                    binaryReader.ReadBytes(chunkLength - 2);
+                    // skip this segment
+                    reader.Skip(segmentLength);
                 }
             }
+            while (true);
+        }
 
-            throw new ArgumentException(errorMessage);
+        private static Size DecodePng(SequentialBinaryReader reader)
+        {
+            reader.IsBigEndian = true;
+            reader.ReadBytes(pngSignatureBytes.Length);
+            reader.Skip(8);
+
+            int width = reader.ReadInt32();
+            int height = reader.ReadInt32();
+            return new Size(width, height);
         }
     }
 }
