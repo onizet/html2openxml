@@ -1,0 +1,9 @@
+language: csharp
+solution: HtmlToOpenXml.sln
+dotnet: 2.1.502
+mono: none
+install:
+  - dotnet restore HtmlToOpenXml.sln
+script:
+  - dotnet build /p:Configuration=Release HtmlToOpenXml.sln
+  - dotnet test ./test/HtmlToOpenXml.Tests/HtmlToOpenXml.Tests.csproj

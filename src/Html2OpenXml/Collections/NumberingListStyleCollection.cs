@@ -21,7 +21,8 @@ namespace HtmlToOpenXml
 	{
 		private MainDocumentPart mainPart;
 		private int nextInstanceID, levelDepth;
-		private bool firstItem;
+        private int maxlevelDepth = 0;
+        private bool firstItem;
 		private Dictionary<String, Int32> knonwAbsNumIds;
 		private Stack<KeyValuePair<Int32, int>> numInstances;
 
@@ -223,26 +224,37 @@ namespace HtmlToOpenXml
 
 			firstItem = true;
 			levelDepth++;
+            if (levelDepth > maxlevelDepth)
+            {
+                maxlevelDepth = levelDepth;
+            }
 
-			// save a NumberingInstance if the nested list style is the same as its ancestor.
-			// this allows us to nest <ol> and restart the indentation to 1.
-			int currentInstanceId = this.InstanceID;
-			if (levelDepth > 1 && absNumId == prevAbsNumId && orderedList)
-			{
-				EnsureMultilevel(absNumId);
-			}
-			else
-			{
-				currentInstanceId = ++nextInstanceID;
-				Numbering numbering = mainPart.NumberingDefinitionsPart.Numbering;
-				numbering.Append(
-					new NumberingInstance(
-						new AbstractNumId() { Val = absNumId },
-						new LevelOverride(
-							new StartOverrideNumberingValue() { Val = 1 }
-						) { LevelIndex = 0, }
-					) { NumberID = currentInstanceId });
-			}
+            // save a NumberingInstance if the nested list style is the same as its ancestor.
+            // this allows us to nest <ol> and restart the indentation to 1.
+            int currentInstanceId = this.InstanceID;
+            if (levelDepth > 1 && absNumId == prevAbsNumId && orderedList)
+            {
+                EnsureMultilevel(absNumId);
+            }
+            else
+            {
+                // For unordered lists (<ul>), create only one NumberingInstance per level
+                // (MS Word does not tolerate hundreds of identical NumberingInstances)
+                if (orderedList || (levelDepth >= maxlevelDepth))
+                {
+                    currentInstanceId = ++nextInstanceID;
+                    Numbering numbering = mainPart.NumberingDefinitionsPart.Numbering;
+                    numbering.Append(
+                        new NumberingInstance(
+                            new AbstractNumId() { Val = absNumId },
+                            new LevelOverride(
+                                new StartOverrideNumberingValue() { Val = 1 }
+                            )
+                            { LevelIndex = 0, }
+                        )
+                        { NumberID = currentInstanceId });
+                }
+            }
 
 			numInstances.Push(new KeyValuePair<int, int>(currentInstanceId, absNumId));
 		}
