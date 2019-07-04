@@ -1046,13 +1046,18 @@ namespace HtmlToOpenXml
 			Unit unit = en.StyleAttributes.GetAsUnit("width");
 			if (!unit.IsValid) unit = en.Attributes.GetAsUnit("width");
 
-			switch (unit.Type)
+            // The heightUnit used to retrieve a height value.
+            Unit heightUnit = en.StyleAttributes.GetAsUnit("height");
+            if (!heightUnit.IsValid) heightUnit = en.Attributes.GetAsUnit("height");
+
+            switch (unit.Type)
 			{
 				case UnitMetric.Percent:
                     properties.TableCellWidth = new TableCellWidth() { Type = TableWidthUnitValues.Pct, Width = (unit.Value * 50).ToString(CultureInfo.InvariantCulture) };
 					break;
 				case UnitMetric.Point:
-                    properties.TableCellWidth = new TableCellWidth() { Type = TableWidthUnitValues.Dxa, Width = (unit.ValueInDxa * 20).ToString(CultureInfo.InvariantCulture) };
+                    // unit.ValueInPoint used instead of ValueInDxa
+                    properties.TableCellWidth = new TableCellWidth() { Type = TableWidthUnitValues.Auto, Width = (unit.ValueInPoint * 20).ToString(CultureInfo.InvariantCulture) };
 					break;
 				case UnitMetric.Pixel:
 					properties.TableCellWidth = new TableCellWidth() { Type = TableWidthUnitValues.Dxa, Width = (unit.ValueInDxa).ToString(CultureInfo.InvariantCulture) };
@@ -1141,10 +1146,24 @@ namespace HtmlToOpenXml
 
 			TableCell cell = new TableCell();
 			if (properties.HasChildren) cell.TableCellProperties = properties;
+                  
+            // The heightUnit value used to append a height to the TableRowHeight.
+            var row = tables.CurrentTable.GetLastChild<TableRow>();
 
-			tables.CurrentTable.GetLastChild<TableRow>().Append(cell);
+            switch (heightUnit.Type)
+            {
+                case UnitMetric.Point:
+                    row.Append(new TableRowHeight() { HeightType = HeightRuleValues.AtLeast, Val = (uint)(heightUnit.Value * 20) });
 
-			if (en.IsSelfClosedTag) // Force a call to ProcessClosingTableColumn
+                    break;
+                case UnitMetric.Pixel:
+                    row.Append(new TableRowHeight() { HeightType = HeightRuleValues.AtLeast, Val = (uint)heightUnit.ValueInDxa });
+                    break;
+            }
+
+            row.Append(cell);
+
+            if (en.IsSelfClosedTag) // Force a call to ProcessClosingTableColumn
 				ProcessClosingTableColumn(en);
 			else
 			{
