@@ -35,8 +35,12 @@ namespace HtmlToOpenXml
 		/// Occurs when an image tag was detected and you want to manage yourself the download of the data.
 		/// </summary>
 		public event EventHandler<ProvisionImageEventArgs> ProvisionImage;
+        /// <summary>
+        /// Occurs before an html tag is processed  
+        /// </summary>
+        public event EventHandler<BeforeProcessEventArgs> BeforeProcess;
 
-		sealed class CachedImagePart
+        sealed class CachedImagePart
 		{
 			public ImagePart Part;
 			public Int32 Width;
@@ -189,11 +193,11 @@ namespace HtmlToOpenXml
 			}
 		}
 
-		#endregion
+        #endregion
+        
+        #region ProcessHtmlChunks
 
-		#region ProcessHtmlChunks
-
-		private void ProcessHtmlChunks(HtmlEnumerator en, String endTag)
+        private void ProcessHtmlChunks(HtmlEnumerator en, String endTag)
 		{
 			while (en.MoveUntilMatch(endTag))
 			{
@@ -203,7 +207,12 @@ namespace HtmlToOpenXml
 					if (knownTags.TryGetValue(en.CurrentTag, out action))
 					{
 						if (Logging.On) Logging.PrintVerbose(en.Current);
-						action(en);
+                        if (!en.CurrentTag.StartsWith("</"))
+                        {
+                            BeforeProcessEventArgs args = new BeforeProcessEventArgs(en.Attributes, en.CurrentTag);
+                            OnBeforeProcess(args);
+                        }
+                        action(en);
 					}
 
 					// else unknown or not yet implemented - we ignore
@@ -802,9 +811,22 @@ namespace HtmlToOpenXml
 			);
 		}
 
-		#endregion
+        #endregion
 
         // Events
+
+        #region OnBeforeProcess
+        
+        /// <summary>
+        /// Raises the BeforeProcess event.
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnBeforeProcess(BeforeProcessEventArgs e)
+        {
+            if (BeforeProcess != null) BeforeProcess(this, e);
+        }
+
+        #endregion
 
         #region OnProvisionImage
 

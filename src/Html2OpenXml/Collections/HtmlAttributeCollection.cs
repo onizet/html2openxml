@@ -22,8 +22,8 @@ namespace HtmlToOpenXml
 	/// <summary>
 	/// Represents the collection of attributes present in the current html tag.
 	/// </summary>
-	sealed class HtmlAttributeCollection
-	{
+	sealed class HtmlAttributeCollection : IHtmlAttributeCollection
+    {
 		// This regex split the attributes. This line is valid and all the attributes are well discovered:
 		// <table border="1" contenteditable style="text-align: center; color: #ff00e6" cellpadding=0 cellspacing='0' align="center">
 		// RegexOptions.Singleline stands for dealing with attributes that contain newline (typically for base64 image, see issue #8)
@@ -109,6 +109,11 @@ namespace HtmlToOpenXml
             {
                 string value;
                 return attributes.TryGetValue(name, out value)? value : null;
+            }
+            set
+            {
+                attributes[name] = value;
+
             }
 		}
 
