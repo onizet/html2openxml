@@ -39,6 +39,10 @@ namespace HtmlToOpenXml
         /// Occurs before an html tag is processed  
         /// </summary>
         public event EventHandler<BeforeProcessEventArgs> BeforeProcess;
+        /// <summary>
+        /// Occurs after an html tag is processed  
+        /// </summary>
+        public event EventHandler<AfterProcessEventArgs> AfterProcess;
 
         sealed class CachedImagePart
 		{
@@ -815,8 +819,21 @@ namespace HtmlToOpenXml
 
         // Events
 
+        #region OnAfterProcess
+
+        /// <summary>
+        /// Raises the AfterProcess event.
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnAfterProcess(AfterProcessEventArgs e)
+        {
+            if (AfterProcess != null) AfterProcess(this, e);
+        }
+
+        #endregion
+
         #region OnBeforeProcess
-        
+
         /// <summary>
         /// Raises the BeforeProcess event.
         /// </summary>
