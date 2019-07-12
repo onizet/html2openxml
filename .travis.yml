@@ -1,6 +1,6 @@
 language: csharp
 solution: HtmlToOpenXml.sln
-dotnet: 2.1.502
+dotnet: 1.1.13
 mono: none
 install:
   - dotnet restore HtmlToOpenXml.sln
