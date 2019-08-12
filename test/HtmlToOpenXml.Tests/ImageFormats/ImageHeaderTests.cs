@@ -14,6 +14,7 @@ namespace HtmlToOpenXml.Tests
         [TestCase("Resources.html2openxml.gif")]
         [TestCase("Resources.html2openxml.jpg")]
         [TestCase("Resources.html2openxml.png")]
+        [TestCase("Resources.html2openxml.emf")]
         public void ReadSize(string resourceName)
         {
             using (var imageStream = ResourceHelper.GetStream(resourceName))
@@ -48,6 +49,17 @@ namespace HtmlToOpenXml.Tests
                 Size size = ImageHeader.GetDimensions(imageStream);
                 Assert.That(size.Width, Is.EqualTo(500));
                 Assert.That(size.Height, Is.EqualTo(500));
+            }
+        }
+
+        [Test]
+        public void ReadSizeEmf()
+        {
+            using (var imageStream = ResourceHelper.GetStream("Resources.html2openxml.emf"))
+            {
+                Size size = ImageHeader.GetDimensions(imageStream);
+                Assert.That(size.Width, Is.EqualTo(252));
+                Assert.That(size.Height, Is.EqualTo(318));
             }
         }
     }
