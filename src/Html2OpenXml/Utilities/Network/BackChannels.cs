@@ -19,7 +19,6 @@ namespace HtmlToOpenXml
     /// </summary>
     static class BackChannels
     {
-#if !FEATURE_NETHTTP
         // HttpClient contains pooling and is optimized to be used thread-safe and reentrant.
         // The best practices is to make it static and to not dispose it
 
@@ -27,20 +26,17 @@ namespace HtmlToOpenXml
         /// Gets the shared Http client.
         /// </summary>
         internal static System.Net.Http.HttpClient HttpClient { get; } = new System.Net.Http.HttpClient();
-#endif
 
         /// <summary>
         /// Process the download of a Http resource.
         /// </summary>
         /// <param name="requestUri">The remote endpoint to retrieve.</param>
-        /// <param name="proxy">The configuration <see cref="HtmlConverter.WebProxy"/> for this http request.</param>
-        public static HttpResponse CreateWebRequest(Uri requestUri, WebProxy proxy)
+        public static HttpResponse CreateWebRequest(Uri requestUri)
         {
             var httpResponse = new HttpResponse();
 
             try
             {
-#if !FEATURE_NETHTTP
                 var requestMessage = new System.Net.Http.HttpRequestMessage();
                 requestMessage.RequestUri = requestUri;
                 var response = HttpClient.SendAsync(requestMessage).Result;
@@ -48,14 +44,6 @@ namespace HtmlToOpenXml
 
                 if (requestUri.Scheme.StartsWith("http"))
                     httpResponse.ContentType = response.Content.Headers.ContentType?.ToString();
-#else
-                System.Net.WebClient webClient = new WebClientEx(proxy);
-                httpResponse.Body = webClient.DownloadData(requestUri);
-
-                // For requested url with no filename, we need to read the media mime type if provided
-                if (requestUri.Scheme.StartsWith("http"))
-                    httpResponse.ContentType = webClient.ResponseHeaders[System.Net.HttpResponseHeader.ContentType];
-#endif
             }
             catch (Exception exc)
             {

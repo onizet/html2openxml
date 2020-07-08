@@ -67,8 +67,7 @@ namespace HtmlToOpenXml
         {
             if (elements.Count == 0) return;
 
-            Stack<TagsAtSameLevel> enqueuedTags;
-            if (!tags.TryGetValue(name, out enqueuedTags))
+            if (!tags.TryGetValue(name, out Stack<TagsAtSameLevel> enqueuedTags))
             {
                 tags.Add(name, enqueuedTags = new Stack<TagsAtSameLevel>());
             }
@@ -83,8 +82,7 @@ namespace HtmlToOpenXml
         /// <param name="elements">The Run properties to apply to the next build run until the tag is popped out.</param>
         public void BeginTag(string name, params OpenXmlElement[] elements)
         {
-            Stack<TagsAtSameLevel> enqueuedTags;
-            if (!tags.TryGetValue(name, out enqueuedTags))
+            if (!tags.TryGetValue(name, out Stack<TagsAtSameLevel> enqueuedTags))
             {
                 tags.Add(name, enqueuedTags = new Stack<TagsAtSameLevel>());
             }
@@ -103,8 +101,7 @@ namespace HtmlToOpenXml
         /// <param name="elements">The properties to apply to the next build run until the tag is popped out.</param>
         public void MergeTag(string name, List<OpenXmlElement> elements)
         {
-            Stack<TagsAtSameLevel> enqueuedTags;
-            if (!tags.TryGetValue(name, out enqueuedTags))
+            if (!tags.TryGetValue(name, out Stack<TagsAtSameLevel> enqueuedTags))
             {
                 BeginTag(name, elements.ToArray());
             }
@@ -142,8 +139,7 @@ namespace HtmlToOpenXml
         /// <param name="name">The name of the tag.</param>
         public virtual void EndTag(string name)
         {
-            Stack<TagsAtSameLevel> enqueuedTags;
-            if (tags.TryGetValue(name, out enqueuedTags))
+            if (tags.TryGetValue(name, out Stack<TagsAtSameLevel> enqueuedTags))
             {
                 enqueuedTags.Pop();
                 if (enqueuedTags.Count == 0) tags.Remove(name);
@@ -158,11 +154,7 @@ namespace HtmlToOpenXml
         #region SetProperties
 
         private static readonly MethodInfo _setMethod =
-#if FEATURE_REFLECTION
             typeof(OpenXmlCompositeElement).GetMethod("SetElement", BindingFlags.Instance | BindingFlags.NonPublic);
-#else
-            typeof(OpenXmlCompositeElement).GetTypeInfo().DeclaredMethods.First(m => m.Name == "SetElement");
-#endif
 
         /// <summary>
         /// Insert a style element inside a RunProperties, taking care of the correct sequence order as defined in the ECMA Standard.

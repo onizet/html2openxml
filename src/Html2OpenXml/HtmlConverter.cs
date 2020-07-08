@@ -499,7 +499,7 @@ namespace HtmlToOpenXml
 			if (imageUrl == null || !knownImageParts.TryGetValue(imageUrl, out imagePart))
 			{
 				HtmlImageInfo iinfo = null;
-				ImageProvisioningProvider provider = new ImageProvisioningProvider(this.WebProxy, preferredSize);
+				ImageProvisioningProvider provider = new ImageProvisioningProvider();
 
 				if (imageUrl == null)
                     iinfo = provider.DownloadData(DataUri.Parse(imageSource));
@@ -887,6 +887,7 @@ namespace HtmlToOpenXml
 		/// <summary>
 		/// Gets or sets the proxy used to download images.
 		/// </summary>
+		[Obsolete("Consider System.Net.Http.HttpClient.DefaultProxy instead")]
 		public WebProxy WebProxy { get; set; }
 
 		/// <summary>

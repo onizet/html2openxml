@@ -31,11 +31,8 @@ namespace HtmlToOpenXml
                 if (object.ReferenceEquals(resourceMan, null))
                 {
                     ResourceManager temp = new ResourceManager("HtmlToOpenXml.Properties.PredefinedStyles",
-#if FEATURE_REFLECTION
                         typeof(PredefinedStyles).Assembly);
-#else
-                        typeof(PredefinedStyles).GetTypeInfo().Assembly);
-#endif
+
                     resourceMan = temp;
                 }
                 return resourceMan;
