@@ -21,8 +21,11 @@ namespace Demo
             {
                 // Uncomment and comment the second using() to open an existing template document
                 // instead of creating it from scratch.
+                using (var buffer = ResourceHelper.GetStream("Resources.template.docx"))
+                {
+                    buffer.CopyTo(generatedDocument);
+                }
 
-                using (var buffer = ResourceHelper.GetStream("Resources.template.docx")) buffer.CopyToAsync(generatedDocument);
                 generatedDocument.Position = 0L;
                 using (WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true))
                 //using (WordprocessingDocument package = WordprocessingDocument.Create(generatedDocument, WordprocessingDocumentType.Document))
