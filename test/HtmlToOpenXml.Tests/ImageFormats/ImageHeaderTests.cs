@@ -55,8 +55,6 @@ namespace HtmlToOpenXml.Tests
         [Test]
         public void ReadSizeEmf()
         {
-            Assert.Ignore("Test currently failing. Returning 100 but expecting 252");
-
             using (var imageStream = ResourceHelper.GetStream("Resources.html2openxml.emf"))
             {
                 Size size = ImageHeader.GetDimensions(imageStream);
