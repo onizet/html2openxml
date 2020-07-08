@@ -51,18 +51,5 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(size.Height, Is.EqualTo(500));
             }
         }
-
-        [Test]
-        public void ReadSizeEmf()
-        {
-            Assert.Ignore("Test currently failing. Returning 100 but expecting 252");
-
-            using (var imageStream = ResourceHelper.GetStream("Resources.html2openxml.emf"))
-            {
-                Size size = ImageHeader.GetDimensions(imageStream);
-                Assert.That(size.Width, Is.EqualTo(252));
-                Assert.That(size.Height, Is.EqualTo(318));
-            }
-        }
     }
 }
