@@ -8,12 +8,12 @@
     <AssemblyName>HtmlToOpenXml</AssemblyName>
     <RootNamespace>HtmlToOpenXml</RootNamespace>
     <PackageId>HtmlToOpenXml.dll</PackageId>
-    <Version>2.0.4</Version>
+    <Version>2.1.0</Version>
     <PackageIcon>icon.png</PackageIcon>
     <Copyright>Copyright 2009-2020</Copyright>
     <PackageReleaseNotes>Support latest OpenXml release</PackageReleaseNotes>
     <PackageTags>office openxml netcore html</PackageTags>
-    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <AssemblyVersion>2.1.0.0</AssemblyVersion>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageProjectUrl>https://github.com/onizet/html2openxml</PackageProjectUrl>
     <RepositoryUrl>https://github.com/onizet/html2openxml</RepositoryUrl>
