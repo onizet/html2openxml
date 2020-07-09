@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
 	  <TargetFrameworks Condition="'$(OS)' != 'Windows_NT'">netcoreapp3.1</TargetFrameworks>
-	  <TargetFrameworks Condition="'$(OS)' == 'Windows_NT'">net46;netcoreapp3.1</TargetFrameworks>
+	  <TargetFrameworks Condition="'$(OS)' == 'Windows_NT'">net48;netcoreapp3.1</TargetFrameworks>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\src\Html2OpenXml\HtmlToOpenXml.snk</AssemblyOriginatorKeyFile>
     <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
