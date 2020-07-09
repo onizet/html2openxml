@@ -36,16 +36,7 @@ namespace HtmlToOpenXml
 			{ ".wmf", ImagePartType.Wmf }
 		};
 
-		private readonly WebProxy proxy;
-        private readonly Size preferredSize;
-		private HtmlImageInfo imageInfo = new HtmlImageInfo();
-
-
-		public ImageProvisioningProvider(WebProxy proxy, Size preferredSize)
-		{
-			this.proxy = proxy;
-			this.preferredSize = preferredSize;
-		}
+		private readonly HtmlImageInfo imageInfo = new HtmlImageInfo();
 
 		//____________________________________________________________________
 		//
@@ -88,7 +79,7 @@ namespace HtmlToOpenXml
 				return DownloadData(dataUri);
 			}
 
-            var response = BackChannels.CreateWebRequest(imageUrl, proxy);
+            var response = BackChannels.CreateWebRequest(imageUrl);
             if (response != null)
             {
                 imageInfo.RawData = response.Body;
@@ -112,11 +103,10 @@ namespace HtmlToOpenXml
             if (dataUri == null)
                 return null;
 
-			ImagePartType type;
-			if (knownContentType.TryGetValue(dataUri.Mime, out type))
-				imageInfo.Type = type;
+            if (knownContentType.TryGetValue(dataUri.Mime, out ImagePartType type))
+                imageInfo.Type = type;
 
-			imageInfo.RawData = dataUri.Data;
+            imageInfo.RawData = dataUri.Data;
             return imageInfo;
 		}
 
@@ -155,7 +145,7 @@ namespace HtmlToOpenXml
 		#region InspectMimeType
 
 		// http://stackoverflow.com/questions/58510/using-net-how-can-you-find-the-mime-type-of-a-file-based-on-the-file-signature
-		private static Dictionary<String, ImagePartType> knownContentType = new Dictionary<String, ImagePartType>(StringComparer.OrdinalIgnoreCase) {
+		private static readonly Dictionary<String, ImagePartType> knownContentType = new Dictionary<String, ImagePartType>(StringComparer.OrdinalIgnoreCase) {
 			{ "image/gif", ImagePartType.Gif },
             { "image/pjpeg", ImagePartType.Jpeg },
 			{ "image/jpg", ImagePartType.Jpeg },
@@ -182,11 +172,10 @@ namespace HtmlToOpenXml
     		// can be null when the protocol used doesn't allow response headers
 			if (contentType == null) return null;
 
-			ImagePartType type;
-			if (knownContentType.TryGetValue(contentType, out type))
-				return type;
+            if (knownContentType.TryGetValue(contentType, out ImagePartType type))
+                return type;
 
-			return null;
+            return null;
 		}
 
 		#endregion
@@ -198,9 +187,8 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public static ImagePartType? GetImagePartTypeForImageUrl(Uri uri)
 		{
-            ImagePartType type;
-            String extension = System.IO.Path.GetExtension(uri.IsAbsoluteUri ? uri.Segments[uri.Segments.Length - 1] : uri.OriginalString);
-            if (knownExtensions.TryGetValue(extension, out type)) return type;
+            String extension = Path.GetExtension(uri.IsAbsoluteUri ? uri.Segments[uri.Segments.Length - 1] : uri.OriginalString);
+            if (knownExtensions.TryGetValue(extension, out ImagePartType type)) return type;
 
             // extension not recognized, try with checking the query string. Expecting to resolve something like:
             // ./image.axd?picture=img1.jpg

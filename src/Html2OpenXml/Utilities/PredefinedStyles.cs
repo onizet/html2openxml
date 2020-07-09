@@ -1,5 +1,4 @@
 ﻿using System.Resources;
-using System.Reflection;
 
 namespace HtmlToOpenXml
 {
@@ -30,12 +29,9 @@ namespace HtmlToOpenXml
             {
                 if (object.ReferenceEquals(resourceMan, null))
                 {
-                    ResourceManager temp = new ResourceManager("HtmlToOpenXml.Properties.PredefinedStyles",
-#if FEATURE_REFLECTION
+                    ResourceManager temp = new ResourceManager("HtmlToOpenXml.PredefinedStyles",
                         typeof(PredefinedStyles).Assembly);
-#else
-                        typeof(PredefinedStyles).GetTypeInfo().Assembly);
-#endif
+
                     resourceMan = temp;
                 }
                 return resourceMan;

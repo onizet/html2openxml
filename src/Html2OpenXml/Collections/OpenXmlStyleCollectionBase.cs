@@ -18,25 +18,16 @@ using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml
 {
-	using TagsAtSameLevel = System.ArraySegment<DocumentFormat.OpenXml.OpenXmlElement>;
+    using TagsAtSameLevel = System.ArraySegment<DocumentFormat.OpenXml.OpenXmlElement>;
 
     /// <summary>
     /// Defines the styles to apply on OpenXml elements.
     /// </summary>
     abstract class OpenXmlStyleCollectionBase
     {
-        /// <summary>
-        /// Handler to retrieves the insert order of a child inside its parent element.
-        /// </summary>
-        /// <param name="child">The child to look up.</param>
-        /// <returns>The sequence order where to insert the child.</returns>
-        protected delegate int GetSequenceNumberHandler(OpenXmlElement child);
-
-
         /// <summary>Holds the tags to apply to the current OpenXml element.</summary>
         /// <remarks>The key contains the name of the tag, the values contains a list of queued attributes of the same tag.</remarks>
-        protected Dictionary<String, Stack<TagsAtSameLevel>> tags;
-
+        protected readonly Dictionary<String, Stack<TagsAtSameLevel>> tags;
 
         protected OpenXmlStyleCollectionBase()
         {
@@ -76,8 +67,7 @@ namespace HtmlToOpenXml
         {
             if (elements.Count == 0) return;
 
-            Stack<TagsAtSameLevel> enqueuedTags;
-            if (!tags.TryGetValue(name, out enqueuedTags))
+            if (!tags.TryGetValue(name, out Stack<TagsAtSameLevel> enqueuedTags))
             {
                 tags.Add(name, enqueuedTags = new Stack<TagsAtSameLevel>());
             }
@@ -92,8 +82,7 @@ namespace HtmlToOpenXml
         /// <param name="elements">The Run properties to apply to the next build run until the tag is popped out.</param>
         public void BeginTag(string name, params OpenXmlElement[] elements)
         {
-            Stack<TagsAtSameLevel> enqueuedTags;
-            if (!tags.TryGetValue(name, out enqueuedTags))
+            if (!tags.TryGetValue(name, out Stack<TagsAtSameLevel> enqueuedTags))
             {
                 tags.Add(name, enqueuedTags = new Stack<TagsAtSameLevel>());
             }
@@ -112,8 +101,7 @@ namespace HtmlToOpenXml
         /// <param name="elements">The properties to apply to the next build run until the tag is popped out.</param>
         public void MergeTag(string name, List<OpenXmlElement> elements)
         {
-            Stack<TagsAtSameLevel> enqueuedTags;
-            if (!tags.TryGetValue(name, out enqueuedTags))
+            if (!tags.TryGetValue(name, out Stack<TagsAtSameLevel> enqueuedTags))
             {
                 BeginTag(name, elements.ToArray());
             }
@@ -151,8 +139,7 @@ namespace HtmlToOpenXml
         /// <param name="name">The name of the tag.</param>
         public virtual void EndTag(string name)
         {
-            Stack<TagsAtSameLevel> enqueuedTags;
-            if (tags.TryGetValue(name, out enqueuedTags))
+            if (tags.TryGetValue(name, out Stack<TagsAtSameLevel> enqueuedTags))
             {
                 enqueuedTags.Pop();
                 if (enqueuedTags.Count == 0) tags.Remove(name);
@@ -166,90 +153,17 @@ namespace HtmlToOpenXml
 
         #region SetProperties
 
+        private static readonly MethodInfo _setMethod =
+            typeof(OpenXmlCompositeElement).GetMethod("SetElement", BindingFlags.Instance | BindingFlags.NonPublic);
+
         /// <summary>
         /// Insert a style element inside a RunProperties, taking care of the correct sequence order as defined in the ECMA Standard.
         /// </summary>
         /// <param name="containerProperties">A RunProperties or ParagraphProperties wherein the tag will be inserted.</param>
         /// <param name="tag">The style to apply to the run.</param>
         protected void SetProperties(OpenXmlCompositeElement containerProperties, OpenXmlElement tag)
-        {
-            // This implementation is largely inspired by DocumentFormat.OpenXml.OpenXmlCompositeElement.SetElement which is internal.
-
-            int tagOrder = GetTagOrder(tag);
-
-            OpenXmlElement firstChild = containerProperties.FirstChild;
-            OpenXmlElement openXmlElement = null;
-            Type type = tag.GetType();
-
-            while (firstChild != null)
-            {
-                bool isKnownElement = (!(firstChild is OpenXmlUnknownElement) && !(firstChild is OpenXmlMiscNode));
-                if (isKnownElement)
-                {
-                    int num = GetTagOrder(firstChild);
-
-                    if (num != tagOrder)
-                    {
-                        if (num > tagOrder) break;
-                        openXmlElement = firstChild;
-                    }
-#if FEATURE_REFLECTION
-                    else if (!type.IsInstanceOfType(firstChild))
-#else
-                    else if (!type.GetTypeInfo().IsAssignableFrom(tag.GetType().GetTypeInfo()))
-#endif
-                    {
-                        openXmlElement = firstChild;
-                    }
-                    else
-                    {
-                        openXmlElement = firstChild.PreviousSibling();
-                        containerProperties.RemoveChild<OpenXmlElement>(firstChild);
-                        break;
-                    }
-                }
-
-                firstChild = firstChild.NextSibling();
-            }
-
-            if (tag != null)
-                containerProperties.InsertAfter(tag, openXmlElement);
-        }
-
-#endregion
-
-        #region GetTagOrder
-
-        protected static GetSequenceNumberHandler CreateTagOrderDelegate<T>()
-            where T : OpenXmlCompositeElement, new()
-        {
-            // I don't want to hard-code the sequence number of the child elements of a RunProperties.
-            // I prefer relying on the OpenXml API and use a bit Reflection.
-#if FEATURE_REFLECTION
-            var mi = typeof(OpenXmlCompositeElement)
-                .GetMethod("GetSequenceNumber", BindingFlags.Instance | BindingFlags.NonPublic);
-
-            // We use a dummy new RunProperties instance
-            // Create a delegate to speed up the invocation to the GetSequenceNumber method
-            return (GetSequenceNumberHandler)
-                 Delegate.CreateDelegate(typeof(GetSequenceNumberHandler), new RunProperties(), mi, true);
-#else
-            var mi = typeof(OpenXmlCompositeElement).GetTypeInfo()
-                .DeclaredMethods.First(m => m.Name == "GetSequenceNumber");
-
-            // We use a dummy new RunProperties instance
-            // Create a delegate to speed up the invocation to the GetSequenceNumber method
-            return (GetSequenceNumberHandler) mi.CreateDelegate(typeof(GetSequenceNumberHandler), new T());
-#endif
-        }
+            => _setMethod.MakeGenericMethod(tag.GetType()).Invoke(containerProperties, new[] { tag });
 
         #endregion
-
-        /// <summary>
-        /// Resolve the element order of the children of RunProperties or ParagraphProperties.
-        /// </summary>
-        /// <param name="element">The child item to look up.</param>
-        /// <returns>Returns the order of the child.</returns>
-        protected abstract int GetTagOrder(OpenXmlElement element);
     }
 }

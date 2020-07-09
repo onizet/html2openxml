@@ -14,6 +14,7 @@ namespace HtmlToOpenXml.Tests
         [TestCase("Resources.html2openxml.gif")]
         [TestCase("Resources.html2openxml.jpg")]
         [TestCase("Resources.html2openxml.png")]
+        [TestCase("Resources.html2openxml.emf")]
         public void ReadSize(string resourceName)
         {
             using (var imageStream = ResourceHelper.GetStream(resourceName))
