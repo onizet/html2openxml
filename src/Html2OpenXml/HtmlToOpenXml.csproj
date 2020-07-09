@@ -9,25 +9,31 @@
     <RootNamespace>HtmlToOpenXml</RootNamespace>
     <PackageId>HtmlToOpenXml.dll</PackageId>
     <Version>2.0.4</Version>
-    <PackageIconUrl>https://github.com/onizet/html2openxml/raw/master/docs/images/Home_h2oxnuget.png</PackageIconUrl>
+    <PackageIcon>icon.png</PackageIcon>
     <Copyright>Copyright 2009-2020</Copyright>
     <PackageReleaseNotes>Support latest OpenXml release</PackageReleaseNotes>
     <PackageTags>office openxml netcore html</PackageTags>
     <AssemblyVersion>2.0.0.0</AssemblyVersion>
-    <PackageLicense>https://raw.githubusercontent.com/onizet/html2openxml/master/LICENSE</PackageLicense>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageProjectUrl>https://github.com/onizet/html2openxml</PackageProjectUrl>
-    <RepositoryUrl></RepositoryUrl>
+    <RepositoryUrl>https://github.com/onizet/html2openxml</RepositoryUrl>
     <Description>A library to convert simple or advanced html to plain OpenXml document</Description>
     <Authors>Olivier Nizet</Authors>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>HtmlToOpenXml.snk</AssemblyOriginatorKeyFile>
     <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
+    <RepositoryType>GIT</RepositoryType>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard2.1' ">
     <DefineConstants>$(DefineConstants);NET_CORE</DefineConstants>
   </PropertyGroup>
 
+  <ItemGroup>
+    <None Include="..\..\icon.png" Pack="true" PackagePath="\" />
+    <None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
+  </ItemGroup>
+  
   <ItemGroup Condition=" '$(TargetFramework)' == 'net48' ">
     <Reference Include="System" />
     <Reference Include="System.Core" />
