@@ -7,7 +7,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <AssemblyName>HtmlToOpenXml</AssemblyName>
     <RootNamespace>HtmlToOpenXml</RootNamespace>
-    <PackageId>HtmlToOpenXml.dll</PackageId>
+    <PackageId>Intron.HtmlToOpenXml.dll</PackageId>
     <Version>2.1.0</Version>
     <PackageIcon>icon.png</PackageIcon>
     <Copyright>Copyright 2009-2020</Copyright>
