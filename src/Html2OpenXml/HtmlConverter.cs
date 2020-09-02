@@ -56,6 +56,7 @@ namespace HtmlToOpenXml
 		private HtmlDocumentStyle htmlStyles;
 		private uint drawingObjId, imageObjId;
 		private Uri baseImageUri;
+		private int titleListId;
 
 
 

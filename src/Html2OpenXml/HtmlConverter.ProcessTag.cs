@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -270,9 +271,43 @@ namespace HtmlToOpenXml
 			htmlStyles.Paragraph.ProcessCommonAttributes(en, styleAttributes);
 
 			AlternateProcessHtmlChunks(en, "</h" + level + ">");
+
 			Paragraph p = new Paragraph(elements);
 			p.InsertInProperties(prop =>
 				prop.ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle("Heading" + level, StyleValues.Paragraph) });
+
+			// Check if the line starts with a number format (1., 1.1., 1.1.1.)
+			// If it does, make sure we make the heading a numbered item
+			OpenXmlElement firstElement = elements.First();
+			MatchCollection regexMatch = Regex.Matches(firstElement.InnerText, @"(\d\.)");
+
+			// Make sure we only grab the heading if it starts with a number
+			if (regexMatch.Count > 0)
+			{
+				int indentLevel = regexMatch.Count;
+
+				// Strip numbers from text
+				firstElement.InnerXml = firstElement.InnerXml.Replace(firstElement.InnerText, firstElement.InnerText.Substring(indentLevel * 2 + 1)); // number, dot and whitespace
+
+				if (titleListId == default(int))
+				{
+					int requiredNumberId = htmlStyles.NumberingList.GetAbsNumIdFromType("decimal-title-multi", true);
+
+					NumberingInstance existingTitleNumbering = mainPart.NumberingDefinitionsPart.Numbering
+						.FirstOrDefault(n => MatchNumberingInstance(n, requiredNumberId)) as NumberingInstance;
+					
+					if (existingTitleNumbering == null)
+						titleListId = htmlStyles.NumberingList.CreateList("decimal-title-multi", true, 3);
+					else
+						titleListId = existingTitleNumbering.NumberID.Value;
+				}
+
+				// Apply numbering to paragraph
+				p.InsertInProperties(prop => prop.NumberingProperties = new NumberingProperties(
+					new NumberingLevelReference(){ Val = (indentLevel - 1) }, // indenting starts at 0
+                    new NumberingId(){ Val = titleListId }
+				));
+			}
 
 			htmlStyles.Paragraph.ApplyTags(p);
 			htmlStyles.Paragraph.EndTag("<h" + level + ">");
@@ -280,6 +315,16 @@ namespace HtmlToOpenXml
 			this.elements.Clear();
 			AddParagraph(p);
 			AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
+		}
+
+		private bool MatchNumberingInstance(object instance, int requiredNumberId)
+		{
+			if (instance == null || !(instance is NumberingInstance))
+				return false;
+				
+			NumberingInstance numInstance = instance as NumberingInstance;
+
+			return numInstance.AbstractNumId.Val == requiredNumberId;
 		}
 
 		#endregion
