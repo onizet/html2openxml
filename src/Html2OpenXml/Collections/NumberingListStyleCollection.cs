@@ -268,19 +268,29 @@ namespace HtmlToOpenXml
 
 		#region EndList
 
-		public void EndList()
+		public void EndList(bool popInstances = true)
 		{
-			if (levelDepth > 0)
+			if (levelDepth > 0 && popInstances)
 				numInstances.Pop();  // decrement for nested list
+
 			levelDepth--;
 			firstItem = true;
 		}
 
 		#endregion
 
+		#region SetLevelDepth
+
+		public void SetLevelDepth(int newLevelDepth)
+		{
+			levelDepth = newLevelDepth;
+		}
+
+		#endregion
+
 		#region CreateList
 
-		public int CreateList(String type, bool orderedList, int numberOfLevels = 1)
+		public int CreateList(String type, bool orderedList)
 		{
 			int absNumId = GetAbsNumIdFromType(type, orderedList);
 			int prevAbsNumId = numInstances.Peek().Value;
@@ -308,24 +318,13 @@ namespace HtmlToOpenXml
                     currentInstanceId = ++nextInstanceID;
                     Numbering numbering = mainPart.NumberingDefinitionsPart.Numbering;
 
-					List<OpenXmlElement> elements = new List<OpenXmlElement>();
-
-					elements.Add(new AbstractNumId() { Val = absNumId });
-
-					for (int i = 0; i < numberOfLevels; i++)
-					{
-						elements.Add(new LevelOverride(
-							new StartOverrideNumberingValue() {
-								Val = 1
-							})
-							{
-								LevelIndex = i
-							});
-					}
-
                     numbering.Append(
                         new NumberingInstance(
-                            elements
+                            new AbstractNumId() { Val = absNumId },
+							new LevelOverride(
+								new StartOverrideNumberingValue() { Val = 1 }
+							)
+							{ LevelIndex = 0 }
                         )
                         { NumberID = currentInstanceId });
                 }

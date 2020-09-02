@@ -297,7 +297,7 @@ namespace HtmlToOpenXml
 						.FirstOrDefault(n => MatchNumberingInstance(n, requiredNumberId)) as NumberingInstance;
 					
 					if (existingTitleNumbering == null)
-						titleListId = htmlStyles.NumberingList.CreateList("decimal-title-multi", true, 3);
+						titleListId = htmlStyles.NumberingList.CreateList("decimal-title-multi", true);
 					else
 						titleListId = existingTitleNumbering.NumberID.Value;
 				}
@@ -307,11 +307,14 @@ namespace HtmlToOpenXml
 					new NumberingLevelReference(){ Val = (indentLevel - 1) }, // indenting starts at 0
                     new NumberingId(){ Val = titleListId }
 				));
+
+				htmlStyles.NumberingList.EndList(false);
+				htmlStyles.NumberingList.SetLevelDepth(0);
 			}
 
 			htmlStyles.Paragraph.ApplyTags(p);
 			htmlStyles.Paragraph.EndTag("<h" + level + ">");
-
+			
 			this.elements.Clear();
 			AddParagraph(p);
 			AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
