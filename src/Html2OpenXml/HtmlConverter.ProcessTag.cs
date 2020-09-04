@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -270,13 +271,30 @@ namespace HtmlToOpenXml
 			htmlStyles.Paragraph.ProcessCommonAttributes(en, styleAttributes);
 
 			AlternateProcessHtmlChunks(en, "</h" + level + ">");
+
 			Paragraph p = new Paragraph(elements);
 			p.InsertInProperties(prop =>
 				prop.ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle("Heading" + level, StyleValues.Paragraph) });
 
+			// Check if the line starts with a number format (1., 1.1., 1.1.1.)
+			// If it does, make sure we make the heading a numbered item
+			OpenXmlElement firstElement = elements.First();
+			Match regexMatch = Regex.Match(firstElement.InnerText, @"(?m)^(\d+.)*\s");
+
+			// Make sure we only grab the heading if it starts with a number
+			if (regexMatch.Groups.Count > 1 && regexMatch.Groups[1].Captures.Count > 0)
+			{
+				int indentLevel = regexMatch.Groups[1].Captures.Count;
+
+				// Strip numbers from text
+				firstElement.InnerXml = firstElement.InnerXml.Replace(firstElement.InnerText, firstElement.InnerText.Substring(indentLevel * 2 + 1)); // number, dot and whitespace
+
+				htmlStyles.NumberingList.ApplyNumberingToHeadingParagraph(p, indentLevel);
+			}
+
 			htmlStyles.Paragraph.ApplyTags(p);
 			htmlStyles.Paragraph.EndTag("<h" + level + ">");
-
+			
 			this.elements.Clear();
 			AddParagraph(p);
 			AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
