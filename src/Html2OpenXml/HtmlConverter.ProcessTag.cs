@@ -719,7 +719,7 @@ namespace HtmlToOpenXml
 			// We add the Quote style to the nested runs to match more Word.
 
 			Run run = new Run(
-				new Text(" " + HtmlStyles.QuoteCharacters.chars[0]) { Space = SpaceProcessingModeValues.Preserve }
+				new Text(" " + HtmlStyles.QuoteCharacters.Prefix) { Space = SpaceProcessingModeValues.Preserve }
 			);
 
 			htmlStyles.Runs.ApplyTags(run);
@@ -1299,7 +1299,7 @@ namespace HtmlToOpenXml
 		private void ProcessClosingQuote(HtmlEnumerator en)
 		{
 			Run run = new Run(
-				new Text(HtmlStyles.QuoteCharacters.chars[1]) { Space = SpaceProcessingModeValues.Preserve }
+				new Text(HtmlStyles.QuoteCharacters.Suffix) { Space = SpaceProcessingModeValues.Preserve }
 			);
 			htmlStyles.Runs.ApplyTags(run);
 			elements.Add(run);

@@ -1,8 +1,5 @@
-using System;
 using System.Linq;
 using NUnit.Framework;
-using DocumentFormat.OpenXml;
-using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml.Tests
@@ -47,7 +44,7 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements[0].ChildElements.Count, Is.EqualTo(2));
             Assert.That(elements[1].ChildElements.Count, Is.EqualTo(2));
 
-            var runProperties = elements[0].ChildElements[0].GetFirstChild<RunProperties>();
+            runProperties = elements[0].ChildElements[0].GetFirstChild<RunProperties>();
             Assert.IsNull(runProperties);
 
             runProperties = elements[0].ChildElements[1].GetFirstChild<RunProperties>();
@@ -71,7 +68,7 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements[1].ChildElements.Count, Is.EqualTo(1));
             Assert.That(elements[1].FirstChild, Is.TypeOf(typeof(Run)));
 
-            var runProperties = elements[1].FirstChild.GetFirstChild<RunProperties>();
+            runProperties = elements[1].FirstChild.GetFirstChild<RunProperties>();
             Assert.IsNull(runProperties);
         }
 

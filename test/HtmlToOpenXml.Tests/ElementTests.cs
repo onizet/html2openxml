@@ -1,7 +1,5 @@
-using System;
 using NUnit.Framework;
 using DocumentFormat.OpenXml;
-using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml.Tests
@@ -74,6 +72,48 @@ text-decoration:underline;
 
             elements = converter.Parse("<span style='font-style:italic'><i style='font-style:normal'>Not italics</i></span>");
         }*/
+
+        [TestCase(@"<q>Build a future where people live in harmony with nature.</q>", true)]
+        [TestCase(@"<cite>Build a future where people live in harmony with nature.</cite>", false)]
+        public void ParseQuote(string html, bool hasQuote)
+        {
+            var elements = converter.Parse(html);
+            Assert.That(elements.Count, Is.EqualTo(1));
+
+            Run run = elements[0].GetFirstChild<Run>();
+            Assert.IsNotNull(run);
+            if (hasQuote)
+            {
+                Assert.That(run.InnerText, Is.EqualTo(" " + converter.HtmlStyles.QuoteCharacters.Prefix));
+
+                Run lastRun = elements[0].GetLastChild<Run>();
+                Assert.IsNotNull(run);
+                Assert.That(lastRun.InnerText, Is.EqualTo(converter.HtmlStyles.QuoteCharacters.Suffix));
+
+                // focus the content run
+                run = (Run) run.NextSibling();
+            }
+
+            RunProperties runProperties = run.GetFirstChild<RunProperties>();
+            Assert.IsNotNull(runProperties);
+
+            var runStyle = runProperties.GetFirstChild<RunStyle>();
+            Assert.IsNotNull(runStyle);
+            Assert.That(runStyle.Val.Value, Is.EqualTo("QuoteChar"));
+        }
+
+        [Test]
+        public void ParseBreak()
+        {
+            var elements = converter.Parse(@"Lorem<br/>Ipsum");
+            Assert.That(elements.Count, Is.EqualTo(1));
+            Assert.That(elements[0].ChildElements.Count, Is.EqualTo(3));
+
+            Assert.That(elements[0].ChildElements[0], Is.InstanceOf(typeof(Run)));
+            Assert.That(elements[0].ChildElements[1], Is.InstanceOf(typeof(Run)));
+            Assert.That(elements[0].ChildElements[2], Is.InstanceOf(typeof(Run)));
+            Assert.IsNotNull(((Run)elements[0].ChildElements[1]).GetFirstChild<Break>());
+        }
 
         private T ParsePhrasing<T> (string html) where T : OpenXmlElement
         {
