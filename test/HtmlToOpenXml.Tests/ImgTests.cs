@@ -18,23 +18,19 @@ namespace HtmlToOpenXml.Tests
         public void ParseImg()
         {
             var elements = converter.Parse(@"<img src='https://www.w3schools.com/tags/smiley.gif' alt='Smiley face' width='42' height='42'>");
-            Assert.Multiple(() => {
-                Assert.That(elements.Count, Is.EqualTo(1));
-                AssertIsImg(elements[0]);
-            });
+            Assert.That(elements.Count, Is.EqualTo(1));
+            AssertIsImg(elements[0]);
         }
 
         [Test]
         public void ParseImgBorder()
         {
             var elements = converter.Parse(@"<img src='https://www.w3schools.com/tags/smiley.gif' border='1'>");
-            Assert.Multiple(() => {
-                AssertIsImg(elements[0]);
-                var run = elements[0].GetFirstChild<Run>();
-                RunProperties runProperties = run.GetFirstChild<RunProperties>();
-                Assert.IsNotNull(runProperties);
-                Assert.IsNotNull(runProperties.Border);
-            });
+            AssertIsImg(elements[0]);
+            var run = elements[0].GetFirstChild<Run>();
+            RunProperties runProperties = run.GetFirstChild<RunProperties>();
+            Assert.IsNotNull(runProperties);
+            Assert.IsNotNull(runProperties.Border);
         }
 
         [Test]
@@ -52,10 +48,8 @@ namespace HtmlToOpenXml.Tests
             };
 
             var elements = converter.Parse(@"<img src='/img/black-dot' alt='Smiley face' width='42' height='42'>");
-            Assert.Multiple(() => {
-                Assert.That(elements.Count, Is.EqualTo(1));
-                AssertIsImg(elements[0]);
-            });
+            Assert.That(elements.Count, Is.EqualTo(1));
+            AssertIsImg(elements[0]);
         }
 
         private void AssertIsImg (OpenXmlCompositeElement elements)

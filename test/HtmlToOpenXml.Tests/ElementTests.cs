@@ -31,10 +31,8 @@ namespace HtmlToOpenXml.Tests
         public void ParseSubSup (string html, VerticalPositionValues val)
         {
             var textAlign = ParsePhrasing<VerticalTextAlignment>(html);
-            Assert.Multiple(() => {
-                Assert.That(textAlign.Val.HasValue, Is.EqualTo(true));
-                Assert.That(textAlign.Val.Value, Is.EqualTo(val));
-            });
+            Assert.That(textAlign.Val.HasValue, Is.EqualTo(true));
+            Assert.That(textAlign.Val.Value, Is.EqualTo(val));
         }
 
         [Test]
@@ -52,8 +50,8 @@ text-decoration:underline;
             Assert.IsNotNull(run);
 
             RunProperties runProperties = run.GetFirstChild<RunProperties>();
+            Assert.IsNotNull(runProperties);
             Assert.Multiple(() => {
-                Assert.IsNotNull(runProperties);
                 Assert.IsTrue(runProperties.HasChild<Bold>());
                 Assert.IsTrue(runProperties.HasChild<Italic>());
                 Assert.IsTrue(runProperties.HasChild<FontSize>());
