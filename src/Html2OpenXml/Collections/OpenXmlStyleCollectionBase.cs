@@ -162,7 +162,13 @@ namespace HtmlToOpenXml
         /// <param name="containerProperties">A RunProperties or ParagraphProperties wherein the tag will be inserted.</param>
         /// <param name="tag">The style to apply to the run.</param>
         protected void SetProperties(OpenXmlCompositeElement containerProperties, OpenXmlElement tag)
-            => _setMethod.MakeGenericMethod(tag.GetType()).Invoke(containerProperties, new[] { tag });
+        {
+            MethodInfo methodInfo = _setMethod;
+            if (methodInfo.IsGenericMethodDefinition)
+                _setMethod.MakeGenericMethod(tag.GetType()).Invoke(containerProperties, new[] { tag });
+            else
+                _setMethod.Invoke(containerProperties, new[] { tag });
+        }
 
         #endregion
     }
