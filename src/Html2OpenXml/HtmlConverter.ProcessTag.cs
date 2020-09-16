@@ -417,8 +417,6 @@ namespace HtmlToOpenXml
 
 		private void ProcessImage(HtmlEnumerator en)
 		{
-			if (this.ImageProcessing == ImageProcessing.Ignore) return;
-
 			Drawing drawing = null;
 			wBorder border = new wBorder() { Val = BorderValues.None };
 			string src = en.Attributes["src"];
@@ -426,13 +424,9 @@ namespace HtmlToOpenXml
 
 			// Bug reported by Erik2014. Inline 64 bit images can be too big and Uri.TryCreate will fail silently with a SizeLimit error.
 			// To circumvent this buffer size, we will work either on the Uri, either on the original src.
-			if (src != null && (DataUri.IsWellFormed(src) || Uri.TryCreate(src, UriKind.RelativeOrAbsolute, out uri)))
+			if (src != null && (IO.DataUri.IsWellFormed(src) || Uri.TryCreate(src, UriKind.RelativeOrAbsolute, out uri)))
 			{
 				string alt = (en.Attributes["title"] ?? en.Attributes["alt"]) ?? String.Empty;
-				bool process = true;
-
-				if (uri != null && !uri.IsAbsoluteUri && this.BaseImageUrl != null)
-					uri = new Uri(this.BaseImageUrl, uri);
 
 				Size preferredSize = Size.Empty;
 				Unit wu = en.Attributes.GetAsUnit("width");
@@ -468,8 +462,7 @@ namespace HtmlToOpenXml
 					}
 				}
 
-				if (process)
-					drawing = AddImagePart(uri, src, alt, preferredSize);
+				drawing = AddImagePart(src, alt, preferredSize);
 			}
 
 			if (drawing != null)

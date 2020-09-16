@@ -1,3 +1,4 @@
+using HtmlToOpenXml.IO;
 using NUnit.Framework;
 
 namespace HtmlToOpenXml.Tests
@@ -9,16 +10,18 @@ namespace HtmlToOpenXml.Tests
     public class DataUriTests
     {
         [Test]
-        public void ParseInline ()
+        public void ParseInline()
         {
             // red dot
-            Assert.IsNotNull("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==");
+            string uri = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==";
+            DataUri.TryCreate(uri, out DataUri result);
+            Assert.IsNotNull(result);
         }
 
         [Test]
         public void ParseMultiline()
         {
-            string html = @"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAoHBwgHBgoICAgLCgoLDhgQDg0NDh0VFhEYIx8l
+            string uri = @"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAoHBwgHBgoICAgLCgoLDhgQDg0NDh0VFhEYIx8l
 JCIfIiEmKzcvJik0KSEiMEExNDk7Pj4+JS5ESUM8SDc9Pjv/wAALCABVAEABAREA/8QAHwAA
 AQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQR
 BRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RF
@@ -60,7 +63,8 @@ OfDEXhz/AIRbxtAkV1pYNrJHNC0qSbPlDKQDg8e3tVD4Q6BKPGmp67Y2lxbaJ5ckVo04IMgZ
 1KjnqAByfXFezMiv95Q2PUZoCKOigY9BSkA9QDjmgqGBDAEHsaia0tnQxtbxMjdVKAg0W9pb
 Wilba3ihB6iNAufyoltLaZw8tvFIw6FkBNSgADA4FLRRRRRRRX//2Q==
 ";
-            Assert.IsNotNull(DataUri.Parse(html));
+            DataUri.TryCreate(uri, out DataUri result);
+            Assert.IsNotNull(result);
         }
     }
 }
