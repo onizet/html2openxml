@@ -54,7 +54,7 @@ namespace HtmlToOpenXml
         /// <exception cref="ArgumentException">The image was of an unrecognised format.</exception>
         public static Size GetDimensions(Stream stream)
         {
-            using (SequentialBinaryReader reader = new SequentialBinaryReader(stream))
+            using (SequentialBinaryReader reader = new SequentialBinaryReader(stream, leaveOpen: true))
             {
                 FileType type = DetectFileType (reader);
                 stream.Seek(0L, SeekOrigin.Begin);

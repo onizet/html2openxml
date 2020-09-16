@@ -25,7 +25,8 @@ namespace HtmlToOpenXml
         public bool IsBigEndian { get; set; }
 
 
-        public SequentialBinaryReader(Stream input) : base(input)
+        public SequentialBinaryReader(Stream input, bool leaveOpen)
+            : base(input, System.Text.Encoding.ASCII, leaveOpen)
         {
         }
 
