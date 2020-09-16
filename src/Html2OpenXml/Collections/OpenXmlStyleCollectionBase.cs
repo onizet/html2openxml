@@ -14,7 +14,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using DocumentFormat.OpenXml;
-using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml
 {
@@ -154,7 +153,11 @@ namespace HtmlToOpenXml
         #region SetProperties
 
         private static readonly MethodInfo _setMethod =
+#if !NETSTANDARD1_3
             typeof(OpenXmlCompositeElement).GetMethod("SetElement", BindingFlags.Instance | BindingFlags.NonPublic);
+#else
+            typeof(OpenXmlCompositeElement).GetTypeInfo().DeclaredMethods.First(m => m.Name == "SetElement");
+#endif
 
         /// <summary>
         /// Insert a style element inside a RunProperties, taking care of the correct sequence order as defined in the ECMA Standard.

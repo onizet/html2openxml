@@ -82,7 +82,7 @@ namespace HtmlToOpenXml
 			{
 				try
 				{
-#if !NET_CORE
+#if !NETSTANDARD1_3
                     var ci = System.Globalization.CultureInfo.GetCultureInfo(attrValue);
 #else
                     var ci = new System.Globalization.CultureInfo(attrValue);
@@ -179,7 +179,7 @@ namespace HtmlToOpenXml
 					if (className != null)
 					{
 						containerStyleAttributes.Add(new ParagraphStyleId() { Val = className });
-                        newParagraph = true;
+						newParagraph = true;
 						break;
 					}
 				}
