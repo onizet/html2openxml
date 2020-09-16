@@ -1,5 +1,6 @@
 using System.Linq;
 using NUnit.Framework;
+using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml.Tests
@@ -128,6 +129,32 @@ namespace HtmlToOpenXml.Tests
         {
             // the new line should generate a space between "bold" and "text"
             var elements = converter.Parse(" <span>This is a <b>bold\n</b>text</span>");
+        }
+
+        [Test]
+        public void ParseParagraphCustomClass()
+        {
+            using (var generatedDocument = new System.IO.MemoryStream())
+            {
+                // Uncomment and comment the second using() to open an existing template document
+                // instead of creating it from scratch.
+                using (var buffer = ResourceHelper.GetStream("Resources.DocWithCustomStyle.docx"))
+                    buffer.CopyTo(generatedDocument);
+
+                generatedDocument.Position = 0L;
+                using (WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true))
+                {
+                    MainDocumentPart mainPart = package.MainDocumentPart;
+                    HtmlConverter converter = new HtmlConverter(mainPart);
+
+                    var elements = converter.Parse("<div class='CustomStyle1'>Lorem</div><span>Ipsum</span>");
+                    Assert.That(elements.Count, Is.GreaterThan(0));
+                    var paragraphProperties = elements[0].GetFirstChild<ParagraphProperties>();
+                    Assert.IsNotNull(paragraphProperties);
+                    Assert.IsNotNull(paragraphProperties.ParagraphStyleId);
+                    Assert.That(paragraphProperties.ParagraphStyleId.Val.Value, Is.EqualTo("CustomStyle1"));
+                }
+            }
         }
     }
 }

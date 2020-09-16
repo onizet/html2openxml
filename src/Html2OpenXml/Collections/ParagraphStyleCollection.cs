@@ -179,7 +179,6 @@ namespace HtmlToOpenXml
 					if (className != null)
 					{
 						containerStyleAttributes.Add(new ParagraphStyleId() { Val = className });
-						newParagraph = true;
 						break;
 					}
 				}
