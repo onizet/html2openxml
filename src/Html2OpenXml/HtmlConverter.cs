@@ -124,20 +124,27 @@ namespace HtmlToOpenXml
 
             var paragraphs = Parse(html);
 
-            Body body = mainPart.Document.Body;
-            SectionProperties sectionProperties = mainPart.Document.Body.GetLastChild<SectionProperties>();
+			Body body = mainPart.Document.Body;
+			SectionProperties sectionProperties = body.GetLastChild<SectionProperties>();
+			for (int i = 0; i < paragraphs.Count; i++)
+				body.Append(paragraphs[i]);
 
-            for (int i = 0; i < paragraphs.Count; i++)
-                body.Append(paragraphs[i]);
+			// move the paragraph with BookmarkStart `_GoBack` as the last child
+			var p = body.GetFirstChild<Paragraph>();
+			if (p != null && p.HasChild<BookmarkStart>())
+			{
+				p.Remove();
+				body.Append(p);
+			}
 
-            // Push the sectionProperties as the last element of the Body
-            // (required by OpenXml schema to avoid the bad formatting of the document)
-            if (sectionProperties != null)
-            {
-                sectionProperties.Remove();
-                body.Append(sectionProperties);
-            }
-        }
+			// Push the sectionProperties as the last element of the Body
+			// (required by OpenXml schema to avoid the bad formatting of the document)
+			if (sectionProperties != null)
+			{
+				sectionProperties.Remove();
+				body.Append(sectionProperties);
+			}
+		}
 
 		#region RemoveEmptyParagraphs
 
