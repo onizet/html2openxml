@@ -26,6 +26,12 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public event EventHandler<StyleEventArgs> StyleMissing;
 
+		/// <summary>
+		/// Contains the default styles for new OpenXML elements
+		/// </summary>
+		public DefaultStyles DefaultStyles { get { return this.defaultStyles; } }
+
+		private DefaultStyles defaultStyles = new DefaultStyles();
 		private RunStyleCollection runStyle;
 		private TableStyleCollection tableStyle;
 		private ParagraphStyleCollection paraStyle;
@@ -196,45 +202,6 @@ namespace HtmlToOpenXml
 
 		//____________________________________________________________________
 		//
-
-		/// <summary>
-		/// Gets the default StyleId to apply on the any new paragraph.
-		/// </summary>
-		internal String DefaultParagraphStyle
-		{
-			get { return paraStyle.DefaultParagraphStyle; }
-			set { paraStyle.DefaultParagraphStyle = value; }
-		}
-
-		/// <summary>
-		/// Gets or sets the default paragraph style to apply on any new runs.
-		/// </summary>
-		public String DefaultStyle
-		{
-			get { return DefaultParagraphStyle ?? runStyle.DefaultRunStyle; }
-			set
-			{
-				if (String.IsNullOrEmpty(value))
-				{
-					runStyle.DefaultRunStyle = null;
-					this.DefaultParagraphStyle = null;
-					return;
-				}
-
-				Style s;
-				if (!knownStyles.TryGetValue(value, out s))
-				{
-					this.DefaultParagraphStyle = value;
-				}
-				else
-				{
-					if (s.Type.Equals<StyleValues>(StyleValues.Paragraph))
-						this.DefaultParagraphStyle = s.StyleId;
-					else
-						runStyle.DefaultRunStyle = s.StyleId;
-				}
-			}
-		}
 
         /// <summary>
         /// Gets or sets the beginning and ending characters used in the &lt;q&gt; tag.
