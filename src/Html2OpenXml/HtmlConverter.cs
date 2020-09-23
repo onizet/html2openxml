@@ -94,10 +94,10 @@ namespace HtmlToOpenXml
 
 			// Start a new processing
 			paragraphs.Add(currentParagraph = htmlStyles.Paragraph.NewParagraph());
-			if (htmlStyles.DefaultParagraphStyle != null)
+			if (htmlStyles.DefaultStyles.ParagraphStyle != null)
 			{
 				currentParagraph.ParagraphProperties = new ParagraphProperties {
-					ParagraphStyleId = new ParagraphStyleId { Val = htmlStyles.DefaultParagraphStyle }
+					ParagraphStyleId = new ParagraphStyleId { Val = htmlStyles.DefaultStyles.ParagraphStyle }
 				};
 			}
 
@@ -323,11 +323,11 @@ namespace HtmlToOpenXml
 				new Footnote(
 					p = new Paragraph(
 						new ParagraphProperties {
-							ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle("FootnoteText", StyleValues.Paragraph) }
+							ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.FootnoteTextStyle, StyleValues.Paragraph) }
 						},
 						markerRun = new Run(
 							new RunProperties {
-								RunStyle = new RunStyle() { Val = htmlStyles.GetStyle("FootnoteReference", StyleValues.Character) }
+								RunStyle = new RunStyle() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.FootnoteReferenceStyle, StyleValues.Character) }
 							},
 							new FootnoteReferenceMark()),
 						new Run(
@@ -352,7 +352,7 @@ namespace HtmlToOpenXml
 
                 h.Append(new Run(
                     new RunProperties {
-                        RunStyle = new RunStyle() { Val = htmlStyles.GetStyle("Hyperlink", StyleValues.Character) }
+                        RunStyle = new RunStyle() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.HyperlinkStyle, StyleValues.Character) }
                     },
                     new Text(description)));
                 p.Append(h);
@@ -424,11 +424,11 @@ namespace HtmlToOpenXml
 				new Endnote(
 					new Paragraph(
 						new ParagraphProperties {
-							ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle("EndnoteText", StyleValues.Paragraph) }
+							ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.EndnoteTextStyle, StyleValues.Paragraph) }
 						},
 						markerRun = new Run(
 							new RunProperties {
-								RunStyle = new RunStyle() { Val = htmlStyles.GetStyle("EndnoteReference", StyleValues.Character) }
+								RunStyle = new RunStyle() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.EndnoteReferenceStyle, StyleValues.Character) }
 							},
 							new FootnoteReferenceMark()),
 						new Run(
