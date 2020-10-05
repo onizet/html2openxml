@@ -12,10 +12,9 @@
  * Inspiration from Metadata Extractor (Drew Noakes):
  * https://github.com/drewnoakes/metadata-extractor-dotnet
  */
-
 using System.IO;
 
-namespace HtmlToOpenXml
+namespace HtmlToOpenXml.IO
 {
     /// <summary>
     /// Reads primitive data types as binary values with endianness support.
@@ -25,7 +24,8 @@ namespace HtmlToOpenXml
         public bool IsBigEndian { get; set; }
 
 
-        public SequentialBinaryReader(Stream input) : base(input)
+        public SequentialBinaryReader(Stream input, bool leaveOpen)
+            : base(input, System.Text.Encoding.ASCII, leaveOpen)
         {
         }
 

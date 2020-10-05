@@ -22,9 +22,7 @@ namespace HtmlToOpenXml
 
 	sealed class RunStyleCollection : OpenXmlStyleCollectionBase
 	{
-		private HtmlDocumentStyle documentStyle;
-		private readonly static GetSequenceNumberHandler getTagOrderHandler = CreateTagOrderDelegate<RunProperties>();
-
+		private readonly HtmlDocumentStyle documentStyle;
 
 		internal RunStyleCollection(HtmlDocumentStyle documentStyle)
 		{
@@ -121,15 +119,6 @@ namespace HtmlToOpenXml
 					styleAttributes.Add(new FontSize() { Val = (font.Size.ValueInPoint * 2).ToString(CultureInfo.InvariantCulture) });
 			}
 		}
-
-        #endregion
-
-        #region GetTagOrder
-
-        protected override int GetTagOrder(OpenXmlElement element)
-        {
-            return (int) getTagOrderHandler.DynamicInvoke(element);
-        }
 
         #endregion
 

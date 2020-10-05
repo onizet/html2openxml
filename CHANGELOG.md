@@ -3,6 +3,16 @@
 - rely on AngleSharp for the parsing
 - drop support for .NET 3.5
 
+# 2.2.0
+
+- 
+- restore support for .NET 4.6+, Net Standard 1.3+
+
+# 2.1.0
+
+- support latest version of OpenXML SDK (2.11.0+) which fix fatal issue
+- drop support for .NET 4.0, .Net Standard 1.4
+
 # 2.0.3
 
 - optimize number of nested list numbering (thanks to BenGraf)

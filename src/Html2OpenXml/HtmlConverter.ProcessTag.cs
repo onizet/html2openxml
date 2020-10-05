@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -48,12 +49,12 @@ namespace HtmlToOpenXml
 				if (this.AcronymPosition == AcronymPosition.PageEnd)
 				{
 					reference = new FootnoteReference() { Id = AddFootnoteReference(title) };
-					runStyle = "FootnoteReference";
+					runStyle = htmlStyles.DefaultStyles.FootnoteReferenceStyle;
 				}
 				else
 				{
 					reference = new EndnoteReference() { Id = AddEndnoteReference(title) };
-					runStyle = "EndnoteReference";
+					runStyle = htmlStyles.DefaultStyles.EndnoteReferenceStyle;
 				}
 
 				Run run;
@@ -77,7 +78,7 @@ namespace HtmlToOpenXml
 			string tagName = en.CurrentTag;
 			string cite = en.Attributes["cite"];
 
-			htmlStyles.Paragraph.BeginTag(en.CurrentTag, new ParagraphStyleId() { Val = htmlStyles.GetStyle("IntenseQuote") });
+			htmlStyles.Paragraph.BeginTag(en.CurrentTag, new ParagraphStyleId() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.IntenseQuoteStyle) });
 
 			AlternateProcessHtmlChunks(en, en.ClosingCurrentTag);
 
@@ -89,12 +90,12 @@ namespace HtmlToOpenXml
 				if (this.AcronymPosition == AcronymPosition.PageEnd)
 				{
 					reference = new FootnoteReference() { Id = AddFootnoteReference(cite) };
-					runStyle = "FootnoteReference";
+					runStyle = htmlStyles.DefaultStyles.FootnoteReferenceStyle;
 				}
 				else
 				{
 					reference = new EndnoteReference() { Id = AddEndnoteReference(cite) };
-					runStyle = "EndnoteReference";
+					runStyle = htmlStyles.DefaultStyles.EndnoteReferenceStyle;
 				}
 
 				Run run;
@@ -165,7 +166,7 @@ namespace HtmlToOpenXml
 
 		private void ProcessCite(HtmlEnumerator en)
 		{
-			ProcessHtmlElement<RunStyle>(en, new RunStyle() { Val = htmlStyles.GetStyle("Quote", StyleValues.Character) });
+			ProcessHtmlElement<RunStyle>(en, new RunStyle() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.QuoteStyle, StyleValues.Character) });
 		}
 
 		#endregion
@@ -275,13 +276,30 @@ namespace HtmlToOpenXml
 			htmlStyles.Paragraph.ProcessCommonAttributes(en, styleAttributes);
 
 			AlternateProcessHtmlChunks(en, "</h" + level + ">");
+
 			Paragraph p = new Paragraph(elements);
 			p.InsertInProperties(prop =>
-				prop.ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle("Heading" + level, StyleValues.Paragraph) });
+				prop.ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.HeadingStyle + level, StyleValues.Paragraph) });
+
+			// Check if the line starts with a number format (1., 1.1., 1.1.1.)
+			// If it does, make sure we make the heading a numbered item
+			OpenXmlElement firstElement = elements.First();
+			Match regexMatch = Regex.Match(firstElement.InnerText, @"(?m)^(\d+.)*\s");
+
+			// Make sure we only grab the heading if it starts with a number
+			if (regexMatch.Groups.Count > 1 && regexMatch.Groups[1].Captures.Count > 0)
+			{
+				int indentLevel = regexMatch.Groups[1].Captures.Count;
+
+				// Strip numbers from text
+				firstElement.InnerXml = firstElement.InnerXml.Replace(firstElement.InnerText, firstElement.InnerText.Substring(indentLevel * 2 + 1)); // number, dot and whitespace
+
+				htmlStyles.NumberingList.ApplyNumberingToHeadingParagraph(p, indentLevel);
+			}
 
 			htmlStyles.Paragraph.ApplyTags(p);
 			htmlStyles.Paragraph.EndTag("<h" + level + ">");
-
+			
 			this.elements.Clear();
 			AddParagraph(p);
 			AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
@@ -377,7 +395,7 @@ namespace HtmlToOpenXml
 
 			currentParagraph.Append(
 					new ParagraphProperties {
-						ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle("Caption", StyleValues.Paragraph) },
+						ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.CaptionStyle, StyleValues.Paragraph) },
 						KeepNext = new KeepNext()
 					},
 					new Run(
@@ -409,8 +427,6 @@ namespace HtmlToOpenXml
 
 		private void ProcessImage(HtmlEnumerator en)
 		{
-			if (this.ImageProcessing == ImageProcessing.Ignore) return;
-
 			Drawing drawing = null;
 			wBorder border = new wBorder() { Val = BorderValues.None };
 			string src = en.Attributes["src"];
@@ -418,13 +434,9 @@ namespace HtmlToOpenXml
 
 			// Bug reported by Erik2014. Inline 64 bit images can be too big and Uri.TryCreate will fail silently with a SizeLimit error.
 			// To circumvent this buffer size, we will work either on the Uri, either on the original src.
-			if (src != null && (DataUri.IsWellFormed(src) || Uri.TryCreate(src, UriKind.RelativeOrAbsolute, out uri)))
+			if (src != null && (IO.DataUri.IsWellFormed(src) || Uri.TryCreate(src, UriKind.RelativeOrAbsolute, out uri)))
 			{
 				string alt = (en.Attributes["title"] ?? en.Attributes["alt"]) ?? String.Empty;
-				bool process = true;
-
-				if (uri != null && !uri.IsAbsoluteUri && this.BaseImageUrl != null)
-					uri = new Uri(this.BaseImageUrl, uri);
 
 				Size preferredSize = Size.Empty;
 				Unit wu = en.Attributes.GetAsUnit("width");
@@ -460,8 +472,7 @@ namespace HtmlToOpenXml
 					}
 				}
 
-				if (process)
-					drawing = AddImagePart(uri, src, alt, preferredSize);
+				drawing = AddImagePart(src, alt, preferredSize);
 			}
 
 			if (drawing != null)
@@ -490,7 +501,7 @@ namespace HtmlToOpenXml
 			// Save the new paragraph reference to support nested numbering list.
 			Paragraph p = currentParagraph;
 			currentParagraph.InsertInProperties(prop => {
-				prop.ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle("ListParagraph", StyleValues.Paragraph) };
+				prop.ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.ListParagraphStyle, StyleValues.Paragraph) };
 				prop.Indentation = level < 2? null : new Indentation() { Left = (level * 780).ToString(CultureInfo.InvariantCulture) };
 				prop.NumberingProperties = new NumberingProperties {
 					NumberingLevelReference = new NumberingLevelReference() { Val = level - 1 },
@@ -592,7 +603,7 @@ namespace HtmlToOpenXml
 				if (run != null && !run.HasChild<Drawing>())
 				{
 					run.InsertInProperties(prop =>
-						prop.RunStyle = new RunStyle() { Val = htmlStyles.GetStyle("Hyperlink", StyleValues.Character) });
+						prop.RunStyle = new RunStyle() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.HyperlinkStyle, StyleValues.Character) });
 					break;
 				}
 			}
@@ -665,7 +676,7 @@ namespace HtmlToOpenXml
             {
                 Table currentTable = new Table(
                     new TableProperties (
-                        new TableStyle() { Val = htmlStyles.GetStyle("TableGrid", StyleValues.Table) },
+                        new TableStyle() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.PreTableStyle, StyleValues.Table) },
                         new TableWidth() { Type = TableWidthUnitValues.Pct, Width = "5000" } // 100% * 50
 					),
                     new TableGrid(
@@ -723,17 +734,17 @@ namespace HtmlToOpenXml
 			// We add the Quote style to the nested runs to match more Word.
 
 			Run run = new Run(
-				new Text(" " + HtmlStyles.QuoteCharacters.chars[0]) { Space = SpaceProcessingModeValues.Preserve }
+				new Text(" " + HtmlStyles.QuoteCharacters.Prefix) { Space = SpaceProcessingModeValues.Preserve }
 			);
 
 			htmlStyles.Runs.ApplyTags(run);
 			elements.Add(run);
 
-			ProcessHtmlElement<RunStyle>(en, new RunStyle() { Val = htmlStyles.GetStyle("Quote", StyleValues.Character) });
-
+			ProcessHtmlElement<RunStyle>(en, new RunStyle() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.QuoteStyle, StyleValues.Character) });
             AfterProcessEventArgs args = new AfterProcessEventArgs(run, en.Attributes, this.currentParagraph, en.CurrentTag);
             OnAfterProcess(args);
-        }
+        
+		}
 
 		#endregion
 
@@ -792,7 +803,7 @@ namespace HtmlToOpenXml
 		private void ProcessTable(HtmlEnumerator en)
 		{
 			TableProperties properties = new TableProperties(
-				new TableStyle() { Val = htmlStyles.GetStyle("TableGrid", StyleValues.Table) }
+				new TableStyle() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.TableStyle, StyleValues.Table) }
 			);
 			Table currentTable = new Table(properties);
 
@@ -821,7 +832,7 @@ namespace HtmlToOpenXml
 
 				// If the border has been specified, we display the Table Grid style which display
 				// its grid lines. Otherwise the default table style hides the grid lines.
-				if (handleBorders && properties.TableStyle.Val != "TableGrid")
+				if (handleBorders && properties.TableStyle.Val != htmlStyles.DefaultStyles.TableStyle)
 				{
 					uint borderSize = border.Value > 1? (uint) new Unit(UnitMetric.Pixel, border.Value).ValueInDxa : 1;
 					properties.TableBorders = new TableBorders() {
@@ -979,7 +990,7 @@ namespace HtmlToOpenXml
 
 			var legend = new Paragraph(
 					new ParagraphProperties {
-						ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle("Caption", StyleValues.Paragraph) }
+						ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.CaptionStyle, StyleValues.Paragraph) }
 					},
 					new Run(
 						new FieldChar() { FieldCharType = FieldCharValues.Begin }),
@@ -1322,7 +1333,7 @@ namespace HtmlToOpenXml
 		private void ProcessClosingQuote(HtmlEnumerator en)
 		{
 			Run run = new Run(
-				new Text(HtmlStyles.QuoteCharacters.chars[1]) { Space = SpaceProcessingModeValues.Preserve }
+				new Text(HtmlStyles.QuoteCharacters.Suffix) { Space = SpaceProcessingModeValues.Preserve }
 			);
 			htmlStyles.Runs.ApplyTags(run);
 			elements.Add(run);

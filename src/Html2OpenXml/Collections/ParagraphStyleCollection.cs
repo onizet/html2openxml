@@ -22,9 +22,7 @@ namespace HtmlToOpenXml
 
 	sealed class ParagraphStyleCollection : OpenXmlStyleCollectionBase
 	{
-		private HtmlDocumentStyle documentStyle;
-        private readonly static GetSequenceNumberHandler getTagOrderHandler = CreateTagOrderDelegate<ParagraphProperties>();
-
+		private readonly HtmlDocumentStyle documentStyle;
 
         internal ParagraphStyleCollection(HtmlDocumentStyle documentStyle)
 		{
@@ -84,7 +82,7 @@ namespace HtmlToOpenXml
 			{
 				try
 				{
-#if !NET_CORE
+#if !NETSTANDARD1_3
                     var ci = System.Globalization.CultureInfo.GetCultureInfo(attrValue);
 #else
                     var ci = new System.Globalization.CultureInfo(attrValue);
@@ -181,7 +179,6 @@ namespace HtmlToOpenXml
 					if (className != null)
 					{
 						containerStyleAttributes.Add(new ParagraphStyleId() { Val = className });
-                        newParagraph = true;
 						break;
 					}
 				}
@@ -223,15 +220,6 @@ namespace HtmlToOpenXml
 
 			return newParagraph;
 		}
-
-        #endregion
-
-        #region GetTagOrder
-
-        protected override int GetTagOrder(OpenXmlElement element)
-        {
-            return (int) getTagOrderHandler.DynamicInvoke(element);
-        }
 
         #endregion
 

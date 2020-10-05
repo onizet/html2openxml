@@ -10,6 +10,8 @@
  * PARTICULAR PURPOSE.
  *
  * Original source code from Andy Wilson: http://www.codeproject.com/KB/cs/ReadingImageHeaders.aspx
+ * http://stackoverflow.com/questions/111345/getting-image-dimensions-without-reading-the-entire-file/111349
+ * EMF Specifications: https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/ae7e7437-cfe5-485e-84ea-c74b51b000be
  */
 
 using System;
@@ -18,18 +20,16 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace HtmlToOpenXml
+namespace HtmlToOpenXml.IO
 {
     /// <summary>
-    /// Taken from http://stackoverflow.com/questions/111345/getting-image-dimensions-without-reading-the-entire-file/111349
-    /// Minor improvements including supporting unsigned 16-bit integers when decoding Jfif and added logic
-    /// to load the image using new Bitmap if reading the headers fails
+    /// Utility class to extract some information of an image file without reading the entire file.
     /// </summary>
     public static class ImageHeader
     {
         // https://en.wikipedia.org/wiki/List_of_file_signatures
 
-        enum FileType { Unrecognized, Bitmap, Gif, Png, Jpeg }
+        public enum FileType { Unrecognized, Bitmap, Gif, Png, Jpeg, Emf }
 
         private static readonly byte[] pngSignatureBytes = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
 
@@ -39,11 +39,29 @@ namespace HtmlToOpenXml
             { Encoding.UTF8.GetBytes("GIF87a"), FileType.Gif },
             { Encoding.UTF8.GetBytes("GIF89a"), FileType.Gif }, // animated gif
             { pngSignatureBytes, FileType.Png },
-            { new byte[] { 0xff, 0xd8 }, FileType.Jpeg }
+            { new byte[] { 0xff, 0xd8 }, FileType.Jpeg },
+            { new byte[] { 0x1, 0, 0, 0 }, FileType.Emf }
         };
 
         private static readonly int MaxMagicBytesLength = imageFormatDecoders
             .Keys.OrderByDescending(x => x.Length).First().Length;
+
+
+        /// <summary>
+        /// Read a image stream and try to detect its file type.
+        /// </summary>
+        /// <param name="stream">The readable image stream</param>
+        /// <param name="type">The guess file type.</param>
+        /// <returns>Returns true if the detection was successful.</returns>
+        public static bool TryDetectFileType(Stream stream, out FileType type)
+        {
+            using (SequentialBinaryReader reader = new SequentialBinaryReader(stream, leaveOpen: true))
+            {
+                type = DetectFileType(reader);
+                stream.Seek(0L, SeekOrigin.Begin);
+                return type != FileType.Unrecognized;
+            }
+        }
 
         /// <summary>
         /// Gets the dimensions of an image.
@@ -53,7 +71,7 @@ namespace HtmlToOpenXml
         /// <exception cref="ArgumentException">The image was of an unrecognised format.</exception>
         public static Size GetDimensions(Stream stream)
         {
-            using (SequentialBinaryReader reader = new SequentialBinaryReader(stream))
+            using (SequentialBinaryReader reader = new SequentialBinaryReader(stream, leaveOpen: true))
             {
                 FileType type = DetectFileType (reader);
                 stream.Seek(0L, SeekOrigin.Begin);
@@ -63,6 +81,7 @@ namespace HtmlToOpenXml
                     case FileType.Gif: return DecodeGif(reader);
                     case FileType.Jpeg: return DecodeJfif(reader);
                     case FileType.Png: return DecodePng(reader);
+                    case FileType.Emf: return DecodeEmf(reader);
                     default: return Size.Empty;
                 }
             }
@@ -226,6 +245,37 @@ namespace HtmlToOpenXml
             int width = reader.ReadInt32();
             int height = reader.ReadInt32();
             return new Size(width, height);
+        }
+
+        private static Size DecodeEmf(SequentialBinaryReader reader)
+        {
+            // EMR_HEADER: Type + Size + Bounds
+            reader.Skip(4 + 4 + 16);
+
+            // Frame: specify the rectangular inclusive-inclusive dimensions, 
+            // in .01 millimeter units, of a rectangle that surrounds the image stored in the metafile.
+            int left   = reader.ReadInt32();
+            int top    = reader.ReadInt32();
+            int right  = reader.ReadInt32();
+            int bottom = reader.ReadInt32();
+
+            // Skip other headers:
+            // Signature (4) + Version (4) + Size (4) + Records (4) + Handles (2)
+            // + nReserved (2) + nDescription (4) + offDescription (4) + PalEntries (4)
+            reader.Skip(32);
+
+            // Next 8 bytes specify the size of the reference device, in pixels
+            int deviceSizeInPixelX = reader.ReadInt32();
+            int deviceSizeInPixelY = reader.ReadInt32();
+
+            // Then 8 more to specify the size of the reference device, in millimeters
+            int deviceSizeInMlmX = reader.ReadInt32();
+            int deviceSizeInMlmY = reader.ReadInt32();
+
+            int widthInPixel = (int) Math.Round(0.5 + ((right - left + 1.0) * deviceSizeInPixelX / deviceSizeInMlmX) / 100.0);
+            int heightInPixel = (int) Math.Round(0.5 + ((bottom-top + 1.0) * deviceSizeInPixelY / deviceSizeInMlmY) / 100.0);
+
+            return new Size(widthInPixel, heightInPixel);
         }
     }
 }
