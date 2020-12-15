@@ -11,8 +11,6 @@
  */
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using DocumentFormat.OpenXml;
 
 namespace HtmlToOpenXml
@@ -143,34 +141,6 @@ namespace HtmlToOpenXml
                 enqueuedTags.Pop();
                 if (enqueuedTags.Count == 0) tags.Remove(name);
             }
-        }
-
-        #endregion
-
-
-        // SetProperties (to enforce XSD Schema compliance)
-
-        #region SetProperties
-
-        private static readonly MethodInfo _setMethod =
-#if !NETSTANDARD1_3
-            typeof(OpenXmlCompositeElement).GetMethod("SetElement", BindingFlags.Instance | BindingFlags.NonPublic);
-#else
-            typeof(OpenXmlCompositeElement).GetTypeInfo().DeclaredMethods.First(m => m.Name == "SetElement");
-#endif
-
-        /// <summary>
-        /// Insert a style element inside a RunProperties, taking care of the correct sequence order as defined in the ECMA Standard.
-        /// </summary>
-        /// <param name="containerProperties">A RunProperties or ParagraphProperties wherein the tag will be inserted.</param>
-        /// <param name="tag">The style to apply to the run.</param>
-        protected void SetProperties(OpenXmlCompositeElement containerProperties, OpenXmlElement tag)
-        {
-            MethodInfo methodInfo = _setMethod;
-            if (methodInfo.IsGenericMethodDefinition)
-                _setMethod.MakeGenericMethod(tag.GetType()).Invoke(containerProperties, new[] { tag });
-            else
-                _setMethod.Invoke(containerProperties, new[] { tag });
         }
 
         #endregion
