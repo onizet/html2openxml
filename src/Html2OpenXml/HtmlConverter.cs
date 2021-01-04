@@ -522,7 +522,7 @@ namespace HtmlToOpenXml
 				new wp.Inline(
 					new wp.Extent() { Cx = widthInEmus, Cy = heightInEmus },
 					new wp.EffectExtent() { LeftEdge = 19050L, TopEdge = 0L, RightEdge = 0L, BottomEdge = 0L },
-					new wp.DocProperties() { Id = drawingObjId, Name = imageSource, Description = String.Empty },
+					new wp.DocProperties() { Id = drawingObjId, Name = "Picture " + imageObjId, Description = String.Empty },
 					new wp.NonVisualGraphicFrameDrawingProperties {
 						GraphicFrameLocks = new a.GraphicFrameLocks() { NoChangeAspect = true }
 					},
@@ -530,7 +530,7 @@ namespace HtmlToOpenXml
 						new a.GraphicData(
 							new pic.Picture(
 								new pic.NonVisualPictureProperties {
-									NonVisualDrawingProperties = new pic.NonVisualDrawingProperties() { Id = imageObjId, Name = imageSource, Description = alt },
+									NonVisualDrawingProperties = new pic.NonVisualDrawingProperties() { Id = imageObjId, Name = DataUri.IsWellFormed(imageSource) ? string.Empty : imageSource, Description = alt },
 									NonVisualPictureDrawingProperties = new pic.NonVisualPictureDrawingProperties(
 										new a.PictureLocks() { NoChangeAspect = true, NoChangeArrowheads = true })
 								},
