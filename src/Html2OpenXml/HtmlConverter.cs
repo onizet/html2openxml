@@ -142,7 +142,7 @@ namespace HtmlToOpenXml
 			if (sectionProperties != null)
 			{
 				sectionProperties.Remove();
-				body.Append(sectionProperties);
+				body.AddChild(sectionProperties);
 			}
 		}
 
@@ -317,7 +317,6 @@ namespace HtmlToOpenXml
 			}
 
 
-			Run markerRun;
             Paragraph p;
 			fpart.Footnotes.Append(
 				new Footnote(
@@ -325,7 +324,7 @@ namespace HtmlToOpenXml
 						new ParagraphProperties {
 							ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.FootnoteTextStyle, StyleValues.Paragraph) }
 						},
-						markerRun = new Run(
+						new Run(
 							new RunProperties {
 								RunStyle = new RunStyle() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.FootnoteReferenceStyle, StyleValues.Character) }
 							},
@@ -419,14 +418,13 @@ namespace HtmlToOpenXml
 				endnotesRef++;
 			}
 
-			Run markerRun;
 			fpart.Endnotes.Append(
 				new Endnote(
 					new Paragraph(
 						new ParagraphProperties {
 							ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.EndnoteTextStyle, StyleValues.Paragraph) }
 						},
-						markerRun = new Run(
+						new Run(
 							new RunProperties {
 								RunStyle = new RunStyle() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.EndnoteReferenceStyle, StyleValues.Character) }
 							},

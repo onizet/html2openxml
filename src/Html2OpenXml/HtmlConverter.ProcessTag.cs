@@ -1021,15 +1021,17 @@ namespace HtmlToOpenXml
 			switch (unit.Type)
 			{
 				case UnitMetric.Point:
-					properties.Append(new TableRowHeight() { HeightType = HeightRuleValues.AtLeast, Val = (uint) (unit.Value * 20) });
+					properties.AddChild(new TableRowHeight() { HeightType = HeightRuleValues.AtLeast, Val = (uint) (unit.Value * 20) });
 					break;
 				case UnitMetric.Pixel:
-					properties.Append(new TableRowHeight() { HeightType = HeightRuleValues.AtLeast, Val = (uint) unit.ValueInDxa });
+					properties.AddChild(new TableRowHeight() { HeightType = HeightRuleValues.AtLeast, Val = (uint) unit.ValueInDxa });
 					break;
 			}
 
+			properties.AddChild(new TableCellSpacing() { Type = TableWidthUnitValues.Dxa, Width = "0" });
+
 			TableRow row = new TableRow();
-			if (properties.HasChildren) row.AppendChild(properties);
+			row.TableRowProperties = properties;
 
 			htmlStyles.Runs.ProcessCommonAttributes(en, runStyleAttributes);
 			if (runStyleAttributes.Count > 0)
@@ -1125,9 +1127,9 @@ namespace HtmlToOpenXml
 				TableCellMargin cellMargin = new TableCellMargin();
 				var cellMarginSide = new List<KeyValuePair<Unit, TableWidthType>>();
 				cellMarginSide.Add(new KeyValuePair<Unit, TableWidthType>(padding.Top, new TopMargin()));
-				cellMarginSide.Add(new KeyValuePair<Unit, TableWidthType>(padding.Right, new RightMargin()));
-				cellMarginSide.Add(new KeyValuePair<Unit, TableWidthType>(padding.Bottom, new BottomMargin()));
 				cellMarginSide.Add(new KeyValuePair<Unit, TableWidthType>(padding.Left, new LeftMargin()));
+				cellMarginSide.Add(new KeyValuePair<Unit, TableWidthType>(padding.Bottom, new BottomMargin()));
+				cellMarginSide.Add(new KeyValuePair<Unit, TableWidthType>(padding.Right, new RightMargin()));
 
 				foreach (var pair in cellMarginSide)
 				{
@@ -1143,7 +1145,7 @@ namespace HtmlToOpenXml
 						pair.Value.Type = TableWidthUnitValues.Dxa;
 					}
 
-					cellMargin.Append(pair.Value);
+					cellMargin.AddChild(pair.Value);
 				}
 
 				properties.TableCellMargin = cellMargin;
@@ -1164,11 +1166,11 @@ namespace HtmlToOpenXml
             switch (heightUnit.Type)
             {
                 case UnitMetric.Point:
-                    row.Append(new TableRowHeight() { HeightType = HeightRuleValues.AtLeast, Val = (uint)(heightUnit.Value * 20) });
+                    row.TableRowProperties.AddChild(new TableRowHeight() { HeightType = HeightRuleValues.AtLeast, Val = (uint)(heightUnit.Value * 20) });
 
                     break;
                 case UnitMetric.Pixel:
-                    row.Append(new TableRowHeight() { HeightType = HeightRuleValues.AtLeast, Val = (uint)heightUnit.ValueInDxa });
+					row.TableRowProperties.AddChild(new TableRowHeight() { HeightType = HeightRuleValues.AtLeast, Val = (uint)heightUnit.ValueInDxa });
                     break;
             }
 
@@ -1385,7 +1387,7 @@ namespace HtmlToOpenXml
                     TableCell cell = row.GetFirstChild<TableCell>();
                     if (tspan.CellOrigin.Column == 0 || cell == null)
                     {
-                        row.InsertAt(emptyCell, 0);
+						row.InsertAfter(emptyCell, row.TableRowProperties);
                         continue;
                     }
 
