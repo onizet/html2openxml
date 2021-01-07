@@ -5,8 +5,9 @@
 
 # 2.2.0
 
-- 
+- support latest version of OpenXML SDK (2.12.0) which introduces an API to add an OpenXmlElement to the correct XSD order
 - restore support for .NET 4.6+, Net Standard 1.3+
+- use cleaner name for base-64 images description
 
 # 2.1.0
 
