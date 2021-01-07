@@ -62,16 +62,19 @@ namespace HtmlToOpenXml
         public static readonly QuoteChars Gecko = new QuoteChars("“", "”");
         /// <summary>Chrome/Safari/Opera style: "abc"</summary>
         public static readonly QuoteChars WebKit = new QuoteChars("\"", "\"");
-        internal readonly String[] chars;
 
         /// <summary>
         /// Initializes a new instance of <see cref="QuoteChars"/> class.
         /// </summary>
         /// <param name="begin">The characters at the beginning of a quote.</param>
         /// <param name="end">The characters at the end of a quote.</param>
-        public QuoteChars(String begin, String end)
+        public QuoteChars(string begin, string end)
         {
-            this.chars = new String[] { begin, end };
+            Prefix = begin;
+            Suffix = end;
         }
+
+        internal string Prefix { get; private set; }
+        internal string Suffix { get; private set; }
     }
 }

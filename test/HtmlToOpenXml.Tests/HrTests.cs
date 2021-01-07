@@ -22,9 +22,7 @@ namespace HtmlToOpenXml.Tests
         {
             // this should not generate a particular spacing
             var elements = converter.Parse("<p style='border-top:1px solid black'>Before</p><hr>");
-            Assert.Multiple(() => {
-                AssertIsHr (elements[1], false);
-            });
+            AssertIsHr (elements[1], false);
         }
 
         [TestCase("<p style='border-bottom:1px solid black'>Before</p><hr>")]
@@ -32,25 +30,21 @@ namespace HtmlToOpenXml.Tests
         public void ParseHrWithSpacing (string html)
         {
             var elements = converter.Parse(html);
-            Assert.Multiple(() => {
-                AssertIsHr (elements[1], true);
-            });
+            AssertIsHr (elements[1], true);
         }
 
         private void AssertIsHr (OpenXmlCompositeElement hr, bool expectSpacing)
         {
-            Assert.Multiple(() => {
-                Assert.That(hr.ChildElements.Count, Is.EqualTo(2));
-                var props = hr.GetFirstChild<ParagraphProperties>();
-                Assert.IsNotNull(props);
+            Assert.That(hr.ChildElements.Count, Is.EqualTo(2));
+            var props = hr.GetFirstChild<ParagraphProperties>();
+            Assert.IsNotNull(props);
 
-                Assert.That(props.ChildElements.Count, Is.EqualTo(expectSpacing? 2:1));
-                Assert.IsNotNull(props.ParagraphBorders);
-                Assert.IsNotNull(props.ParagraphBorders.TopBorder);
+            Assert.That(props.ChildElements.Count, Is.EqualTo(expectSpacing? 2:1));
+            Assert.IsNotNull(props.ParagraphBorders);
+            Assert.IsNotNull(props.ParagraphBorders.TopBorder);
 
-                if (expectSpacing)
-                    Assert.IsNotNull(props.SpacingBetweenLines);
-            });
+            if (expectSpacing)
+                Assert.IsNotNull(props.SpacingBetweenLines);
         }
     }
 }

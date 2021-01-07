@@ -54,7 +54,7 @@ namespace HtmlToOpenXml
 				{
 					TagsAtSameLevel tagsOfSameLevel = en.Current.Value.Peek();
 					foreach (OpenXmlElement tag in tagsOfSameLevel.Array)
-						SetProperties(properties, tag.CloneNode(true));
+						properties.AddChild(tag.CloneNode(true));
 				}
 			}
 
