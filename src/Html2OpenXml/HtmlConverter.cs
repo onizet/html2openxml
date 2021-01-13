@@ -31,6 +31,26 @@ namespace HtmlToOpenXml
 	/// </summary>
 	public partial class HtmlConverter
 	{
+		/// <summary>
+		/// Occurs when an image tag was detected and you want to manage yourself the download of the data.
+		/// </summary>
+		public event EventHandler<ProvisionImageEventArgs> ProvisionImage;
+        /// <summary>
+        /// Occurs before an html tag is processed  
+        /// </summary>
+        public event EventHandler<BeforeProcessEventArgs> BeforeProcess;
+        /// <summary>
+        /// Occurs after an html tag is processed  
+        /// </summary>
+        public event EventHandler<AfterProcessEventArgs> AfterProcess;
+
+        sealed class CachedImagePart
+		{
+			public ImagePart Part;
+			public Int32 Width;
+			public Int32 Height;
+		}
+
 		private MainDocumentPart mainPart;
 		/// <summary>The list of paragraphs that will be returned.</summary>
 		private IList<OpenXmlCompositeElement> paragraphs;
@@ -191,11 +211,11 @@ namespace HtmlToOpenXml
 			}
 		}
 
-		#endregion
+        #endregion
+        
+        #region ProcessHtmlChunks
 
-		#region ProcessHtmlChunks
-
-		private void ProcessHtmlChunks(HtmlEnumerator en, String endTag)
+        private void ProcessHtmlChunks(HtmlEnumerator en, String endTag)
 		{
 			while (en.MoveUntilMatch(endTag))
 			{
@@ -205,7 +225,12 @@ namespace HtmlToOpenXml
 					if (knownTags.TryGetValue(en.CurrentTag, out action))
 					{
 						if (Logging.On) Logging.PrintVerbose(en.Current);
-						action(en);
+                        if (!en.CurrentTag.StartsWith("</"))
+                        {
+                            BeforeProcessEventArgs args = new BeforeProcessEventArgs(en.Attributes, en.CurrentTag);
+                            OnBeforeProcess(args);
+                        }
+                        action(en);
 					}
 
 					// else unknown or not yet implemented - we ignore
@@ -762,6 +787,46 @@ namespace HtmlToOpenXml
 				new Columns() { Space = "708" },
 				new DocGrid() { LinePitch = 360 }
 			);
+		}
+
+        #endregion
+
+        // Events
+
+        #region OnAfterProcess
+
+        /// <summary>
+        /// Raises the AfterProcess event.
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnAfterProcess(AfterProcessEventArgs e)
+        {
+            if (AfterProcess != null) AfterProcess(this, e);
+        }
+
+        #endregion
+
+        #region OnBeforeProcess
+
+        /// <summary>
+        /// Raises the BeforeProcess event.
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnBeforeProcess(BeforeProcessEventArgs e)
+        {
+            if (BeforeProcess != null) BeforeProcess(this, e);
+        }
+
+        #endregion
+
+        #region OnProvisionImage
+
+        /// <summary>
+		/// Raises the ProvisionImage event.
+		/// </summary>
+		protected virtual void OnProvisionImage(ProvisionImageEventArgs e)
+		{
+			if (ProvisionImage != null) ProvisionImage(this, e);
 		}
 
 		#endregion

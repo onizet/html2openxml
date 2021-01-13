@@ -38,6 +38,12 @@ namespace Demo
                     }
 
                     HtmlConverter converter = new HtmlConverter(mainPart);
+                    //converter.WebProxy.Credentials = new System.Net.NetworkCredential("nizeto", "****", "domain");
+                    //converter.WebProxy.Proxy = new System.Net.WebProxy("proxy01:8080");
+                    converter.ImageProcessing = ImageProcessing.ManualProvisioning;
+                    converter.ProvisionImage += OnProvisionImage;
+                    converter.BeforeProcess +=  OnBeforeProcess;
+                    converter.AfterProcess += Converter_AfterProcess;
                     Body body = mainPart.Document.Body;
 
                     converter.ParseHtml(html);
@@ -50,6 +56,54 @@ namespace Demo
             }
 
             System.Diagnostics.Process.Start(filename);
+        }
+
+        private static void Converter_AfterProcess(object sender, AfterProcessEventArgs e)
+        {
+            switch (e.Tag)
+            {
+                case "<img>":
+                    if (e.CurrentParagraph == null)
+                        return;
+                    if (e.HtmlAttributes["class"] == null)
+                        return;
+                    ParagraphProperties paragraphProperties1 = new ParagraphProperties();
+                    if (e.HtmlAttributes["class"].Contains("fr-fic"))
+                        paragraphProperties1.Append(new Justification() { Val = JustificationValues.Center });
+                    if (e.HtmlAttributes["class"].Contains("fr-fil"))
+                        paragraphProperties1.Append(new Justification() { Val = JustificationValues.Left });
+                    if (e.HtmlAttributes["class"].Contains("fr-fir"))
+                        paragraphProperties1.Append(new Justification() { Val = JustificationValues.Right });
+                    e.CurrentParagraph.Append(paragraphProperties1);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Example on how to change attributes of an html Tag if necessary in this case all spans getting bold
+        /// </summary>
+        /// <param name="current"></param>
+        /// <param name="Tag"></param>
+        static void OnBeforeProcess(object sender, BeforeProcessEventArgs e)
+        {
+            switch (e.Tag)
+            {
+                case "<span>":
+                    if (!string.IsNullOrEmpty(e.Current["style"]))
+                        e.Current["style"] = "font-weight: bold";
+                    break;
+            }
+        }
+        static void OnProvisionImage(object sender, ProvisionImageEventArgs e)
+        {
+            string filename = Path.GetFileName(e.ImageUrl.OriginalString);
+            if (!File.Exists("../../images/" + filename))
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            e.Provision(File.ReadAllBytes("../../images/" + filename));
         }
 
         static void AssertThatOpenXmlDocumentIsValid(WordprocessingDocument wpDoc)

@@ -146,7 +146,10 @@ namespace HtmlToOpenXml
                     }
                 }
             }
-		}
+
+            AfterProcessEventArgs args = new AfterProcessEventArgs(mainPart.Document.Body, en.Attributes, this.currentParagraph, en.CurrentTag);
+            OnAfterProcess(args);
+        }
 
 		#endregion
 
@@ -191,8 +194,10 @@ namespace HtmlToOpenXml
 				prop.SpacingBetweenLines = new SpacingBetweenLines() { After = "0" };
 			});
 
-			// Restore the original elements list
-			AddParagraph(currentParagraph);
+            AfterProcessEventArgs args = new AfterProcessEventArgs(this.currentParagraph, en.Attributes, this.currentParagraph, en.CurrentTag);
+            OnAfterProcess(args);
+            // Restore the original elements list
+            AddParagraph(currentParagraph);
 			this.elements.Clear();
 		}
 
@@ -344,7 +349,9 @@ namespace HtmlToOpenXml
 				prop.ParagraphBorders = new ParagraphBorders {
 					TopBorder = new TopBorder() { Val = BorderValues.Single, Size = 4U }
 				});
-		}
+            AfterProcessEventArgs args = new AfterProcessEventArgs(this.currentParagraph, en.Attributes, this.currentParagraph, en.CurrentTag);
+            OnAfterProcess(args);
+        }
 
 		#endregion
 
@@ -409,7 +416,10 @@ namespace HtmlToOpenXml
 			}
 
 			this.CompleteCurrentParagraph(true);
-		}
+
+            AfterProcessEventArgs args = new AfterProcessEventArgs(this.currentParagraph, en.Attributes, this.currentParagraph, en.CurrentTag);
+            OnAfterProcess(args);
+        }
 
 		#endregion
 
@@ -470,7 +480,10 @@ namespace HtmlToOpenXml
 				Run run = new Run(drawing);
 				if (border.Val != BorderValues.None) run.InsertInProperties(prop => prop.Border = border);
 				elements.Add(run);
-			}
+
+                AfterProcessEventArgs args = new AfterProcessEventArgs(run, en.Attributes, this.currentParagraph, en.CurrentTag);
+                OnAfterProcess(args);
+            }
 		}
 
 		#endregion
@@ -504,7 +517,10 @@ namespace HtmlToOpenXml
 			AlternateProcessHtmlChunks(en, "</li>");
 			p.Append(elements);
 			this.elements.Clear();
-		}
+
+            AfterProcessEventArgs args = new AfterProcessEventArgs(this.currentParagraph, en.Attributes, this.currentParagraph, en.CurrentTag);
+            OnAfterProcess(args);
+        }
 
 		#endregion
 
@@ -598,7 +614,10 @@ namespace HtmlToOpenXml
 			elements.Add(h);
 
 			if (imageInLink.Count > 0) CompleteCurrentParagraph(true);
-		}
+
+            AfterProcessEventArgs args = new AfterProcessEventArgs(h, en.Attributes, this.currentParagraph, en.CurrentTag);
+            OnAfterProcess(args);
+        }
 
 		#endregion
 
@@ -678,6 +697,9 @@ namespace HtmlToOpenXml
 
                 AddParagraph(currentTable);
                 tables.NewContext(currentTable);
+
+                AfterProcessEventArgs args = new AfterProcessEventArgs(currentTable, en.Attributes, this.currentParagraph, en.CurrentTag);
+                OnAfterProcess(args);
             }
             else
             {
@@ -700,7 +722,7 @@ namespace HtmlToOpenXml
 				tables.CloseContext();
 
 			CompleteCurrentParagraph();
-		}
+        }
 
 		#endregion
 
@@ -719,6 +741,9 @@ namespace HtmlToOpenXml
 			elements.Add(run);
 
 			ProcessHtmlElement<RunStyle>(en, new RunStyle() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.QuoteStyle, StyleValues.Character) });
+            AfterProcessEventArgs args = new AfterProcessEventArgs(run, en.Attributes, this.currentParagraph, en.CurrentTag);
+            OnAfterProcess(args);
+        
 		}
 
 		#endregion
@@ -945,7 +970,10 @@ namespace HtmlToOpenXml
 			}
 
 			tables.NewContext(currentTable);
-		}
+
+            AfterProcessEventArgs args = new AfterProcessEventArgs(currentTable, en.Attributes, this.currentParagraph, en.CurrentTag);
+            OnAfterProcess(args);
+        }
 
 		#endregion
 
@@ -997,7 +1025,10 @@ namespace HtmlToOpenXml
 				this.paragraphs.Insert(this.paragraphs.Count - 1, legend);
 			else
 				this.paragraphs.Add(legend);
-		}
+
+            AfterProcessEventArgs args = new AfterProcessEventArgs(legend, en.Attributes, this.currentParagraph, en.CurrentTag);
+            OnAfterProcess(args);
+        }
 
 		#endregion
 
@@ -1038,7 +1069,11 @@ namespace HtmlToOpenXml
 				htmlStyles.Runs.BeginTag(en.CurrentTag, runStyleAttributes.ToArray());
 
 			tables.CurrentTable.Append(row);
-			tables.CellPosition = new CellPosition(tables.CellPosition.Row + 1, 0);
+
+            AfterProcessEventArgs args = new AfterProcessEventArgs(row, en.Attributes, this.currentParagraph, en.CurrentTag);
+            OnAfterProcess(args);
+
+            tables.CellPosition = new CellPosition(tables.CellPosition.Row + 1, 0);
 		}
 
 		#endregion
@@ -1051,7 +1086,7 @@ namespace HtmlToOpenXml
 
 			TableCellProperties properties = new TableCellProperties();
             // in Html, table cell are vertically centered by default
-            properties.TableCellVerticalAlignment = new TableCellVerticalAlignment() { Val = TableVerticalAlignmentValues.Center };
+            properties.TableCellVerticalAlignment = new TableCellVerticalAlignment() { Val = TableVerticalAlignmentValues.Top };
 
 			List<OpenXmlElement> styleAttributes = new List<OpenXmlElement>();
 			List<OpenXmlElement> runStyleAttributes = new List<OpenXmlElement>();
@@ -1062,6 +1097,9 @@ namespace HtmlToOpenXml
             // The heightUnit used to retrieve a height value.
             Unit heightUnit = en.StyleAttributes.GetAsUnit("height");
             if (!heightUnit.IsValid) heightUnit = en.Attributes.GetAsUnit("height");
+
+            Unit verticalPosition = en.StyleAttributes.GetAsUnit("vertical-align");
+            if (!verticalPosition.IsValid) verticalPosition = en.Attributes.GetAsUnit("vertical-align");
 
             switch (unit.Type)
 			{
@@ -1175,6 +1213,9 @@ namespace HtmlToOpenXml
             }
 
             row.Append(cell);
+            
+            AfterProcessEventArgs args = new AfterProcessEventArgs(cell, en.Attributes, this.currentParagraph, en.CurrentTag);
+            OnAfterProcess(args);
 
             if (en.IsSelfClosedTag) // Force a call to ProcessClosingTableColumn
 				ProcessClosingTableColumn(en);
