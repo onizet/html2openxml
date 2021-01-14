@@ -329,21 +329,29 @@ namespace HtmlToOpenXml
                         addSpacing = true;
                 }
 
-
                 if (addSpacing)
                 {
                     currentParagraph.InsertInProperties(p => p.SpacingBetweenLines = new SpacingBetweenLines() { Before = "240" });
                 }
-			}
+            }
 
 			// if this paragraph has no children, it will be deleted in RemoveEmptyParagraphs()
 			// in order to kept the <hr>, we force an empty run
             currentParagraph.Append(new Run());
 
-            currentParagraph.InsertInProperties(prop => 
-				prop.ParagraphBorders = new ParagraphBorders {
-					TopBorder = new TopBorder() { Val = BorderValues.Single, Size = 4U }
-				});
+			// Get style from border (only top) or use Default style 
+			TopBorder hrBorderStyle = null;
+						
+			var border = en.StyleAttributes.GetAsBorder("border");
+			if (!border.IsEmpty && border.Top.IsValid)							
+				hrBorderStyle = new TopBorder { Val = border.Top.Style, Color = StringValue.FromString(border.Top.Color.ToHexString()), Size = (uint)border.Top.Width.Value };			
+			else
+				hrBorderStyle = new TopBorder() { Val = BorderValues.Single, Size = 4U };
+
+			currentParagraph.InsertInProperties(prop => 
+			prop.ParagraphBorders = new ParagraphBorders {
+				TopBorder = hrBorderStyle
+			});
 		}
 
 		#endregion
@@ -832,6 +840,23 @@ namespace HtmlToOpenXml
 					InsideVerticalBorder = new InsideVerticalBorder { Val = BorderValues.None }
 				};
 			}
+			else
+            {
+				var styleBorder = en.StyleAttributes.GetAsBorder("border");
+				if (!styleBorder.IsEmpty)
+				{
+					properties.TableBorders = new TableBorders();
+
+					if (styleBorder.Left.IsValid)
+						properties.TableBorders.LeftBorder = new LeftBorder { Val = styleBorder.Left.Style, Color = StringValue.FromString(styleBorder.Left.Color.ToHexString()), Size = (uint)styleBorder.Left.Width.ValueInDxa };
+					if (styleBorder.Right.IsValid)
+						properties.TableBorders.RightBorder = new RightBorder { Val = styleBorder.Right.Style, Color = StringValue.FromString(styleBorder.Right.Color.ToHexString()), Size = (uint)styleBorder.Right.Width.ValueInDxa };
+					if (styleBorder.Top.IsValid)
+						properties.TableBorders.TopBorder = new TopBorder { Val = styleBorder.Top.Style, Color = StringValue.FromString(styleBorder.Top.Color.ToHexString()), Size = (uint)styleBorder.Top.Width.ValueInDxa };
+					if (styleBorder.Bottom.IsValid)
+						properties.TableBorders.BottomBorder = new BottomBorder { Val = styleBorder.Bottom.Style, Color = StringValue.FromString(styleBorder.Bottom.Color.ToHexString()), Size = (uint)styleBorder.Bottom.Width.ValueInDxa };
+				}
+			}			
 
 			Unit unit = en.StyleAttributes.GetAsUnit("width");
 			if (!unit.IsValid) unit = en.Attributes.GetAsUnit("width");
@@ -1014,7 +1039,6 @@ namespace HtmlToOpenXml
 
 			htmlStyles.Tables.ProcessCommonAttributes(en, runStyleAttributes);
 
-
 			Unit unit = en.StyleAttributes.GetAsUnit("height");
 			if (!unit.IsValid) unit = en.Attributes.GetAsUnit("height");
 
@@ -1149,6 +1173,21 @@ namespace HtmlToOpenXml
 				}
 
 				properties.TableCellMargin = cellMargin;
+			}
+
+			var border = en.StyleAttributes.GetAsBorder("border");
+			if (!border.IsEmpty)
+			{
+				properties.TableCellBorders = new TableCellBorders();
+
+				if (border.Left.IsValid)
+					properties.TableCellBorders.LeftBorder = new LeftBorder { Val = border.Left.Style, Color = StringValue.FromString(border.Left.Color.ToHexString()), Size = (uint)border.Left.Width.ValueInDxa };
+				if (border.Right.IsValid)
+					properties.TableCellBorders.RightBorder = new RightBorder { Val = border.Right.Style, Color = StringValue.FromString(border.Right.Color.ToHexString()), Size = (uint)border.Right.Width.ValueInDxa };
+				if (border.Top.IsValid)
+					properties.TableCellBorders.TopBorder = new TopBorder { Val = border.Top.Style, Color = StringValue.FromString(border.Top.Color.ToHexString()), Size = (uint)border.Top.Width.ValueInDxa };
+				if (border.Bottom.IsValid)
+					properties.TableCellBorders.BottomBorder = new BottomBorder { Val = border.Bottom.Style, Color = StringValue.FromString(border.Bottom.Color.ToHexString()), Size = (uint)border.Bottom.Width.ValueInDxa };
 			}
 
 			htmlStyles.Tables.ProcessCommonAttributes(en, runStyleAttributes);
