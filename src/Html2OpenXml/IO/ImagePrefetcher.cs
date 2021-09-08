@@ -81,9 +81,9 @@ namespace HtmlToOpenXml.IO
                 if (response?.Content == null)
                     return null;
             }
-            catch (Exception)
+            catch (Exception exc)
             {
-                if (Logging.On) Logging.PrintVerbose(String.Format("Error fetching image from url: {0}", src));
+                if (Logging.On) Logging.PrintError(String.Format("Error fetching image from url: {0}", src), exc);
                 return null;
             }
 
