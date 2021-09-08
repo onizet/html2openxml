@@ -1,10 +1,10 @@
 ﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
- * 
+ *
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
  * All other rights reserved.
- * 
- * THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY 
+ *
+ * THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY
  * KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
@@ -74,9 +74,18 @@ namespace HtmlToOpenXml.IO
         private HtmlImageInfo DownloadRemoteImage(string src)
         {
             Uri imageUri = new Uri(src, UriKind.RelativeOrAbsolute);
-            var response = resourceLoader.FetchAsync(imageUri, CancellationToken.None).Result;
-            if (response?.Content == null)
+            Resource response;
+            try
+            {
+                response = resourceLoader.FetchAsync(imageUri, CancellationToken.None).Result;
+                if (response?.Content == null)
+                    return null;
+            }
+            catch (Exception)
+            {
+                if (Logging.On) Logging.PrintVerbose(String.Format("Error fetching image from url: {0}", src));
                 return null;
+            }
 
             HtmlImageInfo info = new HtmlImageInfo() { Source = src };
             ImagePartType type;
@@ -163,7 +172,7 @@ namespace HtmlToOpenXml.IO
         private static bool TryInspectMimeType(string contentType, out ImagePartType type)
         {
             // can be null when the protocol used doesn't allow response headers
-            if (contentType != null && 
+            if (contentType != null &&
                 knownContentType.TryGetValue(contentType, out type))
                 return true;
 
