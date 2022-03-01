@@ -104,6 +104,7 @@ namespace HtmlToOpenXml.IO
             try
             {
                 var response = await httpClient.GetAsync(requestUri, cancellationToken).ConfigureAwait(false);
+                if (response == null) return null;
                 resource.StatusCode = response.StatusCode;
 
                 if (response.IsSuccessStatusCode)

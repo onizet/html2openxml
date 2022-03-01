@@ -29,12 +29,14 @@ namespace HtmlToOpenXml
         private bool firstItem;
 		private Dictionary<String, Int32> knownAbsNumIds;
 		private Stack<KeyValuePair<Int32, int>> numInstances;
+        private Stack<string[]> listHtmlElementClasses;
 		private int headingNumberingId;
 
 		public NumberingListStyleCollection(MainDocumentPart mainPart)
 		{
 			this.mainPart = mainPart;
 			this.numInstances = new Stack<KeyValuePair<Int32, int>>();
+            listHtmlElementClasses = new Stack<string[]>();
 			InitNumberingIds();
 		}
 
@@ -251,6 +253,7 @@ namespace HtmlToOpenXml
 			bool orderedList = en.CurrentTag.Equals("<ol>", StringComparison.OrdinalIgnoreCase);
 
 			CreateList(type, orderedList);
+            listHtmlElementClasses.Push(en.Attributes.GetAsClass());
 		}
 
 		#endregion
@@ -259,11 +262,12 @@ namespace HtmlToOpenXml
 
 		public void EndList(bool popInstances = true)
 		{
+			levelDepth--;
 			if (levelDepth > 0 && popInstances)
 				numInstances.Pop();  // decrement for nested list
 
-			levelDepth--;
 			firstItem = true;
+            listHtmlElementClasses.Pop();
 		}
 
 		#endregion
@@ -491,6 +495,8 @@ namespace HtmlToOpenXml
 		{
 			get { return this.levelDepth; }
 		}
+
+        public string[] GetCurrentListClasses => listHtmlElementClasses.Peek();
 
 		/// <summary>
 		/// Gets the ID of the current list instance.
