@@ -1076,7 +1076,8 @@ namespace HtmlToOpenXml
 					break;
 			}
 
-			properties.AddChild(new TableCellSpacing() { Type = TableWidthUnitValues.Dxa, Width = "0" });
+			// Do not explicitly set the tablecell spacing in order to inherit table style (issue 107)
+			//properties.AddChild(new TableCellSpacing() { Type = TableWidthUnitValues.Dxa, Width = "0" });
 
 			TableRow row = new TableRow();
 			row.TableRowProperties = properties;
