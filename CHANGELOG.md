@@ -1,7 +1,13 @@
 # 3.0.0 (Next major release)
 
-- rely on AngleSharp for the parsing
+- rely on HtmlAgilityPack for the parsing
 - drop support for .NET 3.5
+
+# 2.3.0
+
+- better table border style
+- keep processing html even if downloading image generates an error
+- support for styling OL, UL and LI elements
 
 # 2.2.0
 

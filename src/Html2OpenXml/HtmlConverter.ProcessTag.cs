@@ -496,7 +496,7 @@ namespace HtmlToOpenXml
 			// Save the new paragraph reference to support nested numbering list.
 			Paragraph p = currentParagraph;
 			currentParagraph.InsertInProperties(prop => {
-				prop.ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.ListParagraphStyle, StyleValues.Paragraph) };
+				prop.ParagraphStyleId = new ParagraphStyleId() { Val = GetStyleIdForListItem(en) };
 				prop.Indentation = level < 2? null : new Indentation() { Left = (level * 780).ToString(CultureInfo.InvariantCulture) };
 				prop.NumberingProperties = new NumberingProperties {
 					NumberingLevelReference = new NumberingLevelReference() { Val = level - 1 },
@@ -514,7 +514,31 @@ namespace HtmlToOpenXml
 			this.elements.Clear();
 		}
 
-		#endregion
+        private string GetStyleIdForListItem(HtmlEnumerator en) 
+        { 
+            return GetStyleIdFromClasses(en.Attributes.GetAsClass()) 
+                   ?? GetStyleIdFromClasses(htmlStyles.NumberingList.GetCurrentListClasses) 
+                   ?? htmlStyles.DefaultStyles.ListParagraphStyle; 
+        }
+
+        private string GetStyleIdFromClasses(string[] classes)  
+        {  
+            if (classes != null) 
+            { 
+                foreach (string className in classes) 
+                { 
+                    string styleId = htmlStyles.GetStyle(className, StyleValues.Paragraph, ignoreCase: true); 
+                    if (styleId != null) 
+                    { 
+                        return styleId; 
+                    } 
+                } 
+            } 
+			 
+            return null; 
+        }
+
+        #endregion
 
 		#region ProcessLink
 
@@ -1052,7 +1076,8 @@ namespace HtmlToOpenXml
 					break;
 			}
 
-			properties.AddChild(new TableCellSpacing() { Type = TableWidthUnitValues.Dxa, Width = "0" });
+			// Do not explicitly set the tablecell spacing in order to inherit table style (issue 107)
+			//properties.AddChild(new TableCellSpacing() { Type = TableWidthUnitValues.Dxa, Width = "0" });
 
 			TableRow row = new TableRow();
 			row.TableRowProperties = properties;
