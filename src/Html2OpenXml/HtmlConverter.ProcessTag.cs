@@ -41,7 +41,7 @@ namespace HtmlToOpenXml
 
 			AlternateProcessHtmlChunks(en, en.ClosingCurrentTag);
 
-			if (elements.Count > 0 && elements[0] is Run)
+			if (_elements.Count > 0 && _elements[0] is Run)
 			{
 				string runStyle;
 				FootnoteEndnoteReferenceType reference;
@@ -49,19 +49,19 @@ namespace HtmlToOpenXml
 				if (this.AcronymPosition == AcronymPosition.PageEnd)
 				{
 					reference = new FootnoteReference() { Id = AddFootnoteReference(title) };
-					runStyle = htmlStyles.DefaultStyles.FootnoteReferenceStyle;
+					runStyle = _htmlStyles.DefaultStyles.FootnoteReferenceStyle;
 				}
 				else
 				{
 					reference = new EndnoteReference() { Id = AddEndnoteReference(title) };
-					runStyle = htmlStyles.DefaultStyles.EndnoteReferenceStyle;
+					runStyle = _htmlStyles.DefaultStyles.EndnoteReferenceStyle;
 				}
 
 				Run run;
-				elements.Add(
+				_elements.Add(
 					run = new Run(
 						new RunProperties {
-							RunStyle = new RunStyle() { Val = htmlStyles.GetStyle(runStyle, StyleValues.Character) }
+							RunStyle = new RunStyle() { Val = _htmlStyles.GetStyle(runStyle, StyleValues.Character) }
 						},
 						reference));
 			}
@@ -78,7 +78,7 @@ namespace HtmlToOpenXml
 			string tagName = en.CurrentTag;
 			string cite = en.Attributes["cite"];
 
-			htmlStyles.Paragraph.BeginTag(en.CurrentTag, new ParagraphStyleId() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.IntenseQuoteStyle) });
+			_htmlStyles.Paragraph.BeginTag(en.CurrentTag, new ParagraphStyleId() { Val = _htmlStyles.GetStyle(_htmlStyles.DefaultStyles.IntenseQuoteStyle) });
 
 			AlternateProcessHtmlChunks(en, en.ClosingCurrentTag);
 
@@ -90,25 +90,25 @@ namespace HtmlToOpenXml
 				if (this.AcronymPosition == AcronymPosition.PageEnd)
 				{
 					reference = new FootnoteReference() { Id = AddFootnoteReference(cite) };
-					runStyle = htmlStyles.DefaultStyles.FootnoteReferenceStyle;
+					runStyle = _htmlStyles.DefaultStyles.FootnoteReferenceStyle;
 				}
 				else
 				{
 					reference = new EndnoteReference() { Id = AddEndnoteReference(cite) };
-					runStyle = htmlStyles.DefaultStyles.EndnoteReferenceStyle;
+					runStyle = _htmlStyles.DefaultStyles.EndnoteReferenceStyle;
 				}
 
 				Run run;
-				elements.Add(
+				_elements.Add(
 					run = new Run(
 						new RunProperties {
-							RunStyle = new RunStyle() { Val = htmlStyles.GetStyle(runStyle, StyleValues.Character) }
+							RunStyle = new RunStyle() { Val = _htmlStyles.GetStyle(runStyle, StyleValues.Character) }
 						},
 						reference));
 			}
 
 			CompleteCurrentParagraph(true);
-			htmlStyles.Paragraph.EndTag(tagName);
+			_htmlStyles.Paragraph.EndTag(tagName);
 		}
 
 		#endregion
@@ -118,10 +118,10 @@ namespace HtmlToOpenXml
 		private void ProcessBody(HtmlEnumerator en)
 		{
 			List<OpenXmlElement> styleAttributes = new List<OpenXmlElement>();
-			htmlStyles.Paragraph.ProcessCommonAttributes(en, styleAttributes);
+			_htmlStyles.Paragraph.ProcessCommonAttributes(en, styleAttributes);
 
 			if (styleAttributes.Count > 0)
-				htmlStyles.Runs.BeginTag(en.CurrentTag, styleAttributes.ToArray());
+				_htmlStyles.Runs.BeginTag(en.CurrentTag, styleAttributes.ToArray());
 
 			// Unsupported W3C attribute but claimed by users. Specified at <body> level, the page
 			// orientation is applied on the whole document
@@ -130,10 +130,10 @@ namespace HtmlToOpenXml
 			{
 				PageOrientationValues orientation = Converter.ToPageOrientation(attr);
 
-                SectionProperties sectionProperties = mainPart.Document.Body.GetFirstChild<SectionProperties>();
+                SectionProperties sectionProperties = _mainPart.Document.Body.GetFirstChild<SectionProperties>();
                 if (sectionProperties == null || sectionProperties.GetFirstChild<PageSize>() == null)
                 {
-                    mainPart.Document.Body.Append(HtmlConverter.ChangePageOrientation(orientation));
+                    _mainPart.Document.Body.Append(HtmlConverter.ChangePageOrientation(orientation));
                 }
                 else
                 {
@@ -154,7 +154,7 @@ namespace HtmlToOpenXml
 
 		private void ProcessBr(HtmlEnumerator en)
 		{
-			elements.Add(new Run(new Break()));
+			_elements.Add(new Run(new Break()));
 		}
 
 		#endregion
@@ -163,7 +163,7 @@ namespace HtmlToOpenXml
 
 		private void ProcessCite(HtmlEnumerator en)
 		{
-			ProcessHtmlElement<RunStyle>(en, new RunStyle() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.QuoteStyle, StyleValues.Character) });
+			ProcessHtmlElement<RunStyle>(en, new RunStyle() { Val = _htmlStyles.GetStyle(_htmlStyles.DefaultStyles.QuoteStyle, StyleValues.Character) });
 		}
 
 		#endregion
@@ -173,7 +173,7 @@ namespace HtmlToOpenXml
 		private void ProcessDefinitionList(HtmlEnumerator en)
 		{
 			ProcessParagraph(en);
-			currentParagraph.InsertInProperties(prop => prop.SpacingBetweenLines = new SpacingBetweenLines() { After = "0" });
+			_currentParagraph.InsertInProperties(prop => prop.SpacingBetweenLines = new SpacingBetweenLines() { After = "0" });
 		}
 
 		#endregion
@@ -184,16 +184,16 @@ namespace HtmlToOpenXml
 		{
 			AlternateProcessHtmlChunks(en, "</dd>");
 
-			currentParagraph = htmlStyles.Paragraph.NewParagraph();
-			currentParagraph.Append(elements);
-			currentParagraph.InsertInProperties(prop => {
+			_currentParagraph = _htmlStyles.Paragraph.NewParagraph();
+			_currentParagraph.Append(_elements);
+			_currentParagraph.InsertInProperties(prop => {
 				prop.Indentation = new Indentation() { FirstLine = "708" };
 				prop.SpacingBetweenLines = new SpacingBetweenLines() { After = "0" };
 			});
 
 			// Restore the original elements list
-			AddParagraph(currentParagraph);
-			this.elements.Clear();
+			AddParagraph(_currentParagraph);
+			this._elements.Clear();
 		}
 
 		#endregion
@@ -211,13 +211,13 @@ namespace HtmlToOpenXml
 				CompleteCurrentParagraph(newParagraph);
 
 				if (runStyleAttributes.Count > 0)
-					htmlStyles.Runs.BeginTag(en.CurrentTag, runStyleAttributes);
+					_htmlStyles.Runs.BeginTag(en.CurrentTag, runStyleAttributes);
 
 				// Any changes that requires a new paragraph?
 				if (newParagraph)
 				{
 					// Insert before the break, complete this paragraph and start a new one
-					this.paragraphs.Insert(this.paragraphs.Count - 1, currentParagraph);
+					this._paragraphs.Insert(this._paragraphs.Count - 1, _currentParagraph);
 					AlternateProcessHtmlChunks(en, en.ClosingCurrentTag);
 					CompleteCurrentParagraph();
 				}
@@ -255,7 +255,7 @@ namespace HtmlToOpenXml
 			}
 
 			if (styleAttributes.Count > 0)
-				htmlStyles.Runs.MergeTag(en.CurrentTag, styleAttributes);
+				_htmlStyles.Runs.MergeTag(en.CurrentTag, styleAttributes);
 		}
 
 		#endregion
@@ -268,17 +268,17 @@ namespace HtmlToOpenXml
 
 			// support also style attributes for heading (in case of css override)
 			List<OpenXmlElement> styleAttributes = new List<OpenXmlElement>();
-			htmlStyles.Paragraph.ProcessCommonAttributes(en, styleAttributes);
+			_htmlStyles.Paragraph.ProcessCommonAttributes(en, styleAttributes);
 
 			AlternateProcessHtmlChunks(en, "</h" + level + ">");
 
-			Paragraph p = new Paragraph(elements);
+			Paragraph p = new Paragraph(_elements);
 			p.InsertInProperties(prop =>
-				prop.ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.HeadingStyle + level, StyleValues.Paragraph) });
+				prop.ParagraphStyleId = new ParagraphStyleId() { Val = _htmlStyles.GetStyle(_htmlStyles.DefaultStyles.HeadingStyle + level, StyleValues.Paragraph) });
 
 			// Check if the line starts with a number format (1., 1.1., 1.1.1.)
 			// If it does, make sure we make the heading a numbered item
-			OpenXmlElement firstElement = elements.First();
+			OpenXmlElement firstElement = _elements.First();
 			Match regexMatch = Regex.Match(firstElement.InnerText, @"(?m)^(\d+.)*\s");
 
 			// Make sure we only grab the heading if it starts with a number
@@ -289,15 +289,15 @@ namespace HtmlToOpenXml
 				// Strip numbers from text
 				firstElement.InnerXml = firstElement.InnerXml.Replace(firstElement.InnerText, firstElement.InnerText.Substring(indentLevel * 2 + 1)); // number, dot and whitespace
 
-				htmlStyles.NumberingList.ApplyNumberingToHeadingParagraph(p, indentLevel);
+				_htmlStyles.NumberingList.ApplyNumberingToHeadingParagraph(p, indentLevel);
 			}
 
-			htmlStyles.Paragraph.ApplyTags(p);
-			htmlStyles.Paragraph.EndTag("<h" + level + ">");
+			_htmlStyles.Paragraph.ApplyTags(p);
+			_htmlStyles.Paragraph.EndTag("<h" + level + ">");
 			
-			this.elements.Clear();
+			this._elements.Clear();
 			AddParagraph(p);
-			AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
+			AddParagraph(_currentParagraph = _htmlStyles.Paragraph.NewParagraph());
 		}
 
 		#endregion
@@ -312,9 +312,9 @@ namespace HtmlToOpenXml
 			// If the previous paragraph contains a bottom border or is a Table, we add some spacing between the <hr>
 			// and the previous element or Word will display only the last border.
 			// (see Remarks: http://msdn.microsoft.com/en-us/library/documentformat.openxml.wordprocessing.bottomborder%28office.14%29.aspx)
-            if (paragraphs.Count >= 2)
+            if (_paragraphs.Count >= 2)
             {
-                OpenXmlCompositeElement previousElement = paragraphs[paragraphs.Count - 2];
+                OpenXmlCompositeElement previousElement = _paragraphs[_paragraphs.Count - 2];
                 bool addSpacing = false;
                 ParagraphProperties prop = previousElement.GetFirstChild<ParagraphProperties>();
                 if (prop != null)
@@ -331,13 +331,13 @@ namespace HtmlToOpenXml
 
                 if (addSpacing)
                 {
-                    currentParagraph.InsertInProperties(p => p.SpacingBetweenLines = new SpacingBetweenLines() { Before = "240" });
+                    _currentParagraph.InsertInProperties(p => p.SpacingBetweenLines = new SpacingBetweenLines() { Before = "240" });
                 }
             }
 
 			// if this paragraph has no children, it will be deleted in RemoveEmptyParagraphs()
 			// in order to kept the <hr>, we force an empty run
-            currentParagraph.Append(new Run());
+            _currentParagraph.Append(new Run());
 
 			// Get style from border (only top) or use Default style 
 			TopBorder hrBorderStyle = null;
@@ -348,7 +348,7 @@ namespace HtmlToOpenXml
 			else
 				hrBorderStyle = new TopBorder() { Val = BorderValues.Single, Size = 4U };
 
-			currentParagraph.InsertInProperties(prop => 
+			_currentParagraph.InsertInProperties(prop => 
 			prop.ParagraphBorders = new ParagraphBorders {
 				TopBorder = hrBorderStyle
 			});
@@ -361,10 +361,10 @@ namespace HtmlToOpenXml
 		private void ProcessHtml(HtmlEnumerator en)
 		{
 			List<OpenXmlElement> styleAttributes = new List<OpenXmlElement>();
-			htmlStyles.Paragraph.ProcessCommonAttributes(en, styleAttributes);
+			_htmlStyles.Paragraph.ProcessCommonAttributes(en, styleAttributes);
 
 			if (styleAttributes.Count > 0)
-				htmlStyles.Runs.BeginTag(en.CurrentTag, styleAttributes.ToArray());
+				_htmlStyles.Runs.BeginTag(en.CurrentTag, styleAttributes.ToArray());
 		}
 
 		#endregion
@@ -383,7 +383,7 @@ namespace HtmlToOpenXml
 		{
 			List<OpenXmlElement> styleAttributes = new List<OpenXmlElement>() { style };
 			ProcessContainerAttributes(en, styleAttributes);
-			htmlStyles.Runs.MergeTag(en.CurrentTag, styleAttributes);
+			_htmlStyles.Runs.MergeTag(en.CurrentTag, styleAttributes);
 		}
 
 		#endregion
@@ -394,9 +394,9 @@ namespace HtmlToOpenXml
 		{
 			this.CompleteCurrentParagraph(true);
 
-			currentParagraph.Append(
+			_currentParagraph.Append(
 					new ParagraphProperties {
-						ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.CaptionStyle, StyleValues.Paragraph) },
+						ParagraphStyleId = new ParagraphStyleId() { Val = _htmlStyles.GetStyle(_htmlStyles.DefaultStyles.CaptionStyle, StyleValues.Paragraph) },
 						KeepNext = new KeepNext()
 					},
 					new Run(
@@ -410,9 +410,9 @@ namespace HtmlToOpenXml
 
 			ProcessHtmlChunks(en, "</figcaption>");
 
-			if (elements.Count > 0) // any caption?
+			if (_elements.Count > 0) // any caption?
 			{
-				Text t = (elements[0] as Run).GetFirstChild<Text>();
+				Text t = (_elements[0] as Run).GetFirstChild<Text>();
 				t.Text = " " + t.InnerText; // append a space after the numero of the picture
 			}
 
@@ -477,7 +477,7 @@ namespace HtmlToOpenXml
 			{
 				Run run = new Run(drawing);
 				if (border.Val != BorderValues.None) run.InsertInProperties(prop => prop.Border = border);
-				elements.Add(run);
+				_elements.Add(run);
 			}
 		}
 
@@ -488,14 +488,14 @@ namespace HtmlToOpenXml
 		private void ProcessLi(HtmlEnumerator en)
 		{
 			CompleteCurrentParagraph(false);
-			currentParagraph = htmlStyles.Paragraph.NewParagraph();
+			_currentParagraph = _htmlStyles.Paragraph.NewParagraph();
 
-			int numberingId = htmlStyles.NumberingList.ProcessItem(en);
-			int level = htmlStyles.NumberingList.LevelIndex;
+			int numberingId = _htmlStyles.NumberingList.ProcessItem(en);
+			int level = _htmlStyles.NumberingList.LevelIndex;
 
 			// Save the new paragraph reference to support nested numbering list.
-			Paragraph p = currentParagraph;
-			currentParagraph.InsertInProperties(prop => {
+			Paragraph p = _currentParagraph;
+			_currentParagraph.InsertInProperties(prop => {
 				prop.ParagraphStyleId = new ParagraphStyleId() { Val = GetStyleIdForListItem(en) };
 				prop.Indentation = level < 2? null : new Indentation() { Left = (level * 780).ToString(CultureInfo.InvariantCulture) };
 				prop.NumberingProperties = new NumberingProperties {
@@ -505,20 +505,20 @@ namespace HtmlToOpenXml
 			});
 
 			// Restore the original elements list
-			AddParagraph(currentParagraph);
+			AddParagraph(_currentParagraph);
 
 			// Continue to process the html until we found </li>
-			HtmlStyles.Paragraph.ApplyTags(currentParagraph);
+			HtmlStyles.Paragraph.ApplyTags(_currentParagraph);
 			AlternateProcessHtmlChunks(en, "</li>");
-			p.Append(elements);
-			this.elements.Clear();
+			p.Append(_elements);
+			this._elements.Clear();
 		}
 
         private string GetStyleIdForListItem(HtmlEnumerator en) 
         { 
             return GetStyleIdFromClasses(en.Attributes.GetAsClass()) 
-                   ?? GetStyleIdFromClasses(htmlStyles.NumberingList.GetCurrentListClasses) 
-                   ?? htmlStyles.DefaultStyles.ListParagraphStyle; 
+                   ?? GetStyleIdFromClasses(_htmlStyles.NumberingList.GetCurrentListClasses) 
+                   ?? _htmlStyles.DefaultStyles.ListParagraphStyle; 
         }
 
         private string GetStyleIdFromClasses(string[] classes)  
@@ -527,7 +527,7 @@ namespace HtmlToOpenXml
             { 
                 foreach (string className in classes) 
                 { 
-                    string styleId = htmlStyles.GetStyle(className, StyleValues.Paragraph, ignoreCase: true); 
+                    string styleId = _htmlStyles.GetStyle(className, StyleValues.Paragraph, ignoreCase: true); 
                     if (styleId != null) 
                     { 
                         return styleId; 
@@ -568,7 +568,7 @@ namespace HtmlToOpenXml
 				// ensure the links does not start with javascript:
 				else if (Uri.TryCreate(att, UriKind.Absolute, out uri) && uri.Scheme != "javascript")
 				{
-					HyperlinkRelationship extLink = mainPart.AddHyperlinkRelationship(uri, true);
+					HyperlinkRelationship extLink = _mainPart.AddHyperlinkRelationship(uri, true);
 
 					h = new Hyperlink(
 						) { History = true, Id = extLink.Id };
@@ -587,12 +587,12 @@ namespace HtmlToOpenXml
 
 			AlternateProcessHtmlChunks(en, "</a>");
 
-			if (elements.Count == 0) return;
+			if (_elements.Count == 0) return;
 
 			// Let's see whether the link tag include an image inside its body.
 			// If so, the Hyperlink OpenXmlElement is lost and we'll keep only the images
 			// and applied a HyperlinkOnClick attribute.
-			List<OpenXmlElement> imageInLink = elements.FindAll(e => { return e.HasChild<Drawing>(); });
+			List<OpenXmlElement> imageInLink = _elements.FindAll(e => { return e.HasChild<Drawing>(); });
 			if (imageInLink.Count != 0)
 			{
 				for (int i = 0; i < imageInLink.Count; i++)
@@ -610,7 +610,7 @@ namespace HtmlToOpenXml
 			}
 
 			// Append the processed elements and put them to the Run of the Hyperlink
-			h.Append(elements);
+			h.Append(_elements);
 
 			// can't use GetFirstChild<Run> or we may find the one containing the image
 			foreach (var el in h.ChildElements)
@@ -619,15 +619,15 @@ namespace HtmlToOpenXml
 				if (run != null && !run.HasChild<Drawing>())
 				{
 					run.InsertInProperties(prop =>
-						prop.RunStyle = new RunStyle() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.HyperlinkStyle, StyleValues.Character) });
+						prop.RunStyle = new RunStyle() { Val = _htmlStyles.GetStyle(_htmlStyles.DefaultStyles.HyperlinkStyle, StyleValues.Character) });
 					break;
 				}
 			}
 
-			this.elements.Clear();
+			this._elements.Clear();
 
 			// Append the hyperlink
-			elements.Add(h);
+			_elements.Add(h);
 
 			if (imageInLink.Count > 0) CompleteCurrentParagraph(true);
 		}
@@ -638,7 +638,7 @@ namespace HtmlToOpenXml
 
 		private void ProcessNumberingList(HtmlEnumerator en)
 		{
-			htmlStyles.NumberingList.BeginList(en);
+			_htmlStyles.NumberingList.BeginList(en);
 		}
 
 		#endregion
@@ -658,7 +658,7 @@ namespace HtmlToOpenXml
 				JustificationValues? align = Converter.ToParagraphAlign(attrValue);
 				if (align.HasValue)
 				{
-					currentParagraph.InsertInProperties(prop => prop.Justification = new Justification { Val = align });
+					_currentParagraph.InsertInProperties(prop => prop.Justification = new Justification { Val = align });
 				}
 			}
 
@@ -666,7 +666,7 @@ namespace HtmlToOpenXml
 			bool newParagraph = ProcessContainerAttributes(en, styleAttributes);
 
 			if (styleAttributes.Count > 0)
-				htmlStyles.Runs.BeginTag(en.CurrentTag, styleAttributes.ToArray());
+				_htmlStyles.Runs.BeginTag(en.CurrentTag, styleAttributes.ToArray());
 
 			if (newParagraph)
 			{
@@ -682,14 +682,14 @@ namespace HtmlToOpenXml
 		private void ProcessPre(HtmlEnumerator en)
 		{
 			CompleteCurrentParagraph();
-			currentParagraph = htmlStyles.Paragraph.NewParagraph();
+			_currentParagraph = _htmlStyles.Paragraph.NewParagraph();
 
 			// Oftenly, <pre> tag are used to renders some code examples. They look better inside a table
             if (this.RenderPreAsTable)
             {
                 Table currentTable = new Table(
                     new TableProperties (
-                        new TableStyle() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.PreTableStyle, StyleValues.Table) },
+                        new TableStyle() { Val = _htmlStyles.GetStyle(_htmlStyles.DefaultStyles.PreTableStyle, StyleValues.Table) },
                         new TableWidth() { Type = TableWidthUnitValues.Pct, Width = "5000" } // 100% * 50
 					),
                     new TableGrid(
@@ -705,15 +705,15 @@ namespace HtmlToOpenXml
                                    new BottomBorder() { Val = BorderValues.Single },
                                    new RightBorder() { Val = BorderValues.Single })
                             },
-                            currentParagraph))
+                            _currentParagraph))
                 );
 
                 AddParagraph(currentTable);
-                tables.NewContext(currentTable);
+                _tables.NewContext(currentTable);
             }
             else
             {
-                AddParagraph(currentParagraph);
+                AddParagraph(_currentParagraph);
             }
 
 			// Process the entire <pre> tag and append it to the document
@@ -721,15 +721,15 @@ namespace HtmlToOpenXml
 			ProcessContainerAttributes(en, styleAttributes);
 
 			if (styleAttributes.Count > 0)
-				htmlStyles.Runs.BeginTag(en.CurrentTag, styleAttributes.ToArray());
+				_htmlStyles.Runs.BeginTag(en.CurrentTag, styleAttributes.ToArray());
 
 			AlternateProcessHtmlChunks(en, "</pre>");
 
 			if (styleAttributes.Count > 0)
-				htmlStyles.Runs.EndTag(en.CurrentTag);
+				_htmlStyles.Runs.EndTag(en.CurrentTag);
 
 			if (RenderPreAsTable)
-				tables.CloseContext();
+				_tables.CloseContext();
 
 			CompleteCurrentParagraph();
 		}
@@ -747,10 +747,10 @@ namespace HtmlToOpenXml
 				new Text(" " + HtmlStyles.QuoteCharacters.Prefix) { Space = SpaceProcessingModeValues.Preserve }
 			);
 
-			htmlStyles.Runs.ApplyTags(run);
-			elements.Add(run);
+			_htmlStyles.Runs.ApplyTags(run);
+			_elements.Add(run);
 
-			ProcessHtmlElement<RunStyle>(en, new RunStyle() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.QuoteStyle, StyleValues.Character) });
+			ProcessHtmlElement<RunStyle>(en, new RunStyle() { Val = _htmlStyles.GetStyle(_htmlStyles.DefaultStyles.QuoteStyle, StyleValues.Character) });
 		}
 
 		#endregion
@@ -767,7 +767,7 @@ namespace HtmlToOpenXml
 			bool newParagraph = ProcessContainerAttributes(en, styleAttributes);
 
 			if (styleAttributes.Count > 0)
-				htmlStyles.Runs.MergeTag(en.CurrentTag, styleAttributes);
+				_htmlStyles.Runs.MergeTag(en.CurrentTag, styleAttributes);
 
 			if (newParagraph)
 			{
@@ -810,14 +810,14 @@ namespace HtmlToOpenXml
 		private void ProcessTable(HtmlEnumerator en)
 		{
 			TableProperties properties = new TableProperties(
-				new TableStyle() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.TableStyle, StyleValues.Table) }
+				new TableStyle() { Val = _htmlStyles.GetStyle(_htmlStyles.DefaultStyles.TableStyle, StyleValues.Table) }
 			);
 			Table currentTable = new Table(properties);
 
 			string classValue = en.Attributes["class"];
 			if (classValue != null)
 			{
-				classValue = htmlStyles.GetStyle(classValue, StyleValues.Table, ignoreCase: true);
+				classValue = _htmlStyles.GetStyle(classValue, StyleValues.Table, ignoreCase: true);
 				if (classValue != null)
 					properties.TableStyle.Val = classValue;
 			}
@@ -829,17 +829,17 @@ namespace HtmlToOpenXml
 				if (classValue != null)
 				{
 					// check whether the style in use have borders
-                    String styleId = this.htmlStyles.GetStyle(classValue, StyleValues.Table, true);
+                    String styleId = this._htmlStyles.GetStyle(classValue, StyleValues.Table, true);
 					if (styleId != null)
                     {
-                        var s = mainPart.StyleDefinitionsPart.Styles.Elements<Style>().First(e => e.StyleId == styleId);
+                        var s = _mainPart.StyleDefinitionsPart.Styles.Elements<Style>().First(e => e.StyleId == styleId);
                         if (s.StyleTableProperties.TableBorders != null) handleBorders = false;
                     }
 				}
 
 				// If the border has been specified, we display the Table Grid style which display
 				// its grid lines. Otherwise the default table style hides the grid lines.
-				if (handleBorders && properties.TableStyle.Val != htmlStyles.DefaultStyles.TableStyle)
+				if (handleBorders && properties.TableStyle.Val != _htmlStyles.DefaultStyles.TableStyle)
 				{
 					uint borderSize = border.Value > 1? (uint) new Unit(UnitMetric.Pixel, border.Value).ValueInDxa : 1;
 					properties.TableBorders = new TableBorders() {
@@ -968,32 +968,32 @@ namespace HtmlToOpenXml
             }
 
 			List<OpenXmlElement> runStyleAttributes = new List<OpenXmlElement>();
-			htmlStyles.Tables.ProcessCommonAttributes(en, runStyleAttributes);
+			_htmlStyles.Tables.ProcessCommonAttributes(en, runStyleAttributes);
 			if (runStyleAttributes.Count > 0)
-				htmlStyles.Runs.BeginTag(en.CurrentTag, runStyleAttributes.ToArray());
+				_htmlStyles.Runs.BeginTag(en.CurrentTag, runStyleAttributes.ToArray());
 
 
 			// are we currently inside another table?
-			if (tables.HasContext)
+			if (_tables.HasContext)
 			{
 				// Okay we will insert nested table but beware the paragraph inside TableCell should contains at least 1 run.
 
-				TableCell currentCell = tables.CurrentTable.GetLastChild<TableRow>().GetLastChild<TableCell>();
+				TableCell currentCell = _tables.CurrentTable.GetLastChild<TableRow>().GetLastChild<TableCell>();
 				// don't add an empty paragraph if not required (bug #13608 by zanjo)
-				if (elements.Count == 0) currentCell.Append(currentTable);
+				if (_elements.Count == 0) currentCell.Append(currentTable);
 				else
 				{
-					currentCell.Append(new Paragraph(elements), currentTable);
-					elements.Clear();
+					currentCell.Append(new Paragraph(_elements), currentTable);
+					_elements.Clear();
 				}
 			}
 			else
 			{
 				CompleteCurrentParagraph();
-				this.paragraphs.Add(currentTable);
+				this._paragraphs.Add(currentTable);
 			}
 
-			tables.NewContext(currentTable);
+			_tables.NewContext(currentTable);
 		}
 
 		#endregion
@@ -1002,7 +1002,7 @@ namespace HtmlToOpenXml
 
 		private void ProcessTableCaption(HtmlEnumerator en)
 		{
-			if (!tables.HasContext) return;
+			if (!_tables.HasContext) return;
 
 			string att = en.StyleAttributes["text-align"];
 			if (att == null) att = en.Attributes["align"];
@@ -1011,7 +1011,7 @@ namespace HtmlToOpenXml
 
 			var legend = new Paragraph(
 					new ParagraphProperties {
-						ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.CaptionStyle, StyleValues.Paragraph) }
+						ParagraphStyleId = new ParagraphStyleId() { Val = _htmlStyles.GetStyle(_htmlStyles.DefaultStyles.CaptionStyle, StyleValues.Paragraph) }
 					},
 					new Run(
 						new FieldChar() { FieldCharType = FieldCharValues.Begin }),
@@ -1020,8 +1020,8 @@ namespace HtmlToOpenXml
 					new Run(
 						new FieldChar() { FieldCharType = FieldCharValues.End })
 				);
-			legend.Append(elements);
-			elements.Clear();
+			legend.Append(_elements);
+			_elements.Clear();
 
 			if (att != null)
 			{
@@ -1033,7 +1033,7 @@ namespace HtmlToOpenXml
 			{
 				// If no particular alignement has been specified for the legend, we will align the legend
 				// relative to the owning table
-				TableProperties props = tables.CurrentTable.GetFirstChild<TableProperties>();
+				TableProperties props = _tables.CurrentTable.GetFirstChild<TableProperties>();
 				if (props != null)
 				{
 					TableJustification justif = props.GetFirstChild<TableJustification>();
@@ -1043,9 +1043,9 @@ namespace HtmlToOpenXml
 			}
 
 			if (this.TableCaptionPosition == CaptionPositionValues.Above)
-				this.paragraphs.Insert(this.paragraphs.Count - 1, legend);
+				this._paragraphs.Insert(this._paragraphs.Count - 1, legend);
 			else
-				this.paragraphs.Add(legend);
+				this._paragraphs.Add(legend);
 		}
 
 		#endregion
@@ -1056,12 +1056,12 @@ namespace HtmlToOpenXml
 		{
 			// in case the html is bad-formed and use <tr> outside a <table> tag, we will ensure
 			// a table context exists.
-			if (!tables.HasContext) return;
+			if (!_tables.HasContext) return;
 
 			TableRowProperties properties = new TableRowProperties();
 			List<OpenXmlElement> runStyleAttributes = new List<OpenXmlElement>();
 
-			htmlStyles.Tables.ProcessCommonAttributes(en, runStyleAttributes);
+			_htmlStyles.Tables.ProcessCommonAttributes(en, runStyleAttributes);
 
 			Unit unit = en.StyleAttributes.GetAsUnit("height");
 			if (!unit.IsValid) unit = en.Attributes.GetAsUnit("height");
@@ -1082,12 +1082,12 @@ namespace HtmlToOpenXml
 			TableRow row = new TableRow();
 			row.TableRowProperties = properties;
 
-			htmlStyles.Runs.ProcessCommonAttributes(en, runStyleAttributes);
+			_htmlStyles.Runs.ProcessCommonAttributes(en, runStyleAttributes);
 			if (runStyleAttributes.Count > 0)
-				htmlStyles.Runs.BeginTag(en.CurrentTag, runStyleAttributes.ToArray());
+				_htmlStyles.Runs.BeginTag(en.CurrentTag, runStyleAttributes.ToArray());
 
-			tables.CurrentTable.Append(row);
-			tables.CellPosition = new CellPosition(tables.CellPosition.Row + 1, 0);
+			_tables.CurrentTable.Append(row);
+			_tables.CellPosition = new CellPosition(_tables.CellPosition.Row + 1, 0);
 		}
 
 		#endregion
@@ -1096,7 +1096,7 @@ namespace HtmlToOpenXml
 
 		private void ProcessTableColumn(HtmlEnumerator en)
 		{
-			if (!tables.HasContext) return;
+			if (!_tables.HasContext) return;
 
 			TableCellProperties properties = new TableCellProperties();
             // in Html, table cell are vertically centered by default
@@ -1138,14 +1138,14 @@ namespace HtmlToOpenXml
 			{
 				properties.VerticalMerge = new VerticalMerge() { Val = MergedCellValues.Restart };
 
-				var p = tables.CellPosition;
+				var p = _tables.CellPosition;
                 int shift = 0;
                 // if there is already a running rowSpan on a left-sided column, we have to shift this position
-                foreach (var rs in tables.RowSpan)
+                foreach (var rs in _tables.RowSpan)
                     if (rs.CellOrigin.Row < p.Row && rs.CellOrigin.Column <= p.Column + shift) shift++;
 
                 p.Offset(0, shift);
-                tables.RowSpan.Add(new HtmlTableSpan(p) {
+                _tables.RowSpan.Add(new HtmlTableSpan(p) {
                     RowSpan = rowspan.Value - 1,
                     ColSpan = colspan.HasValue && rowspan.Value > 1 ? colspan.Value : 0
                 });
@@ -1160,12 +1160,12 @@ namespace HtmlToOpenXml
 					case "tb-lr":
 						properties.TextDirection = new TextDirection() { Val = TextDirectionValues.BottomToTopLeftToRight };
 						properties.TableCellVerticalAlignment = new TableCellVerticalAlignment() { Val = TableVerticalAlignmentValues.Center };
-						htmlStyles.Tables.BeginTagForParagraph(en.CurrentTag, new Justification() { Val = JustificationValues.Center });
+						_htmlStyles.Tables.BeginTagForParagraph(en.CurrentTag, new Justification() { Val = JustificationValues.Center });
 						break;
 					case "tb-rl":
 						properties.TextDirection = new TextDirection() { Val = TextDirectionValues.TopToBottomRightToLeft };
 						properties.TableCellVerticalAlignment = new TableCellVerticalAlignment() { Val = TableVerticalAlignmentValues.Center };
-						htmlStyles.Tables.BeginTagForParagraph(en.CurrentTag, new Justification() { Val = JustificationValues.Center });
+						_htmlStyles.Tables.BeginTagForParagraph(en.CurrentTag, new Justification() { Val = JustificationValues.Center });
 						break;
 				}
 			}
@@ -1215,17 +1215,17 @@ namespace HtmlToOpenXml
 					properties.TableCellBorders.BottomBorder = new BottomBorder { Val = border.Bottom.Style, Color = StringValue.FromString(border.Bottom.Color.ToHexString()), Size = (uint)border.Bottom.Width.ValueInDxa };
 			}
 
-			htmlStyles.Tables.ProcessCommonAttributes(en, runStyleAttributes);
+			_htmlStyles.Tables.ProcessCommonAttributes(en, runStyleAttributes);
 			if (styleAttributes.Count > 0)
-				htmlStyles.Tables.BeginTag(en.CurrentTag, styleAttributes);
+				_htmlStyles.Tables.BeginTag(en.CurrentTag, styleAttributes);
 			if (runStyleAttributes.Count > 0)
-				htmlStyles.Runs.BeginTag(en.CurrentTag, runStyleAttributes.ToArray());
+				_htmlStyles.Runs.BeginTag(en.CurrentTag, runStyleAttributes.ToArray());
 
 			TableCell cell = new TableCell();
 			if (properties.HasChildren) cell.TableCellProperties = properties;
                   
             // The heightUnit value used to append a height to the TableRowHeight.
-            var row = tables.CurrentTable.GetLastChild<TableRow>();
+            var row = _tables.CurrentTable.GetLastChild<TableRow>();
 
             switch (heightUnit.Type)
             {
@@ -1245,7 +1245,7 @@ namespace HtmlToOpenXml
 			else
 			{
 				// we create a new currentParagraph to add new runs inside the TableCell
-				cell.Append(currentParagraph = new Paragraph());
+				cell.Append(_currentParagraph = new Paragraph());
 			}
 		}
 
@@ -1257,10 +1257,10 @@ namespace HtmlToOpenXml
 		{
 			List<OpenXmlElement> styleAttributes = new List<OpenXmlElement>();
 
-			htmlStyles.Tables.ProcessCommonAttributes(en, styleAttributes);
+			_htmlStyles.Tables.ProcessCommonAttributes(en, styleAttributes);
 
 			if (styleAttributes.Count > 0)
-				htmlStyles.Tables.BeginTag(en.CurrentTag, styleAttributes.ToArray());
+				_htmlStyles.Tables.BeginTag(en.CurrentTag, styleAttributes.ToArray());
 		}
 
 		#endregion
@@ -1299,7 +1299,7 @@ namespace HtmlToOpenXml
 		private void ProcessClosingBlockQuote(HtmlEnumerator en)
 		{
 			CompleteCurrentParagraph(true);
-			htmlStyles.Paragraph.EndTag("<blockquote>");
+			_htmlStyles.Paragraph.EndTag("<blockquote>");
 		}
 
 		#endregion
@@ -1320,8 +1320,8 @@ namespace HtmlToOpenXml
 		private void ProcessClosingTag(HtmlEnumerator en)
 		{
 			string openingTag = en.CurrentTag.Replace("/", "");
-			htmlStyles.Runs.EndTag(openingTag);
-			htmlStyles.Paragraph.EndTag(openingTag);
+			_htmlStyles.Runs.EndTag(openingTag);
+			_htmlStyles.Paragraph.EndTag(openingTag);
 		}
 
 		#endregion
@@ -1330,12 +1330,12 @@ namespace HtmlToOpenXml
 
 		private void ProcessClosingNumberingList(HtmlEnumerator en)
 		{
-			htmlStyles.NumberingList.EndList();
+			_htmlStyles.NumberingList.EndList();
 
 			// If we are no more inside a list, we move to another paragraph (as we created
 			// one for containing all the <li>. This will ensure the next run will not be added to the <li>.
-			if (htmlStyles.NumberingList.LevelIndex == 0)
-				AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
+			if (_htmlStyles.NumberingList.LevelIndex == 0)
+				AddParagraph(_currentParagraph = _htmlStyles.Paragraph.NewParagraph());
 		}
 
 		#endregion
@@ -1347,8 +1347,8 @@ namespace HtmlToOpenXml
 			CompleteCurrentParagraph(true);
 
 			string tag = en.CurrentTag.Replace("/", "");
-			htmlStyles.Runs.EndTag(tag);
-			htmlStyles.Paragraph.EndTag(tag);
+			_htmlStyles.Runs.EndTag(tag);
+			_htmlStyles.Paragraph.EndTag(tag);
 		}
 
 		#endregion
@@ -1360,10 +1360,10 @@ namespace HtmlToOpenXml
 			Run run = new Run(
 				new Text(HtmlStyles.QuoteCharacters.Suffix) { Space = SpaceProcessingModeValues.Preserve }
 			);
-			htmlStyles.Runs.ApplyTags(run);
-			elements.Add(run);
+			_htmlStyles.Runs.ApplyTags(run);
+			_elements.Add(run);
 
-			htmlStyles.Runs.EndTag("<q>");
+			_htmlStyles.Runs.EndTag("<q>");
 		}
 
 		#endregion
@@ -1372,10 +1372,10 @@ namespace HtmlToOpenXml
 
 		private void ProcessClosingTable(HtmlEnumerator en)
 		{
-			htmlStyles.Tables.EndTag("<table>");
-			htmlStyles.Runs.EndTag("<table>");
+			_htmlStyles.Tables.EndTag("<table>");
+			_htmlStyles.Runs.EndTag("<table>");
 
-			TableRow row = tables.CurrentTable.GetFirstChild<TableRow>();
+			TableRow row = _tables.CurrentTable.GetFirstChild<TableRow>();
 			// Is this a misformed or empty table?
 			if (row != null)
 			{
@@ -1390,13 +1390,13 @@ namespace HtmlToOpenXml
 					}
 				}
 
-				tables.CurrentTable.InsertAt<TableGrid>(grid, 1);
+				_tables.CurrentTable.InsertAt<TableGrid>(grid, 1);
 			}
 
-			tables.CloseContext();
+			_tables.CloseContext();
 
-			if (!tables.HasContext)
-				AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
+			if (!_tables.HasContext)
+				AddParagraph(_currentParagraph = _htmlStyles.Paragraph.NewParagraph());
 		}
 
 		#endregion
@@ -1407,7 +1407,7 @@ namespace HtmlToOpenXml
 		{
 			string closingTag = en.CurrentTag.Replace("/", "");
 
-			htmlStyles.Tables.EndTag(closingTag);
+			_htmlStyles.Tables.EndTag(closingTag);
 		}
 
 		#endregion
@@ -1416,8 +1416,8 @@ namespace HtmlToOpenXml
 
 		private void ProcessClosingTableRow(HtmlEnumerator en)
 		{
-			if (!tables.HasContext) return;
-			TableRow row = tables.CurrentTable.GetLastChild<TableRow>();
+			if (!_tables.HasContext) return;
+			TableRow row = _tables.CurrentTable.GetLastChild<TableRow>();
 			if (row == null) return;
 
 			// Word will not open documents with empty rows (reported by scwebgroup)
@@ -1428,13 +1428,13 @@ namespace HtmlToOpenXml
 			}
 
 			// Add empty columns to fill rowspan
-			if (tables.RowSpan.Count > 0)
+			if (_tables.RowSpan.Count > 0)
 			{
-				int rowIndex = tables.CellPosition.Row;
+				int rowIndex = _tables.CellPosition.Row;
 
-				for (int i = 0; i < tables.RowSpan.Count; i++)
+				for (int i = 0; i < _tables.RowSpan.Count; i++)
 				{
-					HtmlTableSpan tspan = tables.RowSpan[i];
+					HtmlTableSpan tspan = _tables.RowSpan[i];
 					if (tspan.CellOrigin.Row == rowIndex) continue;
 
                     TableCell emptyCell = new TableCell(new TableCellProperties {
@@ -1443,7 +1443,7 @@ namespace HtmlToOpenXml
 							            new Paragraph());
 
                     tspan.RowSpan--;
-                    if (tspan.RowSpan == 0) { tables.RowSpan.RemoveAt(i); i--; }
+                    if (tspan.RowSpan == 0) { _tables.RowSpan.RemoveAt(i); i--; }
 
                     // in case of both colSpan + rowSpan on the same cell, we have to reverberate the rowSpan on the next columns too
                     if (tspan.ColSpan > 0) emptyCell.TableCellProperties.GridSpan = new GridSpan() { Val = tspan.ColSpan };
@@ -1468,8 +1468,8 @@ namespace HtmlToOpenXml
                 }
 			}
 
-			htmlStyles.Tables.EndTag("<tr>");
-			htmlStyles.Runs.EndTag("<tr>");
+			_htmlStyles.Tables.EndTag("<tr>");
+			_htmlStyles.Runs.EndTag("<tr>");
 		}
 
 		#endregion
@@ -1478,16 +1478,16 @@ namespace HtmlToOpenXml
 
 		private void ProcessClosingTableColumn(HtmlEnumerator en)
 		{
-			if (!tables.HasContext)
+			if (!_tables.HasContext)
 			{
 				// When the Html is bad-formed and doesn't contain <table>, the browser renders the column separated by a space.
 				// So we do the same here
 				Run run = new Run(new Text(" ") { Space = SpaceProcessingModeValues.Preserve });
-				htmlStyles.Runs.ApplyTags(run);
-				elements.Add(run);
+				_htmlStyles.Runs.ApplyTags(run);
+				_elements.Add(run);
 				return;
 			}
-			TableCell cell = tables.CurrentTable.GetLastChild<TableRow>().GetLastChild<TableCell>();
+			TableCell cell = _tables.CurrentTable.GetLastChild<TableRow>().GetLastChild<TableCell>();
 
 			// As we add automatically a paragraph to the cell once we create it, we'll remove it if finally, it was not used.
 			// For all the other children, we will ensure there is no more empty paragraphs (similarly to what we do at the end
@@ -1504,19 +1504,19 @@ namespace HtmlToOpenXml
 			// We add this paragraph regardless it has elements or not. A TableCell requires at least a Paragraph, as the last child of
 			// of a table cell.
 			// additional check for a proper cleaning (reported by antgraf github.com/onizet/html2openxml/discussions/272744)
-			if (!(cell.LastChild is Paragraph) || elements.Count > 0) cell.Append(new Paragraph(elements));
+			if (!(cell.LastChild is Paragraph) || _elements.Count > 0) cell.Append(new Paragraph(_elements));
 
-			htmlStyles.Tables.ApplyTags(cell);
+			_htmlStyles.Tables.ApplyTags(cell);
 
 			// Reset all our variables and move to next cell
-			this.elements.Clear();
+			this._elements.Clear();
 			String openingTag = en.CurrentTag.Replace("/", "");
-			htmlStyles.Tables.EndTag(openingTag);
-			htmlStyles.Runs.EndTag(openingTag);
+			_htmlStyles.Tables.EndTag(openingTag);
+			_htmlStyles.Runs.EndTag(openingTag);
 
-			var pos = tables.CellPosition;
+			var pos = _tables.CellPosition;
 			pos.Column++;
-			tables.CellPosition = pos;
+			_tables.CellPosition = pos;
 		}
 
 		#endregion

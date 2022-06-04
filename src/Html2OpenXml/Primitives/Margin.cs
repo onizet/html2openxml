@@ -20,12 +20,12 @@ namespace HtmlToOpenXml
     /// </summary>
     struct Margin
     {
-        private Unit[] sides;
+        private Unit[] _sides;
 
 
         public Margin(Unit top, Unit right, Unit bottom, Unit left)
         {
-            this.sides = new[] { top, right, bottom, left };
+            this._sides = new[] { top, right, bottom, left };
         }
 
         /// <summary>
@@ -91,7 +91,7 @@ namespace HtmlToOpenXml
 
 		private void EnsureSides()
 		{
-			if (this.sides == null) sides = new Unit[4];
+			if (this._sides == null) _sides = new Unit[4];
 		}
 
         //____________________________________________________________________
@@ -102,8 +102,8 @@ namespace HtmlToOpenXml
         /// </summary>
         public Unit Bottom
         {
-            get { return sides == null ? Unit.Empty : sides[2]; }
-			set { EnsureSides(); sides[2] = value; }
+            get { return _sides == null ? Unit.Empty : _sides[2]; }
+			set { EnsureSides(); _sides[2] = value; }
         }
 
         /// <summary>
@@ -111,8 +111,8 @@ namespace HtmlToOpenXml
         /// </summary>
         public Unit Left
         {
-			get { return sides == null ? Unit.Empty : sides[3]; }
-			set { EnsureSides(); sides[3] = value; }
+			get { return _sides == null ? Unit.Empty : _sides[3]; }
+			set { EnsureSides(); _sides[3] = value; }
         }
 
         /// <summary>
@@ -120,8 +120,8 @@ namespace HtmlToOpenXml
         /// </summary>
         public Unit Top
         {
-			get { return sides == null ? Unit.Empty : sides[0]; }
-			set { EnsureSides(); sides[0] = value; }
+			get { return _sides == null ? Unit.Empty : _sides[0]; }
+			set { EnsureSides(); _sides[0] = value; }
         }
 
         /// <summary>
@@ -129,13 +129,13 @@ namespace HtmlToOpenXml
         /// </summary>
         public Unit Right
         {
-			get { return sides == null ? Unit.Empty : sides[1]; }
-			set { EnsureSides(); sides[1] = value; }
+			get { return _sides == null ? Unit.Empty : _sides[1]; }
+			set { EnsureSides(); _sides[1] = value; }
         }
 
         public bool IsValid
         {
-            get { return sides != null && Left.IsValid && Right.IsValid && Bottom.IsValid && Top.IsValid; }
+            get { return _sides != null && Left.IsValid && Right.IsValid && Bottom.IsValid && Top.IsValid; }
         }
 
 		/// <summary>
@@ -143,7 +143,7 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public bool IsEmpty
 		{
-			get { return sides == null || !(Left.IsValid || Right.IsValid || Bottom.IsValid || Top.IsValid); }
+			get { return _sides == null || !(Left.IsValid || Right.IsValid || Bottom.IsValid || Top.IsValid); }
 		}
     }
 }

@@ -21,18 +21,18 @@ namespace HtmlToOpenXml
 
 	sealed class TableStyleCollection : OpenXmlStyleCollectionBase
 	{
-		private readonly ParagraphStyleCollection paragraphStyle;
-		private readonly HtmlDocumentStyle documentStyle;
+		private readonly ParagraphStyleCollection _paragraphStyle;
+		private readonly HtmlDocumentStyle _documentStyle;
 
         internal TableStyleCollection(HtmlDocumentStyle documentStyle)
 		{
-			this.documentStyle = documentStyle;
-			paragraphStyle = new ParagraphStyleCollection(documentStyle);
+			this._documentStyle = documentStyle;
+			_paragraphStyle = new ParagraphStyleCollection(documentStyle);
 		}
 
 		internal override void Reset()
 		{
-			paragraphStyle.Reset();
+			_paragraphStyle.Reset();
 			base.Reset();
 		}
 
@@ -60,17 +60,17 @@ namespace HtmlToOpenXml
 
 			// Apply some style attributes on the unique Paragraph tag contained inside a table cell.
 			Paragraph p = tableCell.GetFirstChild<Paragraph>();
-			paragraphStyle.ApplyTags(p);
+			_paragraphStyle.ApplyTags(p);
 		}
 
 		public void BeginTagForParagraph(string name, params OpenXmlElement[] elements)
 		{
-			paragraphStyle.BeginTag(name, elements);
+			_paragraphStyle.BeginTag(name, elements);
 		}
 
 		public override void EndTag(string name)
 		{
-			paragraphStyle.EndTag(name);
+			_paragraphStyle.EndTag(name);
 			base.EndTag(name);
 		}
 
@@ -123,7 +123,7 @@ namespace HtmlToOpenXml
 			{
 				for (int i = 0; i < classes.Length; i++)
 				{
-					string className = documentStyle.GetStyle(classes[i], StyleValues.Table, ignoreCase: true);
+					string className = _documentStyle.GetStyle(classes[i], StyleValues.Table, ignoreCase: true);
 					if (className != null) // only one Style can be applied in OpenXml and dealing with inheritance is out of scope
 					{
 						containerStyleAttributes.Add(new RunStyle() { Val = className });
@@ -135,7 +135,7 @@ namespace HtmlToOpenXml
 			this.BeginTag(en.CurrentTag, containerStyleAttributes);
 
 			// Process general run styles
-			documentStyle.Runs.ProcessCommonAttributes(en, runStyleAttributes);
+			_documentStyle.Runs.ProcessCommonAttributes(en, runStyleAttributes);
 		}
 
 		#endregion

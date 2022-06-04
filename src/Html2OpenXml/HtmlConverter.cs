@@ -31,19 +31,19 @@ namespace HtmlToOpenXml
 	/// </summary>
 	public partial class HtmlConverter
 	{
-		private MainDocumentPart mainPart;
+		private MainDocumentPart _mainPart;
 		/// <summary>The list of paragraphs that will be returned.</summary>
-		private IList<OpenXmlCompositeElement> paragraphs;
+		private IList<OpenXmlCompositeElement> _paragraphs;
 		/// <summary>Holds the elements to append to the current paragraph.</summary>
-		private List<OpenXmlElement> elements;
-		private Paragraph currentParagraph;
-		private Int32 footnotesRef = 1, endnotesRef = 1, figCaptionRef = -1;
-		private Dictionary<String, Action<HtmlEnumerator>> knownTags;
-        private ImagePrefetcher imagePrefetcher;
-        private TableContext tables;
-        private readonly HtmlDocumentStyle htmlStyles;
-        private readonly IWebRequest webRequester;
-        private uint drawingObjId, imageObjId;
+		private List<OpenXmlElement> _elements;
+		private Paragraph _currentParagraph;
+		private Int32 _footnotesRef = 1, _endnotesRef = 1, _figCaptionRef = -1;
+		private Dictionary<String, Action<HtmlEnumerator>> _knownTags;
+        private ImagePrefetcher _imagePrefetcher;
+        private TableContext _tables;
+        private readonly HtmlDocumentStyle _htmlStyles;
+        private readonly IWebRequest _webRequester;
+        private uint drawingObjId, _imageObjId;
 
 
 
@@ -64,10 +64,10 @@ namespace HtmlToOpenXml
         /// <remarks>We preload some configuration from inside the document such as style, bookmarks,...</remarks>
         public HtmlConverter(MainDocumentPart mainPart, IWebRequest webRequester = null)
         {
-            this.knownTags = InitKnownTags();
-            this.mainPart = mainPart ?? throw new ArgumentNullException("mainPart");
-            this.htmlStyles = new HtmlDocumentStyle(mainPart);
-            this.webRequester = webRequester ?? new DefaultWebRequest();
+            this._knownTags = InitKnownTags();
+            this._mainPart = mainPart ?? throw new ArgumentNullException("mainPart");
+            this._htmlStyles = new HtmlDocumentStyle(mainPart);
+            this._webRequester = webRequester ?? new DefaultWebRequest();
         }
 
 		/// <summary>
@@ -80,38 +80,38 @@ namespace HtmlToOpenXml
 				return new Paragraph[0];
 
 			// ensure a body exists to avoid any errors when trying to access it
-			if (mainPart.Document == null)
-				new Document(new Body()).Save(mainPart);
-			else if (mainPart.Document.Body == null)
-				mainPart.Document.Body = new Body();
+			if (_mainPart.Document == null)
+				new Document(new Body()).Save(_mainPart);
+			else if (_mainPart.Document.Body == null)
+				_mainPart.Document.Body = new Body();
 
 			// Reset:
-			elements = new List<OpenXmlElement>();
-			paragraphs = new List<OpenXmlCompositeElement>();
-			tables = new TableContext();
-			htmlStyles.Runs.Reset();
-			currentParagraph = null;
+			_elements = new List<OpenXmlElement>();
+			_paragraphs = new List<OpenXmlCompositeElement>();
+			_tables = new TableContext();
+			_htmlStyles.Runs.Reset();
+			_currentParagraph = null;
 
 			// Start a new processing
-			paragraphs.Add(currentParagraph = htmlStyles.Paragraph.NewParagraph());
-			if (htmlStyles.DefaultStyles.ParagraphStyle != null)
+			_paragraphs.Add(_currentParagraph = _htmlStyles.Paragraph.NewParagraph());
+			if (_htmlStyles.DefaultStyles.ParagraphStyle != null)
 			{
-				currentParagraph.ParagraphProperties = new ParagraphProperties {
-					ParagraphStyleId = new ParagraphStyleId { Val = htmlStyles.DefaultStyles.ParagraphStyle }
+				_currentParagraph.ParagraphProperties = new ParagraphProperties {
+					ParagraphStyleId = new ParagraphStyleId { Val = _htmlStyles.DefaultStyles.ParagraphStyle }
 				};
 			}
 
 			HtmlEnumerator en = new HtmlEnumerator(html);
 			ProcessHtmlChunks(en, null);
 
-            if (elements.Count > 0)
-                this.currentParagraph.Append(elements);
+            if (_elements.Count > 0)
+                this._currentParagraph.Append(_elements);
 
 			// As the Parse method is public, to avoid changing the type of the return value, I use this proxy
 			// that will allow me to call the recursive method RemoveEmptyParagraphs with no major changes, impacting the client.
 			RemoveEmptyParagraphs();
 
-			return paragraphs;
+			return _paragraphs;
 		}
 
         /// <summary>
@@ -124,7 +124,7 @@ namespace HtmlToOpenXml
 
             var paragraphs = Parse(html);
 
-			Body body = mainPart.Document.Body;
+			Body body = _mainPart.Document.Body;
 			SectionProperties sectionProperties = body.GetLastChild<SectionProperties>();
 			for (int i = 0; i < paragraphs.Count; i++)
 				body.Append(paragraphs[i]);
@@ -156,15 +156,15 @@ namespace HtmlToOpenXml
 		{
 			bool hasRuns;
 
-			for (int i = 0; i < paragraphs.Count; i++)
+			for (int i = 0; i < _paragraphs.Count; i++)
 			{
-				OpenXmlCompositeElement p = paragraphs[i];
+				OpenXmlCompositeElement p = _paragraphs[i];
 
 				// If the paragraph is between 2 tables, we don't remove it (it provides some
 				// separation or Word will merge the two tables)
-				if (i > 0 && i + 1 < paragraphs.Count - 1
-					&& paragraphs[i - 1].LocalName == "tbl"
-					&& paragraphs[i + 1].LocalName == "tbl") continue;
+				if (i > 0 && i + 1 < _paragraphs.Count - 1
+					&& _paragraphs[i - 1].LocalName == "tbl"
+					&& _paragraphs[i + 1].LocalName == "tbl") continue;
 
 				if (p.HasChildren)
 				{
@@ -186,7 +186,7 @@ namespace HtmlToOpenXml
 					if (hasRuns) continue;
 				}
 
-				paragraphs.RemoveAt(i);
+				_paragraphs.RemoveAt(i);
 				i--;
 			}
 		}
@@ -202,7 +202,7 @@ namespace HtmlToOpenXml
 				if (en.IsCurrentHtmlTag)
 				{
 					Action<HtmlEnumerator> action;
-					if (knownTags.TryGetValue(en.CurrentTag, out action))
+					if (_knownTags.TryGetValue(en.CurrentTag, out action))
 					{
 						if (Logging.On) Logging.PrintVerbose(en.Current);
 						action(en);
@@ -216,8 +216,8 @@ namespace HtmlToOpenXml
 						new Text(HttpUtility.HtmlDecode(en.Current)) { Space = SpaceProcessingModeValues.Preserve }
 					);
 					// apply the previously discovered style
-					htmlStyles.Runs.ApplyTags(run);
-					elements.Add(run);
+					_htmlStyles.Runs.ApplyTags(run);
+					_elements.Add(run);
 				}
 			}
 		}
@@ -232,7 +232,7 @@ namespace HtmlToOpenXml
 		/// </summary>
 		private void AlternateProcessHtmlChunks(HtmlEnumerator en, string endTag)
 		{
-			if (elements.Count > 0) CompleteCurrentParagraph();
+			if (_elements.Count > 0) CompleteCurrentParagraph();
 			ProcessHtmlChunks(en, endTag);
 		}
 
@@ -246,13 +246,13 @@ namespace HtmlToOpenXml
 		/// </summary>
 		private void AddParagraph(OpenXmlCompositeElement element)
 		{
-			if (tables.HasContext)
+			if (_tables.HasContext)
 			{
-				TableRow row = tables.CurrentTable.GetLastChild<TableRow>();
+				TableRow row = _tables.CurrentTable.GetLastChild<TableRow>();
 				if (row == null)
 				{
-					tables.CurrentTable.Append(row = new TableRow());
-					tables.CellPosition = new CellPosition(tables.CellPosition.Row + 1, 0);
+					_tables.CurrentTable.Append(row = new TableRow());
+					_tables.CellPosition = new CellPosition(_tables.CellPosition.Row + 1, 0);
 				}
                 TableCell cell = row.GetLastChild<TableCell>();
                 if (cell == null) // ensure cell exists (issue #13982 reported by Willu)
@@ -262,7 +262,7 @@ namespace HtmlToOpenXml
                 cell.Append(element);
 			}
 			else
-				this.paragraphs.Add(element);
+				this._paragraphs.Add(element);
 		}
 
 		#endregion
@@ -276,9 +276,9 @@ namespace HtmlToOpenXml
 		/// <returns>Returns the id of the footnote reference.</returns>
 		private int AddFootnoteReference(string description)
 		{
-			FootnotesPart fpart = mainPart.FootnotesPart;
+			FootnotesPart fpart = _mainPart.FootnotesPart;
 			if (fpart == null)
-				fpart = mainPart.AddNewPart<FootnotesPart>();
+				fpart = _mainPart.AddNewPart<FootnotesPart>();
 
 			if (fpart.Footnotes == null)
 			{
@@ -302,7 +302,7 @@ namespace HtmlToOpenXml
 								new ContinuationSeparatorMark())
 						)
 					) { Type = FootnoteEndnoteValues.ContinuationSeparator, Id = 0 }).Save(fpart);
-				footnotesRef = 1;
+				_footnotesRef = 1;
 			}
 			else
 			{
@@ -311,9 +311,9 @@ namespace HtmlToOpenXml
 				// to retrieve the highest Id.
 				foreach (var fn in fpart.Footnotes.Elements<Footnote>())
 				{
-					if (fn.Id.HasValue && fn.Id > footnotesRef) footnotesRef = (int) fn.Id.Value;
+					if (fn.Id.HasValue && fn.Id > _footnotesRef) _footnotesRef = (int) fn.Id.Value;
 				}
-				footnotesRef++;
+				_footnotesRef++;
 			}
 
 
@@ -322,11 +322,11 @@ namespace HtmlToOpenXml
 				new Footnote(
 					p = new Paragraph(
 						new ParagraphProperties {
-							ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.FootnoteTextStyle, StyleValues.Paragraph) }
+							ParagraphStyleId = new ParagraphStyleId() { Val = _htmlStyles.GetStyle(_htmlStyles.DefaultStyles.FootnoteTextStyle, StyleValues.Paragraph) }
 						},
 						new Run(
 							new RunProperties {
-								RunStyle = new RunStyle() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.FootnoteReferenceStyle, StyleValues.Character) }
+								RunStyle = new RunStyle() { Val = _htmlStyles.GetStyle(_htmlStyles.DefaultStyles.FootnoteReferenceStyle, StyleValues.Character) }
 							},
 							new FootnoteReferenceMark()),
 						new Run(
@@ -334,7 +334,7 @@ namespace HtmlToOpenXml
                         // reference number with its description
 							new Text(" ") { Space = SpaceProcessingModeValues.Preserve })
 					)
-				) { Id = footnotesRef });
+				) { Id = _footnotesRef });
 
 
             // Description in footnote reference can be plain text or a web protocols/file share (like \\server01)
@@ -351,7 +351,7 @@ namespace HtmlToOpenXml
 
                 h.Append(new Run(
                     new RunProperties {
-                        RunStyle = new RunStyle() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.HyperlinkStyle, StyleValues.Character) }
+                        RunStyle = new RunStyle() { Val = _htmlStyles.GetStyle(_htmlStyles.DefaultStyles.HyperlinkStyle, StyleValues.Character) }
                     },
                     new Text(description)));
                 p.Append(h);
@@ -364,7 +364,7 @@ namespace HtmlToOpenXml
 
 			fpart.Footnotes.Save();
 
-			return footnotesRef;
+			return _footnotesRef;
 		}
 
 		#endregion
@@ -378,9 +378,9 @@ namespace HtmlToOpenXml
 		/// <returns>Returns the id of the endnote reference.</returns>
 		private int AddEndnoteReference(string description)
 		{
-			EndnotesPart fpart = mainPart.EndnotesPart;
+			EndnotesPart fpart = _mainPart.EndnotesPart;
 			if (fpart == null)
-				fpart = mainPart.AddNewPart<EndnotesPart>();
+				fpart = _mainPart.AddNewPart<EndnotesPart>();
 
 			if (fpart.Endnotes == null)
 			{
@@ -404,7 +404,7 @@ namespace HtmlToOpenXml
 								new ContinuationSeparatorMark())
 						)
 					) { Id = 0 }).Save(fpart);
-				endnotesRef = 1;
+				_endnotesRef = 1;
 			}
 			else
 			{
@@ -413,20 +413,20 @@ namespace HtmlToOpenXml
 				// to retrieve the highest Id.
 				foreach (var p in fpart.Endnotes.Elements<Endnote>())
 				{
-					if (p.Id.HasValue && p.Id > footnotesRef) endnotesRef = (int) p.Id.Value;
+					if (p.Id.HasValue && p.Id > _footnotesRef) _endnotesRef = (int) p.Id.Value;
 				}
-				endnotesRef++;
+				_endnotesRef++;
 			}
 
 			fpart.Endnotes.Append(
 				new Endnote(
 					new Paragraph(
 						new ParagraphProperties {
-							ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.EndnoteTextStyle, StyleValues.Paragraph) }
+							ParagraphStyleId = new ParagraphStyleId() { Val = _htmlStyles.GetStyle(_htmlStyles.DefaultStyles.EndnoteTextStyle, StyleValues.Paragraph) }
 						},
 						new Run(
 							new RunProperties {
-								RunStyle = new RunStyle() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.EndnoteReferenceStyle, StyleValues.Character) }
+								RunStyle = new RunStyle() { Val = _htmlStyles.GetStyle(_htmlStyles.DefaultStyles.EndnoteReferenceStyle, StyleValues.Character) }
 							},
 							new FootnoteReferenceMark()),
 						new Run(
@@ -434,11 +434,11 @@ namespace HtmlToOpenXml
 				// with its description
 							new Text(" " + description) { Space = SpaceProcessingModeValues.Preserve })
 					)
-				) { Id = endnotesRef });
+				) { Id = _endnotesRef });
 
 			fpart.Endnotes.Save();
 
-			return endnotesRef;
+			return _endnotesRef;
 		}
 
 		#endregion
@@ -451,17 +451,17 @@ namespace HtmlToOpenXml
 		/// <returns>Returns the id of the new figure caption.</returns>
 		private int AddFigureCaption()
 		{
-			if (figCaptionRef == -1)
+			if (_figCaptionRef == -1)
 			{
-				figCaptionRef = 0;
-				foreach (var p in mainPart.Document.Descendants<SimpleField>())
+				_figCaptionRef = 0;
+				foreach (var p in _mainPart.Document.Descendants<SimpleField>())
 				{
 					if (p.Instruction == " SEQ Figure \\* ARABIC ")
-						figCaptionRef++;
+						_figCaptionRef++;
 				}
 			}
-			figCaptionRef++;
-			return figCaptionRef;
+			_figCaptionRef++;
+			return _figCaptionRef;
 		}
 
 		#endregion
@@ -470,32 +470,32 @@ namespace HtmlToOpenXml
 
 		private Drawing AddImagePart(String imageSource, String alt, Size preferredSize)
 		{
-			if (imageObjId == UInt32.MinValue)
+			if (_imageObjId == UInt32.MinValue)
 			{
 				// In order to add images in the document, we need to asisgn an unique id
 				// to each Drawing object. So we'll loop through all of the existing <wp:docPr> elements
 				// to find the largest Id, then increment it for each new image.
 
 				drawingObjId = 1; // 1 is the minimum ID set by MS Office.
-				imageObjId = 1;
-				foreach (var d in mainPart.Document.Body.Descendants<Drawing>())
+				_imageObjId = 1;
+				foreach (var d in _mainPart.Document.Body.Descendants<Drawing>())
 				{
 					if (d.Inline == null) continue; // fix some rare issue where Inline is null (reported by scwebgroup)
 					if (d.Inline.DocProperties.Id > drawingObjId) drawingObjId = d.Inline.DocProperties.Id;
 
 					var nvPr = d.Inline.Graphic.GraphicData.GetFirstChild<pic.NonVisualPictureProperties>();
-					if (nvPr != null && nvPr.NonVisualDrawingProperties.Id > imageObjId)
-						imageObjId = nvPr.NonVisualDrawingProperties.Id;
+					if (nvPr != null && nvPr.NonVisualDrawingProperties.Id > _imageObjId)
+						_imageObjId = nvPr.NonVisualDrawingProperties.Id;
 				}
 				if (drawingObjId > 1) drawingObjId++;
-				if (imageObjId > 1) imageObjId++;
+				if (_imageObjId > 1) _imageObjId++;
 			}
 
             // Cache all the ImagePart processed to avoid downloading the same image.
-            if (imagePrefetcher == null)
-                imagePrefetcher = new ImagePrefetcher(mainPart, webRequester);
+            if (_imagePrefetcher == null)
+                _imagePrefetcher = new ImagePrefetcher(_mainPart, _webRequester);
 
-            HtmlImageInfo iinfo = imagePrefetcher.Download(imageSource);
+            HtmlImageInfo iinfo = _imagePrefetcher.Download(imageSource);
 
             if (iinfo == null)
                 return null;
@@ -514,13 +514,13 @@ namespace HtmlToOpenXml
 			long heightInEmus = new Unit(UnitMetric.Pixel, preferredSize.Height).ValueInEmus;
 
 			++drawingObjId;
-			++imageObjId;
+			++_imageObjId;
 
 			var img = new Drawing(
 				new wp.Inline(
 					new wp.Extent() { Cx = widthInEmus, Cy = heightInEmus },
 					new wp.EffectExtent() { LeftEdge = 19050L, TopEdge = 0L, RightEdge = 0L, BottomEdge = 0L },
-					new wp.DocProperties() { Id = drawingObjId, Name = "Picture " + imageObjId, Description = String.Empty },
+					new wp.DocProperties() { Id = drawingObjId, Name = "Picture " + _imageObjId, Description = String.Empty },
 					new wp.NonVisualGraphicFrameDrawingProperties {
 						GraphicFrameLocks = new a.GraphicFrameLocks() { NoChangeAspect = true }
 					},
@@ -528,7 +528,7 @@ namespace HtmlToOpenXml
 						new a.GraphicData(
 							new pic.Picture(
 								new pic.NonVisualPictureProperties {
-									NonVisualDrawingProperties = new pic.NonVisualDrawingProperties() { Id = imageObjId, Name = DataUri.IsWellFormed(imageSource) ? string.Empty : imageSource, Description = alt },
+									NonVisualDrawingProperties = new pic.NonVisualDrawingProperties() { Id = _imageObjId, Name = DataUri.IsWellFormed(imageSource) ? string.Empty : imageSource, Description = alt },
 									NonVisualPictureDrawingProperties = new pic.NonVisualPictureDrawingProperties(
 										new a.PictureLocks() { NoChangeAspect = true, NoChangeArrowheads = true })
 								},
@@ -657,15 +657,15 @@ namespace HtmlToOpenXml
 		/// <summary>
 		/// Push the elements members to the current paragraph and reset the elements collection.
 		/// </summary>
-		/// <param name="createNew">True to automatically create a new paragraph, stored in the instance member <see cref="currentParagraph"/>.</param>
+		/// <param name="createNew">True to automatically create a new paragraph, stored in the instance member <see cref="_currentParagraph"/>.</param>
 		private void CompleteCurrentParagraph(bool createNew = false)
 		{
-			htmlStyles.Paragraph.ApplyTags(currentParagraph);
-			this.currentParagraph.Append(elements);
-			elements.Clear();
+			_htmlStyles.Paragraph.ApplyTags(_currentParagraph);
+			this._currentParagraph.Append(_elements);
+			_elements.Clear();
 
-			if (createNew && currentParagraph.ChildElements.Count > 0)
-				AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
+			if (createNew && _currentParagraph.ChildElements.Count > 0)
+				AddParagraph(_currentParagraph = _htmlStyles.Paragraph.NewParagraph());
 		}
 
 		#endregion
@@ -677,7 +677,7 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public void RefreshStyles()
 		{
-			htmlStyles.PrepareStyles(mainPart);
+			_htmlStyles.PrepareStyles(_mainPart);
 		}
 
 		#endregion
@@ -694,12 +694,12 @@ namespace HtmlToOpenXml
 			bool newParagraph = false;
 
 			// Not applicable to a table : page break
-			if (!tables.HasContext || en.CurrentTag == "<pre>")
+			if (!_tables.HasContext || en.CurrentTag == "<pre>")
 			{
 				String attrValue = en.StyleAttributes["page-break-after"];
 				if (attrValue == "always")
 				{
-					paragraphs.Add(new Paragraph(
+					_paragraphs.Add(new Paragraph(
 						new Run(
 							new Break() { Type = BreakValues.Page })));
 				}
@@ -707,11 +707,11 @@ namespace HtmlToOpenXml
 				attrValue = en.StyleAttributes["page-break-before"];
 				if (attrValue == "always")
 				{
-					elements.Add(
+					_elements.Add(
 						new Run(
 							new Break() { Type = BreakValues.Page })
 					);
-					elements.Add(new Run(
+					_elements.Add(new Run(
 							new LastRenderedPageBreak())
 					);
 				}
@@ -725,10 +725,10 @@ namespace HtmlToOpenXml
                 if (padding.Left.Value > 0) indentation.Left = padding.Left.ValueInDxa.ToString(CultureInfo.InvariantCulture);
                 if (padding.Right.Value > 0) indentation.Right = padding.Right.ValueInDxa.ToString(CultureInfo.InvariantCulture);
 
-			    currentParagraph.InsertInProperties(prop => prop.Indentation = indentation);
+			    _currentParagraph.InsertInProperties(prop => prop.Indentation = indentation);
 			}
 
-			newParagraph |= htmlStyles.Paragraph.ProcessCommonAttributes(en, styleAttributes);
+			newParagraph |= _htmlStyles.Paragraph.ProcessCommonAttributes(en, styleAttributes);
 			return newParagraph;
 		}
 
@@ -801,7 +801,7 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public HtmlDocumentStyle HtmlStyles
 		{
-			get { return htmlStyles; }
+			get { return _htmlStyles; }
 		}
 
         /// <summary>
@@ -817,7 +817,7 @@ namespace HtmlToOpenXml
         [Obsolete("Provide a IWebRequest implementation or use DefaultWebRequest.BaseImageUrl")]
         public Uri BaseImageUrl
         {
-            get { return (webRequester as DefaultWebRequest)?.BaseImageUrl; }
+            get { return (_webRequester as DefaultWebRequest)?.BaseImageUrl; }
             set
             {
                 if (value != null)
@@ -830,7 +830,7 @@ namespace HtmlToOpenXml
                     if (value.IsFile && value.LocalPath[value.LocalPath.Length - 1] != '/')
                         value = new Uri(value.OriginalString + '/');
                 }
-                if (webRequester is DefaultWebRequest wr)
+                if (_webRequester is DefaultWebRequest wr)
                     wr.BaseImageUrl = value;
             }
         }

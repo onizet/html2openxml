@@ -21,7 +21,7 @@ namespace HtmlToOpenXml.IO
     [System.Diagnostics.DebuggerDisplay("{Mime,nq}")]
     public sealed class DataUri
     {
-        private readonly static Regex dataUriRegex = new Regex(
+        private readonly static Regex _dataUriRegex = new Regex(
                 @"data\:(?<mime>\w+/\w+)?(?:;charset=(?<charset>[a-zA-Z_0-9-]+))?(?<base64>;base64)?,(?<data>.*)",
                 RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
@@ -52,7 +52,7 @@ namespace HtmlToOpenXml.IO
 
             // We will stick for IE compliance for the moment...
 
-            Match match = dataUriRegex.Match(uri);
+            Match match = _dataUriRegex.Match(uri);
             result = null;
 
             if (!match.Success) return false;
@@ -121,7 +121,7 @@ namespace HtmlToOpenXml.IO
         /// </summary>
         public static bool IsWellFormed(string uri)
         {
-            return dataUriRegex.IsMatch(uri);
+            return _dataUriRegex.IsMatch(uri);
         }
 
         //____________________________________________________________________

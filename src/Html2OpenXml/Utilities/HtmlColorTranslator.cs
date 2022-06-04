@@ -8,12 +8,12 @@ namespace HtmlToOpenXml
     /// </summary>
     static class HtmlColorTranslator
     {
-        private static readonly Dictionary<string, HtmlColor> namedColors = InitKnownColors();
+        private static readonly Dictionary<string, HtmlColor> _namedColors = InitKnownColors();
 
         public static HtmlColor FromHtml (string htmlColor)
         {
             HtmlColor color = HtmlColor.Empty;
-            namedColors.TryGetValue(htmlColor, out color);
+            _namedColors.TryGetValue(htmlColor, out color);
             return color;
         }
 

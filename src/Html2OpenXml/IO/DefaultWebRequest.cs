@@ -24,20 +24,20 @@ namespace HtmlToOpenXml.IO
     /// </summary>
     public class DefaultWebRequest : IWebRequest
     {
-        private static HashSet<string> SupportedProtocols = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+        private static HashSet<string> _supportedProtocols = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
             "http", "https", "file"
         };
-        private Uri baseImageUri;
-        private static readonly HttpClient DefaultHttp = new HttpClient(new HttpClientHandler() {
+        private Uri _baseImageUri;
+        private static readonly HttpClient _defaultHttp = new HttpClient(new HttpClientHandler() {
             AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
         });
-        private readonly HttpClient httpClient;
+        private readonly HttpClient _httpClient;
 
 
         /// <summary>
         /// Initialize a new instance of the <see cref="DefaultWebRequest"/> class.
         /// </summary>
-        public DefaultWebRequest() : this(DefaultHttp) { }
+        public DefaultWebRequest() : this(_defaultHttp) { }
 
         /// <summary>
         /// Initialize a new instance of the <see cref="DefaultWebRequest"/> class with
@@ -46,8 +46,8 @@ namespace HtmlToOpenXml.IO
         /// <param name="httpClient">The HTTP client to use to download remote resources.</param>
         public DefaultWebRequest(HttpClient httpClient)
         {
-            this.httpClient = httpClient ?? DefaultHttp;
-            this.httpClient.DefaultRequestHeaders.AcceptEncoding.ParseAdd("gzip, deflate");
+            this._httpClient = httpClient ?? _defaultHttp;
+            this._httpClient.DefaultRequestHeaders.AcceptEncoding.ParseAdd("gzip, deflate");
         }
 
         /// <inheritdoc/>
@@ -103,7 +103,7 @@ namespace HtmlToOpenXml.IO
 
             try
             {
-                var response = await httpClient.GetAsync(requestUri, cancellationToken).ConfigureAwait(false);
+                var response = await _httpClient.GetAsync(requestUri, cancellationToken).ConfigureAwait(false);
                 if (response == null) return null;
                 resource.StatusCode = response.StatusCode;
 
@@ -125,7 +125,7 @@ namespace HtmlToOpenXml.IO
 
         /// <inheritdoc/>
         public virtual bool SupportsProtocol(string protocol)
-            => SupportedProtocols.Contains(protocol);
+            => _supportedProtocols.Contains(protocol);
 
         /// <summary>
         /// Gets or sets the base Uri used to automaticaly resolve relative images 
@@ -133,7 +133,7 @@ namespace HtmlToOpenXml.IO
         /// </summary>
         public Uri BaseImageUrl
         {
-            get { return this.baseImageUri; }
+            get { return this._baseImageUri; }
             set
             {
                 if (value != null)
@@ -146,7 +146,7 @@ namespace HtmlToOpenXml.IO
                     if (value.IsFile && value.LocalPath[value.LocalPath.Length - 1] != '/')
                         value = new Uri(value.OriginalString + '/');
                 }
-                this.baseImageUri = value;
+                this._baseImageUri = value;
             }
         }
     }

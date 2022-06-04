@@ -19,7 +19,7 @@ namespace HtmlToOpenXml
     /// </summary>
     struct HtmlColor
     {
-        private static readonly char[] hexDigits = {
+        private static readonly char[] _hexDigits = {
          '0', '1', '2', '3', '4', '5', '6', '7',
          '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
@@ -254,8 +254,8 @@ namespace HtmlToOpenXml
             for (int i = 0; i < bytes.Length; i++)
             {
                 int b = bytes[i];
-                chars[i * 2] = hexDigits[b >> 4];
-                chars[i * 2 + 1] = hexDigits[b & 0xF];
+                chars[i * 2] = _hexDigits[b >> 4];
+                chars[i * 2 + 1] = _hexDigits[b & 0xF];
             }
             return new string(chars);
         }

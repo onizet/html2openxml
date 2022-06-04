@@ -26,15 +26,15 @@ namespace HtmlToOpenXml
         public static readonly Unit Auto = new Unit(UnitMetric.Auto, 0L);
 
 		private UnitMetric type;
-		private double value;
-		private long valueInEmus;
+		private double _value;
+		private long _valueInEmus;
 
 
 		public Unit(UnitMetric type, Double value)
 		{
 			this.type = type;
-			this.value = value;
-			this.valueInEmus = ComputeInEmus(type, value);
+			this._value = value;
+			this._valueInEmus = ComputeInEmus(type, value);
 		}
 
 		public static Unit Parse(String str)
@@ -139,7 +139,7 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public Double Value
 		{
-			get { return value; }
+			get { return _value; }
 		}
 
 		/// <summary>
@@ -147,7 +147,7 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public Int64 ValueInEmus
 		{
-			get { return valueInEmus; }
+			get { return _valueInEmus; }
 		}
 
 		/// <summary>
@@ -155,7 +155,7 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public Int64 ValueInDxa
 		{
-			get { return (long) (((double) valueInEmus / 914400L) * 20 * 72); }
+			get { return (long) (((double) _valueInEmus / 914400L) * 20 * 72); }
 		}
 
 		/// <summary>
@@ -163,7 +163,7 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public int ValueInPx
 		{
-			get { return (int) (type == UnitMetric.Pixel ? this.value : (float) valueInEmus / 914400L * 96); }
+			get { return (int) (type == UnitMetric.Pixel ? this._value : (float) _valueInEmus / 914400L * 96); }
 		}
 
 		/// <summary>
@@ -171,7 +171,7 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public int ValueInPoint
 		{
-			get { return (int) (type == UnitMetric.Point ? this.value : (float) valueInEmus / 12700L); }
+			get { return (int) (type == UnitMetric.Point ? this._value : (float) _valueInEmus / 12700L); }
 		}
 
 		/// <summary>

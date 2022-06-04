@@ -20,9 +20,9 @@ namespace HtmlToOpenXml
     /// </summary>
     static class Logging
 	{
-		private const string TraceSourceName = "html2openxml";
-		private static TraceSource traceSource;
-		private static bool enabled;
+		private const string _traceSourceName = "html2openxml";
+		private static TraceSource _traceSource;
+		private static bool _enabled;
 
 
 		static Logging()
@@ -74,8 +74,8 @@ namespace HtmlToOpenXml
 		private static void Initialize()
 		{
 #if NETSTANDARD1_3 || NETSTANDARD2_0
-            traceSource = new TraceSource(TraceSourceName);
-			enabled = traceSource.Switch.Level != SourceLevels.Off;
+            _traceSource = new TraceSource(_traceSourceName);
+			_enabled = _traceSource.Switch.Level != SourceLevels.Off;
 #else
             try
 			{
@@ -107,7 +107,7 @@ namespace HtmlToOpenXml
 		private static void PrintLine(TraceEventType eventType, int id, string msg)
 		{
 			if (!ValidateSettings(eventType)) return;
-			traceSource.TraceEvent(eventType, id, msg);
+			_traceSource.TraceEvent(eventType, id, msg);
 		}
 
         #endregion
@@ -119,8 +119,8 @@ namespace HtmlToOpenXml
 		/// </summary>
 		private static void OnDomainUnload(object sender, EventArgs e)
 		{
-			traceSource.Close();
-			enabled = false;
+			_traceSource.Close();
+			_enabled = false;
 		}
 
         #endregion
@@ -132,9 +132,9 @@ namespace HtmlToOpenXml
 		/// </summary>
 		private static bool ValidateSettings(TraceEventType traceLevel)
 		{
-			if (!enabled) return false;
+			if (!_enabled) return false;
 
-			if (traceSource == null || !traceSource.Switch.ShouldTrace(traceLevel))
+			if (_traceSource == null || !_traceSource.Switch.ShouldTrace(traceLevel))
 				return false;
 
 			return true;
@@ -150,7 +150,7 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public static bool On
 		{
-			get { return enabled; }
+			get { return _enabled; }
 		}
 	}
 }

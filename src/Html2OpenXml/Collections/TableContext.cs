@@ -26,8 +26,8 @@ namespace HtmlToOpenXml
 			public CellPosition CellPosition;
             public HtmlTableSpanCollection RowSpan;
 		}
-		private Stack<Tuple> tables = new Stack<Tuple>(5);
-		private Tuple current;
+		private Stack<Tuple> _tables = new Stack<Tuple>(5);
+		private Tuple _current;
 
 
 
@@ -41,21 +41,21 @@ namespace HtmlToOpenXml
 
 		public void NewContext(Table table)
 		{
-			if (this.current != null)
-				tables.Push(current);
+			if (this._current != null)
+				_tables.Push(_current);
 
-            current = new Tuple() { Table = table, CellPosition = CellPosition.Empty, RowSpan = new HtmlTableSpanCollection() };
+            _current = new Tuple() { Table = table, CellPosition = CellPosition.Empty, RowSpan = new HtmlTableSpanCollection() };
 		}
 
 		public void CloseContext()
 		{
-			if (tables.Count > 0)
+			if (_tables.Count > 0)
 			{
-				current = tables.Pop();
+				_current = _tables.Pop();
 			}
 			else
 			{
-				this.current = null;
+				this._current = null;
 			}
 		}
 
@@ -64,7 +64,7 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public bool HasContext
 		{
-			get { return current != null; }
+			get { return _current != null; }
 		}
 
 		/// <summary>
@@ -73,8 +73,8 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public CellPosition CellPosition
 		{
-			get { return current.CellPosition; }
-			set { current.CellPosition = value; }
+			get { return _current.CellPosition; }
+			set { _current.CellPosition = value; }
 		}
 
 		/// <summary>
@@ -82,12 +82,12 @@ namespace HtmlToOpenXml
 		/// </summary>
         public HtmlTableSpanCollection RowSpan
 		{
-			get { return current.RowSpan; }
+			get { return _current.RowSpan; }
 		}
 
 		public Table CurrentTable
 		{
-			get { return current.Table; }
+			get { return _current.Table; }
 		}
 	}
 }

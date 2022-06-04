@@ -27,7 +27,7 @@ namespace HtmlToOpenXml
 		// This regex split the attributes. This line is valid and all the attributes are well discovered:
 		// <table border="1" contenteditable style="text-align: center; color: #ff00e6" cellpadding=0 cellspacing='0' align="center">
 		// RegexOptions.Singleline stands for dealing with attributes that contain newline (typically for base64 image, see issue #8)
-		private static Regex stripAttributesRegex = new Regex(@"
+		private static Regex _stripAttributesRegex = new Regex(@"
 #tag and its value surrounded by "" or '
 ((?<tag>\w+)=(?<sep>""|')\s*(?<val>\#?.*?)(\k<sep>|>))
 |
@@ -37,15 +37,15 @@ namespace HtmlToOpenXml
 # single tag (with no value): contenteditable
 \b(?<tag>\w+)\b", RegexOptions.IgnorePatternWhitespace| RegexOptions.Singleline);
 
-        private static Regex stripStyleAttributesRegex = new Regex(@"(?<name>.+?):\s*(?<val>[^;]+);*\s*");
+        private static Regex _stripStyleAttributesRegex = new Regex(@"(?<name>.+?):\s*(?<val>[^;]+);*\s*");
 
-		private Dictionary<string, string> attributes;
+		private Dictionary<string, string> _attributes;
 
 
 
 		private HtmlAttributeCollection()
 		{
-			this.attributes = new Dictionary<string, string>();
+			this._attributes = new Dictionary<string, string>();
 		}
 
 		public static HtmlAttributeCollection Parse(String htmlTag)
@@ -69,10 +69,10 @@ namespace HtmlToOpenXml
 				}
 			}
 
-			MatchCollection matches = stripAttributesRegex.Matches(htmlTag, startIndex);
+			MatchCollection matches = _stripAttributesRegex.Matches(htmlTag, startIndex);
 			foreach (Match m in matches)
 			{
-				collection.attributes[m.Groups["tag"].Value] = m.Groups["val"].Value;
+				collection._attributes[m.Groups["tag"].Value] = m.Groups["val"].Value;
 			}
 
 			return collection;
@@ -85,9 +85,9 @@ namespace HtmlToOpenXml
 
             // Encoded ':' and ';' characters are valid for browser but not handled by the regex (bug #13812 reported by robin391)
             // ex= <span style="text-decoration&#58;underline&#59;color:red">
-			MatchCollection matches = stripStyleAttributesRegex.Matches(HttpUtility.HtmlDecode(htmlTag));
+			MatchCollection matches = _stripStyleAttributesRegex.Matches(HttpUtility.HtmlDecode(htmlTag));
 			foreach (Match m in matches)
-				collection.attributes[m.Groups["name"].Value] = m.Groups["val"].Value;
+				collection._attributes[m.Groups["name"].Value] = m.Groups["val"].Value;
 
 			return collection;
 		}
@@ -97,7 +97,7 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public int Count
 		{
-			get { return attributes.Count; }
+			get { return _attributes.Count; }
 		}
 
 		/// <summary>
@@ -108,7 +108,7 @@ namespace HtmlToOpenXml
 			get
             {
                 string value;
-                return attributes.TryGetValue(name, out value)? value : null;
+                return _attributes.TryGetValue(name, out value)? value : null;
             }
 		}
 

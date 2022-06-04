@@ -23,20 +23,20 @@ namespace HtmlToOpenXml
 	{
 		public const string HEADING_NUMBERING_NAME = "decimal-heading-multi";
 
-		private MainDocumentPart mainPart;
-		private int nextInstanceID, levelDepth;
-        private int maxlevelDepth = 0;
-        private bool firstItem;
-		private Dictionary<String, Int32> knownAbsNumIds;
-		private Stack<KeyValuePair<Int32, int>> numInstances;
-        private Stack<string[]> listHtmlElementClasses;
-		private int headingNumberingId;
+		private MainDocumentPart _mainPart;
+		private int _nextInstanceID, _levelDepth;
+        private int _maxlevelDepth = 0;
+        private bool _firstItem;
+		private Dictionary<String, Int32> _knownAbsNumIds;
+		private Stack<KeyValuePair<Int32, int>> _numInstances;
+        private Stack<string[]> _listHtmlElementClasses;
+		private int _headingNumberingId;
 
 		public NumberingListStyleCollection(MainDocumentPart mainPart)
 		{
-			this.mainPart = mainPart;
-			this.numInstances = new Stack<KeyValuePair<Int32, int>>();
-            listHtmlElementClasses = new Stack<string[]>();
+			this._mainPart = mainPart;
+			this._numInstances = new Stack<KeyValuePair<Int32, int>>();
+            _listHtmlElementClasses = new Stack<string[]>();
 			InitNumberingIds();
 		}
 
@@ -45,15 +45,15 @@ namespace HtmlToOpenXml
 
 		private void InitNumberingIds()
 		{
-			NumberingDefinitionsPart numberingPart = mainPart.NumberingDefinitionsPart;
+			NumberingDefinitionsPart numberingPart = _mainPart.NumberingDefinitionsPart;
 			int absNumIdRef = 0;
 
 			// Ensure the numbering.xml file exists or any numbering or bullets list will results
 			// in simple numbering list (1.   2.   3...)
 			if (numberingPart == null)
-				numberingPart = numberingPart = mainPart.AddNewPart<NumberingDefinitionsPart>();
+				numberingPart = numberingPart = _mainPart.AddNewPart<NumberingDefinitionsPart>();
 
-			if (mainPart.NumberingDefinitionsPart.Numbering == null)
+			if (_mainPart.NumberingDefinitionsPart.Numbering == null)
 			{
 				new Numbering().Save(numberingPart);
 			}
@@ -218,12 +218,12 @@ namespace HtmlToOpenXml
 				for (int i = 0; i < absNumChildren.Length; i++)
 					numberingPart.Numbering.InsertAt(absNumChildren[i], i + lastAbsNumIndex);
 
-				knownAbsNumIds = absNumChildren
+				_knownAbsNumIds = absNumChildren
 					.ToDictionary(a => a.AbstractNumDefinitionName.Val.Value, a => a.AbstractNumberId.Value);
 			} 
 			else
 			{
-				knownAbsNumIds = existingAbstractNums
+				_knownAbsNumIds = existingAbstractNums
 					.Where(a => a.AbstractNumDefinitionName != null && a.AbstractNumDefinitionName.Val != null)
 					.ToDictionary(a => a.AbstractNumDefinitionName.Val.Value, a => a.AbstractNumberId.Value);
 			}
@@ -232,12 +232,12 @@ namespace HtmlToOpenXml
 			// The w:numId can contain a value of 0, which is a special value that indicates that numbering was removed
 			// at this level of the style hierarchy. While processing this markup, if the w:val='0',
 			// the paragraph does not have a list item (http://msdn.microsoft.com/en-us/library/ee922775(office.14).aspx)
-			nextInstanceID = 1;
+			_nextInstanceID = 1;
 			foreach (NumberingInstance inst in numberingPart.Numbering.Elements<NumberingInstance>())
 			{
-				if (inst.NumberID.Value > nextInstanceID) nextInstanceID = inst.NumberID;
+				if (inst.NumberID.Value > _nextInstanceID) _nextInstanceID = inst.NumberID;
 			}
-			numInstances.Push(new KeyValuePair<int, int>(nextInstanceID, -1));
+			_numInstances.Push(new KeyValuePair<int, int>(_nextInstanceID, -1));
 
 			numberingPart.Numbering.Save();
 		}
@@ -253,7 +253,7 @@ namespace HtmlToOpenXml
 			bool orderedList = en.CurrentTag.Equals("<ol>", StringComparison.OrdinalIgnoreCase);
 
 			CreateList(type, orderedList);
-            listHtmlElementClasses.Push(en.Attributes.GetAsClass());
+            _listHtmlElementClasses.Push(en.Attributes.GetAsClass());
 		}
 
 		#endregion
@@ -262,12 +262,12 @@ namespace HtmlToOpenXml
 
 		public void EndList(bool popInstances = true)
 		{
-			levelDepth--;
-			if (levelDepth > 0 && popInstances)
-				numInstances.Pop();  // decrement for nested list
+			_levelDepth--;
+			if (_levelDepth > 0 && popInstances)
+				_numInstances.Pop();  // decrement for nested list
 
-			firstItem = true;
-            listHtmlElementClasses.Pop();
+			_firstItem = true;
+            _listHtmlElementClasses.Pop();
 		}
 
 		#endregion
@@ -276,7 +276,7 @@ namespace HtmlToOpenXml
 
 		public void SetLevelDepth(int newLevelDepth)
 		{
-			levelDepth = newLevelDepth;
+			_levelDepth = newLevelDepth;
 		}
 
 		#endregion
@@ -285,24 +285,24 @@ namespace HtmlToOpenXml
 
 		public int GetHeadingNumberingId()
 		{
-			if (headingNumberingId == default(int))
+			if (_headingNumberingId == default(int))
 			{
 				int absNumberId = GetAbsNumIdFromType(HEADING_NUMBERING_NAME, true);
 
-				NumberingInstance existingTitleNumbering = mainPart.NumberingDefinitionsPart.Numbering
+				NumberingInstance existingTitleNumbering = _mainPart.NumberingDefinitionsPart.Numbering
 					.Elements<NumberingInstance>()
 					.FirstOrDefault(n => n != null && n.AbstractNumId.Val == absNumberId);
 				
 				if (existingTitleNumbering != null)
-					headingNumberingId = existingTitleNumbering.NumberID.Value;
+					_headingNumberingId = existingTitleNumbering.NumberID.Value;
 				else 
 				{
-					headingNumberingId = CreateList(HEADING_NUMBERING_NAME, true);
+					_headingNumberingId = CreateList(HEADING_NUMBERING_NAME, true);
 					EnsureMultilevel(absNumberId, true);
 				}
 			}
 				
-			return headingNumberingId;
+			return _headingNumberingId;
 		}
 
 		public void ApplyNumberingToHeadingParagraph(Paragraph p, int indentLevel)
@@ -325,19 +325,19 @@ namespace HtmlToOpenXml
 		public int CreateList(String type, bool orderedList)
 		{
 			int absNumId = GetAbsNumIdFromType(type, orderedList);
-			int prevAbsNumId = numInstances.Peek().Value;
+			int prevAbsNumId = _numInstances.Peek().Value;
 
-			firstItem = true;
-			levelDepth++;
-            if (levelDepth > maxlevelDepth)
+			_firstItem = true;
+			_levelDepth++;
+            if (_levelDepth > _maxlevelDepth)
             {
-                maxlevelDepth = levelDepth;
+                _maxlevelDepth = _levelDepth;
             }
 
             // save a NumberingInstance if the nested list style is the same as its ancestor.
             // this allows us to nest <ol> and restart the indentation to 1.
             int currentInstanceId = this.InstanceID;
-            if (levelDepth > 1 && absNumId == prevAbsNumId && orderedList)
+            if (_levelDepth > 1 && absNumId == prevAbsNumId && orderedList)
             {
                 EnsureMultilevel(absNumId);
             }
@@ -345,10 +345,10 @@ namespace HtmlToOpenXml
             {
                 // For unordered lists (<ul>), create only one NumberingInstance per level
                 // (MS Word does not tolerate hundreds of identical NumberingInstances)
-                if (orderedList || (levelDepth >= maxlevelDepth))
+                if (orderedList || (_levelDepth >= _maxlevelDepth))
                 {
-                    currentInstanceId = ++nextInstanceID;
-                    Numbering numbering = mainPart.NumberingDefinitionsPart.Numbering;
+                    currentInstanceId = ++_nextInstanceID;
+                    Numbering numbering = _mainPart.NumberingDefinitionsPart.Numbering;
 
                     numbering.Append(
                         new NumberingInstance(
@@ -362,7 +362,7 @@ namespace HtmlToOpenXml
                 }
             }
 
-			numInstances.Push(new KeyValuePair<int, int>(currentInstanceId, absNumId));
+			_numInstances.Push(new KeyValuePair<int, int>(currentInstanceId, absNumId));
 
 			return currentInstanceId;
 		}
@@ -375,12 +375,12 @@ namespace HtmlToOpenXml
 		{
 			int absNumId;
 
-			if (type == null || !knownAbsNumIds.TryGetValue(type.ToLowerInvariant(), out absNumId))
+			if (type == null || !_knownAbsNumIds.TryGetValue(type.ToLowerInvariant(), out absNumId))
 			{
 				if (orderedList)
-					absNumId = knownAbsNumIds["decimal"];
+					absNumId = _knownAbsNumIds["decimal"];
 				else
-					absNumId = knownAbsNumIds["disc"];
+					absNumId = _knownAbsNumIds["disc"];
 			}
 
 			return absNumId;
@@ -392,22 +392,22 @@ namespace HtmlToOpenXml
 
 		public int ProcessItem(HtmlEnumerator en)
 		{
-			if (!firstItem) return this.InstanceID;
+			if (!_firstItem) return this.InstanceID;
 
-			firstItem = false;
+			_firstItem = false;
 
 			// in case a margin has been specifically specified, we need to create a new list template
 			// on the fly with a different AbsNumId, in order to let Word doesn't merge the style with its predecessor.
 			Margin margin = en.StyleAttributes.GetAsMargin("margin");
 			if (margin.Left.Value > 0 && margin.Left.Type == UnitMetric.Pixel)
 			{
-				Numbering numbering = mainPart.NumberingDefinitionsPart.Numbering;
+				Numbering numbering = _mainPart.NumberingDefinitionsPart.Numbering;
 				foreach (AbstractNum absNum in numbering.Elements<AbstractNum>())
 				{
-					if (absNum.AbstractNumberId == numInstances.Peek().Value)
+					if (absNum.AbstractNumberId == _numInstances.Peek().Value)
 					{
 						Level lvl = absNum.GetFirstChild<Level>();
-						Int32 currentNumId = ++nextInstanceID;
+						Int32 currentNumId = ++_nextInstanceID;
 
 						numbering.Append(
 							new AbstractNum(
@@ -419,13 +419,13 @@ namespace HtmlToOpenXml
 										LevelText = new LevelText() { Val = lvl.LevelText.Val }
 									}
 								) { AbstractNumberId = currentNumId });
-						numbering.Save(mainPart.NumberingDefinitionsPart);
+						numbering.Save(_mainPart.NumberingDefinitionsPart);
 						numbering.Append(
 							new NumberingInstance(
 									new AbstractNumId() { Val = currentNumId }
 								) { NumberID = currentNumId });
-						numbering.Save(mainPart.NumberingDefinitionsPart);
-						mainPart.NumberingDefinitionsPart.Numbering.Reload();
+						numbering.Save(_mainPart.NumberingDefinitionsPart);
+						_mainPart.NumberingDefinitionsPart.Numbering.Reload();
 						break;
 					}
 				}
@@ -443,7 +443,7 @@ namespace HtmlToOpenXml
 		/// </summary>
 		private void EnsureMultilevel(int absNumId, bool cascading = false)
 		{
-			AbstractNum absNumMultilevel = mainPart.NumberingDefinitionsPart.Numbering.Elements<AbstractNum>().SingleOrDefault(a => a.AbstractNumberId.Value == absNumId);
+			AbstractNum absNumMultilevel = _mainPart.NumberingDefinitionsPart.Numbering.Elements<AbstractNum>().SingleOrDefault(a => a.AbstractNumberId.Value == absNumId);
 
 			if (absNumMultilevel != null && absNumMultilevel.MultiLevelType.Val == MultiLevelValues.SingleLevel)
 			{
@@ -493,17 +493,17 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public Int32 LevelIndex
 		{
-			get { return this.levelDepth; }
+			get { return this._levelDepth; }
 		}
 
-        public string[] GetCurrentListClasses => listHtmlElementClasses.Peek();
+        public string[] GetCurrentListClasses => _listHtmlElementClasses.Peek();
 
 		/// <summary>
 		/// Gets the ID of the current list instance.
 		/// </summary>
 		private Int32 InstanceID
 		{
-			get { return this.numInstances.Peek().Key; }
+			get { return this._numInstances.Peek().Key; }
 		}
 	}
 }

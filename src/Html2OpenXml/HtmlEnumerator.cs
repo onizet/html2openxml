@@ -22,11 +22,11 @@ namespace HtmlToOpenXml
 	sealed class HtmlEnumerator : IEnumerator<String>
 	{
 		private static Regex
-            stripTagRegex = new Regex(@"(</?\w+)");          // extract the name of a tag without its attributes but with the < >
+            _stripTagRegex = new Regex(@"(</?\w+)");          // extract the name of a tag without its attributes but with the < >
 
-		private IEnumerator<String> en;
-		private String current, currentTag;
-		private HtmlAttributeCollection attributes, styleAttributes;
+		private IEnumerator<String> _en;
+		private String _current, _currentTag;
+		private HtmlAttributeCollection _attributes, _styleAttributes;
 
 
 		/// <summary>
@@ -63,12 +63,12 @@ namespace HtmlToOpenXml
 			// Split our html using the tags
 			String[] lines = Regex.Split(html, @"(</?\w+[^>]*/?>)", RegexOptions.Singleline);
 
-			this.en = (lines as IEnumerable<String>).GetEnumerator();
+			this._en = (lines as IEnumerable<String>).GetEnumerator();
 		}
 
 		public void Dispose()
 		{
-			en.Dispose();
+			_en.Dispose();
 		}
 
 		//__________________________________________________________________________
@@ -120,7 +120,7 @@ namespace HtmlToOpenXml
 
 		public void Reset()
 		{
-			en.Reset();
+			_en.Reset();
 		}
 
 		/// <summary>
@@ -134,15 +134,15 @@ namespace HtmlToOpenXml
 		/// </returns>
 		public bool MoveUntilMatch(String tag)
 		{
-			current = currentTag = null;
-			attributes = styleAttributes = null;
+			_current = _currentTag = null;
+			_attributes = _styleAttributes = null;
 			bool success;
 
 			// Ignore empty lines
-			while ((success = en.MoveNext()) && (current = en.Current.Trim('\r', '\n')).Length == 0) ;
+			while ((success = _en.MoveNext()) && (_current = _en.Current.Trim('\r', '\n')).Length == 0) ;
 
 			if (success && tag != null)
-				return !current.Equals(tag, StringComparison.CurrentCultureIgnoreCase);
+				return !_current.Equals(tag, StringComparison.CurrentCultureIgnoreCase);
 
 			return success;
 		}
@@ -157,7 +157,7 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public HtmlAttributeCollection StyleAttributes
 		{
-			get { return styleAttributes ?? (styleAttributes = HtmlAttributeCollection.ParseStyle(this.Attributes["style"])); }
+			get { return _styleAttributes ?? (_styleAttributes = HtmlAttributeCollection.ParseStyle(this.Attributes["style"])); }
 		}
 
 		/// <summary>
@@ -165,7 +165,7 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public HtmlAttributeCollection Attributes
 		{
-			get { return attributes ?? (attributes = HtmlAttributeCollection.Parse(current)); }
+			get { return _attributes ?? (_attributes = HtmlAttributeCollection.Parse(_current)); }
 		}
 
 		/// <summary>
@@ -173,9 +173,9 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public bool IsCurrentHtmlTag
 		{
-			get { return current[0] == '<' 
+			get { return _current[0] == '<' 
 				// ensure we have not match a false tag like '< p >' nor '<3'
-				&& current.Length > 1 && (char.IsLetter(current[1]) || current[1] == '/'); }
+				&& _current.Length > 1 && (char.IsLetter(_current[1]) || _current[1] == '/'); }
 		}
 
 		/// <summary>
@@ -183,7 +183,7 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public bool IsSelfClosedTag
 		{
-			get { return this.IsCurrentHtmlTag && current.EndsWith("/>", StringComparison.Ordinal); }
+			get { return this.IsCurrentHtmlTag && _current.EndsWith("/>", StringComparison.Ordinal); }
 		}
 
 		/// <summary>
@@ -193,12 +193,12 @@ namespace HtmlToOpenXml
 		{
 			get
 			{
-				if(currentTag == null)
+				if(_currentTag == null)
 				{
-					Match m = stripTagRegex.Match(current);
-					currentTag = m.Success ? m.Groups[1].Value + ">" : null;
+					Match m = _stripTagRegex.Match(_current);
+					_currentTag = m.Success ? m.Groups[1].Value + ">" : null;
 				}
-				return currentTag;
+				return _currentTag;
 			}
 		}
 
@@ -219,12 +219,12 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public String Current
 		{
-			get { return current; }
+			get { return _current; }
 		}
 
 		Object System.Collections.IEnumerator.Current
 		{
-			get { return current; }
+			get { return _current; }
 		}
 	}
 }

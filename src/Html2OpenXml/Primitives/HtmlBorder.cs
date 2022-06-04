@@ -24,18 +24,18 @@ namespace HtmlToOpenXml
 	/// </summary>
 	struct HtmlBorder
 	{
-		private SideBorder[] sides;
+		private SideBorder[] _sides;
 
 
 		public HtmlBorder(SideBorder all)
 		{
-			if (!all.IsValid) sides = null;
-			else this.sides = new[] { all, all, all, all };
+			if (!all.IsValid) _sides = null;
+			else this._sides = new[] { all, all, all, all };
 		}
 
 		private void EnsureSides()
 		{
-			if(this.sides == null) sides = new SideBorder[4];
+			if(this._sides == null) _sides = new SideBorder[4];
 		}
 
 		//____________________________________________________________________
@@ -46,8 +46,8 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public SideBorder Bottom
 		{
-			get { return sides == null ? SideBorder.Empty : sides[2]; }
-			set { EnsureSides(); sides[2] = value; }
+			get { return _sides == null ? SideBorder.Empty : _sides[2]; }
+			set { EnsureSides(); _sides[2] = value; }
 		}
 
 		/// <summary>
@@ -55,8 +55,8 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public SideBorder Left
 		{
-			get { return sides == null ? SideBorder.Empty : sides[3]; }
-			set { EnsureSides(); sides[3] = value; }
+			get { return _sides == null ? SideBorder.Empty : _sides[3]; }
+			set { EnsureSides(); _sides[3] = value; }
 		}
 
 		/// <summary>
@@ -64,8 +64,8 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public SideBorder Top
 		{
-			get { return sides == null ? SideBorder.Empty : sides[0]; }
-			set { EnsureSides(); sides[0] = value; }
+			get { return _sides == null ? SideBorder.Empty : _sides[0]; }
+			set { EnsureSides(); _sides[0] = value; }
 		}
 
 		/// <summary>
@@ -73,8 +73,8 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public SideBorder Right
 		{
-			get { return sides == null ? SideBorder.Empty : sides[1]; }
-			set { EnsureSides(); sides[1] = value; }
+			get { return _sides == null ? SideBorder.Empty : _sides[1]; }
+			set { EnsureSides(); _sides[1] = value; }
 		}
 
 		/// <summary>
@@ -82,7 +82,7 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public bool IsEmpty
 		{
-			get { return sides == null || !(Left.IsValid || Right.IsValid || Bottom.IsValid || Top.IsValid); }
+			get { return _sides == null || !(Left.IsValid || Right.IsValid || Bottom.IsValid || Top.IsValid); }
 		}
 	}
 }

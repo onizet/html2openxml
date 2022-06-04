@@ -31,19 +31,19 @@ namespace HtmlToOpenXml.IO
 
         public enum FileType { Unrecognized, Bitmap, Gif, Png, Jpeg, Emf }
 
-        private static readonly byte[] pngSignatureBytes = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
+        private static readonly byte[] _pngSignatureBytes = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
 
-        private static Dictionary<byte[], FileType> imageFormatDecoders = new Dictionary<byte[], FileType>()
+        private static Dictionary<byte[], FileType> _imageFormatDecoders = new Dictionary<byte[], FileType>()
         {
             { new byte[] { 0x42, 0x4D }, FileType.Bitmap },
             { Encoding.UTF8.GetBytes("GIF87a"), FileType.Gif },
             { Encoding.UTF8.GetBytes("GIF89a"), FileType.Gif }, // animated gif
-            { pngSignatureBytes, FileType.Png },
+            { _pngSignatureBytes, FileType.Png },
             { new byte[] { 0xff, 0xd8 }, FileType.Jpeg },
             { new byte[] { 0x1, 0, 0, 0 }, FileType.Emf }
         };
 
-        private static readonly int MaxMagicBytesLength = imageFormatDecoders
+        private static readonly int _maxMagicBytesLength = _imageFormatDecoders
             .Keys.OrderByDescending(x => x.Length).First().Length;
 
 
@@ -117,11 +117,11 @@ namespace HtmlToOpenXml.IO
         /// </summary>
         private static FileType DetectFileType (SequentialBinaryReader reader)
         {
-            byte[] magicBytes = new byte[MaxMagicBytesLength];
-            for (int i = 0; i < MaxMagicBytesLength; i += 1)
+            byte[] magicBytes = new byte[_maxMagicBytesLength];
+            for (int i = 0; i < _maxMagicBytesLength; i += 1)
             {
                 magicBytes[i] = reader.ReadByte();
-                foreach (var kvPair in imageFormatDecoders)
+                foreach (var kvPair in _imageFormatDecoders)
                 {
                     if (StartsWith(magicBytes, kvPair.Key))
                     {
@@ -239,7 +239,7 @@ namespace HtmlToOpenXml.IO
         private static Size DecodePng(SequentialBinaryReader reader)
         {
             reader.IsBigEndian = true;
-            reader.ReadBytes(pngSignatureBytes.Length);
+            reader.ReadBytes(_pngSignatureBytes.Length);
             reader.Skip(8);
 
             int width = reader.ReadInt32();

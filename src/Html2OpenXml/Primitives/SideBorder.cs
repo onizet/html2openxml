@@ -27,16 +27,16 @@ namespace HtmlToOpenXml
 		/// <summary>Represents an empty border (not defined).</summary>
 		public static readonly SideBorder Empty = new SideBorder();
 
-		private w.BorderValues style;
-		private HtmlColor color;
-		private Unit size;
+		private w.BorderValues _style;
+		private HtmlColor _color;
+		private Unit _size;
 
 
 		public SideBorder(w.BorderValues style, HtmlColor color, Unit size)
 		{
-			this.style = style;
-			this.color = color;
-			this.size = size;
+			this._style = style;
+			this._color = color;
+			this._size = size;
 		}
 
 		public static SideBorder Parse(String str)
@@ -120,8 +120,8 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public w.BorderValues Style
 		{
-			get { return style; }
-			set { style = value; }
+			get { return _style; }
+			set { _style = value; }
 		}
 
 		/// <summary>
@@ -129,8 +129,8 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public HtmlColor Color
 		{
-			get { return color; }
-			set { color = value; }
+			get { return _color; }
+			set { _color = value; }
 		}
 
 		/// <summary>
@@ -138,8 +138,8 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public Unit Width
 		{
-			get { return size; }
-			set { size = value; }
+			get { return _size; }
+			set { _size = value; }
 		}
 
 		/// <summary>
@@ -150,7 +150,7 @@ namespace HtmlToOpenXml
 			get { return this.Style != w.BorderValues.Nil; }
 		}
 
-		private string DebuggerDisplay
+		private string _debuggerDisplay
 		{
 			get { return String.Format(CultureInfo.InvariantCulture, "{{Border={0} {1} {2}}}", Style, Width.DebuggerDisplay, Color); }
 		}

@@ -22,11 +22,11 @@ namespace HtmlToOpenXml
 
 	sealed class RunStyleCollection : OpenXmlStyleCollectionBase
 	{
-		private readonly HtmlDocumentStyle documentStyle;
+		private readonly HtmlDocumentStyle _documentStyle;
 
 		internal RunStyleCollection(HtmlDocumentStyle documentStyle)
 		{
-			this.documentStyle = documentStyle;
+			this._documentStyle = documentStyle;
 		}
 
 		/// <summary>
@@ -90,7 +90,7 @@ namespace HtmlToOpenXml
 			{
 				for (int i = 0; i < classes.Length; i++)
 				{
-					string className = documentStyle.GetStyle(classes[i], StyleValues.Character, ignoreCase: true);
+					string className = _documentStyle.GetStyle(classes[i], StyleValues.Character, ignoreCase: true);
 					if (className != null) // only one Style can be applied in OpenXml and dealing with inheritance is out of scope
 					{
 						styleAttributes.Add(new RunStyle() { Val = className });

@@ -21,20 +21,20 @@ namespace HtmlToOpenXml
 		/// <summary>Represents an empty font (not defined).</summary>
 		public static readonly HtmlFont Empty = new HtmlFont(FontStyle.Normal, FontVariant.Normal, FontWeight.Normal, Unit.Empty, null);
 
-		private FontStyle style;
-		private FontVariant variant;
-		private string family;
-		private FontWeight weight;
-		private Unit size;
+		private FontStyle _style;
+		private FontVariant _variant;
+		private string _family;
+		private FontWeight _weight;
+		private Unit _size;
 
 
 		public HtmlFont(FontStyle style, FontVariant variant, FontWeight weight, Unit size, string family)
 		{
-			this.style = style;
-			this.variant = variant;
-			this.family = family;
-			this.weight = weight;
-			this.size = size;
+			this._style = style;
+			this._variant = variant;
+			this._family = family;
+			this._weight = weight;
+			this._size = size;
 		}
 
 		public static HtmlFont Parse(String str)
@@ -59,30 +59,30 @@ namespace HtmlToOpenXml
 			if (fontParts.Length == 2) // 2=the minimal set of required parameters
 			{
 				// should be the size and the family (in that order). Others are set to their default values
-				font.size = ReadFontSize(fontParts[0]);
-				if (!font.size.IsValid) return HtmlFont.Empty;
-				font.family = Converter.ToFontFamily(fontParts[1]);
+				font._size = ReadFontSize(fontParts[0]);
+				if (!font._size.IsValid) return HtmlFont.Empty;
+				font._family = Converter.ToFontFamily(fontParts[1]);
 				return font;
 			}
 
 			int index = 0;
 
 			FontStyle? style = Converter.ToFontStyle(fontParts[index]);
-			if (style.HasValue) { font.style = style.Value; index++; }
+			if (style.HasValue) { font._style = style.Value; index++; }
 
 			if (index + 2 > fontParts.Length) return HtmlFont.Empty;
 			FontVariant? variant = Converter.ToFontVariant(fontParts[index]);
-			if (variant.HasValue) { font.variant = variant.Value; index++; }
+			if (variant.HasValue) { font._variant = variant.Value; index++; }
 
 			if (index + 2 > fontParts.Length) return HtmlFont.Empty;
 			FontWeight? weight = Converter.ToFontWeight(fontParts[index]);
-			if (weight.HasValue) { font.weight = weight.Value; index++; }
+			if (weight.HasValue) { font._weight = weight.Value; index++; }
 
 			if (fontParts.Length - index < 2) return HtmlFont.Empty;
-			font.size = ReadFontSize(fontParts[fontParts.Length - 2]);
-			if (!font.size.IsValid) return HtmlFont.Empty;
+			font._size = ReadFontSize(fontParts[fontParts.Length - 2]);
+			if (!font._size.IsValid) return HtmlFont.Empty;
 
-			font.family = Converter.ToFontFamily(fontParts[fontParts.Length - 1]);
+			font._family = Converter.ToFontFamily(fontParts[fontParts.Length - 1]);
 
 			return font;
 		}
@@ -101,8 +101,8 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public string Family
 		{
-			get { return family; }
-			set { family = value; }
+			get { return _family; }
+			set { _family = value; }
 		}
 
 		/// <summary>
@@ -110,8 +110,8 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public FontStyle Style
 		{
-			get { return style; }
-			set { style = value; }
+			get { return _style; }
+			set { _style = value; }
 		}
 
 		/// <summary>
@@ -119,8 +119,8 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public FontVariant Variant
 		{
-			get { return variant; }
-			set { variant = value; }
+			get { return _variant; }
+			set { _variant = value; }
 		}
 
 		/// <summary>
@@ -128,8 +128,8 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public Unit Size
 		{
-			get { return size; }
-			set { size = value; }
+			get { return _size; }
+			set { _size = value; }
 		}
 
 		/// <summary>
@@ -137,8 +137,8 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public FontWeight Weight
 		{
-			get { return weight; }
-			set { weight = value; }
+			get { return _weight; }
+			set { _weight = value; }
 		}
 
 		/// <summary>
@@ -146,7 +146,7 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public bool IsEmpty
 		{
-			get { return family == null && !size.IsValid && weight == FontWeight.Normal && style == FontStyle.Normal && variant == FontVariant.Normal; }
+			get { return _family == null && !_size.IsValid && _weight == FontWeight.Normal && _style == FontStyle.Normal && _variant == FontVariant.Normal; }
 		}
 	}
 }

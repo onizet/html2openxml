@@ -23,7 +23,7 @@ namespace HtmlToOpenXml.IO
     sealed class ImagePrefetcher
     {
         // Map extension to ImagePartType
-        private static readonly Dictionary<string, ImagePartType> knownExtensions = new Dictionary<string, ImagePartType>(StringComparer.OrdinalIgnoreCase) {
+        private static readonly Dictionary<string, ImagePartType> _knownExtensions = new Dictionary<string, ImagePartType>(StringComparer.OrdinalIgnoreCase) {
             { ".gif", ImagePartType.Gif },
             { ".bmp", ImagePartType.Bmp },
             { ".emf", ImagePartType.Emf },
@@ -36,16 +36,16 @@ namespace HtmlToOpenXml.IO
             { ".tiff", ImagePartType.Tiff },
             { ".wmf", ImagePartType.Wmf }
         };
-        private readonly MainDocumentPart mainPart;
-        private readonly IWebRequest resourceLoader;
-        private HtmlImageInfoCollection prefetchedImages;
+        private readonly MainDocumentPart _mainPart;
+        private readonly IWebRequest _resourceLoader;
+        private HtmlImageInfoCollection _prefetchedImages;
 
 
         public ImagePrefetcher(MainDocumentPart mainPart, IWebRequest resourceLoader)
         {
-            this.mainPart = mainPart;
-            this.resourceLoader = resourceLoader;
-            this.prefetchedImages = new HtmlImageInfoCollection();
+            this._mainPart = mainPart;
+            this._resourceLoader = resourceLoader;
+            this._prefetchedImages = new HtmlImageInfoCollection();
         }
 
         //____________________________________________________________________
@@ -57,8 +57,8 @@ namespace HtmlToOpenXml.IO
         /// </summary>
         public HtmlImageInfo Download(string imageUri)
         {
-            if (prefetchedImages.Contains(imageUri))
-                return prefetchedImages[imageUri];
+            if (_prefetchedImages.Contains(imageUri))
+                return _prefetchedImages[imageUri];
 
             if (DataUri.IsWellFormed(imageUri)) // data inline, encoded in base64
             {
@@ -77,7 +77,7 @@ namespace HtmlToOpenXml.IO
             Resource response;
             try
             {
-                response = resourceLoader.FetchAsync(imageUri, CancellationToken.None).Result;
+                response = _resourceLoader.FetchAsync(imageUri, CancellationToken.None).Result;
                 if (response?.Content == null)
                     return null;
             }
@@ -100,7 +100,7 @@ namespace HtmlToOpenXml.IO
                     return null;
                 }
 
-                var ipart = mainPart.AddImagePart(type);
+                var ipart = _mainPart.AddImagePart(type);
                 using (var outputStream = ipart.GetStream(FileMode.Create))
                 {
                     response.Content.CopyTo(outputStream);
@@ -109,7 +109,7 @@ namespace HtmlToOpenXml.IO
                     info.Size = GetImageSize(outputStream);
                 }
 
-                info.ImagePartId = mainPart.GetIdOfPart(ipart);
+                info.ImagePartId = _mainPart.GetIdOfPart(ipart);
                 return info;
             }
         }
@@ -122,8 +122,8 @@ namespace HtmlToOpenXml.IO
             if (DataUri.TryCreate(src, out DataUri dataUri))
             {
                 Size size;
-                knownContentType.TryGetValue(dataUri.Mime, out ImagePartType type);
-                var ipart = mainPart.AddImagePart(type);
+                _knownContentType.TryGetValue(dataUri.Mime, out ImagePartType type);
+                var ipart = _mainPart.AddImagePart(type);
                 using (var outputStream = ipart.GetStream(FileMode.Create))
                 {
                     outputStream.Write(dataUri.Data, 0, dataUri.Data.Length);
@@ -134,7 +134,7 @@ namespace HtmlToOpenXml.IO
 
                 return new HtmlImageInfo() {
                     Source = src,
-                    ImagePartId = mainPart.GetIdOfPart(ipart),
+                    ImagePartId = _mainPart.GetIdOfPart(ipart),
                     Size = size
                 };
             }
@@ -147,7 +147,7 @@ namespace HtmlToOpenXml.IO
         // Private Implementation
 
         // http://stackoverflow.com/questions/58510/using-net-how-can-you-find-the-mime-type-of-a-file-based-on-the-file-signature
-        private static Dictionary<string, ImagePartType> knownContentType = new Dictionary<String, ImagePartType>(StringComparer.OrdinalIgnoreCase) {
+        private static Dictionary<string, ImagePartType> _knownContentType = new Dictionary<String, ImagePartType>(StringComparer.OrdinalIgnoreCase) {
             { "image/gif", ImagePartType.Gif },
             { "image/pjpeg", ImagePartType.Jpeg },
             { "image/jpg", ImagePartType.Jpeg },
@@ -173,7 +173,7 @@ namespace HtmlToOpenXml.IO
         {
             // can be null when the protocol used doesn't allow response headers
             if (contentType != null &&
-                knownContentType.TryGetValue(contentType, out type))
+                _knownContentType.TryGetValue(contentType, out type))
                 return true;
 
             type = default;
@@ -186,12 +186,12 @@ namespace HtmlToOpenXml.IO
         private static bool TryGuessTypeFromUri(Uri uri, out ImagePartType type)
         {
             string extension = Path.GetExtension(uri.IsAbsoluteUri ? uri.Segments[uri.Segments.Length - 1] : uri.OriginalString);
-            if (knownExtensions.TryGetValue(extension, out type)) return true;
+            if (_knownExtensions.TryGetValue(extension, out type)) return true;
 
             // extension not recognized, try with checking the query string. Expecting to resolve something like:
             // ./image.axd?picture=img1.jpg
             extension = Path.GetExtension(uri.IsAbsoluteUri ? uri.AbsoluteUri : uri.ToString());
-            if (knownExtensions.TryGetValue(extension, out type)) return true;
+            if (_knownExtensions.TryGetValue(extension, out type)) return true;
 
             return false;
         }

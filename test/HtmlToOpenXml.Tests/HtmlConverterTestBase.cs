@@ -7,8 +7,8 @@ namespace HtmlToOpenXml.Tests
 {
     public abstract class HtmlConverterTestBase
     {
-        private System.IO.MemoryStream generatedDocument;
-        private WordprocessingDocument package;
+        private System.IO.MemoryStream _generatedDocument;
+        private WordprocessingDocument _package;
 
         protected HtmlConverter converter;
         protected MainDocumentPart mainPart;
@@ -17,13 +17,13 @@ namespace HtmlToOpenXml.Tests
         [SetUp]
         public void Init ()
         {
-            generatedDocument = new System.IO.MemoryStream();
-            package = WordprocessingDocument.Create(generatedDocument, WordprocessingDocumentType.Document);
+            _generatedDocument = new System.IO.MemoryStream();
+            _package = WordprocessingDocument.Create(_generatedDocument, WordprocessingDocumentType.Document);
 
-            mainPart = package.MainDocumentPart;
+            mainPart = _package.MainDocumentPart;
             if (mainPart == null)
             {
-                mainPart = package.AddMainDocumentPart();
+                mainPart = _package.AddMainDocumentPart();
                 new Document(new Body()).Save(mainPart);
             }
 
@@ -33,8 +33,8 @@ namespace HtmlToOpenXml.Tests
         [TearDown]
         public void Close ()
         {
-            package?.Dispose();
-            generatedDocument?.Dispose();
+            _package?.Dispose();
+            _generatedDocument?.Dispose();
         }
     }
 }

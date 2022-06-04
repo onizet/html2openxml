@@ -8,7 +8,7 @@ namespace HtmlToOpenXml
     /// </summary>
     internal class PredefinedStyles
     {
-        private static global::System.Resources.ResourceManager resourceMan;
+        private static global::System.Resources.ResourceManager _resourceMan;
 
 
         /// <summary>
@@ -28,7 +28,7 @@ namespace HtmlToOpenXml
         {
             get
             {
-                if (object.ReferenceEquals(resourceMan, null))
+                if (object.ReferenceEquals(_resourceMan, null))
                 {
                     ResourceManager temp = new ResourceManager("HtmlToOpenXml.PredefinedStyles",
 #if !NETSTANDARD1_3
@@ -36,9 +36,9 @@ namespace HtmlToOpenXml
 #else
             typeof(PredefinedStyles).GetTypeInfo().Assembly);
 #endif
-                    resourceMan = temp;
+                    _resourceMan = temp;
                 }
-                return resourceMan;
+                return _resourceMan;
             }
         }
     }

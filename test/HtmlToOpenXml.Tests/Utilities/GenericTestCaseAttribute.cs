@@ -14,18 +14,18 @@ namespace HtmlToOpenXml.Tests
     {
         // Code source from https://stackoverflow.com/questions/2364929/nunit-testcase-with-generics
 
-        private readonly Type type;
+        private readonly Type _type;
 
         public GenericTestCaseAttribute(Type type, params object[] arguments) : base(arguments)
         {
-            this.type = type;
+            this._type = type;
         }
 
         IEnumerable<TestMethod> ITestBuilder.BuildFrom(IMethodInfo method, Test suite)
         {
-            if (method.IsGenericMethodDefinition && type != null)
+            if (method.IsGenericMethodDefinition && _type != null)
             {
-                var gm = method.MakeGenericMethod(type);
+                var gm = method.MakeGenericMethod(_type);
                 return BuildFrom(gm, suite);
             }
             return BuildFrom(method, suite);
