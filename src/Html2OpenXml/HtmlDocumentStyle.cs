@@ -35,7 +35,7 @@ namespace HtmlToOpenXml
 		private RunStyleCollection runStyle;
 		private TableStyleCollection tableStyle;
 		private ParagraphStyleCollection paraStyle;
-        private NumberingListStyleCollection listStyle;
+        	private NumberingListStyleCollection listStyle;
 		private OpenXmlDocumentStyleCollection knownStyles;
 		private MainDocumentPart mainPart;
 
@@ -46,7 +46,7 @@ namespace HtmlToOpenXml
 			tableStyle = new TableStyleCollection(this);
 			runStyle = new RunStyleCollection(this);
 			paraStyle = new ParagraphStyleCollection(this);
-            this.QuoteCharacters = QuoteChars.IE;
+            		this.QuoteCharacters = QuoteChars.IE;
 			this.mainPart = mainPart;
 		}
 
@@ -67,15 +67,30 @@ namespace HtmlToOpenXml
 
 			foreach (var s in styles.Elements<Style>())
 			{
-				StyleName n = s.StyleName;
+                		StyleName n = s.StyleName;
+				string originalIdName = s.StyleId;
+               			 var id = 1;
+
 				if (n != null)
 				{
-					String name = n.Val.Value;
-					if (name != s.StyleId) knownStyles[name] = s;
+				    string name = n.Val.Value;
+				    if (name != originalIdName)
+				    {
+					originalIdName = name;
+				    }
 				}
 
-				knownStyles.Add(s.StyleId, s);
+				s.StyleId = originalIdName;
+
+                		while (knownStyles.ContainsKey(s.StyleId))
+				{
+					id++;
+					s.StyleId = originalIdName + id.ToString("00");
+				}
+
+                		knownStyles.Add(s.StyleId, s);
 			}
+
 		}
 
 		#endregion
