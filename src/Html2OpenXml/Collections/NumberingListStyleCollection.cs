@@ -177,8 +177,34 @@ namespace HtmlToOpenXml
 						LevelIndex = 0,
 						LevelText = new LevelText() { Val = "%1." }
 					}
-				) { AbstractNumberId = absNumIdRef + 8, AbstractNumDefinitionName = new AbstractNumDefinitionName() { Val = HEADING_NUMBERING_NAME } }
-			};
+				) { AbstractNumberId = absNumIdRef + 8, AbstractNumDefinitionName = new AbstractNumDefinitionName() { Val = HEADING_NUMBERING_NAME } },
+
+                new AbstractNum(
+                    new MultiLevelType() { Val = MultiLevelValues.SingleLevel },
+                    new Level {
+                        StartNumberingValue = new StartNumberingValue() { Val = 1 },
+                        NumberingFormat = new NumberingFormat() { Val = NumberFormatValues.LowerLetter },
+                        LevelIndex = 0,
+                        LevelText = new LevelText() { Val = "%1." },
+                        PreviousParagraphProperties = new PreviousParagraphProperties {
+                            Indentation = new Indentation() { Left = "420", Hanging = "360" }
+                        }
+                    }
+                ) { AbstractNumberId = absNumIdRef + 10, AbstractNumDefinitionName = new AbstractNumDefinitionName() { Val = "lower-latin" } },
+                
+                new AbstractNum(
+                    new MultiLevelType() { Val = MultiLevelValues.SingleLevel },
+                    new Level {
+                        StartNumberingValue = new StartNumberingValue() { Val = 1 },
+                        NumberingFormat = new NumberingFormat() { Val = NumberFormatValues.UpperLetter },
+                        LevelIndex = 0,
+                        LevelText = new LevelText() { Val = "%1." },
+                        PreviousParagraphProperties = new PreviousParagraphProperties {
+                            Indentation = new Indentation() { Left = "420", Hanging = "360" }
+                        }
+                    }
+                ) { AbstractNumberId = absNumIdRef + 11, AbstractNumDefinitionName = new AbstractNumDefinitionName() { Val = "upper-latin" } },
+            };
 
 			// Check if we have already initialized our abstract nums
 			// if that is the case, we should not add them again.
