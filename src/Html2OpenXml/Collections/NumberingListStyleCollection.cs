@@ -179,6 +179,19 @@ namespace HtmlToOpenXml
 					}
 				) { AbstractNumberId = absNumIdRef + 8, AbstractNumDefinitionName = new AbstractNumDefinitionName() { Val = HEADING_NUMBERING_NAME } },
 
+				new AbstractNum(
+                    new MultiLevelType() { Val = MultiLevelValues.SingleLevel },
+                    new Level {
+                        StartNumberingValue = new StartNumberingValue() { Val = 1 },
+                        NumberingFormat = new NumberingFormat() { Val = NumberFormatValues.Decimal },
+                        LevelIndex = 0,
+                        LevelText = new LevelText() { Val = "0%1." },
+                        PreviousParagraphProperties = new PreviousParagraphProperties {
+                            Indentation = new Indentation() { Left = "421", Hanging = "361" }
+                        }
+                    }
+                ) { AbstractNumberId = absNumIdRef + 9, AbstractNumDefinitionName = new AbstractNumDefinitionName() { Val = "decimal-leading-zero" } },
+
                 new AbstractNum(
                     new MultiLevelType() { Val = MultiLevelValues.SingleLevel },
                     new Level {
