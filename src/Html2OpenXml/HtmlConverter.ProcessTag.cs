@@ -278,8 +278,8 @@ namespace HtmlToOpenXml
 
 			// Check if the line starts with a number format (1., 1.1., 1.1.1.)
 			// If it does, make sure we make the heading a numbered item
-			OpenXmlElement firstElement = elements.First();
-			Match regexMatch = Regex.Match(firstElement.InnerText, @"(?m)^(\d+\.)*\s");
+			OpenXmlElement firstElement = elements.FirstOrDefault();
+			Match regexMatch = Regex.Match(firstElement?.InnerText ?? string.Empty, @"(?m)^(\d+\.)*\s");
 
 			// Make sure we only grab the heading if it starts with a number
 			if (regexMatch.Groups.Count > 1 && regexMatch.Groups[1].Captures.Count > 0)
