@@ -12,6 +12,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices.ComTypes;
 using System.Threading;
 using DocumentFormat.OpenXml.Packaging;
 
@@ -60,12 +61,21 @@ namespace HtmlToOpenXml.IO
             if (prefetchedImages.Contains(imageUri))
                 return prefetchedImages[imageUri];
 
+            HtmlImageInfo iinfo;
             if (DataUri.IsWellFormed(imageUri)) // data inline, encoded in base64
             {
-                return ReadDataUri(imageUri);
+                iinfo = ReadDataUri(imageUri);
+            }
+            else
+            {
+                iinfo = DownloadRemoteImage(imageUri);
             }
 
-            return DownloadRemoteImage(imageUri);
+            if (iinfo != null)
+            {
+                prefetchedImages.Add(iinfo);
+            }
+            return iinfo;
         }
 
         /// <summary>
