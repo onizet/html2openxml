@@ -63,7 +63,7 @@ namespace HtmlToOpenXml.Tests
             var hyperlink = (Hyperlink) elements[0].FirstChild;
             Assert.That(hyperlink.ChildElements.Count, Is.EqualTo(2));
             Assert.That(hyperlink.FirstChild, Is.TypeOf(typeof(Run)));
-            Assert.That(hyperlink.FirstChild.FirstChild, Is.TypeOf(typeof(Drawing)));
+            Assert.That(hyperlink.FirstChild.HasChild<Drawing>(), Is.True);
             Assert.That(hyperlink.LastChild.InnerText, Is.EqualTo(" Test Caption"));
         }
 

@@ -24,10 +24,11 @@ namespace HtmlToOpenXml.Tests
             ParsePhrasing<T>(html);
         }
 
-        [TestCase(@"<sub>Subscript</sub>", VerticalPositionValues.Subscript)]
-        [TestCase(@"<sup>Superscript</sup>", VerticalPositionValues.Superscript)]
-        public void ParseSubSup (string html, VerticalPositionValues val)
+        [TestCase(@"<sub>Subscript</sub>", "subscript")]
+        [TestCase(@"<sup>Superscript</sup>", "superscript")]
+        public void ParseSubSup (string html, string tagName)
         {
+            var val = new VerticalPositionValues(tagName);
             var textAlign = ParsePhrasing<VerticalTextAlignment>(html);
             Assert.That(textAlign.Val.HasValue, Is.EqualTo(true));
             Assert.That(textAlign.Val.Value, Is.EqualTo(val));

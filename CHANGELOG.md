@@ -6,6 +6,7 @@
 
 ## 2.4.0
 
+- support latest version of OpenXML SDK (3.1.0) which introduces breaking changes, but also support embedding SVG and JPEG2000 files.
 - fix caching the provisioned images
 - drop support for .Net Standard 1.3
 

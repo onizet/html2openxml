@@ -12,7 +12,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices.ComTypes;
 using System.Threading;
 using DocumentFormat.OpenXml.Packaging;
 
@@ -23,17 +22,20 @@ namespace HtmlToOpenXml.IO
     /// </summary>
     sealed class ImagePrefetcher
     {
-        // Map extension to ImagePartType
-        private static readonly Dictionary<string, ImagePartType> knownExtensions = new Dictionary<string, ImagePartType>(StringComparer.OrdinalIgnoreCase) {
+        // Map extension to PartTypeInfo
+        private static readonly Dictionary<string, PartTypeInfo> knownExtensions = new Dictionary<string, PartTypeInfo>(StringComparer.OrdinalIgnoreCase) {
             { ".gif", ImagePartType.Gif },
             { ".bmp", ImagePartType.Bmp },
             { ".emf", ImagePartType.Emf },
             { ".ico", ImagePartType.Icon },
+            { ".jp2", ImagePartType.Jp2 },
             { ".jpeg", ImagePartType.Jpeg },
             { ".jpg", ImagePartType.Jpeg },
             { ".jpe", ImagePartType.Jpeg },
             { ".pcx", ImagePartType.Pcx },
             { ".png", ImagePartType.Png },
+            { ".svg", ImagePartType.Svg },
+            { ".tif", ImagePartType.Tif },
             { ".tiff", ImagePartType.Tiff },
             { ".wmf", ImagePartType.Wmf }
         };
@@ -61,21 +63,12 @@ namespace HtmlToOpenXml.IO
             if (prefetchedImages.Contains(imageUri))
                 return prefetchedImages[imageUri];
 
-            HtmlImageInfo iinfo;
             if (DataUri.IsWellFormed(imageUri)) // data inline, encoded in base64
             {
-                iinfo = ReadDataUri(imageUri);
-            }
-            else
-            {
-                iinfo = DownloadRemoteImage(imageUri);
+                return ReadDataUri(imageUri);
             }
 
-            if (iinfo != null)
-            {
-                prefetchedImages.Add(iinfo);
-            }
-            return iinfo;
+            return DownloadRemoteImage(imageUri);
         }
 
         /// <summary>
@@ -91,7 +84,7 @@ namespace HtmlToOpenXml.IO
                 return null;
 
             HtmlImageInfo info = new HtmlImageInfo() { Source = src };
-            ImagePartType type;
+            PartTypeInfo type;
             using (response)
             {
                 // For requested url with no filename, we need to read the media mime type if provided
@@ -125,7 +118,7 @@ namespace HtmlToOpenXml.IO
             if (DataUri.TryCreate(src, out DataUri dataUri))
             {
                 Size size;
-                knownContentType.TryGetValue(dataUri.Mime, out ImagePartType type);
+                knownContentType.TryGetValue(dataUri.Mime, out PartTypeInfo type);
                 var ipart = mainPart.AddImagePart(type);
                 using (var outputStream = ipart.GetStream(FileMode.Create))
                 {
@@ -150,9 +143,10 @@ namespace HtmlToOpenXml.IO
         // Private Implementation
 
         // http://stackoverflow.com/questions/58510/using-net-how-can-you-find-the-mime-type-of-a-file-based-on-the-file-signature
-        private static Dictionary<string, ImagePartType> knownContentType = new Dictionary<String, ImagePartType>(StringComparer.OrdinalIgnoreCase) {
+        private static Dictionary<string, PartTypeInfo> knownContentType = new Dictionary<String, PartTypeInfo>(StringComparer.OrdinalIgnoreCase) {
             { "image/gif", ImagePartType.Gif },
             { "image/pjpeg", ImagePartType.Jpeg },
+            { "image/jp2", ImagePartType.Jp2 },
             { "image/jpg", ImagePartType.Jpeg },
             { "image/jpeg", ImagePartType.Jpeg },
             { "image/x-png", ImagePartType.Png },
@@ -165,14 +159,15 @@ namespace HtmlToOpenXml.IO
             { "image/ico", ImagePartType.Icon },
             { "text/ico", ImagePartType.Icon },
             { "text/application-ico", ImagePartType.Icon },
-            { "image/bmp", ImagePartType.Bmp }
+            { "image/bmp", ImagePartType.Bmp },
+            { "image/svg+xml", ImagePartType.Svg },
         };
 
         /// <summary>
         /// Inspect the response headers of a web request and decode the mime type if provided
         /// </summary>
         /// <returns>Returns the extension of the image if provideds.</returns>
-        private static bool TryInspectMimeType(string contentType, out ImagePartType type)
+        private static bool TryInspectMimeType(string contentType, out PartTypeInfo type)
         {
             // can be null when the protocol used doesn't allow response headers
             if (contentType != null &&
@@ -184,9 +179,9 @@ namespace HtmlToOpenXml.IO
         }
 
         /// <summary>
-        /// Gets the OpenXml ImagePartType associated to an image.
+        /// Gets the OpenXml PartTypeInfo associated to an image.
         /// </summary>
-        private static bool TryGuessTypeFromUri(Uri uri, out ImagePartType type)
+        private static bool TryGuessTypeFromUri(Uri uri, out PartTypeInfo type)
         {
             string extension = Path.GetExtension(uri.IsAbsoluteUri ? uri.Segments[uri.Segments.Length - 1] : uri.OriginalString);
             if (knownExtensions.TryGetValue(extension, out type)) return true;
@@ -200,9 +195,9 @@ namespace HtmlToOpenXml.IO
         }
 
         /// <summary>
-        /// Gets the OpenXml ImagePartType associated to an image.
+        /// Gets the OpenXml PartTypeInfo associated to an image.
         /// </summary>
-        private static bool TryGuessTypeFromStream(Stream stream, out ImagePartType type)
+        private static bool TryGuessTypeFromStream(Stream stream, out PartTypeInfo type)
         {
             if (ImageHeader.TryDetectFileType(stream, out ImageHeader.FileType guessType))
             {

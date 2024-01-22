@@ -78,7 +78,8 @@ namespace HtmlToOpenXml
 			string tagName = en.CurrentTag;
 			string cite = en.Attributes["cite"];
 
-			htmlStyles.Paragraph.BeginTag(en.CurrentTag, new ParagraphStyleId() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.IntenseQuoteStyle) });
+			htmlStyles.Paragraph.BeginTag(en.CurrentTag, new ParagraphStyleId() { 
+				Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.IntenseQuoteStyle, StyleValues.Paragraph) });
 
 			AlternateProcessHtmlChunks(en, en.ClosingCurrentTag);
 
