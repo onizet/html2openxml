@@ -1,9 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-	  <TargetFrameworks Condition="'$(OS)' != 'Windows_NT'">netcoreapp3.1</TargetFrameworks>
-	  <TargetFrameworks Condition="'$(OS)' == 'Windows_NT'">net48;netcoreapp3.1</TargetFrameworks>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\src\Html2OpenXml\HtmlToOpenXml.snk</AssemblyOriginatorKeyFile>
     <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
@@ -18,10 +19,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Html2OpenXml\HtmlToOpenXml.csproj" />
     <EmbeddedResource Include="Resources\**\*" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
 
 </Project>

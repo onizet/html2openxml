@@ -85,17 +85,10 @@ namespace HtmlToOpenXml.IO
         {
             Uri imageUri = new Uri(src, UriKind.RelativeOrAbsolute);
             Resource response;
-            try
-            {
-                response = resourceLoader.FetchAsync(imageUri, CancellationToken.None).Result;
-                if (response?.Content == null)
-                    return null;
-            }
-            catch (Exception exc)
-            {
-                if (Logging.On) Logging.PrintError(String.Format("Error fetching image from url: {0}", src), exc);
+
+            response = resourceLoader.FetchAsync(imageUri, CancellationToken.None).Result;
+            if (response?.Content == null)
                 return null;
-            }
 
             HtmlImageInfo info = new HtmlImageInfo() { Source = src };
             ImagePartType type;

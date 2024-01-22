@@ -15,6 +15,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace HtmlToOpenXml.IO
 {
@@ -32,6 +33,8 @@ namespace HtmlToOpenXml.IO
             AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
         });
         private readonly HttpClient httpClient;
+        private readonly ILogger logger;
+
 
 
         /// <summary>
@@ -44,10 +47,12 @@ namespace HtmlToOpenXml.IO
         /// the specified <see cref="HttpClient"/>.
         /// </summary>
         /// <param name="httpClient">The HTTP client to use to download remote resources.</param>
-        public DefaultWebRequest(HttpClient httpClient)
+        /// <param name="logger">Provide an logging mechanism for diagnose.</param>
+        public DefaultWebRequest(HttpClient httpClient, ILogger logger = null)
         {
             this.httpClient = httpClient ?? DefaultHttp;
             this.httpClient.DefaultRequestHeaders.AcceptEncoding.ParseAdd("gzip, deflate");
+            this.logger = logger;
         }
 
         /// <inheritdoc/>
@@ -81,6 +86,7 @@ namespace HtmlToOpenXml.IO
 
             try
             {
+                logger?.LogDebug("Downloading local file: {0}", requestUri);
                 return Task.FromResult(new Resource() {
                     Content = System.IO.File.OpenRead(localPath),
                     StatusCode = HttpStatusCode.OK
@@ -88,6 +94,8 @@ namespace HtmlToOpenXml.IO
             }
             catch (Exception exc)
             {
+                logger?.LogError(exc, "Failed to download file: {0}", requestUri);
+
                 if (exc is System.IO.IOException || exc is UnauthorizedAccessException || exc is System.Security.SecurityException || exc is NotSupportedException)
                     return null;
                 throw;
@@ -103,6 +111,8 @@ namespace HtmlToOpenXml.IO
 
             try
             {
+                logger?.LogDebug("Downloading remote file: {0}", requestUri);
+
                 var response = await httpClient.GetAsync(requestUri, cancellationToken).ConfigureAwait(false);
                 if (response == null) return null;
                 resource.StatusCode = response.StatusCode;
@@ -117,6 +127,11 @@ namespace HtmlToOpenXml.IO
             {
                 if (cancellationToken.IsCancellationRequested)
                     return null;
+                throw;
+            }
+            catch(Exception exc)
+            {
+                logger?.LogError(exc, "Failed to download file: {0}", requestUri);
                 throw;
             }
 
