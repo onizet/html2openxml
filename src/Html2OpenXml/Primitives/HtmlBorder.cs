@@ -9,16 +9,9 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
-using System.ComponentModel;
-using System.Globalization;
 
 namespace HtmlToOpenXml
 {
-	using w = DocumentFormat.OpenXml.Wordprocessing;
-	using System.Collections.Generic;
-
-
 	/// <summary>
 	/// Represents a Html Border with the 4 sides.
 	/// </summary>
