@@ -45,16 +45,16 @@ text-decoration:underline;
             Assert.That(elements.Count, Is.EqualTo(1));
 
             Run run = elements[0].GetFirstChild<Run>();
-            Assert.IsNotNull(run);
+            Assert.That(run, Is.Not.Null);
 
             RunProperties runProperties = run.GetFirstChild<RunProperties>();
-            Assert.IsNotNull(runProperties);
+            Assert.That(runProperties, Is.Not.Null);
             Assert.Multiple(() => {
-                Assert.IsTrue(runProperties.HasChild<Bold>());
-                Assert.IsTrue(runProperties.HasChild<Italic>());
-                Assert.IsTrue(runProperties.HasChild<FontSize>());
-                Assert.IsTrue(runProperties.HasChild<Underline>());
-                Assert.IsTrue(runProperties.HasChild<Color>());
+                Assert.That(runProperties.HasChild<Bold>(), Is.True);
+                Assert.That(runProperties.HasChild<Italic>(), Is.True);
+                Assert.That(runProperties.HasChild<FontSize>(), Is.True);
+                Assert.That(runProperties.HasChild<Underline>(), Is.True);
+                Assert.That(runProperties.HasChild<Color>(),Is.True);
             });
         }
 
@@ -81,13 +81,13 @@ text-decoration:underline;
             Assert.That(elements.Count, Is.EqualTo(1));
 
             Run run = elements[0].GetFirstChild<Run>();
-            Assert.IsNotNull(run);
+            Assert.That(run, Is.Not.Null);
             if (hasQuote)
             {
                 Assert.That(run.InnerText, Is.EqualTo(" " + converter.HtmlStyles.QuoteCharacters.Prefix));
 
                 Run lastRun = elements[0].GetLastChild<Run>();
-                Assert.IsNotNull(run);
+                Assert.That(run, Is.Not.Null);
                 Assert.That(lastRun.InnerText, Is.EqualTo(converter.HtmlStyles.QuoteCharacters.Suffix));
 
                 // focus the content run
@@ -95,10 +95,10 @@ text-decoration:underline;
             }
 
             RunProperties runProperties = run.GetFirstChild<RunProperties>();
-            Assert.IsNotNull(runProperties);
+            Assert.That(runProperties, Is.Not.Null);
 
             var runStyle = runProperties.GetFirstChild<RunStyle>();
-            Assert.IsNotNull(runStyle);
+            Assert.That(runStyle, Is.Not.Null);
             Assert.That(runStyle.Val.Value, Is.EqualTo("QuoteChar"));
         }
 
@@ -112,7 +112,7 @@ text-decoration:underline;
             Assert.That(elements[0].ChildElements[0], Is.InstanceOf(typeof(Run)));
             Assert.That(elements[0].ChildElements[1], Is.InstanceOf(typeof(Run)));
             Assert.That(elements[0].ChildElements[2], Is.InstanceOf(typeof(Run)));
-            Assert.IsNotNull(((Run)elements[0].ChildElements[1]).GetFirstChild<Break>());
+            Assert.That(((Run)elements[0].ChildElements[1]).GetFirstChild<Break>(), Is.Not.Null);
         }
 
         private T ParsePhrasing<T> (string html) where T : OpenXmlElement
@@ -121,13 +121,13 @@ text-decoration:underline;
             Assert.That(elements.Count, Is.EqualTo(1));
 
             Run run = elements[0].GetFirstChild<Run>();
-            Assert.IsNotNull(run);
+            Assert.That(run, Is.Not.Null);
 
             RunProperties runProperties = run.GetFirstChild<RunProperties>();
-            Assert.IsNotNull(runProperties);
+            Assert.That(runProperties, Is.Not.Null);
 
             var tag = runProperties.GetFirstChild<T>();
-            Assert.IsNotNull(tag);
+            Assert.That(tag, Is.Not.Null);
             return tag;
         }
     }

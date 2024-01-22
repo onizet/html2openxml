@@ -26,15 +26,15 @@ namespace HtmlToOpenXml.Tests
             });
 
             var hyperlink = (Hyperlink) elements[0].FirstChild;
-            Assert.IsNotNull(hyperlink.Tooltip);
+            Assert.That(hyperlink.Tooltip, Is.Not.Null);
             Assert.That(hyperlink.Tooltip.Value, Is.EqualTo("Test Tooltip"));
 
-            Assert.IsNotNull(hyperlink.Id);
+            Assert.That(hyperlink.Id, Is.Not.Null);
             Assert.That(hyperlink.History.Value, Is.EqualTo(true));
             Assert.That(mainPart.HyperlinkRelationships.Count(), Is.GreaterThan(0));
 
             var extLink = mainPart.HyperlinkRelationships.FirstOrDefault(r => r.Id == hyperlink.Id);
-            Assert.IsNotNull(extLink);
+            Assert.That(extLink, Is.Not.Null);
             Assert.That(extLink.IsExternal, Is.EqualTo(true));
             Assert.That(extLink.Uri.AbsoluteUri, Is.EqualTo("http://www.site.com/"));
         }
@@ -76,15 +76,15 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements[0].FirstChild, Is.TypeOf(typeof(Hyperlink)));
 
             var hyperlink = (Hyperlink) elements[0].FirstChild;
-            Assert.IsNull(hyperlink.Id);
-            Assert.True(hyperlink.Anchor == "anchor1");
+            Assert.That(hyperlink.Id, Is.Null);
+            Assert.That(hyperlink.Anchor == "anchor1", Is.True);
 
             converter.ExcludeLinkAnchor = true;
 
             // _top is always present and bypass the previous rule
             elements = converter.Parse(@"<a href=""#_top"">Anchor2</a>");
             hyperlink = (Hyperlink) elements[0].FirstChild;
-            Assert.True(hyperlink.Anchor == "_top");
+            Assert.That(hyperlink.Anchor == "_top", Is.True);
 
             // this should generate a Run and not an Hyperlink
             elements = converter.Parse(@"<a href=""#_anchor3"">Anchor3</a>");
