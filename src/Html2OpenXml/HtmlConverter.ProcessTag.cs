@@ -243,7 +243,7 @@ namespace HtmlToOpenXml
 			{
 				Unit fontSize = Converter.ToFontSize(attrValue);
                 if (fontSize.IsFixed)
-					styleAttributes.Add(new FontSize { Val = (fontSize.ValueInPoint * 2).ToString(CultureInfo.InvariantCulture) });
+					styleAttributes.Add(new FontSize { Val = Math.Round(fontSize.ValueInPoint * 2).ToString(CultureInfo.InvariantCulture) });
 			}
 
 			attrValue = en.Attributes["face"];

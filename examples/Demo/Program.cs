@@ -6,6 +6,7 @@ using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Validation;
 using DocumentFormat.OpenXml.Wordprocessing;
 using HtmlToOpenXml;
+using System.Runtime.InteropServices;
 
 namespace Demo
 {
@@ -49,19 +50,20 @@ namespace Demo
                 File.WriteAllBytes(filename, generatedDocument.ToArray());
             }
 
-            System.Diagnostics.Process.Start(filename);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                System.Diagnostics.Process.Start(filename);
         }
 
         static void AssertThatOpenXmlDocumentIsValid(WordprocessingDocument wpDoc)
         {
-            var validator = new OpenXmlValidator(FileFormatVersions.Office2010);
+            var validator = new OpenXmlValidator(FileFormatVersions.Office2021);
             var errors = validator.Validate(wpDoc);
 
             if (!errors.GetEnumerator().MoveNext())
                 return;
 
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("The document doesn't look 100% compatible with Office 2010.\n");
+            Console.WriteLine("The document doesn't look 100% compatible with Office 2021.\n");
 
             Console.ForegroundColor = ConsoleColor.Gray;
             foreach (ValidationErrorInfo error in errors)

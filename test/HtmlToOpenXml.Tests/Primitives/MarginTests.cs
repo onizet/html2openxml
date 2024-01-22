@@ -28,7 +28,7 @@ namespace HtmlToOpenXml.Tests
         [Test]
         public void ParseFloat ()
         {
-            var margin = Margin.Parse("0 50% 1em .00001pt");
+            var margin = Margin.Parse("0 50% 9.5pt .00001pt");
 
             Assert.Multiple(() => {
                 Assert.That(margin.IsValid, Is.EqualTo(true));
@@ -39,13 +39,16 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(margin.Right.Value, Is.EqualTo(50));
                 Assert.That(margin.Right.Type, Is.EqualTo(UnitMetric.Percent));
 
-                Assert.That(margin.Bottom.Value, Is.EqualTo(1));
-                Assert.That(margin.Bottom.Type, Is.EqualTo(UnitMetric.EM));
+                Assert.That(margin.Bottom.Value, Is.EqualTo(9.5));
+                Assert.That(margin.Bottom.Type, Is.EqualTo(UnitMetric.Point));
+                Assert.That(margin.Bottom.ValueInPoint, Is.EqualTo(9.5));
+                //size are half-point font size (OpenXml relies mostly on long value, not on float)
+                Assert.That(Math.Round(margin.Bottom.ValueInPoint * 2).ToString(), Is.EqualTo("19"));
 
                 Assert.That(margin.Left.Value, Is.EqualTo(.00001));
                 Assert.That(margin.Left.Type, Is.EqualTo(UnitMetric.Point));
                 // but due to conversion: 0 (OpenXml relies mostly on long value, not on float)
-                Assert.That(margin.Left.ValueInPoint, Is.EqualTo(0));
+                Assert.That(Math.Round(margin.Left.ValueInPoint * 2).ToString(), Is.EqualTo("0"));
             });
         }
     }
