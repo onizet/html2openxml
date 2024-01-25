@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Linq;
 using System.IO;
+using System.Diagnostics;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Validation;
 using DocumentFormat.OpenXml.Wordprocessing;
 using HtmlToOpenXml;
-using System.Runtime.InteropServices;
 
 namespace Demo
 {
@@ -50,8 +49,7 @@ namespace Demo
                 File.WriteAllBytes(filename, generatedDocument.ToArray());
             }
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                System.Diagnostics.Process.Start(filename);
+            Process.Start(new ProcessStartInfo(filename) { UseShellExecute = true });
         }
 
         static void AssertThatOpenXmlDocumentIsValid(WordprocessingDocument wpDoc)

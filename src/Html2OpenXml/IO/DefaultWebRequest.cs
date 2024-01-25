@@ -25,7 +25,7 @@ namespace HtmlToOpenXml.IO
     /// </summary>
     public class DefaultWebRequest : IWebRequest
     {
-        private static HashSet<string> SupportedProtocols = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+        private static readonly HashSet<string> SupportedProtocols = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
             "http", "https", "file"
         };
         private Uri baseImageUri;
