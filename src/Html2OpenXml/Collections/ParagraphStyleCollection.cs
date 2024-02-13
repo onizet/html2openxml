@@ -82,11 +82,7 @@ namespace HtmlToOpenXml
 			{
 				try
 				{
-#if !NETSTANDARD1_3
-                    var ci = System.Globalization.CultureInfo.GetCultureInfo(attrValue);
-#else
                     var ci = new System.Globalization.CultureInfo(attrValue);
-#endif
                     bool rtl = ci.TextInfo.IsRightToLeft;
 
 					Languages lang = new Languages() { Val = ci.TwoLetterISOLanguageName };
@@ -102,10 +98,9 @@ namespace HtmlToOpenXml
 					containerStyleAttributes.Add(new ParagraphMarkRunProperties(lang));
 					containerStyleAttributes.Add(new BiDi() { Val = OnOffValue.FromBoolean(rtl) });
 				}
-				catch (ArgumentException exc)
+				catch (ArgumentException)
 				{
                     // lang not valid, ignore it
-                    if (Logging.On) Logging.PrintError($"lang attribute {attrValue} not recognized: " + exc.Message, exc);
 				}
 			}
 

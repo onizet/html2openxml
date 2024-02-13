@@ -1,17 +1,11 @@
 [![Latest version](https://img.shields.io/nuget/v/HtmlToOpenXml.dll.svg)](https://www.nuget.org/packages/HtmlToOpenXml.dll)
-[![License MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/onizet/html2openxml/blob/master/LICENSE)
 [![NuGet](https://img.shields.io/nuget/dt/HtmlToOpenXml.dll.svg)]()
-[![codecov.io](https://codecov.io/github/onizet/html2openxml/coverage.svg?branch=master)](https://codecov.io/github/onizet/html2openxml?branch=master)
-
-[![netstandard1.3](https://img.shields.io/badge/netstandard-1.3-brightgreen.svg)](https://img.shields.io/badge/netstandard-1.3-brightgreen.svg)
-[![netstandard2.0](https://img.shields.io/badge/netstandard-2.0-brightgreen.svg)](https://img.shields.io/badge/netstandard-2.0-brightgreen.svg)
-[![net46](https://img.shields.io/badge/net-46-brightgreen.svg)](https://img.shields.io/badge/net-46-brightgreen.svg)
 
 # What is Html2OpenXml?
 
 Html2OpenXml is a small .Net library that convert simple or advanced HTML to plain OpenXml components. This program has started in 2009, initially to convert user's comments from SharePoint to Word.
 
-This library supports both **.Net Core (netstandard1.3)** and **.Net Framework 4.6**.
+This library supports both **.Net Core (netstandard2.0)** and **.Net Framework 4.6, 6 and 8**.
 
 Depends on [DocumentFormat.OpenXml](https://www.nuget.org/packages/DocumentFormat.OpenXml/).
 

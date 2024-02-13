@@ -24,14 +24,14 @@ namespace HtmlToOpenXml.Tests
             });
 
             var noteRef = elements[0].LastChild.GetFirstChild<FootnoteReference>();
-            Assert.IsNotNull(noteRef);
+            Assert.That(noteRef, Is.Not.Null);
             Assert.That(noteRef.Id.HasValue, Is.EqualTo(true));
 
-            Assert.IsNotNull(mainPart.FootnotesPart);
+            Assert.That(mainPart.FootnotesPart, Is.Not.Null);
             Assert.That(mainPart.FootnotesPart.HyperlinkRelationships.Count(), Is.EqualTo(0));
 
             var fnotes = mainPart.FootnotesPart.Footnotes.Elements<Footnote>().FirstOrDefault(f => f.Id.Value == noteRef.Id.Value);
-            Assert.IsNotNull(fnotes);
+            Assert.That(fnotes, Is.Not.Null);
         }
 
         [TestCase(@"<abbr title='https://en.wikipedia.org/wiki/N A S A '>NASA</abbr>", "https://en.wikipedia.org/wiki/N%20A%20S%20A")]
@@ -50,18 +50,18 @@ namespace HtmlToOpenXml.Tests
             });
 
             var noteRef = elements[0].LastChild.GetFirstChild<FootnoteReference>();
-            Assert.IsNotNull(noteRef);
+            Assert.That(noteRef, Is.Not.Null);
             Assert.That(noteRef.Id.HasValue, Is.EqualTo(true));
 
-            Assert.IsNotNull(mainPart.FootnotesPart);
+            Assert.That(mainPart.FootnotesPart, Is.Not.Null);
             var fnotes = mainPart.FootnotesPart.Footnotes.Elements<Footnote>().FirstOrDefault(f => f.Id.Value == noteRef.Id.Value);
-            Assert.IsNotNull(fnotes);
+            Assert.That(fnotes, Is.Not.Null);
 
             var link = fnotes.FirstChild.GetFirstChild<Hyperlink>();
-            Assert.IsNotNull(link);
+            Assert.That(link, Is.Not.Null);
 
             var extLink = mainPart.FootnotesPart.HyperlinkRelationships.FirstOrDefault(r => r.Id == link.Id);
-            Assert.IsNotNull(extLink);
+            Assert.That(extLink, Is.Not.Null);
             Assert.That(extLink.IsExternal, Is.EqualTo(true));
             Assert.That(extLink.Uri.AbsoluteUri, Is.EqualTo(expectedUri));
         }
@@ -73,12 +73,12 @@ namespace HtmlToOpenXml.Tests
             var elements = converter.Parse(@"<acronym title='www.nasa.gov'>NASA</acronym>");
 
             var noteRef = elements[0].LastChild.GetFirstChild<EndnoteReference>();
-            Assert.IsNotNull(noteRef);
+            Assert.That(noteRef, Is.Not.Null);
             Assert.That(noteRef.Id.HasValue, Is.EqualTo(true));
 
-            Assert.IsNotNull(mainPart.EndnotesPart);
+            Assert.That(mainPart.EndnotesPart, Is.Not.Null);
             var fnotes = mainPart.EndnotesPart.Endnotes.Elements<Endnote>().FirstOrDefault(f => f.Id.Value == noteRef.Id.Value);
-            Assert.IsNotNull(fnotes);
+            Assert.That(fnotes, Is.Not.Null);
         }
     }
 }

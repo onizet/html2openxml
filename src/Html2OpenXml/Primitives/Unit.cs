@@ -169,9 +169,9 @@ namespace HtmlToOpenXml
 		/// <summary>
 		/// Gets the value expressed in Point unit.
 		/// </summary>
-		public int ValueInPoint
+		public double ValueInPoint
 		{
-			get { return (int) (type == UnitMetric.Point ? this.value : (float) valueInEmus / 12700L); }
+			get { return (double) (type == UnitMetric.Point ? this.value : (float) valueInEmus / 12700L); }
 		}
 
 		/// <summary>

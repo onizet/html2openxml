@@ -78,7 +78,8 @@ namespace HtmlToOpenXml
 			string tagName = en.CurrentTag;
 			string cite = en.Attributes["cite"];
 
-			htmlStyles.Paragraph.BeginTag(en.CurrentTag, new ParagraphStyleId() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.IntenseQuoteStyle) });
+			htmlStyles.Paragraph.BeginTag(en.CurrentTag, new ParagraphStyleId() { 
+				Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.IntenseQuoteStyle, StyleValues.Paragraph) });
 
 			AlternateProcessHtmlChunks(en, en.ClosingCurrentTag);
 
@@ -243,7 +244,7 @@ namespace HtmlToOpenXml
 			{
 				Unit fontSize = Converter.ToFontSize(attrValue);
                 if (fontSize.IsFixed)
-					styleAttributes.Add(new FontSize { Val = (fontSize.ValueInPoint * 2).ToString(CultureInfo.InvariantCulture) });
+					styleAttributes.Add(new FontSize { Val = Math.Round(fontSize.ValueInPoint * 2).ToString(CultureInfo.InvariantCulture) });
 			}
 
 			attrValue = en.Attributes["face"];
@@ -278,8 +279,8 @@ namespace HtmlToOpenXml
 
 			// Check if the line starts with a number format (1., 1.1., 1.1.1.)
 			// If it does, make sure we make the heading a numbered item
-			OpenXmlElement firstElement = elements.First();
-			Match regexMatch = Regex.Match(firstElement.InnerText, @"(?m)^(\d+.)*\s");
+			OpenXmlElement firstElement = elements.FirstOrDefault();
+			Match regexMatch = Regex.Match(firstElement?.InnerText ?? string.Empty, @"(?m)^(\d+\.)*\s");
 
 			// Make sure we only grab the heading if it starts with a number
 			if (regexMatch.Groups.Count > 1 && regexMatch.Groups[1].Captures.Count > 0)

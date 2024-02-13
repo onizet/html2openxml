@@ -29,8 +29,8 @@ namespace HtmlToOpenXml.Tests
             AssertIsImg(elements[0]);
             var run = elements[0].GetFirstChild<Run>();
             RunProperties runProperties = run.GetFirstChild<RunProperties>();
-            Assert.IsNotNull(runProperties);
-            Assert.IsNotNull(runProperties.Border);
+            Assert.That(runProperties, Is.Not.Null);
+            Assert.That(runProperties.Border, Is.Not.Null);
         }
 
         [Test]
@@ -46,12 +46,12 @@ namespace HtmlToOpenXml.Tests
         private void AssertIsImg (OpenXmlCompositeElement elements)
         {
             var run = elements.GetFirstChild<Run>();
-            Assert.IsNotNull(run);
+            Assert.That(run, Is.Not.Null);
             var img = run.GetFirstChild<Drawing>();
-            Assert.IsNotNull(img);
-            Assert.IsNotNull(img.Inline?.Graphic?.GraphicData);
+            Assert.That(img, Is.Not.Null);
+            Assert.That(img.Inline?.Graphic?.GraphicData, Is.Not.Null);
             var pic = img.Inline.Graphic.GraphicData.GetFirstChild<pic.Picture>();
-            Assert.IsNotNull(pic?.BlipFill?.Blip?.Embed);
+            Assert.That(pic?.BlipFill?.Blip?.Embed, Is.Not.Null);
 
             var imagePartId = pic.BlipFill.Blip.Embed.Value;
             var part = mainPart.GetPartById(imagePartId);

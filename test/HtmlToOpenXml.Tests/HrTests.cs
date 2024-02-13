@@ -37,14 +37,14 @@ namespace HtmlToOpenXml.Tests
         {
             Assert.That(hr.ChildElements.Count, Is.EqualTo(2));
             var props = hr.GetFirstChild<ParagraphProperties>();
-            Assert.IsNotNull(props);
+            Assert.That(props, Is.Not.Null);
 
             Assert.That(props.ChildElements.Count, Is.EqualTo(expectSpacing? 2:1));
-            Assert.IsNotNull(props.ParagraphBorders);
-            Assert.IsNotNull(props.ParagraphBorders.TopBorder);
+            Assert.That(props.ParagraphBorders, Is.Not.Null);
+            Assert.That(props.ParagraphBorders.TopBorder, Is.Not.Null);
 
             if (expectSpacing)
-                Assert.IsNotNull(props.SpacingBetweenLines);
+                Assert.That(props.SpacingBetweenLines, Is.Not.Null);
         }
     }
 }

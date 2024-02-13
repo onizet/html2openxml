@@ -267,7 +267,8 @@ namespace HtmlToOpenXml
 				numInstances.Pop();  // decrement for nested list
 
 			firstItem = true;
-            listHtmlElementClasses.Pop();
+			if (listHtmlElementClasses.Any())
+	            listHtmlElementClasses.Pop();
 		}
 
 		#endregion

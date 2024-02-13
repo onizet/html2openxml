@@ -116,7 +116,7 @@ namespace HtmlToOpenXml
 
 				// size are half-point font size
                 if (font.Size.IsFixed)
-					styleAttributes.Add(new FontSize() { Val = (font.Size.ValueInPoint * 2).ToString(CultureInfo.InvariantCulture) });
+					styleAttributes.Add(new FontSize() { Val = Math.Round(font.Size.ValueInPoint * 2).ToString(CultureInfo.InvariantCulture) });
 			}
 		}
 

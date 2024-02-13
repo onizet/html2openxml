@@ -204,7 +204,6 @@ namespace HtmlToOpenXml
 					Action<HtmlEnumerator> action;
 					if (knownTags.TryGetValue(en.CurrentTag, out action))
 					{
-						if (Logging.On) Logging.PrintVerbose(en.Current);
 						action(en);
 					}
 
@@ -803,37 +802,6 @@ namespace HtmlToOpenXml
 		{
 			get { return htmlStyles; }
 		}
-
-        /// <summary>
-        /// Gets or sets how the &lt;img&gt; tag should be handled.
-        /// </summary>
-        [Obsolete("Provide a IWebRequest implementation or use DefaultWebRequest")]
-        public ImageProcessing ImageProcessing { get; set; } = ImageProcessing.AutomaticDownload;
-
-        /// <summary>
-        /// Gets or sets the base Uri used to automaticaly resolve relative images 
-        /// if used with ImageProcessing = AutomaticDownload.
-        /// </summary>
-        [Obsolete("Provide a IWebRequest implementation or use DefaultWebRequest.BaseImageUrl")]
-        public Uri BaseImageUrl
-        {
-            get { return (webRequester as DefaultWebRequest)?.BaseImageUrl; }
-            set
-            {
-                if (value != null)
-                {
-                    if (!value.IsAbsoluteUri)
-                        throw new ArgumentException("BaseImageUrl should be an absolute Uri");
-                    // in case of local uri (file:///) we need to be sure the uri ends with '/' or the
-                    // combination of uri = new Uri(@"C:\users\demo\images", "pic.jpg");
-                    // will eat the images part
-                    if (value.IsFile && value.LocalPath[value.LocalPath.Length - 1] != '/')
-                        value = new Uri(value.OriginalString + '/');
-                }
-                if (webRequester is DefaultWebRequest wr)
-                    wr.BaseImageUrl = value;
-            }
-        }
 
 		/// <summary>
 		/// Gets or sets where the Legend tag (&lt;caption&gt;) should be rendered (above or below the table).
