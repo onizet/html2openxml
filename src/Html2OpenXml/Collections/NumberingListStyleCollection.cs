@@ -215,7 +215,7 @@ namespace HtmlToOpenXml
 					}
 				}
 
-				lastAbsNumIndex = lastAbsNumIndex == -1 ? 0 : lastAbsNumIndex;
+				lastAbsNumIndex = Math.Max(lastAbsNumIndex, 0);
 
 				for (int i = 0; i < absNumChildren.Length; i++)
 					numberingPart.Numbering.InsertAt(absNumChildren[i], i + lastAbsNumIndex);
