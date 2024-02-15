@@ -5,7 +5,7 @@
 
 Html2OpenXml is a small .Net library that convert simple or advanced HTML to plain OpenXml components. This program has started in 2009, initially to convert user's comments from SharePoint to Word.
 
-This library supports both **.Net Core (netstandard2.0)** and **.Net Framework 4.6, 6 and 8**.
+This library supports both **.Net Framework and .Net Core (via netstandard2.0)** and **.Net 6 and 8**.
 
 Depends on [DocumentFormat.OpenXml](https://www.nuget.org/packages/DocumentFormat.OpenXml/).
 
