@@ -13,11 +13,11 @@ using DocumentFormat.OpenXml;
 
 namespace HtmlToOpenXml.Tests
 {
-	/// <summary>
-	/// Helper class that provide some extension methods to OpenXml SDK.
-	/// </summary>
+    /// <summary>
+    /// Helper class that provide some extension methods to OpenXml SDK.
+    /// </summary>
     [System.Diagnostics.DebuggerStepThrough]
-	static class OpenXmlExtension
+    static class OpenXmlExtension
     {
         public static bool HasChild<T>(this OpenXmlElement element) where T : OpenXmlElement
         {

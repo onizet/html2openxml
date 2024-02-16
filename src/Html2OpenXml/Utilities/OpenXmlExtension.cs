@@ -15,56 +15,56 @@ using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml
 {
-	using wp = DocumentFormat.OpenXml.Drawing.Wordprocessing;
+    using wp = DocumentFormat.OpenXml.Drawing.Wordprocessing;
 
-	/// <summary>
-	/// Helper class that provide some extension methods to OpenXml SDK.
-	/// </summary>
+    /// <summary>
+    /// Helper class that provide some extension methods to OpenXml SDK.
+    /// </summary>
     [System.Diagnostics.DebuggerStepThrough]
-	static class OpenXmlExtension
+    static class OpenXmlExtension
     {
         public static bool HasChild<T>(this OpenXmlElement element) where T : OpenXmlElement
         {
             return element.GetFirstChild<T>() != null;
         }
 
-		public static T? GetLastChild<T>(this OpenXmlElement element) where T : OpenXmlElement
-		{
-			if (element == null) return null;
+        public static T? GetLastChild<T>(this OpenXmlElement element) where T : OpenXmlElement
+        {
+            if (element == null) return null;
 
-			for (int i = element.ChildElements.Count - 1; i >= 0; i--)
-			{
-				if (element.ChildElements[i] is T)
-					return element.ChildElements[i] as T;
-			}
+            for (int i = element.ChildElements.Count - 1; i >= 0; i--)
+            {
+                if (element.ChildElements[i] is T)
+                    return element.ChildElements[i] as T;
+            }
 
-			return null;
-		}
+            return null;
+        }
 
         public static bool Equals<T>(this IEnumValue value, T comparand) where T : struct
         {
             return value != null && value.Value.Equals(comparand);
         }
 
-		public static void InsertInProperties(this Paragraph p, Action<ParagraphProperties> @delegate)
-		{
-			p.ParagraphProperties ??= new ParagraphProperties();
-			@delegate(p.ParagraphProperties);
-		}
+        public static void InsertInProperties(this Paragraph p, Action<ParagraphProperties> @delegate)
+        {
+            p.ParagraphProperties ??= new ParagraphProperties();
+            @delegate(p.ParagraphProperties);
+        }
 
-		public static void InsertInProperties(this Run r, Action<RunProperties> @delegate)
-		{
-			r.RunProperties ??= new RunProperties();
-			@delegate(r.RunProperties);
-		}
+        public static void InsertInProperties(this Run r, Action<RunProperties> @delegate)
+        {
+            r.RunProperties ??= new RunProperties();
+            @delegate(r.RunProperties);
+        }
 
-		public static void InsertInDocProperties(this Drawing d, params OpenXmlElement[] newChildren)
-		{
-			d.Inline ??= new wp.Inline();
-			if (d.Inline.DocProperties == null) d.Inline.DocProperties = new wp.DocProperties();
+        public static void InsertInDocProperties(this Drawing d, params OpenXmlElement[] newChildren)
+        {
+            d.Inline ??= new wp.Inline();
+            if (d.Inline.DocProperties == null) d.Inline.DocProperties = new wp.DocProperties();
 
-			d.Inline.DocProperties.Append(newChildren);
-		}
+            d.Inline.DocProperties.Append(newChildren);
+        }
 
         public static bool Compare(this PageSize pageSize, PageOrientationValues orientation)
         {
@@ -77,19 +77,19 @@ namespace HtmlToOpenXml
             return pageOrientation == orientation;
         }
 
-		// needed since December 2009 CTP refactoring, where casting is not anymore an option
+        // needed since December 2009 CTP refactoring, where casting is not anymore an option
 
-		public static TableRowAlignmentValues ToTableRowAlignment(this JustificationValues val)
-		{
-			if (val == JustificationValues.Center) return TableRowAlignmentValues.Center;
-			else if (val == JustificationValues.Right) return TableRowAlignmentValues.Right;
-			else return TableRowAlignmentValues.Left;
-		}
-		public static JustificationValues ToJustification(this TableRowAlignmentValues val)
-		{
-			if (val == TableRowAlignmentValues.Left) return JustificationValues.Left;
-			else if (val == TableRowAlignmentValues.Center) return JustificationValues.Center;
-			else return JustificationValues.Right;
-		}
+        public static TableRowAlignmentValues ToTableRowAlignment(this JustificationValues val)
+        {
+            if (val == JustificationValues.Center) return TableRowAlignmentValues.Center;
+            else if (val == JustificationValues.Right) return TableRowAlignmentValues.Right;
+            else return TableRowAlignmentValues.Left;
+        }
+        public static JustificationValues ToJustification(this TableRowAlignmentValues val)
+        {
+            if (val == TableRowAlignmentValues.Left) return JustificationValues.Left;
+            else if (val == TableRowAlignmentValues.Center) return JustificationValues.Center;
+            else return JustificationValues.Right;
+        }
     }
 }

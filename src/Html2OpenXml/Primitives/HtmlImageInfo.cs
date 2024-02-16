@@ -13,10 +13,10 @@ using DocumentFormat.OpenXml.Packaging;
 
 namespace HtmlToOpenXml
 {
-	/// <summary>
-	/// Represents an image and its metadata.
-	/// </summary>
-	sealed class HtmlImageInfo(string source)
+    /// <summary>
+    /// Represents an image and its metadata.
+    /// </summary>
+    sealed class HtmlImageInfo(string source)
     {
         /// <summary>
         /// The URI identifying this cached image information.
@@ -28,20 +28,20 @@ namespace HtmlToOpenXml
         /// </summary>
         public string? ImagePartId { get; set; }
 
-		/// <summary>
-		/// Gets or sets the size of the image
-		/// </summary>
-		public Size Size { get; set; }
-	}
+        /// <summary>
+        /// Gets or sets the size of the image
+        /// </summary>
+        public Size Size { get; set; }
+    }
 
-	/// <summary>
-	/// Typed dictionary of <see cref="HtmlImageInfo"/> where the Source URI is the identifier.
-	/// </summary>
-	sealed class HtmlImageInfoCollection : System.Collections.ObjectModel.KeyedCollection<string, HtmlImageInfo>
-	{
-		protected override string GetKeyForItem(HtmlImageInfo item)
-		{
-			return item.Source;
-		}
-	}
+    /// <summary>
+    /// Typed dictionary of <see cref="HtmlImageInfo"/> where the Source URI is the identifier.
+    /// </summary>
+    sealed class HtmlImageInfoCollection : System.Collections.ObjectModel.KeyedCollection<string, HtmlImageInfo>
+    {
+        protected override string GetKeyForItem(HtmlImageInfo item)
+        {
+            return item.Source;
+        }
+    }
 }

@@ -1,0 +1,27 @@
+* text=auto
+
+*.docx  diff=astextplain
+
+*.jpg binary
+*.png binary
+*.gif binary
+
+*.cs      text diff=csharp
+*.xml     text
+*.xsd     text
+*.xaml    text
+*.csproj  text
+*.resx    text
+*.sln     text
+*.tt      text
+*.ps1     text
+*.cmd     text
+*.msbuild text
+*.md      text
+*.txt     text
+*.html -text
+*.htm -text
+*.css -text
+
+*.csproj -text merge=union
+*.sln -text merge=union
