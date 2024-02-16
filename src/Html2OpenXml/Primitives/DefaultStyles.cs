@@ -96,7 +96,7 @@ namespace HtmlToOpenXml
         /// Default style for paragraphs
         /// </summary>
         /// <value>null</value>
-        public string ParagraphStyle { get; set; }
+        public string? ParagraphStyle { get; set; }
 
         #endregion
 

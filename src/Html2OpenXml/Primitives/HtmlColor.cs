@@ -17,7 +17,7 @@ namespace HtmlToOpenXml
     /// <summary>
     /// Represents an ARGB color.
     /// </summary>
-    struct HtmlColor
+    readonly struct HtmlColor
     {
         private static readonly char[] hexDigits = {
          '0', '1', '2', '3', '4', '5', '6', '7',
@@ -33,12 +33,20 @@ namespace HtmlToOpenXml
         public static readonly HtmlColor Black = FromArgb(0, 0, 0);
 
 
+        public HtmlColor(double alpha, byte red, byte green, byte blue) : this()
+        {
+            A = alpha;
+            R = red;
+            G = green;
+            B = blue;
+        }
+
         /// <summary>
         /// Try to parse a value (RGB(A) or HSL(A), hexadecimal, or named color) to its RGB representation.
         /// </summary>
         /// <param name="htmlColor">The color to parse.</param>
         /// <returns>Returns <see cref="HtmlColor.Empty"/> if parsing failed.</returns>
-        public static HtmlColor Parse(string htmlColor)
+        public static HtmlColor Parse(string? htmlColor)
         {
             if (string.IsNullOrEmpty(htmlColor))
                 return HtmlColor.Empty;
@@ -47,7 +55,7 @@ namespace HtmlToOpenXml
             // RGB or RGBA
             try
             {
-                if (htmlColor.StartsWith("rgb", StringComparison.OrdinalIgnoreCase))
+                if (htmlColor!.StartsWith("rgb", StringComparison.OrdinalIgnoreCase))
                 {
                     int startIndex = htmlColor.IndexOf('(', 3), endIndex = htmlColor.LastIndexOf(')');
                     if (startIndex >= 3 && endIndex > -1)
@@ -148,9 +156,7 @@ namespace HtmlToOpenXml
             if (alpha < 0.0 || alpha > 1.0)
                 throw new ArgumentOutOfRangeException(nameof(alpha), alpha, "Alpha should be comprised between 0.0 and 1.0");
 
-            return new HtmlColor() {
-                A = alpha, R = red, G = green, B = blue
-            };
+            return new HtmlColor(alpha, red, green, blue);
         }
 
         /// <summary>
@@ -272,17 +278,17 @@ namespace HtmlToOpenXml
         //
 
         /// <summary>Gets the alpha component value of this color structure.</summary>
-        public double A { get; set; }
+        public double A { get; }
         /// <summary>Gets the red component value of this cColor structure.</summary>
-        public byte R { get; set; }
+        public byte R { get; }
         /// <summary>Gets the green component value of this color structure.</summary>
-        public byte G { get; set; }
+        public byte G { get; }
         /// <summary>Gets the blue component value of this color structure.</summary>
-        public byte B { get; set; }
+        public byte B { get; }
 
         /// <summary>
         /// Specifies whether this HtmlColor structure is uninitialized.
         /// </summary>
-        public bool IsEmpty { get { return this.Equals(Empty); } }
+        public bool IsEmpty { get => this.Equals(Empty); }
     }
 }

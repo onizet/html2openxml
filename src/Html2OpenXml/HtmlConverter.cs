@@ -39,7 +39,7 @@ namespace HtmlToOpenXml
 		private Paragraph currentParagraph;
 		private Int32 footnotesRef = 1, endnotesRef = 1, figCaptionRef = -1;
 		private Dictionary<String, Action<HtmlEnumerator>> knownTags;
-        private ImagePrefetcher imagePrefetcher;
+        private ImagePrefetcher? imagePrefetcher;
         private TableContext tables;
         private readonly HtmlDocumentStyle htmlStyles;
         private readonly IWebRequest webRequester;
@@ -62,22 +62,27 @@ namespace HtmlToOpenXml
         /// <param name="mainPart">The mainDocumentPart of a document where to write the conversion to.</param>
         /// <param name="webRequester">Factory to download the images.</param>
         /// <remarks>We preload some configuration from inside the document such as style, bookmarks,...</remarks>
-        public HtmlConverter(MainDocumentPart mainPart, IWebRequest webRequester = null)
+        public HtmlConverter(MainDocumentPart mainPart, IWebRequest? webRequester = null)
         {
             this.knownTags = InitKnownTags();
-            this.mainPart = mainPart ?? throw new ArgumentNullException("mainPart");
+            this.mainPart = mainPart ?? throw new ArgumentNullException(nameof(mainPart));
             this.htmlStyles = new HtmlDocumentStyle(mainPart);
             this.webRequester = webRequester ?? new DefaultWebRequest();
+            this.elements = new List<OpenXmlElement>();
+            this.paragraphs = new List<OpenXmlCompositeElement>();
+            this.currentParagraph = new Paragraph();
+            this.tables = new TableContext();
         }
 
 		/// <summary>
 		/// Start the parse processing.
 		/// </summary>
 		/// <returns>Returns a list of parsed paragraph.</returns>
-        public IList<OpenXmlCompositeElement> Parse(String html)
+        public IList<OpenXmlCompositeElement> Parse(string? html)
 		{
+			var b = SideBorder.Parse("12px red");
 			if (String.IsNullOrEmpty(html))
-				return new Paragraph[0];
+				return Array.Empty<Paragraph>();
 
 			// ensure a body exists to avoid any errors when trying to access it
 			if (mainPart.Document == null)
@@ -86,11 +91,10 @@ namespace HtmlToOpenXml
 				mainPart.Document.Body = new Body();
 
 			// Reset:
-			elements = new List<OpenXmlElement>();
-			paragraphs = new List<OpenXmlCompositeElement>();
-			tables = new TableContext();
+			elements.Clear();
+			paragraphs.Clear();
 			htmlStyles.Runs.Reset();
-			currentParagraph = null;
+			tables = new TableContext();
 
 			// Start a new processing
 			paragraphs.Add(currentParagraph = htmlStyles.Paragraph.NewParagraph());
@@ -101,7 +105,7 @@ namespace HtmlToOpenXml
 				};
 			}
 
-			HtmlEnumerator en = new HtmlEnumerator(html);
+			HtmlEnumerator en = new HtmlEnumerator(html!);
 			ProcessHtmlChunks(en, null);
 
             if (elements.Count > 0)
@@ -124,8 +128,8 @@ namespace HtmlToOpenXml
 
             var paragraphs = Parse(html);
 
-			Body body = mainPart.Document.Body;
-			SectionProperties sectionProperties = body.GetLastChild<SectionProperties>();
+			Body body = mainPart.Document.Body!;
+			SectionProperties? sectionProperties = body.GetLastChild<SectionProperties>();
 			for (int i = 0; i < paragraphs.Count; i++)
 				body.Append(paragraphs[i]);
 
@@ -154,8 +158,10 @@ namespace HtmlToOpenXml
 		/// </summary>
 		private void RemoveEmptyParagraphs()
 		{
-			bool hasRuns;
+			if (paragraphs == null)
+				return;
 
+			bool hasRuns;
 			for (int i = 0; i < paragraphs.Count; i++)
 			{
 				OpenXmlCompositeElement p = paragraphs[i];
@@ -168,20 +174,19 @@ namespace HtmlToOpenXml
 
 				if (p.HasChildren)
 				{
-					if (!(p is Paragraph)) continue;
+					if (p is not Paragraph) continue;
 
 					// Has this paragraph some other elements than ParagraphProperties?
 					// This code ensure no default style or attribute on empty div will stay
 					hasRuns = false;
 					for (int j = p.ChildElements.Count - 1; j >= 0; j--)
 					{
-						ParagraphProperties prop = p.ChildElements[j] as ParagraphProperties;
-						if (prop == null || prop.SectionProperties != null)
-						{
-							hasRuns = true;
-							break;
-						}
-					}
+                        if (p.ChildElements[j] is not ParagraphProperties prop || prop.SectionProperties != null)
+                        {
+                            hasRuns = true;
+                            break;
+                        }
+                    }
 
 					if (hasRuns) continue;
 				}
@@ -195,14 +200,13 @@ namespace HtmlToOpenXml
 
 		#region ProcessHtmlChunks
 
-		private void ProcessHtmlChunks(HtmlEnumerator en, String endTag)
+		private void ProcessHtmlChunks(HtmlEnumerator en, string? endTag)
 		{
 			while (en.MoveUntilMatch(endTag))
 			{
 				if (en.IsCurrentHtmlTag)
 				{
-					Action<HtmlEnumerator> action;
-					if (knownTags.TryGetValue(en.CurrentTag, out action))
+					if (knownTags.TryGetValue(en.CurrentTag!, out var action))
 					{
 						action(en);
 					}
@@ -247,13 +251,13 @@ namespace HtmlToOpenXml
 		{
 			if (tables.HasContext)
 			{
-				TableRow row = tables.CurrentTable.GetLastChild<TableRow>();
+				TableRow? row = tables.CurrentTable!.GetLastChild<TableRow>();
 				if (row == null)
 				{
-					tables.CurrentTable.Append(row = new TableRow());
+					tables.CurrentTable!.Append(row = new TableRow());
 					tables.CellPosition = new CellPosition(tables.CellPosition.Row + 1, 0);
 				}
-                TableCell cell = row.GetLastChild<TableCell>();
+                TableCell? cell = row.GetLastChild<TableCell>();
                 if (cell == null) // ensure cell exists (issue #13982 reported by Willu)
                 {
                     row.Append(cell = new TableCell());
@@ -275,7 +279,7 @@ namespace HtmlToOpenXml
 		/// <returns>Returns the id of the footnote reference.</returns>
 		private int AddFootnoteReference(string description)
 		{
-			FootnotesPart fpart = mainPart.FootnotesPart;
+			FootnotesPart? fpart = mainPart.FootnotesPart;
 			if (fpart == null)
 				fpart = mainPart.AddNewPart<FootnotesPart>();
 
@@ -310,14 +314,14 @@ namespace HtmlToOpenXml
 				// to retrieve the highest Id.
 				foreach (var fn in fpart.Footnotes.Elements<Footnote>())
 				{
-					if (fn.Id.HasValue && fn.Id > footnotesRef) footnotesRef = (int) fn.Id.Value;
+					if (fn.Id != null && fn.Id > footnotesRef) footnotesRef = (int) fn.Id.Value;
 				}
 				footnotesRef++;
 			}
 
 
             Paragraph p;
-			fpart.Footnotes.Append(
+			fpart.Footnotes!.Append(
 				new Footnote(
 					p = new Paragraph(
 						new ParagraphProperties {
@@ -337,9 +341,8 @@ namespace HtmlToOpenXml
 
 
             // Description in footnote reference can be plain text or a web protocols/file share (like \\server01)
-            Uri uriReference;
-            Regex linkRegex = new Regex(@"^((https?|ftps?|mailto|file)://|[\\]{2})(?:[\w][\w.-]?)");
-            if (linkRegex.IsMatch(description) && Uri.TryCreate(description, UriKind.Absolute, out uriReference))
+            Regex linkRegex = new(@"^((https?|ftps?|mailto|file)://|[\\]{2})(?:[\w][\w.-]?)");
+            if (linkRegex.IsMatch(description) && Uri.TryCreate(description, UriKind.Absolute, out var uriReference))
             {
                 // when URI references a network server (ex: \\server01), System.IO.Packaging is not resolving the correct URI and this leads
                 // to a bad-formed XML not recognized by Word. To enforce the "original URI", a fresh new instance must be created
@@ -377,7 +380,7 @@ namespace HtmlToOpenXml
 		/// <returns>Returns the id of the endnote reference.</returns>
 		private int AddEndnoteReference(string description)
 		{
-			EndnotesPart fpart = mainPart.EndnotesPart;
+			EndnotesPart? fpart = mainPart.EndnotesPart;
 			if (fpart == null)
 				fpart = mainPart.AddNewPart<EndnotesPart>();
 
@@ -412,12 +415,12 @@ namespace HtmlToOpenXml
 				// to retrieve the highest Id.
 				foreach (var p in fpart.Endnotes.Elements<Endnote>())
 				{
-					if (p.Id.HasValue && p.Id > footnotesRef) endnotesRef = (int) p.Id.Value;
+					if (p.Id != null && p.Id > footnotesRef) endnotesRef = (int) p.Id.Value;
 				}
 				endnotesRef++;
 			}
 
-			fpart.Endnotes.Append(
+			fpart.Endnotes!.Append(
 				new Endnote(
 					new Paragraph(
 						new ParagraphProperties {
@@ -467,7 +470,7 @@ namespace HtmlToOpenXml
 
 		#region AddImagePart
 
-		private Drawing AddImagePart(String imageSource, String alt, Size preferredSize)
+		private Drawing? AddImagePart(String imageSource, String alt, Size preferredSize)
 		{
 			if (imageObjId == UInt32.MinValue)
 			{
@@ -477,13 +480,13 @@ namespace HtmlToOpenXml
 
 				drawingObjId = 1; // 1 is the minimum ID set by MS Office.
 				imageObjId = 1;
-				foreach (var d in mainPart.Document.Body.Descendants<Drawing>())
+				foreach (var d in mainPart.Document.Body!.Descendants<Drawing>())
 				{
 					if (d.Inline == null) continue; // fix some rare issue where Inline is null (reported by scwebgroup)
-					if (d.Inline.DocProperties.Id > drawingObjId) drawingObjId = d.Inline.DocProperties.Id;
+					if (d.Inline!.DocProperties?.Id?.Value > drawingObjId) drawingObjId = d.Inline.DocProperties.Id;
 
-					var nvPr = d.Inline.Graphic.GraphicData.GetFirstChild<pic.NonVisualPictureProperties>();
-					if (nvPr != null && nvPr.NonVisualDrawingProperties.Id > imageObjId)
+					var nvPr = d.Inline!.Graphic?.GraphicData?.GetFirstChild<pic.NonVisualPictureProperties>();
+					if (nvPr != null && nvPr.NonVisualDrawingProperties?.Id?.Value > imageObjId)
 						imageObjId = nvPr.NonVisualDrawingProperties.Id;
 				}
 				if (drawingObjId > 1) drawingObjId++;
@@ -494,7 +497,7 @@ namespace HtmlToOpenXml
             if (imagePrefetcher == null)
                 imagePrefetcher = new ImagePrefetcher(mainPart, webRequester);
 
-            HtmlImageInfo iinfo = imagePrefetcher.Download(imageSource);
+            HtmlImageInfo? iinfo = imagePrefetcher.Download(imageSource);
 
             if (iinfo == null)
                 return null;
@@ -695,7 +698,7 @@ namespace HtmlToOpenXml
 			// Not applicable to a table : page break
 			if (!tables.HasContext || en.CurrentTag == "<pre>")
 			{
-				String attrValue = en.StyleAttributes["page-break-after"];
+				var attrValue = en.StyleAttributes["page-break-after"];
 				if (attrValue == "always")
 				{
 					paragraphs.Add(new Paragraph(

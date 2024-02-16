@@ -9,7 +9,6 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
 using System.Collections.Generic;
 
 namespace HtmlToOpenXml
@@ -21,7 +20,7 @@ namespace HtmlToOpenXml
     {
         protected override void InsertItem(int index, HtmlTableSpan item)
         {
-            index = (this.Items as List<HtmlTableSpan>).BinarySearch(item);
+            index = ((List<HtmlTableSpan>) Items).BinarySearch(item);
             base.InsertItem(index < 0? ~index : index, item);
         }
     }

@@ -35,20 +35,20 @@ namespace HtmlToOpenXml
 		public override void ApplyTags(OpenXmlCompositeElement run)
 		{
 			if (tags.Count == 0 && DefaultRunStyle == null) return;
+			if (run is not Run r) return;
 
-			RunProperties properties = run.GetFirstChild<RunProperties>();
-			if (properties == null) run.PrependChild<RunProperties>(properties = new RunProperties());
+			r.RunProperties ??= new RunProperties();
 
 			var en = tags.GetEnumerator();
 			while (en.MoveNext())
 			{
 				TagsAtSameLevel tagsOfSameLevel = en.Current.Value.Peek();
-				foreach (OpenXmlElement tag in tagsOfSameLevel.Array)
-					properties.AddChild(tag.CloneNode(true));
+				foreach (OpenXmlElement tag in tagsOfSameLevel.Array!)
+					r.RunProperties.AddChild(tag.CloneNode(true));
 			}
 
 			if (this.DefaultRunStyle != null)
-				properties.RunStyle = new RunStyle() { Val = this.DefaultRunStyle };
+				r.RunProperties.RunStyle = new RunStyle() { Val = this.DefaultRunStyle };
 		}
 
 		#region ProcessCommonAttributes
@@ -90,7 +90,7 @@ namespace HtmlToOpenXml
 			{
 				for (int i = 0; i < classes.Length; i++)
 				{
-					string className = documentStyle.GetStyle(classes[i], StyleValues.Character, ignoreCase: true);
+					string? className = documentStyle.GetStyle(classes[i], StyleValues.Character, ignoreCase: true);
 					if (className != null) // only one Style can be applied in OpenXml and dealing with inheritance is out of scope
 					{
 						styleAttributes.Add(new RunStyle() { Val = className });
@@ -129,6 +129,6 @@ namespace HtmlToOpenXml
         /// <summary>
         /// Gets the default StyleId to apply on the any new runs.
         /// </summary>
-        internal String DefaultRunStyle { get; set; }
+        internal string? DefaultRunStyle { get; set; }
 	}
 }

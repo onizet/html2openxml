@@ -11,7 +11,6 @@
  */
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 
 namespace HtmlToOpenXml
 {
@@ -21,7 +20,6 @@ namespace HtmlToOpenXml
 	/// <summary>
 	/// Represents a Html Unit (ie: 120px, 10em, ...).
 	/// </summary>
-	[System.Diagnostics.DebuggerDisplay("{DebuggerDisplay,nq}")]
 	struct SideBorder
 	{
 		/// <summary>Represents an empty border (not defined).</summary>
@@ -39,7 +37,7 @@ namespace HtmlToOpenXml
 			this.size = size;
 		}
 
-		public static SideBorder Parse(String str)
+		public static SideBorder Parse(string? str)
 		{
 			if (str == null) return SideBorder.Empty;
 
@@ -48,7 +46,7 @@ namespace HtmlToOpenXml
 			// The main problem for parsing this attribute is that the browsers allow any permutation of the values... meaning more coding :(
 			// http://www.w3schools.com/cssref/pr_border.asp
 
-			List<String> borderParts = new List<String>(str.Split(HttpUtility.WhiteSpaces, StringSplitOptions.RemoveEmptyEntries));
+			var borderParts = new List<string>(str.Split(HttpUtility.WhiteSpaces, StringSplitOptions.RemoveEmptyEntries));
 			if (borderParts.Count == 0) return SideBorder.Empty;
 
 			// Initialize default values
@@ -91,7 +89,7 @@ namespace HtmlToOpenXml
 				borderWidth.IsFixed? borderWidth : new Unit(UnitMetric.Pixel, 4));
 		}
 
-		internal static Unit ParseWidth(String borderWidth)
+		internal static Unit ParseWidth(string? borderWidth)
 		{
 			Unit bu = Unit.Parse(borderWidth);
 			if (bu.IsValid)
@@ -148,11 +146,6 @@ namespace HtmlToOpenXml
 		public bool IsValid
 		{
 			get { return this.Style != w.BorderValues.Nil; }
-		}
-
-		private string DebuggerDisplay
-		{
-			get { return String.Format(CultureInfo.InvariantCulture, "{{Border={0} {1} {2}}}", Style, Width.DebuggerDisplay, Color); }
 		}
 	}
 }

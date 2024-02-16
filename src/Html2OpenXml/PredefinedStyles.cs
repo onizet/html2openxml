@@ -8,14 +8,14 @@ namespace HtmlToOpenXml
     /// </summary>
     internal class PredefinedStyles
     {
-        private static global::System.Resources.ResourceManager resourceMan;
+        private static global::System.Resources.ResourceManager? resourceMan;
 
 
         /// <summary>
         /// Retrieves the embedded resource.
         /// </summary>
         /// <param name="styleName">The key name of the resource to find.</param>
-        public static string GetOuterXml(string styleName)
+        public static string? GetOuterXml(string styleName)
         {
             return ResourceManager.GetString(styleName);
         }

@@ -25,7 +25,7 @@ namespace HtmlToOpenXml
             this.CellOrigin = origin;
         }
 
-        public int CompareTo(HtmlTableSpan other)
+        public int CompareTo(HtmlTableSpan? other)
         {
             if (other == null) return -1;
             int rc = this.CellOrigin.Row.CompareTo(other.CellOrigin.Row);

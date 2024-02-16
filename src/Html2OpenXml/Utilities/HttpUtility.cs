@@ -23,7 +23,9 @@ namespace HtmlToOpenXml
 	static class HttpUtility
 	{
 		/// <summary>The common characters considered as white space.</summary>
-		internal static readonly char[] WhiteSpaces = { ' ', '\t', '\r', '\u00A0', '\u0085' };
+		internal static readonly char[] WhiteSpaces = [' ', '\t', '\r', '\u00A0', '\u0085'];
+		private static readonly char[] entityEndingChars = [';', '&'];
+
 
 		static class HtmlEntities
 		{
@@ -45,8 +47,8 @@ namespace HtmlToOpenXml
 				"∴-there4", "∼-sim", "≅-cong", "≈-asymp", "≠-ne", "≡-equiv", "≤-le", "≥-ge", "⊂-sub", "⊃-sup", "⊄-nsub", "⊆-sube", "⊇-supe", "⊕-oplus", "⊗-otimes", "⊥-perp", 
 				"⋅-sdot", "⌈-lceil", "⌉-rceil", "⌊-lfloor", "⌋-rfloor", "〈-lang", "〉-rang", "◊-loz", "♠-spades", "♣-clubs", "♥-hearts", "♦-diams"
 			 };
-			private static Dictionary<String,Char> entitiesLookupTable;
-			private static readonly object SyncObject = new object();
+			private static Dictionary<string, char>? entitiesLookupTable;
+			private static readonly object SyncObject = new();
 
 			internal static char Lookup(string entity)
 			{
@@ -56,7 +58,7 @@ namespace HtmlToOpenXml
 					{
 						if (entitiesLookupTable == null)
 						{
-							Dictionary<String, Char> hashtable = new Dictionary<String, Char>(entitiesList.Length);
+							var hashtable = new Dictionary<string, char>(entitiesList.Length);
 							foreach (string str in entitiesList)
 								hashtable[str.Substring(2)] = str[0];
 
@@ -76,9 +78,9 @@ namespace HtmlToOpenXml
 		/// <summary>
 		/// Converts a string that has been HTML-encoded for HTTP transmission into a decoded string.
 		/// </summary>
-		public static string HtmlDecode(string s)
+		public static string HtmlDecode(string? s)
 		{
-			if (s == null) return null;
+			if (s == null) return string.Empty;
 
 			if (s.IndexOf('&') < 0) return s;
 
@@ -92,12 +94,10 @@ namespace HtmlToOpenXml
 		/// Converts a string that has been HTML-encoded into a decoded string, and sends
 		/// the decoded string to a System.IO.TextWriter output stream.
 		/// </summary>
-		public static void HtmlDecode(string s, TextWriter output)
+		public static void HtmlDecode(string? s, TextWriter output)
 		{
 			if (s == null) return;
 			if (s.IndexOf('&') < 0) output.Write(s);
-
-			char[] entityEndingChars = new char[] { ';', '&' };
 
 			int length = s.Length;
 			for (int i = 0; i < length; i++)
@@ -160,13 +160,14 @@ namespace HtmlToOpenXml
 		/// <summary>
 		/// Converts a string that represents an Html-encoded URL to a decoded string.
 		/// </summary>
-		public static string UrlDecode(string text)
+		public static string? UrlDecode(string? text)
 		{
 			// pre-process for + sign space formatting since System.Uri doesn't handle it
 			// plus literals are encoded as %2b normally so this should be safe
 			// http://www.west-wind.com/weblog/posts/2009/Feb/05/Html-and-Uri-String-Encoding-without-SystemWeb
-			text = text.Replace("+", " ");
-			return System.Uri.UnescapeDataString(text);
+			if (string.IsNullOrEmpty(text)) return string.Empty;
+			text = text!.Replace("+", " ");
+			return Uri.UnescapeDataString(text);
 		}
 
 		#endregion

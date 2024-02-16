@@ -28,7 +28,7 @@ namespace HtmlToOpenXml
             return element.GetFirstChild<T>() != null;
         }
 
-		public static T GetLastChild<T>(this OpenXmlElement element) where T : OpenXmlElement
+		public static T? GetLastChild<T>(this OpenXmlElement element) where T : OpenXmlElement
 		{
 			if (element == null) return null;
 
@@ -48,27 +48,22 @@ namespace HtmlToOpenXml
 
 		public static void InsertInProperties(this Paragraph p, Action<ParagraphProperties> @delegate)
 		{
-			ParagraphProperties prop = p.GetFirstChild<ParagraphProperties>();
-			if (prop == null) p.PrependChild<ParagraphProperties>(prop = new ParagraphProperties());
-
-			@delegate(prop);
+			p.ParagraphProperties ??= new ParagraphProperties();
+			@delegate(p.ParagraphProperties);
 		}
 
 		public static void InsertInProperties(this Run r, Action<RunProperties> @delegate)
 		{
-			RunProperties prop = r.GetFirstChild<RunProperties>();
-			if (prop == null) r.PrependChild<RunProperties>(prop = new RunProperties());
-
-			@delegate(prop);
+			r.RunProperties ??= new RunProperties();
+			@delegate(r.RunProperties);
 		}
 
 		public static void InsertInDocProperties(this Drawing d, params OpenXmlElement[] newChildren)
 		{
-			wp.Inline inline = d.GetFirstChild<wp.Inline>();
-			wp.DocProperties prop = inline.GetFirstChild<wp.DocProperties>();
+			d.Inline ??= new wp.Inline();
+			if (d.Inline.DocProperties == null) d.Inline.DocProperties = new wp.DocProperties();
 
-			if (prop == null) inline.Append(prop = new wp.DocProperties());
-			prop.Append(newChildren);
+			d.Inline.DocProperties.Append(newChildren);
 		}
 
         public static bool Compare(this PageSize pageSize, PageOrientationValues orientation)

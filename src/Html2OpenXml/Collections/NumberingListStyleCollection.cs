@@ -37,23 +37,24 @@ namespace HtmlToOpenXml
 			this.mainPart = mainPart;
 			this.numInstances = new Stack<KeyValuePair<Int32, int>>();
             listHtmlElementClasses = new Stack<string[]>();
-			InitNumberingIds();
+			knownAbsNumIds = InitNumberingIds();
 		}
 
 
 		#region InitNumberingIds
 
-		private void InitNumberingIds()
+		private Dictionary<String, Int32> InitNumberingIds()
 		{
-			NumberingDefinitionsPart numberingPart = mainPart.NumberingDefinitionsPart;
+			var knownAbsNumIds = new Dictionary<string, int>();
+			NumberingDefinitionsPart? numberingPart = mainPart.NumberingDefinitionsPart;
 			int absNumIdRef = 0;
 
 			// Ensure the numbering.xml file exists or any numbering or bullets list will results
 			// in simple numbering list (1.   2.   3...)
 			if (numberingPart == null)
-				numberingPart = numberingPart = mainPart.AddNewPart<NumberingDefinitionsPart>();
+				numberingPart = mainPart.AddNewPart<NumberingDefinitionsPart>();
 
-			if (mainPart.NumberingDefinitionsPart.Numbering == null)
+			if (numberingPart.Numbering == null)
 			{
 				new Numbering().Save(numberingPart);
 			}
@@ -63,7 +64,7 @@ namespace HtmlToOpenXml
 				// to retrieve the highest Id and reconstruct our own list definition template.
 				foreach (var abs in numberingPart.Numbering.Elements<AbstractNum>())
 				{
-					if (abs.AbstractNumberId.HasValue && abs.AbstractNumberId > absNumIdRef)
+					if (abs.AbstractNumberId != null && abs.AbstractNumberId > absNumIdRef)
 						absNumIdRef = abs.AbstractNumberId;
 				}
 				absNumIdRef++;
@@ -185,7 +186,7 @@ namespace HtmlToOpenXml
 			// This supports a use-case where the HtmlConverter is called multiple times
 			// on document generation, and needs to continue existing lists
 			bool addNewAbstractNums = false;
-			IEnumerable<AbstractNum> existingAbstractNums = numberingPart.Numbering.ChildElements.Where(e => e != null && e is AbstractNum).Cast<AbstractNum>();
+			IEnumerable<AbstractNum> existingAbstractNums = numberingPart.Numbering!.ChildElements.Where(e => e != null && e is AbstractNum).Cast<AbstractNum>();
 
 			if (existingAbstractNums.Count() >= absNumChildren.Length) // means we might have added our own already
 			{
@@ -193,7 +194,7 @@ namespace HtmlToOpenXml
 				{
 					// Check if we can find this in the existing document
 					addNewAbstractNums = addNewAbstractNums 
-						|| !existingAbstractNums.Any(a => a.AbstractNumDefinitionName != null && a.AbstractNumDefinitionName.Val.Value == abstractNum.AbstractNumDefinitionName.Val.Value);
+						|| !existingAbstractNums.Any(a => a.AbstractNumDefinitionName?.Val?.Value == abstractNum.AbstractNumDefinitionName?.Val?.Value);
 				}
 			} else {
 				addNewAbstractNums = true;
@@ -221,13 +222,13 @@ namespace HtmlToOpenXml
 					numberingPart.Numbering.InsertAt(absNumChildren[i], i + lastAbsNumIndex);
 
 				knownAbsNumIds = absNumChildren
-					.ToDictionary(a => a.AbstractNumDefinitionName.Val.Value, a => a.AbstractNumberId.Value);
+					.ToDictionary(a => a.AbstractNumDefinitionName!.Val!.Value!, a => a.AbstractNumberId!.Value);
 			} 
 			else
 			{
 				knownAbsNumIds = existingAbstractNums
 					.Where(a => a.AbstractNumDefinitionName != null && a.AbstractNumDefinitionName.Val != null)
-					.ToDictionary(a => a.AbstractNumDefinitionName.Val.Value, a => a.AbstractNumberId.Value);
+					.ToDictionary(a => a.AbstractNumDefinitionName!.Val!.Value!, a => a.AbstractNumberId!.Value);
 			}
 
 			// compute the next list instance ID seed. We start at 1 because 0 has a special meaning: 
@@ -237,11 +238,12 @@ namespace HtmlToOpenXml
 			nextInstanceID = 1;
 			foreach (NumberingInstance inst in numberingPart.Numbering.Elements<NumberingInstance>())
 			{
-				if (inst.NumberID.Value > nextInstanceID) nextInstanceID = inst.NumberID;
+				if (inst.NumberID?.Value > nextInstanceID) nextInstanceID = inst.NumberID;
 			}
 			numInstances.Push(new KeyValuePair<int, int>(nextInstanceID, -1));
 
 			numberingPart.Numbering.Save();
+			return knownAbsNumIds;
 		}
 
 		#endregion
@@ -251,8 +253,8 @@ namespace HtmlToOpenXml
 		public void BeginList(HtmlEnumerator en)
 		{
 			// lookup for a predefined list style in the template collection
-			String type = en.StyleAttributes["list-style-type"];
-			bool orderedList = en.CurrentTag.Equals("<ol>", StringComparison.OrdinalIgnoreCase);
+			string? type = en.StyleAttributes["list-style-type"];
+			bool orderedList = en.CurrentTag!.Equals("<ol>", StringComparison.OrdinalIgnoreCase);
 
 			CreateList(type, orderedList);
             listHtmlElementClasses.Push(en.Attributes.GetAsClass());
@@ -292,11 +294,11 @@ namespace HtmlToOpenXml
 			{
 				int absNumberId = GetAbsNumIdFromType(HEADING_NUMBERING_NAME, true);
 
-				NumberingInstance existingTitleNumbering = mainPart.NumberingDefinitionsPart.Numbering
+				NumberingInstance? existingTitleNumbering = mainPart.NumberingDefinitionsPart!.Numbering!
 					.Elements<NumberingInstance>()
-					.FirstOrDefault(n => n != null && n.AbstractNumId.Val == absNumberId);
+					.FirstOrDefault(n => n != null && n.AbstractNumId!.Val! == absNumberId);
 				
-				if (existingTitleNumbering != null)
+				if (existingTitleNumbering?.NumberID != null)
 					headingNumberingId = existingTitleNumbering.NumberID.Value;
 				else 
 				{
@@ -325,7 +327,7 @@ namespace HtmlToOpenXml
 
 		#region CreateList
 
-		public int CreateList(String type, bool orderedList)
+		public int CreateList(string? type, bool orderedList)
 		{
 			int absNumId = GetAbsNumIdFromType(type, orderedList);
 			int prevAbsNumId = numInstances.Peek().Value;
@@ -351,7 +353,7 @@ namespace HtmlToOpenXml
                 if (orderedList || (levelDepth >= maxlevelDepth))
                 {
                     currentInstanceId = ++nextInstanceID;
-                    Numbering numbering = mainPart.NumberingDefinitionsPart.Numbering;
+                    Numbering numbering = mainPart.NumberingDefinitionsPart!.Numbering;
 
                     numbering.Append(
                         new NumberingInstance(
@@ -374,7 +376,7 @@ namespace HtmlToOpenXml
 
 		#region GetAbsNumIdFromType
 
-		public int GetAbsNumIdFromType(String type, bool orderedList)
+		public int GetAbsNumIdFromType(string? type, bool orderedList)
 		{
 			int absNumId;
 
@@ -404,12 +406,13 @@ namespace HtmlToOpenXml
 			Margin margin = en.StyleAttributes.GetAsMargin("margin");
 			if (margin.Left.Value > 0 && margin.Left.Type == UnitMetric.Pixel)
 			{
-				Numbering numbering = mainPart.NumberingDefinitionsPart.Numbering;
+				Numbering numbering = mainPart.NumberingDefinitionsPart!.Numbering;
 				foreach (AbstractNum absNum in numbering.Elements<AbstractNum>())
 				{
-					if (absNum.AbstractNumberId == numInstances.Peek().Value)
+					if (absNum.AbstractNumberId! == numInstances.Peek().Value)
 					{
-						Level lvl = absNum.GetFirstChild<Level>();
+						Level? lvl = absNum.GetFirstChild<Level>();
+						if (lvl == null) continue;
 						Int32 currentNumId = ++nextInstanceID;
 
 						numbering.Append(
@@ -417,9 +420,9 @@ namespace HtmlToOpenXml
 									new MultiLevelType() { Val = MultiLevelValues.SingleLevel },
 									new Level {
 										StartNumberingValue = new StartNumberingValue() { Val = 1 },
-										NumberingFormat = new NumberingFormat() { Val = lvl.NumberingFormat.Val },
+										NumberingFormat = new NumberingFormat() { Val = lvl.NumberingFormat?.Val },
 										LevelIndex = 0,
-										LevelText = new LevelText() { Val = lvl.LevelText.Val }
+										LevelText = new LevelText() { Val = lvl.LevelText?.Val }
 									}
 								) { AbstractNumberId = currentNumId });
 						numbering.Save(mainPart.NumberingDefinitionsPart);
@@ -446,11 +449,13 @@ namespace HtmlToOpenXml
 		/// </summary>
 		private void EnsureMultilevel(int absNumId, bool cascading = false)
 		{
-			AbstractNum absNumMultilevel = mainPart.NumberingDefinitionsPart.Numbering.Elements<AbstractNum>().SingleOrDefault(a => a.AbstractNumberId.Value == absNumId);
+			AbstractNum? absNumMultilevel = mainPart.NumberingDefinitionsPart!.Numbering!
+				.Elements<AbstractNum>()
+				.SingleOrDefault(a => a.AbstractNumberId!.Value == absNumId);
 
-			if (absNumMultilevel != null && absNumMultilevel.MultiLevelType.Val == MultiLevelValues.SingleLevel)
+			if (absNumMultilevel != null && absNumMultilevel.MultiLevelType?.Val! == MultiLevelValues.SingleLevel)
 			{
-				Level level1 = absNumMultilevel.GetFirstChild<Level>();
+				Level? level1 = absNumMultilevel.GetFirstChild<Level>();
 				absNumMultilevel.MultiLevelType.Val = MultiLevelValues.Multilevel;
 
 				// skip the first level, starts to 2
@@ -458,7 +463,7 @@ namespace HtmlToOpenXml
 				{
 					Level level = new Level {
 						StartNumberingValue = new StartNumberingValue() { Val = 1 },
-						NumberingFormat = new NumberingFormat() { Val = level1.NumberingFormat.Val },
+						NumberingFormat = new NumberingFormat() { Val = level1?.NumberingFormat?.Val },
 						LevelIndex = i - 1
 					};
 

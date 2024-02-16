@@ -17,13 +17,13 @@ namespace HtmlToOpenXml
 	/// </summary>
 	struct HtmlBorder
 	{
-		private SideBorder[] sides;
+		private SideBorder[]? sides;
 
 
 		public HtmlBorder(SideBorder all)
 		{
 			if (!all.IsValid) sides = null;
-			else this.sides = new[] { all, all, all, all };
+			else this.sides = [all, all, all, all];
 		}
 
 		private void EnsureSides()
@@ -40,7 +40,7 @@ namespace HtmlToOpenXml
 		public SideBorder Bottom
 		{
 			get { return sides == null ? SideBorder.Empty : sides[2]; }
-			set { EnsureSides(); sides[2] = value; }
+			set { EnsureSides(); sides![2] = value; }
 		}
 
 		/// <summary>
@@ -49,7 +49,7 @@ namespace HtmlToOpenXml
 		public SideBorder Left
 		{
 			get { return sides == null ? SideBorder.Empty : sides[3]; }
-			set { EnsureSides(); sides[3] = value; }
+			set { EnsureSides(); sides![3] = value; }
 		}
 
 		/// <summary>
@@ -58,7 +58,7 @@ namespace HtmlToOpenXml
 		public SideBorder Top
 		{
 			get { return sides == null ? SideBorder.Empty : sides[0]; }
-			set { EnsureSides(); sides[0] = value; }
+			set { EnsureSides(); sides![0] = value; }
 		}
 
 		/// <summary>
@@ -67,7 +67,7 @@ namespace HtmlToOpenXml
 		public SideBorder Right
 		{
 			get { return sides == null ? SideBorder.Empty : sides[1]; }
-			set { EnsureSides(); sides[1] = value; }
+			set { EnsureSides(); sides![1] = value; }
 		}
 
 		/// <summary>
@@ -75,7 +75,7 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public bool IsEmpty
 		{
-			get { return sides == null || !(Left.IsValid || Right.IsValid || Bottom.IsValid || Top.IsValid); }
+			get => sides == null || !(Left.IsValid || Right.IsValid || Bottom.IsValid || Top.IsValid);
 		}
 	}
 }

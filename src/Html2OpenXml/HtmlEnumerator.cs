@@ -25,8 +25,8 @@ namespace HtmlToOpenXml
             stripTagRegex = new Regex(@"(</?\w+)");          // extract the name of a tag without its attributes but with the < >
 
 		private IEnumerator<String> en;
-		private String current, currentTag;
-		private HtmlAttributeCollection attributes, styleAttributes;
+		private string? current, currentTag;
+		private HtmlAttributeCollection? attributes, styleAttributes;
 
 
 		/// <summary>
@@ -132,7 +132,7 @@ namespace HtmlToOpenXml
 		/// if the enumerator has passed the end of the collection.<br/>
 		/// If tag is not null, it returns false as long as the tag was not found.
 		/// </returns>
-		public bool MoveUntilMatch(String tag)
+		public bool MoveUntilMatch(string? tag)
 		{
 			current = currentTag = null;
 			attributes = styleAttributes = null;
@@ -142,7 +142,7 @@ namespace HtmlToOpenXml
 			while ((success = en.MoveNext()) && (current = en.Current.Trim('\r', '\n')).Length == 0) ;
 
 			if (success && tag != null)
-				return !current.Equals(tag, StringComparison.CurrentCultureIgnoreCase);
+				return !current!.Equals(tag, StringComparison.CurrentCultureIgnoreCase);
 
 			return success;
 		}
@@ -165,7 +165,7 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public HtmlAttributeCollection Attributes
 		{
-			get { return attributes ?? (attributes = HtmlAttributeCollection.Parse(current)); }
+			get { return attributes ??= HtmlAttributeCollection.Parse(current); }
 		}
 
 		/// <summary>
@@ -173,7 +173,7 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public bool IsCurrentHtmlTag
 		{
-			get { return current[0] == '<' 
+			get { return current != null && current[0] == '<' 
 				// ensure we have not match a false tag like '< p >' nor '<3'
 				&& current.Length > 1 && (char.IsLetter(current[1]) || current[1] == '/'); }
 		}
@@ -183,19 +183,19 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public bool IsSelfClosedTag
 		{
-			get { return this.IsCurrentHtmlTag && current.EndsWith("/>", StringComparison.Ordinal); }
+			get { return this.IsCurrentHtmlTag && current!.EndsWith("/>", StringComparison.Ordinal); }
 		}
 
 		/// <summary>
 		/// If <see cref="HtmlEnumerator.Current"/> property is a Html tag, it returns the name of that tag.
 		/// </summary>
-		public String CurrentTag
+		public string? CurrentTag
 		{
 			get
 			{
 				if(currentTag == null)
 				{
-					Match m = stripTagRegex.Match(current);
+					Match m = stripTagRegex.Match(current!);
 					currentTag = m.Success ? m.Groups[1].Value + ">" : null;
 				}
 				return currentTag;
@@ -205,26 +205,26 @@ namespace HtmlToOpenXml
 		/// <summary>
 		/// Gets the expected closing tag for the current tag.
 		/// </summary>
-		public String ClosingCurrentTag
+		public String? ClosingCurrentTag
 		{
 			get
 			{
 				if (IsSelfClosedTag) return this.CurrentTag;
-				return this.CurrentTag.Insert(1, "/");
+				return this.CurrentTag?.Insert(1, "/");
 			}
 		}
 
 		/// <summary>
 		/// Gets the line or tag at the current position of the enumerator.
 		/// </summary>
-		public String Current
+		public string Current
 		{
-			get { return current; }
+			get { return current!; }
 		}
 
 		Object System.Collections.IEnumerator.Current
 		{
-			get { return current; }
+			get { return current!; }
 		}
 	}
 }

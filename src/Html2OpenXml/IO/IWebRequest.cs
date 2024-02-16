@@ -30,7 +30,7 @@ namespace HtmlToOpenXml.IO
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive
         /// notice of cancellation.</param>
         /// <returns>The task that will eventually give the resource's response data.</returns>
-        Task<Resource> FetchAsync(Uri requestUri, CancellationToken cancellationToken);
+        Task<Resource?> FetchAsync(Uri requestUri, CancellationToken cancellationToken);
 
         /// <summary>
         /// Checks if the given protocol is supported.

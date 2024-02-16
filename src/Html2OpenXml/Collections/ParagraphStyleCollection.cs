@@ -35,16 +35,16 @@ namespace HtmlToOpenXml
 		public override void ApplyTags(OpenXmlCompositeElement paragraph)
 		{
 			if (tags.Count == 0) return;
+			if (paragraph is not Paragraph p) return;
 
-			ParagraphProperties properties = paragraph.GetFirstChild<ParagraphProperties>();
-			if (properties == null) paragraph.PrependChild<ParagraphProperties>(properties = new ParagraphProperties());
+			p.ParagraphProperties ??= new ParagraphProperties();
 
 			var en = tags.GetEnumerator();
 			while (en.MoveNext())
 			{
 				TagsAtSameLevel tagsOfSameLevel = en.Current.Value.Peek();
-				foreach (OpenXmlElement tag in tagsOfSameLevel.Array)
-					properties.AddChild(tag.CloneNode(true));
+				foreach (OpenXmlElement tag in tagsOfSameLevel.Array!)
+					p.ParagraphProperties.AddChild(tag.CloneNode(true));
 			}
 		}
 
@@ -75,9 +75,9 @@ namespace HtmlToOpenXml
 			if (en.Attributes.Count == 0) return false;
 
 			bool newParagraph = false;
-			List<OpenXmlElement> containerStyleAttributes = new List<OpenXmlElement>();
+			var containerStyleAttributes = new List<OpenXmlElement>();
 
-			string attrValue = en.Attributes["lang"];
+			string? attrValue = en.Attributes["lang"];
 			if (attrValue != null && attrValue.Length > 0)
 			{
 				try
@@ -92,7 +92,7 @@ namespace HtmlToOpenXml
 						styleAttributes.Add(new Languages() { Bidi = ci.Name });
 
 						// notify table
-						documentStyle.Tables.BeginTag(en.CurrentTag, new TableJustification() { Val = TableRowAlignmentValues.Right });
+						documentStyle.Tables.BeginTag(en.CurrentTag!, new TableJustification() { Val = TableRowAlignmentValues.Right });
 					}
 
 					containerStyleAttributes.Add(new ParagraphMarkRunProperties(lang));
@@ -170,7 +170,7 @@ namespace HtmlToOpenXml
 			{
 				for (int i = 0; i < classes.Length; i++)
 				{
-					string className = documentStyle.GetStyle(classes[i], StyleValues.Paragraph, ignoreCase: true);
+					string? className = documentStyle.GetStyle(classes[i], StyleValues.Paragraph, ignoreCase: true);
 					if (className != null)
 					{
 						containerStyleAttributes.Add(new ParagraphStyleId() { Val = className });
@@ -180,7 +180,7 @@ namespace HtmlToOpenXml
 			}
 
 			Margin margin = en.StyleAttributes.GetAsMargin("margin");
-            Indentation indentation = null;
+            Indentation? indentation = null;
             if (!margin.IsEmpty)
 			{
                 if (margin.Top.IsFixed || margin.Bottom.IsFixed)
@@ -208,7 +208,7 @@ namespace HtmlToOpenXml
                 containerStyleAttributes.Add(indentation);
             }
 
-			this.BeginTag(en.CurrentTag, containerStyleAttributes);
+			this.BeginTag(en.CurrentTag!, containerStyleAttributes);
 
 			// Process general run styles
 			documentStyle.Runs.ProcessCommonAttributes(en, styleAttributes);
@@ -225,6 +225,6 @@ namespace HtmlToOpenXml
         /// <summary>
         /// Gets the default StyleId to apply on the any new paragraph.
         /// </summary>
-        internal String DefaultParagraphStyle { get; set; }
+        internal string? DefaultParagraphStyle { get; set; }
 	}
 }

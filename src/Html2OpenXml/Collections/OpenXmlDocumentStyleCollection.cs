@@ -32,8 +32,11 @@ namespace HtmlToOpenXml
 		/// <param name="styleType">Specify the type of style seeked (Paragraph or Character).</param>
 		/// <param name="style">When this method returns, the style associated with the specified name, if
 		/// the key is found; otherwise, returns null. This parameter is passed uninitialized.</param>
-		public bool TryGetValueIgnoreCase(String name, StyleValues styleType, out Style style)
+		public bool TryGetValueIgnoreCase(String name, StyleValues styleType, out Style? style)
 		{
+			if (name == null)
+				throw new ArgumentNullException(nameof(name));
+
 			// we'll use Binary Search algorithm because the collection is sorted (we inherits from SortedList)
 			IList<String> keys = this.Keys;
 			int low = 0, hi = keys.Count - 1, mid;
@@ -49,16 +52,16 @@ namespace HtmlToOpenXml
 					Style firstFoundStyle = style;
 
 					// we have found the named style but maybe the style doesn't match (Paragraph is not Character)
-					for (int i = mid; i < keys.Count && !style.Type.Equals(styleType); i++)
+					for (int i = mid; i < keys.Count && !styleType.Equals(style.Type!); i++)
 					{
 						style = this.Values[i];
-						if (!String.Equals(style.StyleName.Val, name, StringComparison.OrdinalIgnoreCase)) break;
+						if (!name.Equals(style.StyleName!.Val, StringComparison.OrdinalIgnoreCase)) break;
 					}
 
-					if (!String.Equals(style.StyleName.Val, name, StringComparison.OrdinalIgnoreCase))
+					if (!name.Equals(style.StyleName!.Val, StringComparison.OrdinalIgnoreCase))
 						style = firstFoundStyle;
 
-                    return style.Type.Equals(styleType);
+                    return styleType.Equals(style.Type!);
 				}
 				else if (rc < 0) hi = mid - 1;
 				else low = mid + 1;

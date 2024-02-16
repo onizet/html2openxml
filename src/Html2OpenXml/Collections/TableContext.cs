@@ -20,14 +20,14 @@ namespace HtmlToOpenXml
 	/// </summary>
 	sealed class TableContext : IComparer<CellPosition>
 	{
-		sealed class Tuple
+		sealed class Tuple(Table table)
 		{
-			public Table Table;
-			public CellPosition CellPosition;
-            public HtmlTableSpanCollection RowSpan;
+			public Table Table = table;
+			public CellPosition CellPosition = CellPosition.Empty;
+            public HtmlTableSpanCollection RowSpan = [];
 		}
 		private Stack<Tuple> tables = new Stack<Tuple>(5);
-		private Tuple current;
+		private Tuple? current;
 
 
 
@@ -44,7 +44,7 @@ namespace HtmlToOpenXml
 			if (this.current != null)
 				tables.Push(current);
 
-            current = new Tuple() { Table = table, CellPosition = CellPosition.Empty, RowSpan = new HtmlTableSpanCollection() };
+            current = new Tuple(table);
 		}
 
 		public void CloseContext()
@@ -73,21 +73,24 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public CellPosition CellPosition
 		{
-			get { return current.CellPosition; }
-			set { current.CellPosition = value; }
+			get { return current?.CellPosition ?? CellPosition.Empty; }
+			set {
+				if (current == null) throw new InvalidOperationException();
+				current.CellPosition = value;
+			}
 		}
 
 		/// <summary>
 		/// Gets the concurrent remaining row span foreach columns (key: cell with rowSpan attribute, value: length of the span).
 		/// </summary>
-        public HtmlTableSpanCollection RowSpan
+        public HtmlTableSpanCollection? RowSpan
 		{
-			get { return current.RowSpan; }
+			get { return current?.RowSpan; }
 		}
 
-		public Table CurrentTable
+		public Table? CurrentTable
 		{
-			get { return current.Table; }
+			get { return current?.Table; }
 		}
 	}
 }

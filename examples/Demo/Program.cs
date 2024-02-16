@@ -6,6 +6,7 @@ using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Validation;
 using DocumentFormat.OpenXml.Wordprocessing;
 using HtmlToOpenXml;
+using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
 
 namespace Demo
 {

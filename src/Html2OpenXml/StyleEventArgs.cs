@@ -20,10 +20,10 @@ namespace HtmlToOpenXml
 	/// </summary>
 	public class StyleEventArgs : EventArgs
 	{
-		internal StyleEventArgs(String styleId, MainDocumentPart mainPart, StyleValues type)
+		internal StyleEventArgs(string styleId, StyleDefinitionsPart stylePart, StyleValues type)
 		{
 			this.Name = styleId;
-			this.StyleDefinitionsPart = mainPart.StyleDefinitionsPart;
+			this.StyleDefinitionsPart = stylePart;
 			this.Type = type;
 		}
 

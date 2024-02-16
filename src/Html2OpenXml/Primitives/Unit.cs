@@ -17,17 +17,17 @@ namespace HtmlToOpenXml
 	/// <summary>
 	/// Represents a Html Unit (ie: 120px, 10em, ...).
 	/// </summary>
-	[System.Diagnostics.DebuggerDisplay("{DebuggerDisplay,nq}")]
-	struct Unit
+	[System.Diagnostics.DebuggerDisplay("Unit: {Value} {Type}")]
+    readonly struct Unit
 	{
 		/// <summary>Represents an empty unit (not defined).</summary>
 		public static readonly Unit Empty = new Unit();
         /// <summary>Represents an Auto unit.</summary>
         public static readonly Unit Auto = new Unit(UnitMetric.Auto, 0L);
 
-		private UnitMetric type;
-		private double value;
-		private long valueInEmus;
+		private readonly UnitMetric type;
+		private readonly double value;
+		private readonly long valueInEmus;
 
 
 		public Unit(UnitMetric type, Double value)
@@ -37,7 +37,7 @@ namespace HtmlToOpenXml
 			this.valueInEmus = ComputeInEmus(type, value);
 		}
 
-		public static Unit Parse(String str)
+		public static Unit Parse(string? str)
 		{
 			if (str == null) return Unit.Empty;
 
@@ -47,7 +47,7 @@ namespace HtmlToOpenXml
 			for (int i = 0; i < length; i++)
 			{
 				char ch = str[i];
-				if ((ch < '0' || ch > '9') && (ch != '-' && ch != '.' && ch != ','))
+				if ((ch < '0' || ch > '9') && ch != '-' && ch != '.' && ch != ',')
 					break;
 
 				digitLength = i;
@@ -189,10 +189,5 @@ namespace HtmlToOpenXml
         {
             get { return this.IsValid && (this.Type != UnitMetric.Auto && this.Type != UnitMetric.Auto); }
         }
-
-		internal string DebuggerDisplay
-		{
-            get { return String.Format(CultureInfo.InvariantCulture, "{{Unit: {0} {1}}}", Value, Type); }
-		}
     }
 }

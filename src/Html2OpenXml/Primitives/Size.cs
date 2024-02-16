@@ -35,7 +35,7 @@ namespace HtmlToOpenXml
         /// <summary>
         /// Tests whether this size has zero width and height.
         /// </summary>
-        public bool IsEmpty => Width == 0 && Height == 0;
+        public readonly bool IsEmpty => Width == 0 && Height == 0;
 
         /// <summary>
         /// Represents the horizontal component of this size.

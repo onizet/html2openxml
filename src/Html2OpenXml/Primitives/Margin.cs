@@ -9,9 +9,6 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
-using System.ComponentModel;
-using System.Globalization;
 
 namespace HtmlToOpenXml
 {
@@ -25,7 +22,7 @@ namespace HtmlToOpenXml
 
         public Margin(Unit top, Unit right, Unit bottom, Unit left)
         {
-            this.sides = new[] { top, right, bottom, left };
+            this.sides = [top, right, bottom, left];
         }
 
         /// <summary>
@@ -51,11 +48,11 @@ namespace HtmlToOpenXml
         /// <b>margin:25px;</b>
         /// all four margins are 25px
         /// </remarks>
-        public static Margin Parse(String str)
+        public static Margin Parse(string? str)
         {
             if (str == null) return new Margin();
 
-            String[] parts = str.Split(HttpUtility.WhiteSpaces);
+            var parts = str.Split(HttpUtility.WhiteSpaces);
             switch (parts.Length)
             {
                 case 1:
@@ -135,7 +132,7 @@ namespace HtmlToOpenXml
 
         public bool IsValid
         {
-            get { return sides != null && Left.IsValid && Right.IsValid && Bottom.IsValid && Top.IsValid; }
+            get => sides != null && Left.IsValid && Right.IsValid && Bottom.IsValid && Top.IsValid;
         }
 
 		/// <summary>
@@ -143,7 +140,7 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public bool IsEmpty
 		{
-			get { return sides == null || !(Left.IsValid || Right.IsValid || Bottom.IsValid || Top.IsValid); }
+			get => sides == null || !(Left.IsValid || Right.IsValid || Bottom.IsValid || Top.IsValid);
 		}
     }
 }

@@ -16,17 +16,17 @@ namespace HtmlToOpenXml
 	/// <summary>
 	/// Represents an image and its metadata.
 	/// </summary>
-	sealed class HtmlImageInfo
-	{
-		/// <summary>
-		/// The URI identifying this cached image information.
-		/// </summary>
-		public string Source { get; set; }
+	sealed class HtmlImageInfo(string source)
+    {
+        /// <summary>
+        /// The URI identifying this cached image information.
+        /// </summary>
+        public string Source { get; set; } = source;
 
-		/// <summary>
-		/// The Unique identifier of the ImagePart in the <see cref="MainDocumentPart"/>.
-		/// </summary>
-		public string ImagePartId { get; set; }
+        /// <summary>
+        /// The Unique identifier of the ImagePart in the <see cref="MainDocumentPart"/>.
+        /// </summary>
+        public string? ImagePartId { get; set; }
 
 		/// <summary>
 		/// Gets or sets the size of the image

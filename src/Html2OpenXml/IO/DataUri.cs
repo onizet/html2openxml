@@ -39,7 +39,7 @@ namespace HtmlToOpenXml.IO
         /// from <paramref name="uri"/>. This parameter is passed uninitialized.</param>
         /// <returns>A <see cref="Boolean"/> value that is true if the DataUri was 
         /// successfully created; otherwise, false.</returns>
-        public static bool TryCreate(string uri, out DataUri result)
+        public static bool TryCreate(string uri, out DataUri? result)
         {
             // expected format: data:[<MIME-type>][;charset=<encoding>][;base64],<data>
             // The encoding is indicated by ;base64. If it's present the data is encoded as base64. Without it the data (as a sequence of octets)
@@ -99,7 +99,7 @@ namespace HtmlToOpenXml.IO
             else
             {
                 // the <data> represents some text (like html snippet) and must be decoded.
-                string raw = HttpUtility.UrlDecode(match.Groups["data"].Value);
+                string? raw = HttpUtility.UrlDecode(match.Groups["data"].Value)!;
                 try
                 {
                     // we convert back to UTF-8 for easier processing later and to have a "referential" encoding

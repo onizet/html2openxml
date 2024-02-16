@@ -11,6 +11,7 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 
@@ -24,7 +25,7 @@ namespace HtmlToOpenXml
 		/// <summary>
 		/// Occurs when a Style is missing in the MainDocumentPart but will be used during the conversion process.
 		/// </summary>
-		public event EventHandler<StyleEventArgs> StyleMissing;
+		public event EventHandler<StyleEventArgs>? StyleMissing;
 
 		/// <summary>
 		/// Contains the default styles for new OpenXML elements
@@ -35,8 +36,8 @@ namespace HtmlToOpenXml
 		private RunStyleCollection runStyle;
 		private TableStyleCollection tableStyle;
 		private ParagraphStyleCollection paraStyle;
-        	private NumberingListStyleCollection listStyle;
-		private OpenXmlDocumentStyleCollection knownStyles;
+        private NumberingListStyleCollection? listStyle;
+		private OpenXmlDocumentStyleCollection? knownStyles;
 		private MainDocumentPart mainPart;
 
 
@@ -46,7 +47,7 @@ namespace HtmlToOpenXml
 			tableStyle = new TableStyleCollection(this);
 			runStyle = new RunStyleCollection(this);
 			paraStyle = new ParagraphStyleCollection(this);
-            		this.QuoteCharacters = QuoteChars.IE;
+            this.QuoteCharacters = QuoteChars.IE;
 			this.mainPart = mainPart;
 		}
 
@@ -61,34 +62,34 @@ namespace HtmlToOpenXml
 		internal void PrepareStyles(MainDocumentPart mainPart)
 		{
 			knownStyles = new OpenXmlDocumentStyleCollection();
-			if (mainPart.StyleDefinitionsPart == null) return;
+			if (mainPart.StyleDefinitionsPart?.Styles == null) return;
 
 			Styles styles = mainPart.StyleDefinitionsPart.Styles;
 
-			foreach (var s in styles.Elements<Style>())
+			foreach (var s in styles.Elements<Style>().Where(s => s.StyleId != null))
 			{
-                		StyleName n = s.StyleName;
-				string originalIdName = s.StyleId;
-               			 var id = 1;
+                StyleName n = s.StyleName!;
+				string originalIdName = s.StyleId!;
+               	var id = 1;
 
-				if (n != null)
+				if (n?.Val != null)
 				{
-				    string name = n.Val.Value;
+				    string? name = n.Val.Value;
 				    if (name != originalIdName)
 				    {
-					originalIdName = name;
+						originalIdName = name!;
 				    }
 				}
 
 				s.StyleId = originalIdName;
 
-                		while (knownStyles.ContainsKey(s.StyleId))
+                while (knownStyles.ContainsKey(s.StyleId!))
 				{
 					id++;
 					s.StyleId = originalIdName + id.ToString("00");
 				}
 
-                		knownStyles.Add(s.StyleId, s);
+                knownStyles.Add(s.StyleId!, s);
 			}
 
 		}
@@ -104,9 +105,12 @@ namespace HtmlToOpenXml
 		/// <param name="styleType">Paragraph or Character version of the given style.</param>
 		/// <param name="ignoreCase">Indicate whether the search should be performed with the case-sensitive flag or not.</param>
 		/// <returns>If not found, returns the given name argument.</returns>
-		public string GetStyle(string name, StyleValues styleType, bool ignoreCase = false)
+		public string? GetStyle(string name, StyleValues styleType, bool ignoreCase = false)
 		{
-			Style style;
+			if  (knownStyles == null)
+				throw new InvalidOperationException();
+
+			Style? style;
 
 			// OpenXml is case-sensitive but CSS is not.
 			// We will try to find the styles another time with case-insensitive:
@@ -116,14 +120,14 @@ namespace HtmlToOpenXml
 				{
 					if (StyleMissing != null)
 					{
-						StyleMissing(this, new StyleEventArgs(name, mainPart, styleType));
+						StyleMissing(this, new StyleEventArgs(name, mainPart.StyleDefinitionsPart!, styleType));
 						if (knownStyles.TryGetValueIgnoreCase(name, styleType, out style))
-							return style.StyleId;
+							return style!.StyleId;
 					}
 					return null; // null means we ignore this style (css class)
 				}
 
-				return style.StyleId;
+				return style!.StyleId;
 			}
 			else
 			{
@@ -131,17 +135,17 @@ namespace HtmlToOpenXml
 				{
 					if (!EnsureKnownStyle(name, out style))
 					{
-						StyleMissing?.Invoke(this, new StyleEventArgs(name, mainPart, styleType));
+						StyleMissing?.Invoke(this, new StyleEventArgs(name, mainPart.StyleDefinitionsPart!, styleType));
 						return name;
 					}
 				}
 
-				if (styleType == StyleValues.Character && !style.Type.Equals(StyleValues.Character))
+				if (styleType == StyleValues.Character && !style!.Type!.Equals(StyleValues.Character))
 				{
-					LinkedStyle linkStyle = style.GetFirstChild<LinkedStyle>();
+					var linkStyle = style.LinkedStyle;
 					if (linkStyle != null) return linkStyle.Val;
 				}
-				return style.StyleId;
+				return style!.StyleId;
 			}
 		}
 
@@ -154,6 +158,9 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public bool DoesStyleExists(string name)
 		{
+			if  (knownStyles == null)
+				throw new InvalidOperationException();
+
 			return knownStyles.ContainsKey(name);
 		}
 
@@ -166,10 +173,13 @@ namespace HtmlToOpenXml
 		/// </summary>
 		internal void AddStyle(String name, Style style)
 		{
+			if  (knownStyles == null)
+				throw new InvalidOperationException();
+
 			knownStyles[name] = style;
 			if (mainPart.StyleDefinitionsPart == null)
 				mainPart.AddNewPart<StyleDefinitionsPart>().Styles = new Styles();
-			mainPart.StyleDefinitionsPart.Styles.Append(style);
+			mainPart.StyleDefinitionsPart!.Styles!.Append(style);
 		}
 
 		#endregion
@@ -179,10 +189,10 @@ namespace HtmlToOpenXml
         /// <summary>
         /// Try to insert the style in the document if it is a known style.
         /// </summary>
-        private bool EnsureKnownStyle(string styleName, out Style style)
+        private bool EnsureKnownStyle(string styleName, out Style? style)
         {
 			style = null;
-			string xml = PredefinedStyles.GetOuterXml(styleName);
+			string? xml = PredefinedStyles.GetOuterXml(styleName);
 			if (xml == null) return false;
 			this.AddStyle(styleName, style = new Style(xml));
 			return true;
@@ -212,7 +222,7 @@ namespace HtmlToOpenXml
         {
 			// use lazy loading to avoid injecting NumberListDefinition if not required
             [System.Diagnostics.DebuggerHidden()]
-            get { return listStyle ?? (listStyle = new NumberingListStyleCollection(mainPart)); }
+            get => listStyle ??= new NumberingListStyleCollection(mainPart);
         }
 
 		//____________________________________________________________________

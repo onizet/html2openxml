@@ -28,7 +28,7 @@ namespace HtmlToOpenXml
 
         protected OpenXmlStyleCollectionBase()
         {
-            tags = new Dictionary<String, Stack<ArraySegment<OpenXmlElement>>>(StringComparer.OrdinalIgnoreCase);
+            tags = new (StringComparer.OrdinalIgnoreCase);
         }
 
         internal virtual void Reset()
@@ -64,7 +64,7 @@ namespace HtmlToOpenXml
         {
             if (elements.Count == 0) return;
 
-            if (!tags.TryGetValue(name, out Stack<TagsAtSameLevel> enqueuedTags))
+            if (!tags.TryGetValue(name, out var enqueuedTags))
             {
                 tags.Add(name, enqueuedTags = new Stack<TagsAtSameLevel>());
             }
@@ -79,7 +79,7 @@ namespace HtmlToOpenXml
         /// <param name="elements">The Run properties to apply to the next build run until the tag is popped out.</param>
         public void BeginTag(string name, params OpenXmlElement[] elements)
         {
-            if (!tags.TryGetValue(name, out Stack<TagsAtSameLevel> enqueuedTags))
+            if (!tags.TryGetValue(name, out var enqueuedTags))
             {
                 tags.Add(name, enqueuedTags = new Stack<TagsAtSameLevel>());
             }
@@ -98,13 +98,13 @@ namespace HtmlToOpenXml
         /// <param name="elements">The properties to apply to the next build run until the tag is popped out.</param>
         public void MergeTag(string name, List<OpenXmlElement> elements)
         {
-            if (!tags.TryGetValue(name, out Stack<TagsAtSameLevel> enqueuedTags))
+            if (!tags.TryGetValue(name, out var enqueuedTags))
             {
                 BeginTag(name, elements.ToArray());
             }
             else
             {
-                Dictionary<String, OpenXmlElement> knonwTags = new Dictionary<String, OpenXmlElement>();
+                var knonwTags = new Dictionary<string, OpenXmlElement>();
                 for (int i = 0; i < elements.Count; i++)
                     if (!knonwTags.ContainsKey(elements[i].LocalName))
                         knonwTags.Add(elements[i].LocalName, elements[i]);
@@ -112,7 +112,7 @@ namespace HtmlToOpenXml
                 OpenXmlElement[] array;
                 foreach (TagsAtSameLevel tagOfSameLevel in enqueuedTags)
                 {
-                    array = tagOfSameLevel.Array;
+                    array = tagOfSameLevel.Array!;
                     for (int i = 0; i < array.Length; i++)
                     {
                         if (!knonwTags.ContainsKey(array[i].LocalName))
@@ -136,7 +136,7 @@ namespace HtmlToOpenXml
         /// <param name="name">The name of the tag.</param>
         public virtual void EndTag(string name)
         {
-            if (tags.TryGetValue(name, out Stack<TagsAtSameLevel> enqueuedTags))
+            if (tags.TryGetValue(name, out var enqueuedTags))
             {
                 enqueuedTags.Pop();
                 if (enqueuedTags.Count == 0) tags.Remove(name);

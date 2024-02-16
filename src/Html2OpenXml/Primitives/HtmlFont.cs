@@ -19,16 +19,16 @@ namespace HtmlToOpenXml
     struct HtmlFont
 	{
 		/// <summary>Represents an empty font (not defined).</summary>
-		public static readonly HtmlFont Empty = new HtmlFont(FontStyle.Normal, FontVariant.Normal, FontWeight.Normal, Unit.Empty, null);
+		public static readonly HtmlFont Empty = new (FontStyle.Normal, FontVariant.Normal, FontWeight.Normal, Unit.Empty, null);
 
 		private FontStyle style;
 		private FontVariant variant;
-		private string family;
+		private string? family;
 		private FontWeight weight;
 		private Unit size;
 
 
-		public HtmlFont(FontStyle style, FontVariant variant, FontWeight weight, Unit size, string family)
+		public HtmlFont(FontStyle style, FontVariant variant, FontWeight weight, Unit size, string? family)
 		{
 			this.style = style;
 			this.variant = variant;
@@ -37,7 +37,7 @@ namespace HtmlToOpenXml
 			this.size = size;
 		}
 
-		public static HtmlFont Parse(String str)
+		public static HtmlFont Parse(string? str)
 		{
 			if (str == null) return HtmlFont.Empty;
 
@@ -52,7 +52,7 @@ namespace HtmlToOpenXml
 			// in order to split by white spaces, we remove any white spaces between 2 family names (ex: Verdana, Arial -> Verdana,Arial)
 			str = System.Text.RegularExpressions.Regex.Replace(str, @",\s+?", ",");
 
-			String[] fontParts = str.Split(HttpUtility.WhiteSpaces, StringSplitOptions.RemoveEmptyEntries);
+			var fontParts = str.Split(HttpUtility.WhiteSpaces, StringSplitOptions.RemoveEmptyEntries);
 			if (fontParts.Length < 2) return HtmlFont.Empty;
 			HtmlFont font = HtmlFont.Empty;
 
@@ -99,7 +99,7 @@ namespace HtmlToOpenXml
 		/// <summary>
 		/// Gets or sets the name of this font.
 		/// </summary>
-		public string Family
+		public string? Family
 		{
 			get { return family; }
 			set { family = value; }
@@ -144,7 +144,7 @@ namespace HtmlToOpenXml
 		/// <summary>
 		/// Gets whether the border is well formed and not empty.
 		/// </summary>
-		public bool IsEmpty
+		public readonly bool IsEmpty
 		{
 			get { return family == null && !size.IsValid && weight == FontWeight.Normal && style == FontStyle.Normal && variant == FontVariant.Normal; }
 		}

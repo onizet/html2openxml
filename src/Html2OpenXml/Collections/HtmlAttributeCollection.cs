@@ -27,7 +27,7 @@ namespace HtmlToOpenXml
 		// This regex split the attributes. This line is valid and all the attributes are well discovered:
 		// <table border="1" contenteditable style="text-align: center; color: #ff00e6" cellpadding=0 cellspacing='0' align="center">
 		// RegexOptions.Singleline stands for dealing with attributes that contain newline (typically for base64 image, see issue #8)
-		private static Regex stripAttributesRegex = new Regex(@"
+		private static readonly Regex stripAttributesRegex = new(@"
 #tag and its value surrounded by "" or '
 ((?<tag>\w+)=(?<sep>""|')\s*(?<val>\#?.*?)(\k<sep>|>))
 |
@@ -37,7 +37,7 @@ namespace HtmlToOpenXml
 # single tag (with no value): contenteditable
 \b(?<tag>\w+)\b", RegexOptions.IgnorePatternWhitespace| RegexOptions.Singleline);
 
-        private static Regex stripStyleAttributesRegex = new Regex(@"(?<name>.+?):\s*(?<val>[^;]+);*\s*");
+        private static readonly Regex stripStyleAttributesRegex = new(@"(?<name>.+?):\s*(?<val>[^;]+);*\s*");
 
 		private Dictionary<string, string> attributes;
 
@@ -48,14 +48,14 @@ namespace HtmlToOpenXml
 			this.attributes = new Dictionary<string, string>();
 		}
 
-		public static HtmlAttributeCollection Parse(String htmlTag)
+		public static HtmlAttributeCollection Parse(string? htmlTag)
 		{
 			HtmlAttributeCollection collection = new HtmlAttributeCollection();
 			if (String.IsNullOrEmpty(htmlTag)) return collection;
 
 			// We remove the name of the tag (due to our regex) and ensure there are at least one parameter
 			int startIndex;
-			for (startIndex = 0; startIndex < htmlTag.Length; startIndex++)
+			for (startIndex = 0; startIndex < htmlTag!.Length; startIndex++)
 			{
 				if (Char.IsWhiteSpace(htmlTag[startIndex]))
 				{
@@ -78,9 +78,9 @@ namespace HtmlToOpenXml
 			return collection;
 		}
 
-		public static HtmlAttributeCollection ParseStyle(String htmlTag)
+		public static HtmlAttributeCollection ParseStyle(string? htmlTag)
 		{
-			HtmlAttributeCollection collection = new HtmlAttributeCollection();
+			var collection = new HtmlAttributeCollection();
 			if (String.IsNullOrEmpty(htmlTag)) return collection;
 
             // Encoded ':' and ';' characters are valid for browser but not handled by the regex (bug #13812 reported by robin391)
@@ -103,13 +103,9 @@ namespace HtmlToOpenXml
 		/// <summary>
 		/// Gets the named attribute.
 		/// </summary>
-		public String this[String name]
+		public string? this[string name]
 		{
-			get
-            {
-                string value;
-                return attributes.TryGetValue(name, out value)? value : null;
-            }
+			get => attributes.TryGetValue(name, out var value)? value : null;
 		}
 
 		/// <summary>
@@ -117,9 +113,8 @@ namespace HtmlToOpenXml
 		/// </summary>
 		public Int32? GetAsInt(String name)
 		{
-			string attrValue = this[name];
-			int val;
-			if (attrValue != null && Int32.TryParse(attrValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out val))
+			string? attrValue = this[name];
+			if (attrValue != null && Int32.TryParse(attrValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var val))
 				return val;
 
 			return null;
@@ -194,7 +189,7 @@ namespace HtmlToOpenXml
         /// <returns>If the attribute is misformed, the <see cref="HtmlBorder.IsEmpty"/> property is set to false.</returns>
         public SideBorder GetAsSideBorder(String name)
 		{
-			string attrValue = this[name];
+			var attrValue = this[name];
 			SideBorder border = SideBorder.Parse(attrValue);
 
 			// handle attributes specified individually.
@@ -213,10 +208,10 @@ namespace HtmlToOpenXml
 		/// <summary>
 		/// Gets the class attribute that specify one or more classnames.
 		/// </summary>
-		public String[] GetAsClass()
+		public string[] GetAsClass()
 		{
-			string attrValue = this["class"];
-			if (attrValue == null) return null;
+			var attrValue = this["class"];
+			if (attrValue == null) return [];
 			return attrValue.Split(HttpUtility.WhiteSpaces, StringSplitOptions.RemoveEmptyEntries);
 		}
 
@@ -226,7 +221,7 @@ namespace HtmlToOpenXml
 		public HtmlFont GetAsFont(String name)
 		{
 			HtmlFont font = HtmlFont.Parse(this[name]);
-			string attrValue = this[name + "-style"];
+			var attrValue = this[name + "-style"];
 			if (attrValue != null)
 			{
 				var style = Converter.ToFontStyle(attrValue);

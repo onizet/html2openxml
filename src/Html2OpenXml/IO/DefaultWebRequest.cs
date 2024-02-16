@@ -25,15 +25,15 @@ namespace HtmlToOpenXml.IO
     /// </summary>
     public class DefaultWebRequest : IWebRequest
     {
-        private static readonly HashSet<string> SupportedProtocols = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+        private static readonly HashSet<string> SupportedProtocols = new(StringComparer.OrdinalIgnoreCase) {
             "http", "https", "file"
         };
-        private Uri baseImageUri;
-        private static readonly HttpClient DefaultHttp = new HttpClient(new HttpClientHandler() {
+        private Uri? baseImageUri;
+        private static readonly HttpClient DefaultHttp = new(new HttpClientHandler() {
             AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
         });
         private readonly HttpClient httpClient;
-        private readonly ILogger logger;
+        private readonly ILogger? logger;
 
 
 
@@ -48,7 +48,7 @@ namespace HtmlToOpenXml.IO
         /// </summary>
         /// <param name="httpClient">The HTTP client to use to download remote resources.</param>
         /// <param name="logger">Provide an logging mechanism for diagnose.</param>
-        public DefaultWebRequest(HttpClient httpClient, ILogger logger = null)
+        public DefaultWebRequest(HttpClient httpClient, ILogger? logger = null)
         {
             this.httpClient = httpClient ?? DefaultHttp;
             this.httpClient.DefaultRequestHeaders.AcceptEncoding.ParseAdd("gzip, deflate");
@@ -61,7 +61,7 @@ namespace HtmlToOpenXml.IO
         }
 
         /// <inheritdoc/>
-        public virtual Task<Resource> FetchAsync(Uri requestUri, CancellationToken cancellationToken)
+        public virtual Task<Resource?> FetchAsync(Uri requestUri, CancellationToken cancellationToken)
         {
             if (!requestUri.IsAbsoluteUri && BaseImageUrl != null)
             {
@@ -79,7 +79,7 @@ namespace HtmlToOpenXml.IO
         /// <summary>
         /// Process to the read of a file from the File System.
         /// </summary>
-        protected virtual Task<Resource> DownloadLocalFile(Uri requestUri, CancellationToken cancellationToken)
+        protected virtual Task<Resource?> DownloadLocalFile(Uri requestUri, CancellationToken cancellationToken)
         {
             // replace string %20 in LocalPath by daviderapicavoli (patch #15938)
             string localPath = Uri.UnescapeDataString(requestUri.LocalPath);
@@ -87,7 +87,7 @@ namespace HtmlToOpenXml.IO
             try
             {
                 logger?.LogDebug("Downloading local file: {0}", requestUri);
-                return Task.FromResult(new Resource() {
+                return Task.FromResult<Resource?>(new Resource() {
                     Content = System.IO.File.OpenRead(localPath),
                     StatusCode = HttpStatusCode.OK
                 });
@@ -97,7 +97,7 @@ namespace HtmlToOpenXml.IO
                 logger?.LogError(exc, "Failed to download file: {0}", requestUri);
 
                 if (exc is System.IO.IOException || exc is UnauthorizedAccessException || exc is System.Security.SecurityException || exc is NotSupportedException)
-                    return null;
+                    return Task.FromResult<Resource?>(null);
                 throw;
             }
         }
@@ -105,7 +105,7 @@ namespace HtmlToOpenXml.IO
         /// <summary>
         /// Process to the download of a resource with Http/Https protocol.
         /// </summary>
-        protected virtual async Task<Resource> DownloadHttpFile(Uri requestUri, CancellationToken cancellationToken)
+        protected virtual async Task<Resource?> DownloadHttpFile(Uri requestUri, CancellationToken cancellationToken)
         {
             var resource = new Resource();
 
@@ -146,7 +146,7 @@ namespace HtmlToOpenXml.IO
         /// Gets or sets the base Uri used to automaticaly resolve relative images 
         /// if used with ImageProcessing = AutomaticDownload.
         /// </summary>
-        public Uri BaseImageUrl
+        public Uri? BaseImageUrl
         {
             get { return this.baseImageUri; }
             set

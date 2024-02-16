@@ -46,21 +46,22 @@ namespace HtmlToOpenXml
 		{
 			if (tags.Count > 0)
 			{
-				TableCellProperties properties = tableCell.GetFirstChild<TableCellProperties>();
-				if (properties == null) tableCell.PrependChild<TableCellProperties>(properties = new TableCellProperties());
+				TableCellProperties? properties = tableCell.GetFirstChild<TableCellProperties>();
+				if (properties == null) tableCell.PrependChild(properties = new TableCellProperties());
 
 				var en = tags.GetEnumerator();
 				while (en.MoveNext())
 				{
 					TagsAtSameLevel tagsOfSameLevel = en.Current.Value.Peek();
-					foreach (OpenXmlElement tag in tagsOfSameLevel.Array)
+					foreach (OpenXmlElement tag in tagsOfSameLevel.Array!)
 						properties.AddChild(tag.CloneNode(true));
 				}
 			}
 
 			// Apply some style attributes on the unique Paragraph tag contained inside a table cell.
-			Paragraph p = tableCell.GetFirstChild<Paragraph>();
-			paragraphStyle.ApplyTags(p);
+			Paragraph? p = tableCell.GetFirstChild<Paragraph>();
+			if (p != null)
+				paragraphStyle.ApplyTags(p);
 		}
 
 		public void BeginTagForParagraph(string name, params OpenXmlElement[] elements)
@@ -114,7 +115,7 @@ namespace HtmlToOpenXml
 			{
 				JustificationValues? halign = Converter.ToParagraphAlign(htmlAlign);
 				if (halign.HasValue)
-					this.BeginTagForParagraph(en.CurrentTag, new KeepNext(), new Justification { Val = halign });
+					this.BeginTagForParagraph(en.CurrentTag!, new KeepNext(), new Justification { Val = halign });
 			}
 
 			// implemented by ddforge
@@ -123,7 +124,7 @@ namespace HtmlToOpenXml
 			{
 				for (int i = 0; i < classes.Length; i++)
 				{
-					string className = documentStyle.GetStyle(classes[i], StyleValues.Table, ignoreCase: true);
+					string? className = documentStyle.GetStyle(classes[i], StyleValues.Table, ignoreCase: true);
 					if (className != null) // only one Style can be applied in OpenXml and dealing with inheritance is out of scope
 					{
 						containerStyleAttributes.Add(new RunStyle() { Val = className });
@@ -132,7 +133,7 @@ namespace HtmlToOpenXml
 				}
 			}
 
-			this.BeginTag(en.CurrentTag, containerStyleAttributes);
+			this.BeginTag(en.CurrentTag!, containerStyleAttributes);
 
 			// Process general run styles
 			documentStyle.Runs.ProcessCommonAttributes(en, runStyleAttributes);

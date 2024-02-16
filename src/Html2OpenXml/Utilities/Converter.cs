@@ -10,7 +10,6 @@
  * PARTICULAR PURPOSE.
  */
 using System;
-using System.Globalization;
 using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml
@@ -25,19 +24,18 @@ namespace HtmlToOpenXml
 		/// <summary>
 		/// Convert the Html text align attribute (horizontal alignement) to its corresponding OpenXml value.
 		/// </summary>
-		public static JustificationValues? ToParagraphAlign(string htmlAlign)
+		public static JustificationValues? ToParagraphAlign(string? htmlAlign)
 		{
 			if (htmlAlign == null) return null;
-			switch (htmlAlign.ToLowerInvariant())
-			{
-				case "left": return JustificationValues.Left;
-				case "right": return JustificationValues.Right;
-				case "center": return JustificationValues.Center;
-				case "justify": return JustificationValues.Both;
-			}
-
-			return null;
-		}
+            return htmlAlign.ToLowerInvariant() switch
+            {
+                "left" => JustificationValues.Left,
+                "right" => JustificationValues.Right,
+                "center" => JustificationValues.Center,
+                "justify" => JustificationValues.Both,
+                _ => null,
+            };
+        }
 
 		#endregion
 
@@ -46,18 +44,17 @@ namespace HtmlToOpenXml
 		/// <summary>
 		/// Convert the Html vertical-align attribute to its corresponding OpenXml value.
 		/// </summary>
-		public static TableVerticalAlignmentValues? ToVAlign(string htmlAlign)
+		public static TableVerticalAlignmentValues? ToVAlign(string? htmlAlign)
 		{
 			if (htmlAlign == null) return null;
-			switch (htmlAlign.ToLowerInvariant())
-			{
-				case "top": return TableVerticalAlignmentValues.Top;
-				case "middle": return TableVerticalAlignmentValues.Center;
-				case "bottom": return TableVerticalAlignmentValues.Bottom;
-			}
-
-			return null;
-		}
+            return htmlAlign.ToLowerInvariant() switch
+            {
+                "top" => TableVerticalAlignmentValues.Top,
+                "middle" => TableVerticalAlignmentValues.Center,
+                "bottom" => TableVerticalAlignmentValues.Bottom,
+                _ => null,
+            };
+        }
 
 		#endregion
 
@@ -66,7 +63,7 @@ namespace HtmlToOpenXml
 		/// <summary>
 		/// Convert Html regular font-size to OpenXml font value (expressed in point).
 		/// </summary>
-		public static Unit ToFontSize(string htmlSize)
+		public static Unit ToFontSize(string? htmlSize)
 		{
 			if (htmlSize == null) return Unit.Empty;
 			switch (htmlSize.ToLowerInvariant())
@@ -101,62 +98,62 @@ namespace HtmlToOpenXml
 
 		#region ToFontVariant
 
-		public static FontVariant? ToFontVariant(string html)
+		public static FontVariant? ToFontVariant(string? html)
 		{
 			if (html == null) return null;
 
-			switch (html.ToLowerInvariant())
-			{
-				case "small-caps": return FontVariant.SmallCaps;
-				case "normal": return FontVariant.Normal;
-				default: return null;
-			}
-		}
+            return html.ToLowerInvariant() switch
+            {
+                "small-caps" => FontVariant.SmallCaps,
+                "normal" => FontVariant.Normal,
+                _ => null,
+            };
+        }
 
 		#endregion
 
 		#region ToFontStyle
 
-		public static FontStyle? ToFontStyle(string html)
+		public static FontStyle? ToFontStyle(string? html)
 		{
 			if (html == null) return null;
-			switch (html.ToLowerInvariant())
-			{
-				case "italic":
-				case "oblique": return FontStyle.Italic;
-				case "normal": return FontStyle.Normal;
-				default: return null;
-			}
-		}
+            return html.ToLowerInvariant() switch
+            {
+                "italic" or "oblique" => FontStyle.Italic,
+                "normal" => FontStyle.Normal,
+                _ => null,
+            };
+        }
 
 		#endregion
 
 		#region ToFontWeight
 
-		public static FontWeight? ToFontWeight(string html)
+		public static FontWeight? ToFontWeight(string? html)
 		{
 			if (html == null) return null;
-			switch (html.ToLowerInvariant())
-			{
-                case "700":
-				case "bold": return FontWeight.Bold;
-				case "bolder": return FontWeight.Bolder;
-                case "400":
-                case "normal": return FontWeight.Normal;
-				default: return null;
-			}
-		}
+            return html.ToLowerInvariant() switch
+            {
+                "700" or "bold" => FontWeight.Bold,
+                "bolder" => FontWeight.Bolder,
+                "400" or "normal" => FontWeight.Normal,
+                _ => null,
+            };
+        }
 
 		#endregion
 
 		#region ToFontFamily
 
-		public static string ToFontFamily(string str)
+		public static string? ToFontFamily(string? str)
 		{
-			String[] names = str.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            if (str == null) return null;
+
+			var names = str.Split(',' );
 			for (int i = 0; i < names.Length; i++)
 			{
-                String fontName = names[i];
+                string fontName = names[i];
+				if (fontName.Length == 0) continue;
 				try
 				{
                     if (fontName[0] == '\'' && fontName[fontName.Length-1] == '\'') fontName = fontName.Substring(1, fontName.Length - 2);
@@ -175,51 +172,51 @@ namespace HtmlToOpenXml
 
 		#region ToBorderStyle
 
-		public static BorderValues ToBorderStyle(string borderStyle)
+		public static BorderValues ToBorderStyle(string? borderStyle)
 		{
 			if (borderStyle == null) return BorderValues.Nil;
-			switch (borderStyle.ToLowerInvariant())
-			{
-				case "dotted": return BorderValues.Dotted;
-				case "dashed": return BorderValues.Dashed;
-				case "solid": return BorderValues.Single;
-				case "double": return BorderValues.Double;
-				case "inset": return BorderValues.Inset;
-				case "outset": return BorderValues.Outset;
-				case "none": return BorderValues.None;
-				default: return BorderValues.Nil;
-			}
-		}
+            return borderStyle.ToLowerInvariant() switch
+            {
+                "dotted" => BorderValues.Dotted,
+                "dashed" => BorderValues.Dashed,
+                "solid" => BorderValues.Single,
+                "double" => BorderValues.Double,
+                "inset" => BorderValues.Inset,
+                "outset" => BorderValues.Outset,
+                "none" => BorderValues.None,
+                _ => BorderValues.Nil,
+            };
+        }
 
 		#endregion
 
 		#region ToUnitMetric
 
-		public static UnitMetric ToUnitMetric(String type)
+		public static UnitMetric ToUnitMetric(string? type)
 		{
 			if (type == null) return UnitMetric.Unknown;
-			switch (type.ToLowerInvariant())
-			{
-				case "%": return UnitMetric.Percent;
-				case "in": return UnitMetric.Inch;
-				case "cm": return UnitMetric.Centimeter;
-				case "mm": return UnitMetric.Millimeter;
-				case "em": return UnitMetric.EM;
-				case "ex": return UnitMetric.Ex;
-				case "pt": return UnitMetric.Point;
-				case "pc": return UnitMetric.Pica;
-				case "px": return UnitMetric.Pixel;
-				default: return UnitMetric.Unknown;
-			}
-		}
+            return type.ToLowerInvariant() switch
+            {
+                "%" => UnitMetric.Percent,
+                "in" => UnitMetric.Inch,
+                "cm" => UnitMetric.Centimeter,
+                "mm" => UnitMetric.Millimeter,
+                "em" => UnitMetric.EM,
+                "ex" => UnitMetric.Ex,
+                "pt" => UnitMetric.Point,
+                "pc" => UnitMetric.Pica,
+                "px" => UnitMetric.Pixel,
+                _ => UnitMetric.Unknown,
+            };
+        }
 
 		#endregion
 
 		#region ToPageOrientation
 
-		public static PageOrientationValues ToPageOrientation(String orientation)
+		public static PageOrientationValues ToPageOrientation(string? orientation)
 		{
-			if (String.Equals(orientation, "landscape", StringComparison.OrdinalIgnoreCase))
+			if ( "landscape".Equals(orientation,StringComparison.OrdinalIgnoreCase))
 				return PageOrientationValues.Landscape;
 
 			return PageOrientationValues.Portrait;
@@ -229,7 +226,7 @@ namespace HtmlToOpenXml
 
 		#region ToTextDecoration
 
-		public static TextDecoration ToTextDecoration(string html)
+		public static TextDecoration ToTextDecoration(string? html)
         {
 			// this style could take multiple values separated by a space
 			// ex: text-decoration: blink underline;

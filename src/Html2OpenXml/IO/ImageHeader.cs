@@ -13,7 +13,6 @@
  * http://stackoverflow.com/questions/111345/getting-image-dimensions-without-reading-the-entire-file/111349
  * EMF Specifications: https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/ae7e7437-cfe5-485e-84ea-c74b51b000be
  */
-
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -29,11 +28,13 @@ namespace HtmlToOpenXml.IO
     {
         // https://en.wikipedia.org/wiki/List_of_file_signatures
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public enum FileType { Unrecognized, Bitmap, Gif, Png, Jpeg, Emf }
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
-        private static readonly byte[] pngSignatureBytes = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
+        private static readonly byte[] pngSignatureBytes = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
 
-        private static Dictionary<byte[], FileType> imageFormatDecoders = new Dictionary<byte[], FileType>()
+        private static Dictionary<byte[], FileType> imageFormatDecoders = new()
         {
             { new byte[] { 0x42, 0x4D }, FileType.Bitmap },
             { Encoding.UTF8.GetBytes("GIF87a"), FileType.Gif },
