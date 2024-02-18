@@ -4,11 +4,17 @@
 
 - rely on HtmlAgilityPack for the parsing
 
-## 2.4.0
+## 2.4.2
 
+- Fix signing the assembly
+- Enable Nullable reference types
 - support latest version of OpenXML SDK (3.1.0) which introduces breaking changes, but also support embedding SVG and JPEG2000 files.
 - fix caching the provisioned images
 - drop support for .Net Standard 1.3
+
+## 2.4.0 and 2.4.1
+
+do not use as the signing assembly was in failure #138
 
 ## 2.3.0
 
