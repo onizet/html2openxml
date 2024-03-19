@@ -30,7 +30,12 @@ namespace HtmlToOpenXml
     /// <summary>
     /// Predefined quote style as defined by the browser (used for the &lt;q&gt; tag).
     /// </summary>
-    public struct QuoteChars
+    /// <remarks>
+    /// Initializes a new instance of <see cref="QuoteChars"/> class.
+    /// </remarks>
+    /// <param name="begin">The characters at the beginning of a quote.</param>
+    /// <param name="end">The characters at the end of a quote.</param>
+    public readonly struct QuoteChars(string begin, string end)
     {
         /// <summary>Internet Explorer style: « abc » </summary>
         public static readonly QuoteChars IE = new QuoteChars("« ", " »");
@@ -39,18 +44,7 @@ namespace HtmlToOpenXml
         /// <summary>Chrome/Safari/Opera style: "abc"</summary>
         public static readonly QuoteChars WebKit = new QuoteChars("\"", "\"");
 
-        /// <summary>
-        /// Initializes a new instance of <see cref="QuoteChars"/> class.
-        /// </summary>
-        /// <param name="begin">The characters at the beginning of a quote.</param>
-        /// <param name="end">The characters at the end of a quote.</param>
-        public QuoteChars(string begin, string end)
-        {
-            Prefix = begin;
-            Suffix = end;
-        }
-
-        internal string Prefix { get; private set; }
-        internal string Suffix { get; private set; }
+        internal string Prefix { get; } = begin;
+        internal string Suffix { get; } = end;
     }
 }

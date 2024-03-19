@@ -145,7 +145,7 @@ namespace HtmlToOpenXml
         /// </summary>
         public bool IsValid
         {
-            get { return this.Style != w.BorderValues.Nil; }
+            get { return !Style.Equals(w.BorderValues.Nil); }
         }
     }
 }

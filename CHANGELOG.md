@@ -3,6 +3,16 @@
 ## 3.0.0 (Next major release)
 
 - rely on HtmlAgilityPack for the parsing
+- todo: update readme
+- todo: pre line breaks, whitespace between 2 runs - ok
+- todo: svg tag support
+- todo: remove old code
+- todo: list
+- todo: table
+- todo: dd, dt, dl
+- todo: mathml
+- todo: run all unit test with green
+- todo: block quote char?
 
 ## 2.4.2
 

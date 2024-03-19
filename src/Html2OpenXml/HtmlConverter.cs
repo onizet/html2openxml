@@ -12,7 +12,11 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using AngleSharp;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -39,9 +43,10 @@ namespace HtmlToOpenXml
         private Paragraph currentParagraph;
         private Int32 footnotesRef = 1, endnotesRef = 1, figCaptionRef = -1;
         private Dictionary<String, Action<HtmlEnumerator>> knownTags;
+        /// <summary>Cache all the ImagePart processed to avoid downloading the same image.</summary>
         private ImagePrefetcher? imagePrefetcher;
         private TableContext tables;
-        private readonly HtmlDocumentStyle htmlStyles;
+        private readonly WordDocumentStyle htmlStyles;
         private readonly IWebRequest webRequester;
         private uint drawingObjId, imageObjId;
 
@@ -66,7 +71,7 @@ namespace HtmlToOpenXml
         {
             this.knownTags = InitKnownTags();
             this.mainPart = mainPart ?? throw new ArgumentNullException(nameof(mainPart));
-            this.htmlStyles = new HtmlDocumentStyle(mainPart);
+            this.htmlStyles = new WordDocumentStyle(mainPart);
             this.webRequester = webRequester ?? new DefaultWebRequest();
             this.elements = new List<OpenXmlElement>();
             this.paragraphs = new List<OpenXmlCompositeElement>();
@@ -80,8 +85,16 @@ namespace HtmlToOpenXml
         /// <returns>Returns a list of parsed paragraph.</returns>
         public IList<OpenXmlCompositeElement> Parse(string? html)
         {
-            var b = SideBorder.Parse("12px red");
-            if (String.IsNullOrEmpty(html))
+            return Parse(html, default).ConfigureAwait(false).GetAwaiter().GetResult().ToList();
+        }
+
+        /// <summary>
+        /// Start the parse processing.
+        /// </summary>
+        /// <returns>Returns a list of parsed paragraph.</returns>
+        public async Task<IEnumerable<OpenXmlCompositeElement>> Parse(string? html, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(html))
                 return Array.Empty<Paragraph>();
 
             // ensure a body exists to avoid any errors when trying to access it
@@ -90,10 +103,20 @@ namespace HtmlToOpenXml
             else if (mainPart.Document.Body == null)
                 mainPart.Document.Body = new Body();
 
-            // Reset:
+            var browsingContext = BrowsingContext.New();
+            var htmlDocument = await browsingContext.OpenAsync(req => req.Content(html), cancellationToken);
+            if (htmlDocument == null)
+                return [];
+
+            var parsingContext = new ParsingContext(this, mainPart);
+            var body = new Expressions.BodyExpression (htmlDocument.Body!);
+            var paragraphs = body.Interpret (parsingContext);
+            return paragraphs;
+
+            /*// Reset:
             elements.Clear();
             paragraphs.Clear();
-            htmlStyles.Runs.Reset();
+            //htmlStyles.Runs.Reset();
             tables = new TableContext();
 
             // Start a new processing
@@ -115,23 +138,23 @@ namespace HtmlToOpenXml
             // that will allow me to call the recursive method RemoveEmptyParagraphs with no major changes, impacting the client.
             RemoveEmptyParagraphs();
 
-            return paragraphs;
+            return paragraphs;*/
         }
 
         /// <summary>
         /// Start the parse processing and append the converted paragraphs into the Body of the document.
         /// </summary>
-        public void ParseHtml(String html)
+        public async Task ParseHtml(string html, CancellationToken cancellationToken = default)
         {
             // This method exists because we may ensure the SectionProperties remains the last element of the body.
             // It's mandatory when dealing with page orientation
 
-            var paragraphs = Parse(html);
+            var paragraphs = await Parse(html, cancellationToken);
 
             Body body = mainPart.Document.Body!;
             SectionProperties? sectionProperties = body.GetLastChild<SectionProperties>();
-            for (int i = 0; i < paragraphs.Count; i++)
-                body.Append(paragraphs[i]);
+            foreach (var para in paragraphs)
+                body.Append(para);
 
             // move the paragraph with BookmarkStart `_GoBack` as the last child
             var p = body.GetFirstChild<Paragraph>();
@@ -219,7 +242,7 @@ namespace HtmlToOpenXml
                         new Text(HttpUtility.HtmlDecode(en.Current)) { Space = SpaceProcessingModeValues.Preserve }
                     );
                     // apply the previously discovered style
-                    htmlStyles.Runs.ApplyTags(run);
+                    //TODO: htmlStyles.Runs.ApplyTags(run);
                     elements.Add(run);
                 }
             }
@@ -563,47 +586,47 @@ namespace HtmlToOpenXml
             // A complete list of HTML tags can be found here: http://www.w3schools.com/tags/default.asp
 
             var knownTags = new Dictionary<String, Action<HtmlEnumerator>>(StringComparer.OrdinalIgnoreCase) {
-                { "<a>", ProcessLink },
-                { "<abbr>", ProcessAcronym },
-                { "<acronym>", ProcessAcronym },
-                { "<article>", ProcessDiv },
-                { "<aside>", ProcessDiv },
-                { "<b>", ProcessHtmlElement<Bold> },
-                { "<blockquote>", ProcessBlockQuote },
-                { "<body>", ProcessBody },
-                { "<br>", ProcessBr },
+                //{ "<a>", ProcessLink },
+                //{ "<abbr>", ProcessAcronym },
+                //{ "<acronym>", ProcessAcronym },
+                //{ "<article>", ProcessDiv },
+                //{ "<aside>", ProcessDiv },
+                //{ "<b>", ProcessHtmlElement<Bold> },
+                //{ "<blockquote>", ProcessBlockQuote },
+                //{ "<body>", ProcessBody },
+                //{ "<br>", ProcessBr },
                 { "<caption>", ProcessTableCaption },
-                { "<cite>", ProcessCite },
-                { "<del>", ProcessHtmlElement<Strike> },
-                { "<div>", ProcessDiv },
+                //{ "<cite>", ProcessCite },
+                //{ "<del>", ProcessHtmlElement<Strike> },
+               // { "<div>", ProcessDiv },
                 { "<dd>", ProcessDefinitionListItem },
                 { "<dt>", ProcessDefinitionList },
-                { "<em>", ProcessHtmlElement<Italic> },
-                { "<font>", ProcessFont },
-                { "<h1>", ProcessHeading },
-                { "<h2>", ProcessHeading },
-                { "<h3>", ProcessHeading },
-                { "<h4>", ProcessHeading },
-                { "<h5>", ProcessHeading },
-                { "<h6>", ProcessHeading },
+                //{ "<em>", ProcessHtmlElement<Italic> },
+                //{ "<font>", ProcessFont },
+               // { "<h1>", ProcessHeading },
+                //{ "<h2>", ProcessHeading },
+                //{ "<h3>", ProcessHeading },
+                //{ "<h4>", ProcessHeading },
+                //{ "<h5>", ProcessHeading },
+                //{ "<h6>", ProcessHeading },
                 { "<hr>", ProcessHorizontalLine },
                 { "<html>", ProcessHtml },
-                { "<figcaption>", ProcessFigureCaption },
-                { "<i>", ProcessHtmlElement<Italic> },
-                { "<img>", ProcessImage },
-                { "<ins>", ProcessUnderline },
+                //{ "<figcaption>", ProcessFigureCaption },
+               // { "<i>", ProcessHtmlElement<Italic> },
+                //{ "<img>", ProcessImage },
+                //{ "<ins>", ProcessUnderline },
                 { "<li>", ProcessLi },
                 { "<ol>", ProcessNumberingList },
-                { "<p>", ProcessParagraph },
-                { "<pre>", ProcessPre },
-                { "<q>", ProcessQuote },
-                { "<span>", ProcessSpan },
-                { "<section>", ProcessDiv },
-                { "<s>", ProcessHtmlElement<Strike> },
-                { "<strike>", ProcessHtmlElement<Strike> },
-                { "<strong>", ProcessHtmlElement<Bold> },
-                { "<sub>", ProcessSubscript },
-                { "<sup>", ProcessSuperscript },
+                //{ "<p>", ProcessParagraph },
+                //{ "<pre>", ProcessPre },
+                //{ "<q>", ProcessQuote },
+                //{ "<span>", ProcessSpan },
+                //{ "<section>", ProcessDiv },
+                //{ "<s>", ProcessHtmlElement<Strike> },
+                //{ "<strike>", ProcessHtmlElement<Strike> },
+                //{ "<strong>", ProcessHtmlElement<Bold> },
+                //{ "<sub>", ProcessSubscript },
+                //{ "<sup>", ProcessSuperscript },
                 { "<table>", ProcessTable },
                 { "<tbody>", ProcessTablePart },
                 { "<td>", ProcessTableColumn },
@@ -611,9 +634,9 @@ namespace HtmlToOpenXml
                 { "<th>", ProcessTableColumn },
                 { "<thead>", ProcessTablePart },
                 { "<tr>", ProcessTableRow },
-                { "<u>", ProcessUnderline },
+                //{ "<u>", ProcessUnderline },
                 { "<ul>", ProcessNumberingList },
-                { "<xml>", ProcessXmlDataIsland },
+                //{ "<xml>", ProcessXmlDataIsland },
 
                 // closing tag
                 { "</article>", ProcessClosingDiv },
@@ -801,7 +824,7 @@ namespace HtmlToOpenXml
         /// <summary>
         /// Gets the Html styles manager mapping to OpenXml style properties.
         /// </summary>
-        public HtmlDocumentStyle HtmlStyles
+        public WordDocumentStyle HtmlStyles
         {
             get { return htmlStyles; }
         }
@@ -816,5 +839,13 @@ namespace HtmlToOpenXml
         /// </summary>
         /// <remarks>The table will contains only one cell.</remarks>
         public bool RenderPreAsTable { get; set; }
+
+        /// <summary>
+        /// Resolve a remote or inline image resource.
+        /// </summary>
+        internal ImagePrefetcher ImagePrefetcher
+        {
+            get => imagePrefetcher ??= new ImagePrefetcher(mainPart, webRequester);
+        }
     }
 }

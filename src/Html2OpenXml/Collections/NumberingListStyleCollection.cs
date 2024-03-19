@@ -257,7 +257,7 @@ namespace HtmlToOpenXml
             bool orderedList = en.CurrentTag!.Equals("<ol>", StringComparison.OrdinalIgnoreCase);
 
             CreateList(type, orderedList);
-            listHtmlElementClasses.Push(en.Attributes.GetAsClass());
+            listHtmlElementClasses.Push(en.Attributes.GetClasses());
         }
 
         #endregion

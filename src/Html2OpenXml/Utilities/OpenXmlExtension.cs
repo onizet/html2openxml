@@ -10,6 +10,7 @@
  * PARTICULAR PURPOSE.
  */
 using System;
+using System.Runtime.CompilerServices;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
 
@@ -23,6 +24,7 @@ namespace HtmlToOpenXml
     [System.Diagnostics.DebuggerStepThrough]
     static class OpenXmlExtension
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool HasChild<T>(this OpenXmlElement element) where T : OpenXmlElement
         {
             return element.GetFirstChild<T>() != null;

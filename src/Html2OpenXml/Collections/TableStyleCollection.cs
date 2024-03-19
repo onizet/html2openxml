@@ -22,9 +22,9 @@ namespace HtmlToOpenXml
     sealed class TableStyleCollection : OpenXmlStyleCollectionBase
     {
         private readonly ParagraphStyleCollection paragraphStyle;
-        private readonly HtmlDocumentStyle documentStyle;
+        private readonly WordDocumentStyle documentStyle;
 
-        internal TableStyleCollection(HtmlDocumentStyle documentStyle)
+        internal TableStyleCollection(WordDocumentStyle documentStyle)
         {
             this.documentStyle = documentStyle;
             paragraphStyle = new ParagraphStyleCollection(documentStyle);
@@ -119,7 +119,7 @@ namespace HtmlToOpenXml
             }
 
             // implemented by ddforge
-            String[] classes = en.Attributes.GetAsClass();
+            String[] classes = en.Attributes.GetClasses();
             if (classes != null)
             {
                 for (int i = 0; i < classes.Length; i++)

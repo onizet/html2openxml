@@ -12,7 +12,9 @@ namespace HtmlToOpenXml.Tests
     public class ParserTests : HtmlConverterTestBase
     {
         [TestCase("<!--<p>some text</p>-->")]
-        [TestCase("<script>$.appendTo('<p>some text</p>', document);</script>")]
+        [TestCase("<script>document.getElementById('body');</script>")]
+        [TestCase("<style>{font-size:2em}</script>")]
+        [TestCase("<xml><element><childElement attr='value' /></element></xml>")]
         public void ParseIgnore(string html)
         {
             // the inner html shouldn't be interpreted
@@ -80,7 +82,7 @@ namespace HtmlToOpenXml.Tests
         public int ParseNewline (string html)
         {
             var elements = converter.Parse(html);
-            return elements[0].ChildElements.Count;
+            return elements[0].Count(c => c is Run);
         }
 
         [Test]
@@ -116,19 +118,25 @@ namespace HtmlToOpenXml.Tests
             var elements = converter.Parse(" < b >bold</b>");
             Assert.That(elements.Count, Is.EqualTo(1));
             Assert.That(elements[0].ChildElements.Count, Is.EqualTo(1));
-            Assert.That(elements[0].FirstChild.GetFirstChild<RunProperties>(), Is.Null);
+            Assert.That(elements[0].FirstChild, Is.TypeOf<Run>());
+            Assert.That(elements[0].FirstChild.InnerText, Is.EqualTo("< b >bold"));
 
             elements = converter.Parse(" <3");
             Assert.That(elements.Count, Is.EqualTo(1));
             Assert.That(elements[0].ChildElements.Count, Is.EqualTo(1));
-            Assert.That(elements[0].FirstChild.GetFirstChild<RunProperties>(), Is.Null);
+            Assert.That(elements[0].FirstChild, Is.TypeOf<Run>());
+            Assert.That(elements[0].FirstChild.InnerText, Is.EqualTo("<3"));
         }
 
         [Test]
-        public void ParseNewlineFlow ()
+        public void ParseSpaceRuns ()
         {
             // the new line should generate a space between "bold" and "text"
             var elements = converter.Parse(" <span>This is a <b>bold\n</b>text</span>");
+            Assert.That(elements.Count, Is.EqualTo(1));
+            Assert.That(elements[0].ChildElements.Count, Is.EqualTo(3));
+            Assert.That(elements[0].ChildElements.All(r => r is Run), Is.True);
+            Assert.That(elements[0].InnerText, Is.EqualTo("This is a bold text"));
         }
 
         [Test]

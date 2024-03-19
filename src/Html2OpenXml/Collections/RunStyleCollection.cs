@@ -22,9 +22,9 @@ namespace HtmlToOpenXml
 
     sealed class RunStyleCollection : OpenXmlStyleCollectionBase
     {
-        private readonly HtmlDocumentStyle documentStyle;
+        private readonly WordDocumentStyle documentStyle;
 
-        internal RunStyleCollection(HtmlDocumentStyle documentStyle)
+        internal RunStyleCollection(WordDocumentStyle documentStyle)
         {
             this.documentStyle = documentStyle;
         }
@@ -85,7 +85,7 @@ namespace HtmlToOpenXml
                 styleAttributes.Add(new Strike());
             }
 
-            String[] classes = en.Attributes.GetAsClass();
+            String[] classes = en.Attributes.GetClasses();
             if (classes != null)
             {
                 for (int i = 0; i < classes.Length; i++)

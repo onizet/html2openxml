@@ -187,7 +187,7 @@ namespace HtmlToOpenXml
         /// </summary>
         public bool IsFixed
         {
-            get { return this.IsValid && (this.Type != UnitMetric.Auto && this.Type != UnitMetric.Auto); }
+            get { return IsValid && Type != UnitMetric.Auto && Type != UnitMetric.Auto; }
         }
     }
 }

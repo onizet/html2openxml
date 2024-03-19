@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Globalization;
+using System.Reflection;
 using System.Resources;
 
 namespace HtmlToOpenXml
@@ -10,6 +11,23 @@ namespace HtmlToOpenXml
     {
         private static global::System.Resources.ResourceManager? resourceMan;
 
+        /// <summary>
+        /// Looks up a localized string similar to Caption.
+        /// </summary>
+        internal static string Caption {
+            get {
+                return ResourceManager.GetString("Caption", CultureInfo.InvariantCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar HyperLink.
+        /// </summary>
+        internal static string HyperLink {
+            get {
+                return ResourceManager.GetString("HyperLink", CultureInfo.InvariantCulture);
+            }
+        }
 
         /// <summary>
         /// Retrieves the embedded resource.
@@ -28,9 +46,9 @@ namespace HtmlToOpenXml
         {
             get
             {
-                if (object.ReferenceEquals(resourceMan, null))
+                if (resourceMan is null)
                 {
-                    ResourceManager temp = new ResourceManager("HtmlToOpenXml.PredefinedStyles",
+                    ResourceManager temp = new("HtmlToOpenXml.PredefinedStyles",
                         typeof(PredefinedStyles).GetTypeInfo().Assembly);
                     resourceMan = temp;
                 }

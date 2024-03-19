@@ -22,9 +22,9 @@ namespace HtmlToOpenXml
 
     sealed class ParagraphStyleCollection : OpenXmlStyleCollectionBase
     {
-        private readonly HtmlDocumentStyle documentStyle;
+        private readonly WordDocumentStyle documentStyle;
 
-        internal ParagraphStyleCollection(HtmlDocumentStyle documentStyle)
+        internal ParagraphStyleCollection(WordDocumentStyle documentStyle)
         {
             this.documentStyle = documentStyle;
         }
@@ -165,7 +165,7 @@ namespace HtmlToOpenXml
                 }
             }
 
-            String[] classes = en.Attributes.GetAsClass();
+            String[] classes = en.Attributes.GetClasses();
             if (classes != null)
             {
                 for (int i = 0; i < classes.Length; i++)
@@ -211,7 +211,7 @@ namespace HtmlToOpenXml
             this.BeginTag(en.CurrentTag!, containerStyleAttributes);
 
             // Process general run styles
-            documentStyle.Runs.ProcessCommonAttributes(en, styleAttributes);
+           //TODO: documentStyle.Runs.ProcessCommonAttributes(en, styleAttributes);
 
             return newParagraph;
         }

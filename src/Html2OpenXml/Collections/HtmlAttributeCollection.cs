@@ -208,7 +208,7 @@ namespace HtmlToOpenXml
         /// <summary>
         /// Gets the class attribute that specify one or more classnames.
         /// </summary>
-        public string[] GetAsClass()
+        public string[] GetClasses()
         {
             var attrValue = this["class"];
             if (attrValue == null) return [];
