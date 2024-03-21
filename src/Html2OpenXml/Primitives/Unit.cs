@@ -175,6 +175,16 @@ namespace HtmlToOpenXml
         }
 
         /// <summary>
+        /// Gets the value expressed in 1/8 of a Point
+        /// IMPORTANT: Use this for borders, as OpenXML expresses Border Width in 1/8 of points,
+        /// with a minimum value of 2 (1/4 of a point) and a maximum value of 96 (12 points).
+        /// </summary>
+        public double ValueInEighthPoint
+        {
+            get { return ValueInPoint * 8; }
+        }
+
+        /// <summary>
         /// Gets whether the unit is well formed and not empty.
         /// </summary>
         public bool IsValid

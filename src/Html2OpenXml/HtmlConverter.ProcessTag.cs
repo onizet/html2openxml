@@ -875,13 +875,21 @@ namespace HtmlToOpenXml
                     properties.TableBorders = new TableBorders();
 
                     if (styleBorder.Left.IsValid)
-                        properties.TableBorders.LeftBorder = new LeftBorder { Val = styleBorder.Left.Style, Color = StringValue.FromString(styleBorder.Left.Color.ToHexString()), Size = (uint)styleBorder.Left.Width.ValueInDxa };
+                        properties.TableBorders.LeftBorder = new LeftBorder { Val = styleBorder.Left.Style, 
+                        Color = StringValue.FromString(styleBorder.Left.Color.ToHexString()),
+                        Size = (uint)Math.Round(styleBorder.Left.Width.ValueInEighthPoint) };
                     if (styleBorder.Right.IsValid)
-                        properties.TableBorders.RightBorder = new RightBorder { Val = styleBorder.Right.Style, Color = StringValue.FromString(styleBorder.Right.Color.ToHexString()), Size = (uint)styleBorder.Right.Width.ValueInDxa };
+                        properties.TableBorders.RightBorder = new RightBorder { Val = styleBorder.Right.Style,
+                        Color = StringValue.FromString(styleBorder.Right.Color.ToHexString()),
+                        Size = (uint)Math.Round(styleBorder.Right.Width.ValueInEighthPoint) };
                     if (styleBorder.Top.IsValid)
-                        properties.TableBorders.TopBorder = new TopBorder { Val = styleBorder.Top.Style, Color = StringValue.FromString(styleBorder.Top.Color.ToHexString()), Size = (uint)styleBorder.Top.Width.ValueInDxa };
+                        properties.TableBorders.TopBorder = new TopBorder { Val = styleBorder.Top.Style,
+                        Color = StringValue.FromString(styleBorder.Top.Color.ToHexString()),
+                        Size = (uint)Math.Round(styleBorder.Top.Width.ValueInEighthPoint) };
                     if (styleBorder.Bottom.IsValid)
-                        properties.TableBorders.BottomBorder = new BottomBorder { Val = styleBorder.Bottom.Style, Color = StringValue.FromString(styleBorder.Bottom.Color.ToHexString()), Size = (uint)styleBorder.Bottom.Width.ValueInDxa };
+                        properties.TableBorders.BottomBorder = new BottomBorder { Val = styleBorder.Bottom.Style,
+                        Color = StringValue.FromString(styleBorder.Bottom.Color.ToHexString()),
+                        Size = (uint)Math.Round(styleBorder.Bottom.Width.ValueInEighthPoint) };
                 }
             }            
 
