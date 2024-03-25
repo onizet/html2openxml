@@ -11,31 +11,22 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml
 {
-    using w = DocumentFormat.OpenXml.Wordprocessing;
-
-
     /// <summary>
     /// Represents a Html Unit (ie: 120px, 10em, ...).
     /// </summary>
-    struct SideBorder
+    readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
     {
         /// <summary>Represents an empty border (not defined).</summary>
-        public static readonly SideBorder Empty = new SideBorder();
+        public static readonly SideBorder Empty = new(BorderValues.Nil, HtmlColor.Empty, Unit.Empty);
 
-        private w.BorderValues style;
-        private HtmlColor color;
-        private Unit size;
-
-
-        public SideBorder(w.BorderValues style, HtmlColor color, Unit size)
-        {
-            this.style = style;
-            this.color = color;
-            this.size = size;
-        }
+        private readonly BorderValues style = style;
+        private readonly HtmlColor color = color;
+        private readonly Unit size = size;
 
         public static SideBorder Parse(string? str)
         {
@@ -46,13 +37,15 @@ namespace HtmlToOpenXml
             // The main problem for parsing this attribute is that the browsers allow any permutation of the values... meaning more coding :(
             // http://www.w3schools.com/cssref/pr_border.asp
 
+            // Remove the spaces that could appear in the color parameter: rgb(233, 233, 233) -> rgb(233,233,233)
+            str = Regex.Replace(str, @",\s+?", ",");
             var borderParts = new List<string>(str.Split(HttpUtility.WhiteSpaces, StringSplitOptions.RemoveEmptyEntries));
             if (borderParts.Count == 0) return SideBorder.Empty;
 
             // Initialize default values
             Unit borderWidth = Unit.Empty;
             HtmlColor borderColor = HtmlColor.Empty;
-            w.BorderValues borderStyle = w.BorderValues.Nil;
+            BorderValues borderStyle = BorderValues.Nil;
 
             // Now try to guess the values with their permutation
 
@@ -60,7 +53,7 @@ namespace HtmlToOpenXml
             for (int i = 0; i < borderParts.Count; i++)
             {
                 borderStyle = Converter.ToBorderStyle(borderParts[i]);
-                if (borderStyle != w.BorderValues.Nil)
+                if (borderStyle != BorderValues.Nil)
                 {
                     borderParts.RemoveAt(i); // no need to process this part anymore
                     break;
@@ -81,10 +74,13 @@ namespace HtmlToOpenXml
             if(borderParts.Count > 0)
                 borderColor = HtmlColor.Parse(borderParts[0]);
 
+            if (borderColor.IsEmpty && !borderWidth.IsValid && borderStyle == BorderValues.Nil)
+                return SideBorder.Empty;
+
             // returns the instance with default value if needed.
             // These value are the ones used by the browser, i.e: solid 3px black
             return new SideBorder(
-                borderStyle == w.BorderValues.Nil? w.BorderValues.Single : borderStyle,
+                borderStyle == BorderValues.Nil? BorderValues.Single : borderStyle,
                 borderColor.IsEmpty? HtmlColor.Black : borderColor,
                 borderWidth.IsFixed? borderWidth : new Unit(UnitMetric.Pixel, 4));
         }
@@ -116,10 +112,9 @@ namespace HtmlToOpenXml
         /// <summary>
         /// Gets or sets the type of border (solid, dashed, dotted, ...)
         /// </summary>
-        public w.BorderValues Style
+        public BorderValues Style
         {
             get { return style; }
-            set { style = value; }
         }
 
         /// <summary>
@@ -128,7 +123,6 @@ namespace HtmlToOpenXml
         public HtmlColor Color
         {
             get { return color; }
-            set { color = value; }
         }
 
         /// <summary>
@@ -137,7 +131,6 @@ namespace HtmlToOpenXml
         public Unit Width
         {
             get { return size; }
-            set { size = value; }
         }
 
         /// <summary>
@@ -145,7 +138,7 @@ namespace HtmlToOpenXml
         /// </summary>
         public bool IsValid
         {
-            get { return !Style.Equals(w.BorderValues.Nil); }
+            get { return !BorderValues.Nil.Equals(Style); }
         }
     }
 }

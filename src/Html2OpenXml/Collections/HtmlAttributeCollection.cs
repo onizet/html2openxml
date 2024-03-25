@@ -187,22 +187,22 @@ namespace HtmlToOpenXml
         /// If a border style/color/width has been specified individually, it will override the grouped definition.
         /// </summary>
         /// <returns>If the attribute is misformed, the <see cref="HtmlBorder.IsEmpty"/> property is set to false.</returns>
-        public SideBorder GetAsSideBorder(String name)
+        public SideBorder GetAsSideBorder(string name)
         {
             var attrValue = this[name];
             SideBorder border = SideBorder.Parse(attrValue);
 
             // handle attributes specified individually.
             Unit width = SideBorder.ParseWidth(this[name + "-width"]);
-            if (width.IsValid) border.Width = width;
+            if (!width.IsValid) width = border.Width;
 
             var color = GetAsColor(name + "-color");
-            if (!color.IsEmpty) border.Color = color;
+            if (color.IsEmpty) color = border.Color;
 
             var style = Converter.ToBorderStyle(this[name + "-style"]);
-            if (style != w.BorderValues.Nil) border.Style = style;
+            if (style == w.BorderValues.Nil) style = border.Style;
 
-            return border;
+            return new SideBorder(style, color, width);
         }
 
         /// <summary>
