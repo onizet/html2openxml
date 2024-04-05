@@ -15,6 +15,9 @@ namespace HtmlToOpenXml.Tests
         [TestCase("<script>document.getElementById('body');</script>")]
         [TestCase("<style>{font-size:2em}</script>")]
         [TestCase("<xml><element><childElement attr='value' /></element></xml>")]
+        [TestCase("<button>Save</button>")]
+        [TestCase("<input type='search' placeholder='Search' />")]
+
         public void ParseIgnore(string html)
         {
             // the inner html shouldn't be interpreted

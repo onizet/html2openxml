@@ -24,7 +24,8 @@ namespace HtmlToOpenXml.Expressions;
 abstract class HtmlDomExpression
 {
     static readonly Dictionary<string, Func<IHtmlElement, HtmlElementExpression>> knownTags = InitKnownTags();
-    static readonly HashSet<string> ignoreTags = [TagNames.Xml, TagNames.AnnotationXml];
+    static readonly HashSet<string> ignoreTags = new(StringComparer.OrdinalIgnoreCase) {
+        TagNames.Xml, TagNames.AnnotationXml, TagNames.Button };
 
     private static Dictionary<string, Func<IHtmlElement, HtmlElementExpression>> InitKnownTags()
     {
@@ -82,12 +83,13 @@ abstract class HtmlDomExpression
         if (node.NodeType == NodeType.Text)
             return new TextExpression(node);
         else if (node.NodeType == NodeType.Element
-            && !ignoreTags.Contains(node.NodeName))
+            && !ignoreTags.Contains(node.NodeName)
+            && node is not IHtmlInputElement)
         {
             if (knownTags.TryGetValue(node.NodeName, out Func<IHtmlElement, HtmlElementExpression>? handler))
                 return handler((IHtmlElement) node);
 
-            // fallback on the flow element
+            // fallback on the flow element which will cover all the semantic Html5 tags
             return new FlowElementExpression((IHtmlElement) node);
         }
 
