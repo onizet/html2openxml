@@ -100,8 +100,7 @@ namespace HtmlToOpenXml
             }
 
             HtmlFont font = en.StyleAttributes.GetAsFont("font");
-            if (!font.IsEmpty)
-            {
+            
                 if (font.Style == FontStyle.Italic)
                     styleAttributes.Add(new Italic());
 
@@ -117,7 +116,7 @@ namespace HtmlToOpenXml
                 // size are half-point font size
                 if (font.Size.IsFixed)
                     styleAttributes.Add(new FontSize() { Val = Math.Round(font.Size.ValueInPoint * 2).ToString(CultureInfo.InvariantCulture) });
-            }
+            
         }
 
         #endregion

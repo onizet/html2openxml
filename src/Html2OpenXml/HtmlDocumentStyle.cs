@@ -10,6 +10,7 @@
  * PARTICULAR PURPOSE.
  */
 using System;
+using System.Collections.Generic;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 
@@ -20,8 +21,6 @@ namespace HtmlToOpenXml;
 /// </summary>
 public sealed class WordDocumentStyle
 {
-    internal enum KnownStyles { Hyperlink, Caption }
-
     /// <summary>
     /// Occurs when a Style is missing in the MainDocumentPart but will be used during the conversion process.
     /// </summary>
@@ -32,13 +31,34 @@ public sealed class WordDocumentStyle
     private readonly ParagraphStyleCollection paraStyle;
     private NumberingListStyleCollection listStyle;
     private readonly MainDocumentPart mainPart;
-    private OpenXmlDocumentStyleCollection knownStyles;
+    private readonly OpenXmlDocumentStyleCollection knownStyles;
+    private readonly ISet<string> lazyPredefinedStyles;
+
     private DefaultStyles? defaultStyles;
     
 
     internal WordDocumentStyle(MainDocumentPart mainPart)
     {
-        PrepareStyles(mainPart);
+        knownStyles = PrepareStyles(mainPart);
+        lazyPredefinedStyles = new HashSet<string>() { 
+            PredefinedStyles.Caption,
+            PredefinedStyles.EndnoteReference,
+            PredefinedStyles.EndnoteText,
+            PredefinedStyles.FootnoteReference,
+            PredefinedStyles.FootnoteText,
+            PredefinedStyles.Heading + "1",
+            PredefinedStyles.Heading + "2",
+            PredefinedStyles.Heading + "3",
+            PredefinedStyles.Heading + "4",
+            PredefinedStyles.Heading + "5",
+            PredefinedStyles.Heading + "6",
+            PredefinedStyles.Hyperlink,
+            PredefinedStyles.IntenseQuote,
+            PredefinedStyles.ListParagraph,
+            PredefinedStyles.Quote,
+            PredefinedStyles.QuoteChar,
+            PredefinedStyles.TableGrid
+        };
         tableStyle = new TableStyleCollection(this);
         runStyle = new RunStyleCollection(this);
         paraStyle = new ParagraphStyleCollection(this);
@@ -51,13 +71,13 @@ public sealed class WordDocumentStyle
     /// <summary>
     /// Preload the styles in the document to match localized style name.
     /// </summary>
-    internal void PrepareStyles(MainDocumentPart mainPart)
+    internal OpenXmlDocumentStyleCollection PrepareStyles(MainDocumentPart mainPart)
     {
-        knownStyles = new OpenXmlDocumentStyleCollection();
-        if (mainPart.StyleDefinitionsPart == null) return;
+        var knownStyles = new OpenXmlDocumentStyleCollection();
+        if (mainPart.StyleDefinitionsPart == null) return knownStyles;
 
         Styles? styles = mainPart.StyleDefinitionsPart.Styles;
-        if (styles == null) return;
+        if (styles == null) return knownStyles;
 
         foreach (var s in styles.Elements<Style>())
         {
@@ -72,6 +92,7 @@ public sealed class WordDocumentStyle
 
             knownStyles.Add(s.StyleId!, s);
         }
+        return knownStyles;
     }
 
     internal ParagraphStyleId GetParagraphStyle(string name)
@@ -119,8 +140,18 @@ public sealed class WordDocumentStyle
         {
             if (!knownStyles.TryGetValue(name, out style))
             {
-                StyleMissing?.Invoke(this, new StyleEventArgs(name, mainPart.StyleDefinitionsPart!, styleType));
-                return name;
+                if (lazyPredefinedStyles.Contains(name))
+                {
+                    string? xml = PredefinedStyles.GetOuterXml(name);
+                    if (xml != null)
+                        this.AddStyle(name, style = new Style(xml));
+                }
+
+                if (style is null)
+                {
+                    StyleMissing?.Invoke(this, new StyleEventArgs(name, mainPart.StyleDefinitionsPart!, styleType));
+                    return name;
+                }
             }
 
             if (styleType == StyleValues.Character && !StyleValues.Character.Equals(style!.Type!))
@@ -133,14 +164,6 @@ public sealed class WordDocumentStyle
     }
 
     /// <summary>
-    /// Gets whether the given style exists in the document.
-    /// </summary>
-    public bool DoesStyleExists(string name)
-    {
-        return knownStyles.ContainsKey(name);
-    }
-
-    /// <summary>
     /// Add a new style inside the document and refresh the style cache.
     /// </summary>
     private void AddStyle(string name, Style style)
@@ -149,45 +172,6 @@ public sealed class WordDocumentStyle
         if (mainPart.StyleDefinitionsPart == null)
             mainPart.AddNewPart<StyleDefinitionsPart>().Styles = new Styles();
         mainPart.StyleDefinitionsPart!.Styles!.Append(style);
-    }
-
-    /// <summary>
-    /// Ensure the specified style exists in the document.
-    /// </summary>
-    internal void EnsureKnownStyle(KnownStyles styleName)
-    {
-        if (styleName == KnownStyles.Hyperlink)
-        {
-            if (!DoesStyleExists("Hyperlink"))
-            {
-                AddStyle("Hyperlink", new Style(
-                    new StyleName() { Val = "Hyperlink" },
-                    new UnhideWhenUsed(),
-                    new StyleRunProperties(PredefinedStyles.HyperLink)
-                ) { Type = StyleValues.Character, StyleId = "Hyperlink" });
-            }
-        }
-        else if (styleName == KnownStyles.Caption)
-        {
-            if (DoesStyleExists("caption"))
-                return;
-
-            var normalStyleName = GetStyle("Normal", StyleValues.Paragraph);
-            Style style = new Style(
-                new StyleName { Val = "caption" },
-                new BasedOn { Val = normalStyleName },
-                new NextParagraphStyle { Val = normalStyleName },
-                new UnhideWhenUsed(),
-                new PrimaryStyle(),
-                new StyleParagraphProperties
-                {
-                    SpacingBetweenLines = new SpacingBetweenLines { Line = "240", LineRule = LineSpacingRuleValues.Auto }
-                },
-                new StyleRunProperties(PredefinedStyles.Caption)
-            ) { Type = StyleValues.Paragraph, StyleId = "Caption" };
-
-            AddStyle("caption", style);
-        }
     }
 
     //____________________________________________________________________

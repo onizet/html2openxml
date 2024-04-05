@@ -116,7 +116,7 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
         }
 
         var colorValue = styleAttributes.GetAsColor("color");
-        if (colorValue.IsEmpty) colorValue = node.AttributeAsColor("color");
+        if (colorValue.IsEmpty) colorValue = HtmlColor.Parse(node.GetAttribute("color"));
         if (!colorValue.IsEmpty)
             runProperties.Color = new Color { Val = colorValue.ToHexString() };
 
@@ -128,7 +128,7 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
             runProperties.Shading = new Shading { Val = ShadingPatternValues.Clear, Fill = colorValue.ToHexString() };
         }
 
-        var decorations = Converter.ToTextDecoration(node.GetAttribute("text-decoration"));
+        var decorations = Converter.ToTextDecoration(styleAttributes["text-decoration"]);
         if ((decorations & TextDecoration.Underline) != 0)
         {
             runProperties.Underline = new Underline { Val = UnderlineValues.Single };
@@ -150,23 +150,27 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
         }
 
         HtmlFont font = styleAttributes.GetAsFont("font");
-        if (!font.IsEmpty)
-        {
-            if (font.Style == FontStyle.Italic)
-                runProperties.Italic = new Italic();
 
-            if (font.Weight == FontWeight.Bold || font.Weight == FontWeight.Bolder)
-                runProperties.Bold = new Bold();
+        if (font.Style == FontStyle.Italic)
+            runProperties.Italic = new Italic();
+        else if (font.Style == FontStyle.Normal)
+            runProperties.Italic = new Italic() { Val = false };
 
-            if (font.Variant == FontVariant.SmallCaps)
-                runProperties.SmallCaps = new SmallCaps();
+        if (font.Weight == FontWeight.Bold || font.Weight == FontWeight.Bolder)
+            runProperties.Bold = new Bold();
+        else if (font.Weight == FontWeight.Normal)
+            runProperties.Bold = new Bold() { Val = false };
 
-            if (font.Family != null)
-                runProperties.RunFonts = new RunFonts() { Ascii = font.Family, HighAnsi = font.Family };
+        if (font.Variant == FontVariant.SmallCaps)
+            runProperties.SmallCaps = new SmallCaps();
+        else if (font.Variant == FontVariant.Normal)
+            runProperties.SmallCaps = new SmallCaps() { Val = false };
 
-            // size are half-point font size
-            if (font.Size.IsFixed)
-                runProperties.FontSize = new FontSize() { Val = Math.Round(font.Size.ValueInPoint * 2).ToString(CultureInfo.InvariantCulture) };
-        }
+        if (font.Family != null)
+            runProperties.RunFonts = new RunFonts() { Ascii = font.Family, HighAnsi = font.Family };
+
+        // size are half-point font size
+        if (font.Size.IsFixed)
+            runProperties.FontSize = new FontSize() { Val = Math.Round(font.Size.ValueInPoint * 2).ToString(CultureInfo.InvariantCulture) };
     }
 }

@@ -39,19 +39,18 @@ namespace HtmlToOpenXml
 
         private static readonly Regex stripStyleAttributesRegex = new(@"(?<name>.+?):\s*(?<val>[^;]+);*\s*");
 
-        private Dictionary<string, string> attributes;
+        private readonly Dictionary<string, string> attributes = [];
 
 
 
         private HtmlAttributeCollection()
         {
-            this.attributes = new Dictionary<string, string>();
         }
 
         public static HtmlAttributeCollection Parse(string? htmlTag)
         {
             HtmlAttributeCollection collection = new HtmlAttributeCollection();
-            if (String.IsNullOrEmpty(htmlTag)) return collection;
+            if (string.IsNullOrEmpty(htmlTag)) return collection;
 
             // We remove the name of the tag (due to our regex) and ensure there are at least one parameter
             int startIndex;
@@ -81,7 +80,7 @@ namespace HtmlToOpenXml
         public static HtmlAttributeCollection ParseStyle(string? htmlTag)
         {
             var collection = new HtmlAttributeCollection();
-            if (String.IsNullOrEmpty(htmlTag)) return collection;
+            if (string.IsNullOrEmpty(htmlTag)) return collection;
 
             // Encoded ':' and ';' characters are valid for browser but not handled by the regex (bug #13812 reported by robin391)
             // ex= <span style="text-decoration&#58;underline&#59;color:red">
@@ -111,10 +110,10 @@ namespace HtmlToOpenXml
         /// <summary>
         /// Gets an attribute representing an integer.
         /// </summary>
-        public Int32? GetAsInt(String name)
+        public int? GetAsInt(string name)
         {
             string? attrValue = this[name];
-            if (attrValue != null && Int32.TryParse(attrValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var val))
+            if (attrValue != null && int.TryParse(attrValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var val))
                 return val;
 
             return null;
@@ -124,7 +123,7 @@ namespace HtmlToOpenXml
         /// Gets an attribute representing a color (named color, hexadecimal or hexadecimal 
         /// without the preceding # character).
         /// </summary>
-        public HtmlColor GetAsColor(String name)
+        public HtmlColor GetAsColor(string name)
         {
             return HtmlColor.Parse(this[name]);
         }
@@ -133,7 +132,7 @@ namespace HtmlToOpenXml
         /// Gets an attribute representing an unit: 120px, 10pt, 5em, 20%, ...
         /// </summary>
         /// <returns>If the attribute is misformed, the <see cref="Unit.IsValid"/> property is set to false.</returns>
-        public Unit GetAsUnit(String name)
+        public Unit GetAsUnit(string name)
         {
             return Unit.Parse(this[name]);
         }
@@ -143,7 +142,7 @@ namespace HtmlToOpenXml
         /// If a side has been specified individually, it will override the grouped definition.
         /// </summary>
         /// <returns>If the attribute is misformed, the <see cref="Margin.IsValid"/> property is set to false.</returns>
-        public Margin GetAsMargin(String name)
+        public Margin GetAsMargin(string name)
         {
             Margin margin = Margin.Parse(this[name]);
             Unit u;
@@ -165,9 +164,9 @@ namespace HtmlToOpenXml
         /// If a border style/color/width has been specified individually, it will override the grouped definition.
         /// </summary>
         /// <returns>If the attribute is misformed, the <see cref="HtmlBorder.IsEmpty"/> property is set to false.</returns>
-        public HtmlBorder GetAsBorder(String name)
+        public HtmlBorder GetAsBorder(string name)
         {
-            HtmlBorder border = new HtmlBorder(GetAsSideBorder(name));
+            HtmlBorder border = new(GetAsSideBorder(name));
             SideBorder sb;
 
             sb = GetAsSideBorder(name + "-top");
@@ -218,35 +217,40 @@ namespace HtmlToOpenXml
         /// <summary>
         /// Gets the font attribute and combine with the style, size and family.
         /// </summary>
-        public HtmlFont GetAsFont(String name)
+        public HtmlFont GetAsFont(string name)
         {
             HtmlFont font = HtmlFont.Parse(this[name]);
+            FontStyle? fontStyle = font.Style;
+            FontVariant? variant = font.Variant;
+            FontWeight? weight = font.Weight;
+            Unit fontSize = font.Size;
+            string? family = font.Family;
+
             var attrValue = this[name + "-style"];
             if (attrValue != null)
             {
-                var style = Converter.ToFontStyle(attrValue);
-                if (style.HasValue) font.Style = style.Value;
+                fontStyle = Converter.ToFontStyle(attrValue) ?? font.Style;
             }
             attrValue = this[name + "-variant"];
             if (attrValue != null)
             {
-                var variant = Converter.ToFontVariant(attrValue);
-                if (variant.HasValue) font.Variant = variant.Value;
+                variant = Converter.ToFontVariant(attrValue) ?? font.Variant;
             }
             attrValue = this[name + "-weight"];
             if (attrValue != null)
             {
-                var weight = Converter.ToFontWeight(attrValue);
-                if (weight.HasValue) font.Weight = weight.Value;
+                weight = Converter.ToFontWeight(attrValue) ?? font.Weight;
             }
             attrValue = this[name + "-family"];
             if (attrValue != null)
             {
-                font.Family = Converter.ToFontFamily(attrValue);
+                family = Converter.ToFontFamily(attrValue) ?? font.Family;
             }
+
             Unit unit = this.GetAsUnit(name + "-size");
-            if (unit.IsValid) font.Size = unit;
-            return font;
+            if (unit.IsValid) fontSize = unit;
+
+            return new HtmlFont(fontStyle, variant, weight, fontSize, family);
         }
     }
 }

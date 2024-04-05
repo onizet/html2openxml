@@ -59,20 +59,31 @@ text-decoration:underline;
             });
         }
 
-        /*[Test]
-        public void ParseDisruptiveStyle ()
+        [TestCase(@"<i style='font-style:normal'>Not italic</i>", false)]
+        [TestCase(@"<span style='font-style:italic'><i style='font-style:normal'>Not italic</i></span>", false)]
+        [TestCase(@"<span style='font-style:normal'><span style='font-style:italic'>Italic!</span></span>", true)]
+        public void ParseDisruptiveStyle (string html, bool expectItalic)
         {
-            //TODO:
             // italic should not be applied as we specify font-style=normal
-            var elements = converter.Parse("<i style='font-style:normal'>Not italics</i>");
-            Assert.Multiple(() => {
-                var runProperties = elements[0].FirstChild.GetFirstChild<RunProperties>();
-                Assert.IsNotNull(runProperties);
-                Assert.IsTrue(!runProperties.HasChild<Italic>());
-            });
-
-            elements = converter.Parse("<span style='font-style:italic'><i style='font-style:normal'>Not italics</i></span>");
-        }*/
+            var elements = converter.Parse(html);
+            Assert.That(elements, Is.Not.Empty);
+            Assert.That(elements[0], Is.TypeOf<Paragraph>());
+            Assert.That(elements[0].FirstChild, Is.TypeOf<Run>());
+            var run  = elements[0].FirstChild as Run;
+            Assert.That(run.RunProperties, Is.Not.Null);
+            if (expectItalic)
+            {
+                Assert.That(run.RunProperties.Italic, Is.Not.Null);
+                // normally, Val should be null
+                if (run.RunProperties.Italic.Val is not null)
+                    Assert.That(run.RunProperties.Italic.Val, Is.EqualTo(true));
+            }
+            else
+            {
+                if (run.RunProperties.Italic is not null)
+                    Assert.That(run.RunProperties.Italic.Val, Is.EqualTo(false));
+            }
+        }
 
         [TestCase(@"<q>Build a future where people live in harmony with nature.</q>", true)]
         [TestCase(@"<cite>Build a future where people live in harmony with nature.</cite>", false)]
