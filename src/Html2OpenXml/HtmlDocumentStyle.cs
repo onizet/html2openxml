@@ -71,7 +71,7 @@ public sealed class WordDocumentStyle
     /// <summary>
     /// Preload the styles in the document to match localized style name.
     /// </summary>
-    internal OpenXmlDocumentStyleCollection PrepareStyles(MainDocumentPart mainPart)
+    internal static OpenXmlDocumentStyleCollection PrepareStyles(MainDocumentPart mainPart)
     {
         var knownStyles = new OpenXmlDocumentStyleCollection();
         if (mainPart.StyleDefinitionsPart == null) return knownStyles;
@@ -166,8 +166,11 @@ public sealed class WordDocumentStyle
     /// <summary>
     /// Add a new style inside the document and refresh the style cache.
     /// </summary>
-    private void AddStyle(string name, Style style)
+    internal void AddStyle(string name, Style style)
     {
+        if (knownStyles.ContainsKey(name))
+            return;
+
         knownStyles[name] = style;
         if (mainPart.StyleDefinitionsPart == null)
             mainPart.AddNewPart<StyleDefinitionsPart>().Styles = new Styles();
@@ -194,6 +197,7 @@ public sealed class WordDocumentStyle
         [System.Diagnostics.DebuggerHidden()]
         get { return paraStyle; }
     }
+    [Obsolete]
     internal NumberingListStyleCollection NumberingList
     {
         // use lazy loading to avoid injecting NumberListDefinition if not required

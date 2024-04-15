@@ -30,7 +30,7 @@ sealed class ParsingContext(HtmlConverter converter, MainDocumentPart mainPart)
     public MainDocumentPart MainPart { get; } = mainPart;
 
     private HtmlElementExpression? parentExpression;
-    private Dictionary<string, object> propertyBag = [];
+    private Dictionary<string, object?> propertyBag = [];
 
     /// <summary>Whether the text content should preserver the line breaks.</summary>
     public bool PreverseLinebreaks { get; set; }
@@ -93,8 +93,8 @@ sealed class ParsingContext(HtmlConverter converter, MainDocumentPart mainPart)
 
     /// <summary>Retrieves a variable tied to the context of the parsing.</summary>
     public T? Properties<T>(string name)
-        => propertyBag.TryGetValue(name, out var value)? (T) value : default;
+        => propertyBag.TryGetValue(name, out var value)? (T?) value : default;
 
     /// <summary>Store a variable in the global context of the parsing.</summary>
-    public void Properties(string name, object value) => propertyBag[name] = value;
+    public void Properties(string name, object? value) => propertyBag[name] = value;
 }

@@ -702,7 +702,7 @@ namespace HtmlToOpenXml
         /// </summary>
         public void RefreshStyles()
         {
-            htmlStyles.PrepareStyles(mainPart);
+            WordDocumentStyle.PrepareStyles(mainPart);
         }
 
         #endregion

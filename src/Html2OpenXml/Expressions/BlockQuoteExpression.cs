@@ -168,7 +168,7 @@ sealed class BlockQuoteExpression(IHtmlElement node) : FlowElementExpression(nod
 
         fpart.Footnotes.Save();
 
-        context.Properties("footnotesRef", footnotesRef!);
+        context.Properties("footnotesRef", footnotesRef);
         return footnotesRef!.Value;
     }
 
@@ -239,7 +239,7 @@ sealed class BlockQuoteExpression(IHtmlElement node) : FlowElementExpression(nod
 
         fpart.Endnotes.Save();
 
-        context.Properties("endnotesRef", endnotesRef!);
+        context.Properties("endnotesRef", endnotesRef);
         return endnotesRef!.Value;
     }
 }
