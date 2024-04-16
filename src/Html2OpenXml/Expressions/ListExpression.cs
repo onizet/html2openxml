@@ -38,6 +38,7 @@ sealed class ListExpression(IHtmlElement node) : FlowElementExpression(node)
     }
 #endif
 
+    /// <summary>Hard-coded value from Word</summary>
     const int MAX_LEVEL = 8;
     const string HEADING_NUMBERING_NAME = "decimal-heading-multi";
     // https://www.w3schools.com/cssref/playdemo.php?filename=playcss_list-style-type
@@ -81,7 +82,6 @@ sealed class ListExpression(IHtmlElement node) : FlowElementExpression(node)
             parentContext = listContext;
             var abstractNumId = FindListTemplate(context, listStyle);
             listContext = ConcretiseInstance(context, abstractNumId, listStyle, listContext.Level);
-            //listContext = new ListContext(listStyle, abstractNumId, instanceId, listContext.Level + 1);
 
             numbering.Append(
                 new NumberingInstance(
@@ -101,7 +101,8 @@ sealed class ListExpression(IHtmlElement node) : FlowElementExpression(node)
 
         context.Properties("listContext", listContext);
 
-        var level = listContext.Level;
+        // +1 because index starts on 1 and not 0
+        var level = Math.Min(listContext.Level, MAX_LEVEL+1);
         foreach (IHtmlElement liNode in liNodes.Cast<IHtmlElement>())
         {
             var expression = new FlowElementExpression(liNode);
@@ -166,6 +167,11 @@ sealed class ListExpression(IHtmlElement node) : FlowElementExpression(node)
                     absNumIdRef = abs.AbstractNumberId;
             }
         }
+
+        // compute the next list instance ID seed. We start at 1 because 0 has a special meaning: 
+        // The w:numId can contain a value of 0, which is a special value that indicates that numbering was removed
+        // at this level of the style hierarchy. While processing this markup, if the w:val='0',
+        // the paragraph does not have a list item (http://msdn.microsoft.com/en-us/library/ee922775(office.14).aspx)
         absNumIdRef++;
         context.Properties("absNumIdRef", absNumIdRef);
         return absNumIdRef.Value;
@@ -217,68 +223,12 @@ sealed class ListExpression(IHtmlElement node) : FlowElementExpression(node)
         }
         absNumIdRef++;
 
-        // Check if we have already initialized our abstract nums
-        // if that is the case, we should not add them again.
-        // This supports a use-case where the HtmlConverter is called multiple times
-        // on document generation, and needs to continue existing lists
-        /*bool addNewAbstractNums = true;
-        IEnumerable<AbstractNum> existingAbstractNums = numberingPart.Numbering!.ChildElements.Where(e => e != null && e is AbstractNum).Cast<AbstractNum>();
-
-        if (existingAbstractNums.Count() >= absNumChildren.Length) // means we might have added our own already
-        {
-            foreach (var abstractNum in absNumChildren)
-            {
-                // Check if we can find this in the existing document
-                addNewAbstractNums = addNewAbstractNums 
-                    || !existingAbstractNums.Any(a => a.AbstractNumDefinitionName?.Val?.Value == abstractNum.AbstractNumDefinitionName?.Val?.Value);
-            }
-        }
-
-        if (addNewAbstractNums)
-        {
-            // this is not documented but MS Word needs that all the AbstractNum are stored consecutively.
-            // Otherwise, it will apply the "NoList" style to the existing ListInstances.
-            // This is the reason why I insert all the items after the last AbstractNum.
-            int lastAbsNumIndex = 0;
-            if (absNumIdRef > 0)
-            {
-                lastAbsNumIndex = numberingPart.Numbering.ChildElements.Count-1;
-                for (; lastAbsNumIndex >= 0; lastAbsNumIndex--)
-                {
-                    if(numberingPart.Numbering.ChildElements[lastAbsNumIndex] is AbstractNum)
-                        break;
-                }
-            }
-
-            lastAbsNumIndex = Math.Max(lastAbsNumIndex, 0);
-
-            for (int i = 0; i < absNumChildren.Length; i++)
-                numberingPart.Numbering.InsertAt(absNumChildren[i], i + lastAbsNumIndex);
-
-            knownAbsNumIds = absNumChildren
-                .ToDictionary(a => a.AbstractNumDefinitionName!.Val!.Value!, a => a.AbstractNumberId!.Value);
-        } 
-        else
-        {*/
         IEnumerable<AbstractNum> existingAbstractNums = numbering.ChildElements
             .Where(e => e != null && e is AbstractNum).Cast<AbstractNum>();
 
         knownAbsNumIds = existingAbstractNums
             .Where(a => a.AbstractNumDefinitionName != null && a.AbstractNumDefinitionName.Val != null)
             .ToDictionary(a => a.AbstractNumDefinitionName!.Val!.Value!, a => a.AbstractNumberId!.Value);
-        //}
-
-        // compute the next list instance ID seed. We start at 1 because 0 has a special meaning: 
-        // The w:numId can contain a value of 0, which is a special value that indicates that numbering was removed
-        // at this level of the style hierarchy. While processing this markup, if the w:val='0',
-        // the paragraph does not have a list item (http://msdn.microsoft.com/en-us/library/ee922775(office.14).aspx)
-        //TODO:store this
-        /*int nextInstanceID = 1;
-        foreach (NumberingInstance inst in numberingPart.Numbering.Elements<NumberingInstance>())
-        {
-            if (inst.NumberID?.Value > nextInstanceID) nextInstanceID = inst.NumberID;
-        }*/
-        //numInstances.Push(new KeyValuePair<int, int>(nextInstanceID, -1));
 
         foreach (NumberingInstance inst in numbering.Elements<NumberingInstance>())
         {
@@ -372,29 +322,6 @@ sealed class ListExpression(IHtmlElement node) : FlowElementExpression(node)
         abstractNum = (AbstractNum) abstractNum.CloneNode(true);
         abstractNum.AbstractNumberId = IncrementAbstractNumId(context, numberingPart);
         var level1 = abstractNum.GetFirstChild<Level>()!;
-
-       // var listStyles = maxDepth.Topology.Split('+');
-        //var isConsistentStyle = listStyles.All(s => s == listStyles[0]);
-        /*AbstractNum abstractNum = new(
-                new MultiLevelType() { Val = MultiLevelValues.HybridMultilevel },
-                new RunProperties(
-                    new RunFonts() { HighAnsi = "Arial Unicode MS" }
-                )
-            )
-        {
-            AbstractNumDefinitionName = new() { Val = maxDepth.Topology },
-            AbstractNumberId = IncrementAbstractNumId(context, numberingPart)
-        };
-
-        for (var i = 0; i < listStyles.Length; i++)
-        {
-            var abstractStyleNum = predefinedNumberingLists[listStyles[0]];
-            var level = (Level) abstractStyleNum.GetFirstChild<Level>()!.CloneNode(true);
-
-            level.LevelIndex = i;
-            level.LevelText!.Val = level.LevelText.Val!.Value!.Replace("%1.", $"%{i+1}.");
-            abstractNum.AddChild(level);
-        }*/
 
         /*Level level1 = abstractNum.GetFirstChild<Level>()!;
         // skip the first level, starts to 2

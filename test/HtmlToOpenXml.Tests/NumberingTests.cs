@@ -159,5 +159,40 @@ namespace HtmlToOpenXml.Tests
             Assert.That(afterMaxInstanceId, Is.EqualTo(beforeMaxInstanceId + 1),
                 "The new list instance should have been registred incrementally");
         }
+
+        /// <summary>
+        /// Even if Word won't display the 10th levels, the conversion should not fail
+        /// </summary>
+        [TestCase(8, Description = "Word doesn't display more than 8 deep levels.")]
+        public void MaxNumberingLevel(int maxLevel)
+        {
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i <= maxLevel; i++)
+                sb.AppendFormat("<ol><li>Item {0}", i+1);
+            for (int i = 0; i <= maxLevel; i++)
+                sb.Append("</li></ol>");
+
+            var elements = converter.Parse(sb.ToString());
+
+            var absNum = mainPart.NumberingDefinitionsPart?.Numbering
+                .Elements<AbstractNum>()
+                .SingleOrDefault();
+            Assert.That(absNum, Is.Not.Null);
+
+            var inst = mainPart.NumberingDefinitionsPart?.Numbering
+                .Elements<NumberingInstance>().Where(i => i.AbstractNumId.Val == absNum.AbstractNumberId)
+                .SingleOrDefault();
+            Assert.That(inst, Is.Not.Null);
+            Assert.That(inst.NumberID?.Value, Is.Not.Null);
+
+            Assert.That(elements, Has.Count.EqualTo(maxLevel + 1));
+            Assert.That(elements.Cast<Paragraph>().Select(e => 
+                e.ParagraphProperties.NumberingProperties?.NumberingId?.Val?.Value),
+                Has.All.EqualTo(inst.NumberID.Value),
+                "All paragraphs are linked to the same list instance");
+            Assert.That(elements.Last().GetFirstChild<ParagraphProperties>()
+                .NumberingProperties.NumberingLevelReference.Val.Value, Is.EqualTo(maxLevel),
+                "Level must be maxed out");
+        }
     }
 }
