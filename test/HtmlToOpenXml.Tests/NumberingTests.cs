@@ -194,5 +194,62 @@ namespace HtmlToOpenXml.Tests
                 .NumberingProperties.NumberingLevelReference.Val.Value, Is.EqualTo(maxLevel),
                 "Level must be maxed out");
         }
+
+        [Test(Description = "Apply Word document style on list scope")]
+        public void NumberingWithListCssClass()
+        {
+            using var generatedDocument = new MemoryStream();
+            using (var buffer = ResourceHelper.GetStream("Resources.DocWithCustomStyle.docx"))
+                buffer.CopyTo(generatedDocument);
+
+            generatedDocument.Position = 0L;
+            using WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true);
+            MainDocumentPart mainPart = package.MainDocumentPart;
+            HtmlConverter converter = new(mainPart);
+
+            var elements = converter.Parse(@"<ul class='no-mapping-cls CustomStyle1'>
+                <li>Item 1</li>
+                <li>Item 2</li>
+                <li>Item 3</li>
+            </ul>");
+
+            Assert.That(elements, Has.Count.EqualTo(3));
+            Assert.That(elements.Cast<Paragraph>().Select(e => 
+                e.ParagraphProperties.ParagraphStyleId?.Val?.Value),
+                Has.All.EqualTo("CustomStyle1"),
+                "All paragraphs are linked to the same list instance");
+        }
+
+        [Test(Description = "Apply Word document style on list item scope")]
+        public void NumberingWithListItemCssClass()
+        {
+            using var generatedDocument = new MemoryStream();
+            using (var buffer = ResourceHelper.GetStream("Resources.DocWithCustomStyle.docx"))
+                buffer.CopyTo(generatedDocument);
+
+            generatedDocument.Position = 0L;
+            using WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true);
+            MainDocumentPart mainPart = package.MainDocumentPart;
+            HtmlConverter converter = new(mainPart);
+
+            var elements = converter.Parse(@"<ul>
+                <li>Item 1</li>
+                <li class='no-mapping-cls CustomStyle1'>Item 2</li>
+                <li>Item 3</li>
+            </ul>");
+
+            var numbering = mainPart.NumberingDefinitionsPart?.Numbering;
+            Assert.That(numbering, Is.Not.Null);
+            Assert.That(elements, Has.Count.EqualTo(3));
+            Assert.Multiple(() =>
+            {
+                Assert.That(elements.First().GetFirstChild<ParagraphProperties>()?.ParagraphStyleId?.Val?.Value,
+                    Is.EqualTo(converter.HtmlStyles.DefaultStyles.ListParagraphStyle));
+                Assert.That(elements.ElementAt(1).GetFirstChild<ParagraphProperties>()?.ParagraphStyleId?.Val?.Value,
+                    Is.EqualTo("CustomStyle1"));
+                Assert.That(elements.Last().GetFirstChild<ParagraphProperties>()?.ParagraphStyleId?.Val?.Value,
+                    Is.EqualTo(converter.HtmlStyles.DefaultStyles.ListParagraphStyle));
+            });
+        }
     }
 }

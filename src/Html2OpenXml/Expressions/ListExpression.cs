@@ -54,6 +54,7 @@ sealed class ListExpression(IHtmlElement node) : FlowElementExpression(node)
     /// <summary>Contains the list of numbering instance.</summary>
     private Dictionary<int, int>? knownInstanceIds;
     private Numbering? numbering;
+    private ParagraphStyleId? listParagraphStyleId;
 
 
     public override IEnumerable<OpenXmlCompositeElement> Interpret(ParsingContext context)
@@ -91,6 +92,8 @@ sealed class ListExpression(IHtmlElement node) : FlowElementExpression(node)
                     )
                 )
                 { NumberID = listContext.InstanceId });
+
+            listParagraphStyleId = GetStyleIdForListItem(context.DocumentStyle, node, defaultIfEmpty: false);
         }
         else
         {
@@ -110,8 +113,7 @@ sealed class ListExpression(IHtmlElement node) : FlowElementExpression(node)
             Paragraph p = (Paragraph) childElements.First();
 
             p.InsertInProperties(prop => {
-                //todo: GetStyleIdForListItem
-                prop.ParagraphStyleId = context.DocumentStyle.GetParagraphStyle(context.DocumentStyle.DefaultStyles.ListParagraphStyle);
+                prop.ParagraphStyleId = GetStyleIdForListItem(context.DocumentStyle, liNode);
                 prop.Indentation = level < 2? null : new() { Left = (level * 720).ToString(CultureInfo.InvariantCulture) };
                 prop.NumberingProperties = new NumberingProperties {
                     NumberingLevelReference = new() { Val = level - 1 },
@@ -134,6 +136,32 @@ sealed class ListExpression(IHtmlElement node) : FlowElementExpression(node)
     }
 
     /// <summary>
+    /// Create a new instance of a list template.
+    /// </summary>
+    private ListContext ConcretiseInstance(ParsingContext context, int abstractNumId, string listStyle, int currentLevel)
+    {
+        if (!knownInstanceIds!.TryGetValue(abstractNumId, out int instanceId))
+        {
+            // create a new instance of that list template
+            instanceId = IncrementInstanceId(context, numbering!);
+            knownInstanceIds.Add(abstractNumId, instanceId);
+        }
+        else
+            // if the previous element is the same list style,
+            // we must restart the ordering to 0
+            if (node.PreviousElementSibling != null &&
+            (node.PreviousElementSibling.LocalName == "ol" ||
+             node.PreviousElementSibling.LocalName == "ul")
+             && GetListType(node.PreviousElementSibling) == listStyle)
+        {
+            instanceId = IncrementInstanceId(context, numbering!);
+            return new ListContext(listStyle, abstractNumId, instanceId, 1);
+        }
+
+        return new ListContext(listStyle, abstractNumId, instanceId, currentLevel + 1);
+    }
+
+    /// <summary>
     /// Resolve the list style to determine which NumberList style to apply.
     /// </summary>
     private static string GetListType(IElement listNode)
@@ -148,6 +176,26 @@ sealed class ListExpression(IHtmlElement node) : FlowElementExpression(node)
         }
 
         return type!;
+    }
+
+    /// <summary>
+    /// Resolve the <see cref="ParagraphStyleId"/> of a list element node, 
+    /// based on its css class if provided and if matching.
+    /// </summary>
+    private ParagraphStyleId? GetStyleIdForListItem(WordDocumentStyle documentStyle, IHtmlElement liNode, bool defaultIfEmpty = true)
+    {
+        if (listParagraphStyleId != null)
+            return (ParagraphStyleId) listParagraphStyleId.Clone();
+
+        foreach(var clsName in liNode.ClassList)
+        {
+            var styleId = documentStyle.GetStyle(clsName, StyleValues.Paragraph, ignoreCase: true);
+            if (styleId != null)
+                return new ParagraphStyleId { Val = styleId };
+        }
+
+        if (!defaultIfEmpty) return null;
+        return documentStyle.GetParagraphStyle(documentStyle.DefaultStyles.ListParagraphStyle);
     }
 
     /// <summary>
@@ -395,28 +443,5 @@ sealed class ListExpression(IHtmlElement node) : FlowElementExpression(node)
         context.Properties("knownAbsNumIds", knownAbsNumIds);
 
         return abstractNumId;
-    }
-
-    private ListContext ConcretiseInstance(ParsingContext context, int abstractNumId, string listStyle, int currentLevel)
-    {
-        if (!knownInstanceIds!.TryGetValue(abstractNumId, out int instanceId))
-        {
-            // create a new instance of that list template
-            instanceId = IncrementInstanceId(context, numbering!);
-            knownInstanceIds.Add(abstractNumId, instanceId);
-        }
-        else
-            // if the previous element is the same list style,
-            // we must restart the ordering to 0
-            if (node.PreviousElementSibling != null &&
-            (node.PreviousElementSibling.LocalName == "ol" ||
-             node.PreviousElementSibling.LocalName == "ul")
-             && GetListType(node.PreviousElementSibling) == listStyle)
-        {
-            instanceId = IncrementInstanceId(context, numbering!);
-            return new ListContext(listStyle, abstractNumId, instanceId, 1);
-        }
-
-        return new ListContext(listStyle, abstractNumId, instanceId, currentLevel + 1);
     }
 }
