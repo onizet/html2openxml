@@ -53,7 +53,7 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(elements.Cast<Paragraph>().Select(e => 
                     e.ParagraphProperties.NumberingProperties?.NumberingLevelReference?.Val?.Value),
                     Has.All.EqualTo(0),
-                    "All paragraphs are linked level 0");
+                    "All paragraphs stand on level 0");
                 Assert.That(p1.ParagraphProperties.NumberingProperties?.NumberingId?.Val?.Value,
                     Is.Not.EqualTo(p2.ParagraphProperties.NumberingProperties?.NumberingId?.Val?.Value),
                     "Expected two different list instances");

@@ -9,7 +9,9 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
+using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.RegularExpressions;
 using AngleSharp.Html.Dom;
@@ -21,8 +23,10 @@ namespace HtmlToOpenXml.Expressions;
 /// <summary>
 /// Process the parsing of a heading element.
 /// </summary>
-sealed class HeadingElementExpression(IHtmlElement node) : FlowElementExpression(node)
+sealed class HeadingElementExpression(IHtmlElement node) : NumberingExpression(node)
 {
+    private static readonly Regex numberingRegex = new(@"(?m)^(\d+\.?)*\s+");
+
     /// <inheritdoc/>
     public override IEnumerable<OpenXmlCompositeElement> Interpret (ParsingContext context)
     {
@@ -41,25 +45,57 @@ sealed class HeadingElementExpression(IHtmlElement node) : FlowElementExpression
                 context.DocumentStyle.GetParagraphStyle(context.DocumentStyle.DefaultStyles.HeadingStyle + level)
         );
 
+        var runElement = childElements.FirstOrDefault();
+        if (runElement != null && IsNumbering(runElement))
+        {
+            var abstractNumId = GetOrCreateListTemplate(context, HeadingNumberingName);
+            var instanceId = GetListInstance(abstractNumId);
+            if (!instanceId.HasValue)
+            {
+                instanceId = IncrementInstanceId(context, abstractNumId);
+            }
+
+            var numbering = context.MainPart.NumberingDefinitionsPart!.Numbering!;
+            numbering.Append(
+                new NumberingInstance(
+                    new AbstractNumId() { Val = abstractNumId }
+                )
+                { NumberID = instanceId });
+            SetNumbering(paragraph, level - '0', instanceId.Value);
+        }
+
+        return [paragraph];
+    }
+
+    private static bool IsNumbering(OpenXmlCompositeElement runElement)
+    {
         // Check if the line starts with a number format (1., 1.1., 1.1.1.)
         // If it does, make sure we make the heading a numbered item
-        OpenXmlElement? firstElement = childElements.FirstOrDefault();
-        Match regexMatch = Regex.Match(firstElement?.InnerText ?? string.Empty, @"(?m)^(\d+\.)*\s");
+        Match regexMatch = numberingRegex.Match(runElement.InnerText ?? string.Empty);
 
         // Make sure we only grab the heading if it starts with a number
         if (regexMatch.Groups.Count > 1 && regexMatch.Groups[1].Captures.Count > 0)
         {
-            int indentLevel = regexMatch.Groups[1].Captures.Count;
+             // Strip numbers from text
+            runElement.InnerXml = runElement.InnerXml
+                .Replace(runElement.InnerText!, runElement.InnerText!.Substring(regexMatch.Length));
 
-            // Strip numbers from text
-            if (firstElement != null)
-                firstElement.InnerXml = firstElement.InnerXml
-                    .Replace(firstElement.InnerText, firstElement.InnerText.Substring(indentLevel * 2 + 1)); // number, dot and whitespace
-
-            //TODO: ici faut refaire
-            context.DocumentStyle.NumberingList.ApplyNumberingToHeadingParagraph(paragraph, indentLevel);
+            return true;
         }
+        return false;
+    }
 
-        return [paragraph];
+    /// <summary>
+    /// Apply numbering to the heading paragraph.
+    /// </summary>
+    private static void SetNumbering(Paragraph paragraph, int level, int instanceId)
+    {
+        // Apply numbering to paragraph
+        paragraph.InsertInProperties(prop => {
+            prop.NumberingProperties = new NumberingProperties {
+                NumberingLevelReference = new() { Val = level - 1 },
+                NumberingId = new() { Val = instanceId }
+            };
+        });
     }
 }

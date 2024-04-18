@@ -261,50 +261,6 @@ namespace HtmlToOpenXml
 
         #endregion
 
-        #region ProcessHeading
-
-        private void ProcessHeading(HtmlEnumerator en)
-        {
-            char level = en.Current[2];
-
-            // support also style attributes for heading (in case of css override)
-            var styleAttributes = new List<OpenXmlElement>();
-            htmlStyles.Paragraph.ProcessCommonAttributes(en, styleAttributes);
-
-            AlternateProcessHtmlChunks(en, "</h" + level + ">");
-
-            Paragraph p = new Paragraph(elements);
-            p.InsertInProperties(prop =>
-                prop.ParagraphStyleId = new ParagraphStyleId() { Val = htmlStyles.GetStyle(htmlStyles.DefaultStyles.HeadingStyle + level, StyleValues.Paragraph) });
-
-            // Check if the line starts with a number format (1., 1.1., 1.1.1.)
-            // If it does, make sure we make the heading a numbered item
-            OpenXmlElement? firstElement = elements.FirstOrDefault();
-            Match regexMatch = Regex.Match(firstElement?.InnerText ?? string.Empty, @"(?m)^(\d+\.)*\s");
-
-            // Make sure we only grab the heading if it starts with a number
-            if (regexMatch.Groups.Count > 1 && regexMatch.Groups[1].Captures.Count > 0)
-            {
-                int indentLevel = regexMatch.Groups[1].Captures.Count;
-
-                // Strip numbers from text
-                if (firstElement != null)
-                    firstElement.InnerXml = firstElement.InnerXml
-                        .Replace(firstElement.InnerText, firstElement.InnerText.Substring(indentLevel * 2 + 1)); // number, dot and whitespace
-
-                htmlStyles.NumberingList.ApplyNumberingToHeadingParagraph(p, indentLevel);
-            }
-
-            htmlStyles.Paragraph.ApplyTags(p);
-            htmlStyles.Paragraph.EndTag("<h" + level + ">");
-            
-            this.elements.Clear();
-            AddParagraph(p);
-            AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
-        }
-
-        #endregion
-
         #region ProcessHorizontalLine
 
         private void ProcessHorizontalLine(HtmlEnumerator en)
@@ -485,63 +441,6 @@ namespace HtmlToOpenXml
 
         #endregion
 
-        #region ProcessLi
-
-        private void ProcessLi(HtmlEnumerator en)
-        {
-            CompleteCurrentParagraph(false);
-            currentParagraph = htmlStyles.Paragraph.NewParagraph();
-
-            int numberingId = htmlStyles.NumberingList.ProcessItem(en);
-            int level = htmlStyles.NumberingList.LevelIndex;
-
-            // Save the new paragraph reference to support nested numbering list.
-            Paragraph p = currentParagraph;
-            currentParagraph.InsertInProperties(prop => {
-                prop.ParagraphStyleId = new ParagraphStyleId() { Val = GetStyleIdForListItem(en) };
-                prop.Indentation = level < 2? null : new Indentation() { Left = (level * 780).ToString(CultureInfo.InvariantCulture) };
-                prop.NumberingProperties = new NumberingProperties {
-                    NumberingLevelReference = new NumberingLevelReference() { Val = level - 1 },
-                    NumberingId = new NumberingId() { Val = numberingId }
-                };
-            });
-
-            // Restore the original elements list
-            AddParagraph(currentParagraph);
-
-            // Continue to process the html until we found </li>
-            HtmlStyles.Paragraph.ApplyTags(currentParagraph);
-            AlternateProcessHtmlChunks(en, "</li>");
-            p.Append(elements);
-            this.elements.Clear();
-        }
-
-        private string GetStyleIdForListItem(HtmlEnumerator en) 
-        { 
-            return GetStyleIdFromClasses(en.Attributes.GetClasses()) 
-                   ?? GetStyleIdFromClasses(htmlStyles.NumberingList.GetCurrentListClasses) 
-                   ?? htmlStyles.DefaultStyles.ListParagraphStyle; 
-        }
-
-        private string? GetStyleIdFromClasses(string[] classes)  
-        {  
-            if (classes != null) 
-            { 
-                foreach (string className in classes) 
-                { 
-                    string? styleId = htmlStyles.GetStyle(className, StyleValues.Paragraph, ignoreCase: true); 
-                    if (styleId != null) 
-                    { 
-                        return styleId; 
-                    } 
-                } 
-            } 
-             
-            return null; 
-        }
-
-        #endregion
-
         #region ProcessLink
 
         private void ProcessLink(HtmlEnumerator en)
@@ -633,15 +532,6 @@ namespace HtmlToOpenXml
             elements.Add(h);
 
             if (imageInLink.Count > 0) CompleteCurrentParagraph(true);
-        }
-
-        #endregion
-
-        #region ProcessNumberingList
-
-        private void ProcessNumberingList(HtmlEnumerator en)
-        {
-            htmlStyles.NumberingList.BeginList(en);
         }
 
         #endregion
@@ -1339,20 +1229,6 @@ namespace HtmlToOpenXml
             string openingTag = en.CurrentTag!.Replace("/", "");
             htmlStyles.Runs.EndTag(openingTag);
             htmlStyles.Paragraph.EndTag(openingTag);
-        }
-
-        #endregion
-
-        #region ProcessClosingNumberingList
-
-        private void ProcessClosingNumberingList(HtmlEnumerator en)
-        {
-            htmlStyles.NumberingList.EndList();
-
-            // If we are no more inside a list, we move to another paragraph (as we created
-            // one for containing all the <li>. This will ensure the next run will not be added to the <li>.
-            if (htmlStyles.NumberingList.LevelIndex == 0)
-                AddParagraph(currentParagraph = htmlStyles.Paragraph.NewParagraph());
         }
 
         #endregion

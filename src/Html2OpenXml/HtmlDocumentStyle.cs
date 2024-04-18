@@ -29,7 +29,6 @@ public sealed class WordDocumentStyle
     private readonly RunStyleCollection runStyle;
     private TableStyleCollection tableStyle;
     private readonly ParagraphStyleCollection paraStyle;
-    private NumberingListStyleCollection listStyle;
     private readonly MainDocumentPart mainPart;
     private readonly OpenXmlDocumentStyleCollection knownStyles;
     private readonly ISet<string> lazyPredefinedStyles;
@@ -196,13 +195,6 @@ public sealed class WordDocumentStyle
     {
         [System.Diagnostics.DebuggerHidden()]
         get { return paraStyle; }
-    }
-    [Obsolete]
-    internal NumberingListStyleCollection NumberingList
-    {
-        // use lazy loading to avoid injecting NumberListDefinition if not required
-        [System.Diagnostics.DebuggerHidden()]
-        get { return listStyle ?? (listStyle = new NumberingListStyleCollection(mainPart)); }
     }
 
     /// <summary>

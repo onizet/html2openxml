@@ -615,8 +615,6 @@ namespace HtmlToOpenXml
                // { "<i>", ProcessHtmlElement<Italic> },
                 //{ "<img>", ProcessImage },
                 //{ "<ins>", ProcessUnderline },
-                { "<li>", ProcessLi },
-                { "<ol>", ProcessNumberingList },
                 //{ "<p>", ProcessParagraph },
                 //{ "<pre>", ProcessPre },
                 //{ "<q>", ProcessQuote },
@@ -635,7 +633,6 @@ namespace HtmlToOpenXml
                 { "<thead>", ProcessTablePart },
                 { "<tr>", ProcessTableRow },
                 //{ "<u>", ProcessUnderline },
-                { "<ul>", ProcessNumberingList },
                 //{ "<xml>", ProcessXmlDataIsland },
 
                 // closing tag
@@ -651,7 +648,6 @@ namespace HtmlToOpenXml
                 { "</html>", ProcessClosingTag },
                 { "</i>", ProcessClosingTag },
                 { "</ins>", ProcessClosingTag },
-                { "</ol>", ProcessClosingNumberingList },
                 { "</p>", ProcessClosingParagraph },
                 { "</q>", ProcessClosingQuote },
                 { "</span>", ProcessClosingTag },
@@ -669,7 +665,6 @@ namespace HtmlToOpenXml
                 { "</th>", ProcessClosingTableColumn },
                 { "</tr>", ProcessClosingTableRow },
                 { "</u>", ProcessClosingTag },
-                { "</ul>", ProcessClosingNumberingList },
             };
 
             return knownTags;
