@@ -127,10 +127,8 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpression(node)
         else
             // if the previous element is the same list style,
             // we must restart the ordering to 0
-            if (node.PreviousElementSibling != null &&
-            (node.PreviousElementSibling.LocalName == "ol" ||
-             node.PreviousElementSibling.LocalName == "ul")
-             && GetListType(node.PreviousElementSibling) == listStyle)
+            if (node.IsPrecededByListElement(out var precedingElement)
+                && GetListType(precedingElement!) == listStyle)
         {
             instanceId = IncrementInstanceId(context, abstractNumId, isReusable: false);
             return new ListContext(listStyle, abstractNumId, instanceId.Value, 1);

@@ -31,9 +31,10 @@ namespace HtmlToOpenXml.Tests
         {
             var elements = converter.Parse(@"
                 <oL><li>Item 1.1</li></oL>
+                <p>placeholder</p>
                 <ol><li>Item 2.1</li></ol>");
             Assert.Multiple(() => {
-                Assert.That(elements, Has.Count.EqualTo(2));
+                Assert.That(elements, Has.Count.EqualTo(3));
                 Assert.That(elements, Is.All.TypeOf<Paragraph>());
             });
 
@@ -47,10 +48,10 @@ namespace HtmlToOpenXml.Tests
             Assert.That(instances.Count(), Is.EqualTo(2));
 
             Paragraph p1 = (Paragraph) elements[0];
-            Paragraph p2 = (Paragraph) elements[1];
+            Paragraph p2 = (Paragraph) elements[2];
             Assert.Multiple(() =>
             {
-                Assert.That(elements.Cast<Paragraph>().Select(e => 
+                Assert.That(new[]{p1, p2}.Select(e => 
                     e.ParagraphProperties.NumberingProperties?.NumberingLevelReference?.Val?.Value),
                     Has.All.EqualTo(0),
                     "All paragraphs stand on level 0");
