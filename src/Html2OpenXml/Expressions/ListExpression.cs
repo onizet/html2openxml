@@ -132,13 +132,21 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpression(node)
             return new ListContext(listStyle, abstractNumId, instanceId.Value, currentLevel + 1);
         }
 
+        int startValue = 1;
+        if (node.NodeName.Equals("ol", StringComparison.OrdinalIgnoreCase))
+        {
+            var startAttribute = node.GetAttribute("start");
+            if (startAttribute != null && int.TryParse(startAttribute, out var val) && val > 1)
+                startValue = val;
+        }
+
 
         var numbering = context.MainPart.NumberingDefinitionsPart!.Numbering;
         numbering.Append(
             new NumberingInstance(
                 new AbstractNumId() { Val = abstractNumId },
                 new LevelOverride(
-                    new StartOverrideNumberingValue() { Val = 1 }
+                    new StartOverrideNumberingValue() { Val = startValue }
                 )
             )
             { NumberID = instanceId.Value });

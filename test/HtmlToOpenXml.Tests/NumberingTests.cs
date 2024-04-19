@@ -344,5 +344,35 @@ namespace HtmlToOpenXml.Tests
                 Has.All.EqualTo(instances.First().NumberID.Value),
                 "All paragraphs are linked to the same list instance");
         }
+
+        [Test(Description = "Allow to specify another start value for the first item of a `ol` list")]
+        public void OverrideStartNumberingOl()
+        {
+            const short startLevel = 3;
+            var elements = converter.Parse($"<ol start='{startLevel}'><li>Item</li></ol>");
+            Assert.That(elements, Is.Not.Empty);
+
+            var inst = mainPart.NumberingDefinitionsPart?.Numbering
+                .Elements<NumberingInstance>()
+                .SingleOrDefault();
+            Assert.That(inst, Is.Not.Null);
+            Assert.That(inst.GetFirstChild<LevelOverride>()?.StartOverrideNumberingValue?.Val?.Value,
+                Is.EqualTo(startLevel));
+        }
+
+        [Test(Description = "Allow to specify another start value for the first item of a `ul` list")]
+        public void IgnoreOverrideStartNumberUl()
+        {
+            var elements = converter.Parse($"<ul start='3'><li>Item</li></ul>");
+            Assert.That(elements, Is.Not.Empty);
+
+            var inst = mainPart.NumberingDefinitionsPart?.Numbering
+                .Elements<NumberingInstance>()
+                .SingleOrDefault();
+            Assert.That(inst, Is.Not.Null);
+            Assert.That(inst.GetFirstChild<LevelOverride>()?.StartOverrideNumberingValue?.Val?.Value,
+                Is.EqualTo(1),
+                "Start value should be ignored for `ul`");
+        }
     }
 }
