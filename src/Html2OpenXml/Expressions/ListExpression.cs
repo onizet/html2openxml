@@ -43,7 +43,8 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpression(node)
     private static readonly HashSet<string> supportedListTypes = 
         ["disc", "decimal", "square", "circle",
          "lower-alpha", "upper-alpha", "lower-latin", "upper-latin",
-         "lower-roman", "upper-roman"];
+         "lower-roman", "upper-roman",
+         "decimal-tiered" /* not W3C compliant */];
     private ParagraphStyleId? listParagraphStyleId;
 
 
@@ -54,7 +55,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpression(node)
 
         ListContext? parentContext = null;
         var listContext = context.Properties<ListContext>("listContext");
-        var listStyle = GetListType(node);
+        var listStyle = GetListName(node, listContext.Name);
         if (listContext.InstanceId == 0 || listContext.Name != listStyle)
         {
             parentContext = listContext;
@@ -121,7 +122,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpression(node)
             // if the previous element is the same list style,
             // we must restart the ordering to 0
             if (node.IsPrecededByListElement(out var precedingElement)
-                && GetListType(precedingElement!) == listStyle)
+                && GetListName(precedingElement!) == listStyle)
         {
             instanceId = IncrementInstanceId(context, abstractNumId, isReusable: false);
             listContext =  new ListContext(listStyle, abstractNumId, instanceId.Value, 1);
@@ -148,14 +149,17 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpression(node)
     /// <summary>
     /// Resolve the list style to determine which NumberList style to apply.
     /// </summary>
-    private static string GetListType(IElement listNode)
+    private static string GetListName(IElement listNode, string? parentName = null)
     {
         var styleAttributes = HtmlAttributeCollection.ParseStyle(listNode.GetAttribute("style"));
         string? type = styleAttributes["list-style-type"];
 
         if (string.IsNullOrEmpty(type) || !supportedListTypes.Contains(type!))
         {
-            bool orderedList = listNode.NodeName.Equals(TagNames.Ol, StringComparison.OrdinalIgnoreCase);
+            if (parentName != null && IsCascadingStyle(parentName))
+                return parentName!;
+
+            bool orderedList = listNode.NodeName.Equals("ol", StringComparison.OrdinalIgnoreCase);
             type = orderedList? "decimal" : "disc";
         }
 
@@ -180,5 +184,13 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpression(node)
 
         if (!defaultIfEmpty) return null;
         return documentStyle.GetParagraphStyle(documentStyle.DefaultStyles.ListParagraphStyle);
+    }
+
+    /// <summary>
+    /// Gets whether the given style is automatically promoted to child lists.
+    /// </summary>
+    private static bool IsCascadingStyle(string styleName)
+    {
+        return styleName == "decimal-tiered";
     }
 }

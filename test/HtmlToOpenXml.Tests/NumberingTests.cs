@@ -309,5 +309,40 @@ namespace HtmlToOpenXml.Tests
                 Is.Unique,
                 "All paragraphs use different list instances");
         }
+
+        /// <summary>
+        /// Tiered numbering such as: 1, 1.1, 1.1.1
+        /// </summary>
+        [Test(Description = "Nested numbering (issue #81)")]
+        public void DecimalTieredNumbering()
+        {
+            var elements = converter.Parse(
+                @"<ol style='list-style-type:decimal-tiered'>
+                    <li>Item 1
+                        <ol><li>Item 1.1</li></ol>
+                    </li>
+                    <li>Item 2</li>
+                </ol>");
+
+            var absNum = mainPart.NumberingDefinitionsPart?.Numbering
+                .Elements<AbstractNum>()
+                .SingleOrDefault();
+            Assert.That(absNum, Is.Not.Null);
+
+            var instances = mainPart.NumberingDefinitionsPart?.Numbering
+                .Elements<NumberingInstance>().Where(i => i.AbstractNumId.Val == absNum.AbstractNumberId);
+            Assert.Multiple(() =>
+            {
+                Assert.That(instances.Count(), Is.EqualTo(1));
+                Assert.That(instances.Select(i => i.NumberID?.HasValue), Has.All.True);
+            });
+
+            Assert.That(elements, Is.Not.Empty);
+            // exception rule: this style should cascade to nested lists
+            Assert.That(elements.Cast<Paragraph>().Select(e => 
+                e.ParagraphProperties.NumberingProperties?.NumberingId?.Val?.Value),
+                Has.All.EqualTo(instances.First().NumberID.Value),
+                "All paragraphs are linked to the same list instance");
+        }
     }
 }

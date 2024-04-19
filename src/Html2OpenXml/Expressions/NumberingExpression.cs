@@ -220,7 +220,6 @@ abstract class NumberingExpression(IHtmlElement node) : FlowElementExpression(no
     private static Dictionary<string, AbstractNum> InitKnownLists()
     {
         var knownAbstractNums = new Dictionary<string, AbstractNum>();
-        AbstractNum abstractNum;
 
         // This minimal numbering definition has been inspired by the documentation OfficeXMLMarkupExplained_en.docx
         // http://www.microsoft.com/downloads/details.aspx?FamilyID=6f264d0b-23e8-43fe-9f82-9ab627e5eaa3&displaylang=en
@@ -237,7 +236,7 @@ abstract class NumberingExpression(IHtmlElement node) : FlowElementExpression(no
             ("lower-greek", NumberFormatValues.LowerLetter, "%{0}."),
         })
         {
-            abstractNum = new AbstractNum(
+            var abstractNum = new AbstractNum(
                 new MultiLevelType() { Val = MultiLevelValues.HybridMultilevel },
                 new RunProperties(
                     new RunFonts() { HighAnsi = "Arial Unicode MS" }
@@ -265,26 +264,29 @@ abstract class NumberingExpression(IHtmlElement node) : FlowElementExpression(no
             knownAbstractNums.Add(listName, abstractNum);
         }
 
-        // WARNING: only use this for headings
-        abstractNum = new AbstractNum(
-            new MultiLevelType() { Val = MultiLevelValues.HybridMultilevel },
-            new RunProperties(
-                new RunFonts() { HighAnsi = "Arial Unicode MS" }
-            )
-        ) { AbstractNumDefinitionName = new() { Val = HeadingNumberingName } };
-        var lvlText = new System.Text.StringBuilder();
-        for (var lvlIndex = 0; lvlIndex <= MaxLevel; lvlIndex++)
+        // tiered numbering: 1, 1.1, 1.1.1
+        foreach (var listName in new[] { HeadingNumberingName, "decimal-tiered" })
         {
-            lvlText.AppendFormat("%{0}.", lvlIndex+1);
+            var abstractNum = new AbstractNum(
+                new MultiLevelType() { Val = MultiLevelValues.HybridMultilevel },
+                new RunProperties(
+                    new RunFonts() { HighAnsi = "Arial Unicode MS" }
+                )
+            ) { AbstractNumDefinitionName = new() { Val = listName } };
+            var lvlText = new System.Text.StringBuilder();
+            for (var lvlIndex = 0; lvlIndex <= MaxLevel; lvlIndex++)
+            {
+                lvlText.AppendFormat("%{0}.", lvlIndex+1);
 
-            abstractNum.Append(new Level {
-                StartNumberingValue = new() { Val = 1 },
-                NumberingFormat = new() { Val = NumberFormatValues.Decimal },
-                LevelIndex = lvlIndex,
-                LevelText = new() { Val = lvlText.ToString() }
-            });
+                abstractNum.Append(new Level {
+                    StartNumberingValue = new() { Val = 1 },
+                    NumberingFormat = new() { Val = NumberFormatValues.Decimal },
+                    LevelIndex = lvlIndex,
+                    LevelText = new() { Val = lvlText.ToString() }
+                });
+            }
+            knownAbstractNums.Add(listName, abstractNum);
         }
-        knownAbstractNums.Add(HeadingNumberingName, abstractNum);
 
         return knownAbstractNums;
     }
