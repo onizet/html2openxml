@@ -132,7 +132,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test] 
-        public void ReadExistingNumbering()
+        public void ReuseExistingNumbering()
         {
             using var generatedDocument = new MemoryStream();
             using (var buffer = ResourceHelper.GetStream("Resources.DocWithNumbering.docx"))
@@ -251,6 +251,63 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(elements.Last().GetFirstChild<ParagraphProperties>()?.ParagraphStyleId?.Val?.Value,
                     Is.EqualTo(converter.HtmlStyles.DefaultStyles.ListParagraphStyle));
             });
+        }
+
+        [Test(Description = "Resume indenting from existing numbering")]
+        public async Task ContinueExistingNumbering()
+        {
+            await converter.ParseHtml(@"<ol><li>Item 1</li></ol>");
+
+            await converter.ParseHtml("<ol><li>Item 2</li></ol>");
+
+            var absNum = mainPart.NumberingDefinitionsPart?.Numbering
+                .Elements<AbstractNum>()
+                .SingleOrDefault();
+            Assert.That(absNum, Is.Not.Null);
+
+            var instances = mainPart.NumberingDefinitionsPart?.Numbering
+                .Elements<NumberingInstance>().Where(i => i.AbstractNumId.Val == absNum.AbstractNumberId);
+            Assert.Multiple(() =>
+            {
+                Assert.That(instances.Count(), Is.EqualTo(1));
+                Assert.That(instances.Select(i => i.NumberID?.HasValue), Has.All.True);
+            });
+
+            var paragraphs = mainPart.Document.Body.Elements<Paragraph>();
+            Assert.That(paragraphs, Is.Not.Empty);
+            Assert.That(paragraphs.Select(e => 
+                e.ParagraphProperties.NumberingProperties?.NumberingId?.Val?.Value),
+                Has.All.EqualTo(instances.First().NumberID.Value),
+                "All paragraphs are linked to the same list instance");
+        }
+
+        [Test(Description = "Stop indenting from existing numbering (issue #57)")]
+        public async Task RestartExistingNumbering()
+        {
+            await converter.ParseHtml(@"<ol><li>Item 1</li></ol>");
+
+            converter.ContinueNumbering = false;
+            await converter.ParseHtml("<ol><li>Item 2</li></ol>");
+
+            var absNum = mainPart.NumberingDefinitionsPart?.Numbering
+                .Elements<AbstractNum>()
+                .SingleOrDefault();
+            Assert.That(absNum, Is.Not.Null);
+
+            var instances = mainPart.NumberingDefinitionsPart?.Numbering
+                .Elements<NumberingInstance>().Where(i => i.AbstractNumId.Val == absNum.AbstractNumberId);
+            Assert.Multiple(() =>
+            {
+                Assert.That(instances.Count(), Is.EqualTo(2), "Expecting 2 distinct instances of the list");
+                Assert.That(instances.Select(i => i.NumberID?.HasValue), Has.All.True);
+            });
+
+            var paragraphs = mainPart.Document.Body.Elements<Paragraph>();
+            Assert.That(paragraphs, Is.Not.Empty);
+            Assert.That(paragraphs.Select(e => 
+                e.ParagraphProperties.NumberingProperties?.NumberingId?.Val?.Value),
+                Is.Unique,
+                "All paragraphs use different list instances");
         }
     }
 }

@@ -61,16 +61,6 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpression(node)
             var abstractNumId = GetOrCreateListTemplate(context, listStyle);
             listContext = ConcretiseInstance(context, abstractNumId, listStyle, listContext.Level);
 
-            var numbering = context.MainPart.NumberingDefinitionsPart!.Numbering;
-            numbering.Append(
-                new NumberingInstance(
-                    new AbstractNumId() { Val = listContext.AbsNumId },
-                    new LevelOverride(
-                        new StartOverrideNumberingValue() { Val = 1 }
-                    )
-                )
-                { NumberID = listContext.InstanceId });
-
             listParagraphStyleId = GetStyleIdForListItem(context.DocumentStyle, node, defaultIfEmpty: false);
         }
         else
@@ -118,11 +108,14 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpression(node)
     /// </summary>
     private ListContext ConcretiseInstance(ParsingContext context, int abstractNumId, string listStyle, int currentLevel)
     {
+        ListContext listContext;
+
         var instanceId = GetListInstance(abstractNumId);
-        if (!instanceId.HasValue)
+        if (!instanceId.HasValue || context.Converter.ContinueNumbering == false)
         {
             // create a new instance of that list template
-            instanceId = IncrementInstanceId(context, abstractNumId);
+            instanceId = IncrementInstanceId(context, abstractNumId, isReusable: context.Converter.ContinueNumbering);
+            listContext = new ListContext(listStyle, abstractNumId, instanceId.Value, currentLevel + 1);
         }
         else
             // if the previous element is the same list style,
@@ -131,10 +124,25 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpression(node)
                 && GetListType(precedingElement!) == listStyle)
         {
             instanceId = IncrementInstanceId(context, abstractNumId, isReusable: false);
-            return new ListContext(listStyle, abstractNumId, instanceId.Value, 1);
+            listContext =  new ListContext(listStyle, abstractNumId, instanceId.Value, 1);
+        }
+        else
+        {
+            return new ListContext(listStyle, abstractNumId, instanceId.Value, currentLevel + 1);
         }
 
-        return new ListContext(listStyle, abstractNumId, instanceId.Value, currentLevel + 1);
+
+        var numbering = context.MainPart.NumberingDefinitionsPart!.Numbering;
+        numbering.Append(
+            new NumberingInstance(
+                new AbstractNumId() { Val = abstractNumId },
+                new LevelOverride(
+                    new StartOverrideNumberingValue() { Val = 1 }
+                )
+            )
+            { NumberID = instanceId.Value });
+
+        return listContext;
     }
 
     /// <summary>
