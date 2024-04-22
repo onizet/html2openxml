@@ -34,7 +34,7 @@ sealed class TextExpression(INode node) : HtmlDomExpression
             text = text.StripLineBreaks();
 
         Run run = new(
-            new Text(text) { Space = SpaceProcessingModeValues.Preserve }
+            new Text(text)
         );
 
         context.CascadeStyles(run);

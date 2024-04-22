@@ -53,6 +53,7 @@ abstract class HtmlDomExpression
             { TagNames.I, el => new PhrasingElementExpression(el, new Italic()) },
             { TagNames.Img, el => new ImageExpression(el) },
             { TagNames.Ins, el => new PhrasingElementExpression(el, new Underline() { Val = UnderlineValues.Single }) },
+            { TagNames.Ol, el => new ListExpression(el) },
             { TagNames.Pre, el => new PreElementExpression(el) },
             { TagNames.Q, el => new QuoteElementExpression(el) },
             { TagNames.Quote, el => new QuoteElementExpression(el) },
@@ -63,6 +64,7 @@ abstract class HtmlDomExpression
             { TagNames.Sub, el => new PhrasingElementExpression(el, new VerticalTextAlignment() { Val = VerticalPositionValues.Subscript }) },
             { TagNames.Sup, el => new PhrasingElementExpression(el, new VerticalTextAlignment() { Val = VerticalPositionValues.Superscript }) },
             { TagNames.U, el => new PhrasingElementExpression(el, new Underline() { Val = UnderlineValues.Single }) },
+            { TagNames.Ul, el => new ListExpression(el) },
         };
 
         return knownTags;

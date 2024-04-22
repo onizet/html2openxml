@@ -12,8 +12,7 @@ namespace HtmlToOpenXml
 
         public static HtmlColor FromHtml (string htmlColor)
         {
-            HtmlColor color = HtmlColor.Empty;
-            namedColors.TryGetValue(htmlColor, out color);
+            namedColors.TryGetValue(htmlColor, out var color);
             return color;
         }
 

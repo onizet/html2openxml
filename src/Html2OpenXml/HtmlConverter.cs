@@ -615,8 +615,6 @@ namespace HtmlToOpenXml
                // { "<i>", ProcessHtmlElement<Italic> },
                 //{ "<img>", ProcessImage },
                 //{ "<ins>", ProcessUnderline },
-                { "<li>", ProcessLi },
-                { "<ol>", ProcessNumberingList },
                 //{ "<p>", ProcessParagraph },
                 //{ "<pre>", ProcessPre },
                 //{ "<q>", ProcessQuote },
@@ -635,7 +633,6 @@ namespace HtmlToOpenXml
                 { "<thead>", ProcessTablePart },
                 { "<tr>", ProcessTableRow },
                 //{ "<u>", ProcessUnderline },
-                { "<ul>", ProcessNumberingList },
                 //{ "<xml>", ProcessXmlDataIsland },
 
                 // closing tag
@@ -651,7 +648,6 @@ namespace HtmlToOpenXml
                 { "</html>", ProcessClosingTag },
                 { "</i>", ProcessClosingTag },
                 { "</ins>", ProcessClosingTag },
-                { "</ol>", ProcessClosingNumberingList },
                 { "</p>", ProcessClosingParagraph },
                 { "</q>", ProcessClosingQuote },
                 { "</span>", ProcessClosingTag },
@@ -669,7 +665,6 @@ namespace HtmlToOpenXml
                 { "</th>", ProcessClosingTableColumn },
                 { "</tr>", ProcessClosingTableRow },
                 { "</u>", ProcessClosingTag },
-                { "</ul>", ProcessClosingNumberingList },
             };
 
             return knownTags;
@@ -702,7 +697,7 @@ namespace HtmlToOpenXml
         /// </summary>
         public void RefreshStyles()
         {
-            htmlStyles.PrepareStyles(mainPart);
+            WordDocumentStyle.PrepareStyles(mainPart);
         }
 
         #endregion
@@ -801,7 +796,7 @@ namespace HtmlToOpenXml
         public AcronymPosition AcronymPosition { get; set; }
 
         /// <summary>
-        /// Gets or sets whether the &lt;div&gt; tag should be processed as &lt;p&gt; (default false). It depends whether you consider &lt;div&gt;
+        /// Gets or sets whether the <c>div</c> tag should be processed as <c>p</c> (default false). It depends whether you consider <c>div</c>
         /// as part of the layout or as part of a text field.
         /// </summary>
         public bool ConsiderDivAsParagraph { get; set; }
@@ -817,7 +812,7 @@ namespace HtmlToOpenXml
         /// For others anchors like refering to your own bookmark or a title, add a 
         /// <see cref="DocumentFormat.OpenXml.Wordprocessing.BookmarkStart"/> and 
         /// <see cref="DocumentFormat.OpenXml.Wordprocessing.BookmarkEnd"/> elements
-        /// and set the value of href to <i>#&lt;name of your bookmark&gt;</i>.
+        /// and set the value of href to <i><c>#name of your bookmark</c></i>.
         /// </remarks>
         public bool ExcludeLinkAnchor { get; set; }
 
@@ -830,15 +825,21 @@ namespace HtmlToOpenXml
         }
 
         /// <summary>
-        /// Gets or sets where the Legend tag (&lt;caption&gt;) should be rendered (above or below the table).
+        /// Gets or sets where the Legend tag (<c>caption</c>) should be rendered (above or below the table).
         /// </summary>
         public CaptionPositionValues TableCaptionPosition { get; set; }
 
         /// <summary>
-        /// Gets or sets whether the &lt;pre&gt; tag should be rendered as a table.
+        /// Gets or sets whether the <c>pre</c> tag should be rendered as a table.
         /// </summary>
         /// <remarks>The table will contains only one cell.</remarks>
         public bool RenderPreAsTable { get; set; }
+
+        /// <summary>
+        /// Defines whether ordered lists (<c>ol</c>) continue incrementing existing numbering
+        /// or restarts to 1 (default continues numbering).
+        /// </summary>
+        public bool ContinueNumbering { get; set; } = true;
 
         /// <summary>
         /// Resolve a remote or inline image resource.
