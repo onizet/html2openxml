@@ -11,7 +11,6 @@
  */
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
@@ -83,7 +82,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpression(node)
 
             p.InsertInProperties(prop => {
                 prop.ParagraphStyleId = GetStyleIdForListItem(context.DocumentStyle, liNode);
-                prop.Indentation = level < 2? null : new() { Left = (level * 720).ToString(CultureInfo.InvariantCulture) };
+                prop.Indentation = level < 2? null : new() { Left = (level * Indentation).ToString() };
                 prop.NumberingProperties = new NumberingProperties {
                     NumberingLevelReference = new() { Val = level - 1 },
                     NumberingId = new() { Val = listContext.InstanceId }

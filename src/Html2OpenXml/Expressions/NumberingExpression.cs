@@ -24,6 +24,7 @@ abstract class NumberingExpression(IHtmlElement node) : FlowElementExpression(no
 {
     /// <summary>Hard-coded value from Word</summary>
     public const int MaxLevel = 8;
+    protected const int Indentation = 360;
     public const string HeadingNumberingName = "decimal-heading-multi";
     private static readonly IDictionary<string, AbstractNum> predefinedNumberingLists = InitKnownLists();
     /// <summary>Contains the list of templated list along with the AbstractNumbId</summary>
@@ -250,10 +251,10 @@ abstract class NumberingExpression(IHtmlElement node) : FlowElementExpression(no
                     StartNumberingValue = new() { Val = 1 },
                     NumberingFormat = new() { Val = formatValue },
                     LevelIndex = lvlIndex,
-                    LevelText = new() { Val = string.Format(text, lvlIndex) },
+                    LevelText = new() { Val = string.Format(text, lvlIndex+1) },
                     LevelJustification = new() { Val = LevelJustificationValues.Left },
                     PreviousParagraphProperties = new() {
-                        Indentation = new() { Left = "720", Hanging = "360" }
+                        Indentation = new() { Left = Indentation.ToString(), Hanging = Indentation.ToString() }
                     },
                     NumberingSymbolRunProperties = useSymbol? new () {
                         RunFonts = new() { Ascii = "Symbol", Hint = FontTypeHintValues.Default }
