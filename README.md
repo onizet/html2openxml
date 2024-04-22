@@ -3,11 +3,11 @@
 
 # What is Html2OpenXml?
 
-Html2OpenXml is a small .Net library that convert simple or advanced HTML to plain OpenXml components. This program has started in 2009, initially to convert user's comments from SharePoint to Word.
+Html2OpenXml is a small .Net library that convert simple or advanced HTML to plain OpenXml components. This program has started in 2009, initially to convert user's comments into Word.
 
 This library supports both **.Net Framework 4.6.2**, **.NET Standard 2.0** and **.NET 8** which are all LTS.
 
-Depends on [DocumentFormat.OpenXml](https://www.nuget.org/packages/DocumentFormat.OpenXml/).
+Depends on [DocumentFormat.OpenXml](https://www.nuget.org/packages/DocumentFormat.OpenXml/) and [AngleSharp](https://www.nuget.org/packages/AngleSharp).
 
 ## See Also
 
@@ -36,11 +36,13 @@ Refer to [w3schools’ tag](http://www.w3schools.com/tags/default.asp) list to s
 * &lt;q&gt; and &lt;blockquote&gt; (since 1.5)
 * &lt;article&gt;, &lt;aside&gt;, &lt;section&gt; are considered like &lt;div&gt;
 
-Javascript (&lt;script&gt;), CSS &lt;style&gt;, &lt;meta&gt; and other not supported tags does not generate an error but are **ignored**.
+Javascript (&lt;script&gt;), CSS &lt;style&gt;, &lt;meta&gt;, comments and other not supported tags does not generate an error but are **ignored**.
 
-## Tolerance for bad formed HTML
+## Html Parser
 
-The parsing of the Html is done using a custom Regex-based enumerator. These are supported:
+In v3, the parsing of the Html relies on AngleSharp package, which follows the W3C specifications and actively supports Html5.
+
+In v1 and v2, the parsing of the Html was done using a custom Regex-based enumerator. These are supported:
 
 |   | samples |
 | ------------- | ------------- |
