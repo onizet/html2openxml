@@ -11,17 +11,16 @@
  */
 using System.Collections.Generic;
 
-namespace HtmlToOpenXml
+namespace HtmlToOpenXml;
+
+/// <summary>
+/// Typed sorted list on span in table.
+/// </summary>
+sealed class HtmlTableSpanCollection : System.Collections.ObjectModel.Collection<HtmlTableSpan>
 {
-    /// <summary>
-    /// Typed sorted list on span in table.
-    /// </summary>
-    sealed class HtmlTableSpanCollection : System.Collections.ObjectModel.Collection<HtmlTableSpan>
+    protected override void InsertItem(int index, HtmlTableSpan item)
     {
-        protected override void InsertItem(int index, HtmlTableSpan item)
-        {
-            index = ((List<HtmlTableSpan>) Items).BinarySearch(item);
-            base.InsertItem(index < 0? ~index : index, item);
-        }
+        index = ((List<HtmlTableSpan>) Items).BinarySearch(item);
+        base.InsertItem(index < 0? ~index : index, item);
     }
 }

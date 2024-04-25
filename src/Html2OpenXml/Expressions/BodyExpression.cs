@@ -10,12 +10,69 @@
  * PARTICULAR PURPOSE.
  */
 using AngleSharp.Html.Dom;
+using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml.Expressions;
 
 /// <summary>
-/// Process the parsing of flow contents. Flow content are sectioning tags, body, heading and footer tags.
+/// Top parent expression, processing the <c>body</c> tag,
+/// even if it is not directly specified in the provided Html.
 /// </summary>
-class BodyExpression(IHtmlElement node) : FlowElementExpression(node)
+sealed class BodyExpression(IHtmlElement node) : FlowElementExpression(node)
 {
+    protected override void ComposeStyles(ParsingContext context)
+    {
+        base.ComposeStyles(context);
+
+        // Unsupported W3C attribute but claimed by users. Specified at <body> level, the page
+        // orientation is applied on the whole document
+        string? attr = styleAttributes!["page-orientation"];
+        if (attr != null)
+        {
+            PageOrientationValues orientation = Converter.ToPageOrientation(attr);
+
+            var sectionProperties = context.MainPart.Document.Body!.GetFirstChild<SectionProperties>();
+            if (sectionProperties == null || sectionProperties.GetFirstChild<PageSize>() == null)
+            {
+                context.MainPart.Document.Body.Append(ChangePageOrientation(orientation));
+            }
+            else
+            {
+                var pageSize = sectionProperties.GetFirstChild<PageSize>();
+                if (pageSize == null || !pageSize.Compare(orientation))
+                {
+                    SectionProperties validSectionProp = ChangePageOrientation(orientation);
+                    pageSize?.Remove();
+                    sectionProperties.PrependChild(validSectionProp.GetFirstChild<PageSize>()!.CloneNode(true));
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Generate the required OpenXml element for handling page orientation.
+    /// </summary>
+    private static SectionProperties ChangePageOrientation(PageOrientationValues orientation)
+    {
+        PageSize pageSize = new() { Width = (UInt32Value) 16838U, Height = (UInt32Value) 11906U };
+        if (orientation == PageOrientationValues.Portrait)
+        {
+            (pageSize.Height, pageSize.Width) = (pageSize.Width, pageSize.Height);
+        }
+        else
+        {
+            pageSize.Orient = orientation;
+        }
+
+        return new SectionProperties (
+            pageSize,
+            new PageMargin() {
+                Top = 1417, Right = (UInt32Value) 1417U, Bottom = 1417, Left = (UInt32Value) 1417U,
+                Header = (UInt32Value) 708U, Footer = (UInt32Value) 708U, Gutter = (UInt32Value) 0U
+            },
+            new Columns() { Space = "708" },
+            new DocGrid() { LinePitch = 360 }
+        );
+    }
 }

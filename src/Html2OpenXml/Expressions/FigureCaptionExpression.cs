@@ -19,8 +19,7 @@ using DocumentFormat.OpenXml.Wordprocessing;
 namespace HtmlToOpenXml.Expressions;
 
 /// <summary>
-/// Process the parsing of a phrasing content. A Phrasing content is the content at the lower level
-/// that consists of text and HTML elements that mark up the text within paragraphs.
+/// Process the parsing of a <c>figcaption</c> element, which is used to describe an image.
 /// </summary>
 class FigureCaptionExpression(IHtmlElement node) : PhrasingElementExpression(node)
 {
@@ -30,6 +29,8 @@ class FigureCaptionExpression(IHtmlElement node) : PhrasingElementExpression(nod
     {
         ComposeStyles(context);
         var childElements = Interpret(context.CreateChild(this), node.ChildNodes);
+        if (!childElements.Any())
+            return [];
 
         var p = new Paragraph (
             new Run(
@@ -46,7 +47,7 @@ class FigureCaptionExpression(IHtmlElement node) : PhrasingElementExpression(nod
             }
         };
 
-        if (childElements.Any() && childElements.First() is Run run) // any caption?
+        if (childElements.First() is Run run) // any caption?
         {
             Text? t = run.GetFirstChild<Text>();
             if (t != null)

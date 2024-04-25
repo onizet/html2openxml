@@ -11,6 +11,7 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -124,7 +125,8 @@ sealed class ImageExpression(IHtmlElement node) : HtmlElementExpression(node)
             if (imageObjId > 1) imageObjId++;
         }
 
-        HtmlImageInfo? iinfo = context.Converter.ImagePrefetcher.Download(src);
+        HtmlImageInfo? iinfo = context.Converter.ImagePrefetcher.Download(src, CancellationToken.None)
+            .ConfigureAwait(false).GetAwaiter().GetResult();
 
         if (iinfo == null)
             return null;

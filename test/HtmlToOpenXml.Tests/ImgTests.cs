@@ -1,4 +1,3 @@
-using System;
 using NUnit.Framework;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
@@ -18,7 +17,7 @@ namespace HtmlToOpenXml.Tests
         public void ParseImg()
         {
             var elements = converter.Parse(@"<img src='https://www.w3schools.com/tags/smiley.gif' alt='Smiley face' width='42' height='42'>");
-            Assert.That(elements.Count, Is.EqualTo(1));
+            Assert.That(elements, Has.Count.EqualTo(1));
             AssertIsImg(elements[0]);
         }
 
@@ -39,7 +38,7 @@ namespace HtmlToOpenXml.Tests
             converter = new HtmlConverter(mainPart, new LocalWebRequest());
 
             var elements = converter.Parse(@"<img src='/img/black-dot' alt='Smiley face' width='42' height='42'>");
-            Assert.That(elements.Count, Is.EqualTo(1));
+            Assert.That(elements, Has.Count.EqualTo(1));
             AssertIsImg(elements[0]);
         }
 

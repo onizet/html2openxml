@@ -26,9 +26,6 @@ public sealed class WordDocumentStyle
     /// </summary>
     public event EventHandler<StyleEventArgs>? StyleMissing;
 
-    private readonly RunStyleCollection runStyle;
-    private TableStyleCollection tableStyle;
-    private readonly ParagraphStyleCollection paraStyle;
     private readonly MainDocumentPart mainPart;
     private readonly OpenXmlDocumentStyleCollection knownStyles;
     private readonly ISet<string> lazyPredefinedStyles;
@@ -58,9 +55,6 @@ public sealed class WordDocumentStyle
             PredefinedStyles.QuoteChar,
             PredefinedStyles.TableGrid
         };
-        tableStyle = new TableStyleCollection(this);
-        runStyle = new RunStyleCollection(this);
-        paraStyle = new ParagraphStyleCollection(this);
         this.mainPart = mainPart;
     }
 
@@ -178,24 +172,6 @@ public sealed class WordDocumentStyle
 
     //____________________________________________________________________
     //
-
-    [Obsolete]
-    internal RunStyleCollection Runs
-    {
-        [System.Diagnostics.DebuggerHidden()]
-        get { return runStyle; }
-    }
-    internal TableStyleCollection Tables
-    {
-        [System.Diagnostics.DebuggerHidden()]
-        get { return tableStyle; }
-    }
-    [Obsolete]
-    internal ParagraphStyleCollection Paragraph
-    {
-        [System.Diagnostics.DebuggerHidden()]
-        get { return paraStyle; }
-    }
 
     /// <summary>
     /// Contains the default styles for new OpenXML elements

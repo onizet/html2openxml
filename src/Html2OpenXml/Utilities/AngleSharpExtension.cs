@@ -9,42 +9,40 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
 using AngleSharp.Dom;
 
-namespace HtmlToOpenXml
+namespace HtmlToOpenXml;
+
+/// <summary>
+/// Helper class that provide some extension methods to AngleSharp SDK.
+/// </summary>
+static class AngleSharpExtension
 {
     /// <summary>
-    /// Helper class that provide some extension methods to AngleSharp SDK.
+    /// Gets whether the given child is preceded by any list element (<c>ol</c> or <c>ul</c>).
     /// </summary>
-    static class AngleSharpExtension
+    public static bool IsPrecededByListElement(this INode child, out IElement? precedingElement)
     {
-        /// <summary>
-        /// Gets whether the given child is preceded by any list element (<c>ol</c> or <c>ul</c>).
-        /// </summary>
-        public static bool IsPrecededByListElement(this INode child, out IElement? precedingElement)
+        precedingElement = null;
+
+        if (child.Parent == null)
+            return false;
+
+        foreach (INode childNode in child.Parent!.ChildNodes)
         {
-            precedingElement = null;
-
-            if (child.Parent == null)
-                return false;
-
-            foreach (INode childNode in child.Parent!.ChildNodes)
+            if (childNode == child)
             {
-                if (childNode == child)
-                {
-                    break;
-                }
-
-                if (childNode.NodeType == NodeType.Element && (
-                    ((IElement) childNode).LocalName == TagNames.Ol || ((IElement) childNode).LocalName == TagNames.Ul))
-                {
-                    precedingElement = (IElement) childNode;
-                    return true;
-                }
+                break;
             }
 
-            return false;
+            if (childNode.NodeType == NodeType.Element && (
+                ((IElement) childNode).LocalName == TagNames.Ol || ((IElement) childNode).LocalName == TagNames.Ul))
+            {
+                precedingElement = (IElement) childNode;
+                return true;
+            }
         }
+
+        return false;
     }
 }

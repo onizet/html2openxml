@@ -82,15 +82,13 @@ sealed class HyperlinkExpression(IHtmlElement node) : PhrasingElementExpression(
 
     private Hyperlink? CreateHyperlink(ParsingContext context)
     {
-        string? att = linkNode.Href;
+        string? att = linkNode.GetAttribute("href");
         Hyperlink? h = null;
 
         if (string.IsNullOrEmpty(att))
             return null;
 
-        // handle link where the http:// is missing and that starts directly with www
-        if(att!.StartsWith("www.", StringComparison.OrdinalIgnoreCase))
-            att = "http://" + att;
+        SanitizeUrl(ref att!);
 
         // is it an anchor?
         if (att[0] == '#' && att.Length > 1)
@@ -120,5 +118,15 @@ sealed class HyperlinkExpression(IHtmlElement node) : PhrasingElementExpression(
         if (!string.IsNullOrEmpty(node.Title))
             h.Tooltip = node.Title;
         return h;
+    }
+
+    private static void SanitizeUrl(ref string url)
+    {
+        // handle link where the http:// is missing and that starts directly with www
+        if(url.StartsWith("www.", StringComparison.OrdinalIgnoreCase))
+            url = "http://" + url;
+        // or starts without the protocol
+        if (url.StartsWith("://"))
+            url = "http" + url;
     }
 }

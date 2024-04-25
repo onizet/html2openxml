@@ -18,7 +18,7 @@ namespace HtmlToOpenXml.Tests
                 <li>Element1</li>
                 <li>Element2</li>
             </ol>");
-            Assert.That(elements.Count, Is.EqualTo(2));
+            Assert.That(elements, Has.Count.EqualTo(2));
             Assert.Multiple(() => {
                 Assert.That(elements[0], Is.TypeOf(typeof(Paragraph)));
                 Assert.That(elements[0].HasChild<Run>(), Is.True);

@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using DocumentFormat.OpenXml.Packaging;
 
 namespace HtmlToOpenXml.IO
@@ -58,7 +59,7 @@ namespace HtmlToOpenXml.IO
         /// <summary>
         /// Download the remote or local image located at the specified url.
         /// </summary>
-        public HtmlImageInfo? Download(string imageUri)
+        public async Task<HtmlImageInfo?> Download(string imageUri, CancellationToken cancellationToken)
         {
             if (prefetchedImages.Contains(imageUri))
                 return prefetchedImages[imageUri];
@@ -70,7 +71,7 @@ namespace HtmlToOpenXml.IO
             }
             else
             {
-                iinfo = DownloadRemoteImage(imageUri);
+                iinfo = await DownloadRemoteImage(imageUri, cancellationToken);
             }
 
             if (iinfo != null)
@@ -82,22 +83,21 @@ namespace HtmlToOpenXml.IO
         /// <summary>
         /// Download the image and try to find its format type.
         /// </summary>
-        private HtmlImageInfo? DownloadRemoteImage(string src)
+        private async Task<HtmlImageInfo?> DownloadRemoteImage(string src, CancellationToken cancellationToken)
         {
             Uri imageUri = new Uri(src, UriKind.RelativeOrAbsolute);
             Resource? response;
 
-            response = resourceLoader.FetchAsync(imageUri, CancellationToken.None).Result;
+            response = await resourceLoader.FetchAsync(imageUri, cancellationToken);
             if (response?.Content == null)
                 return null;
 
             HtmlImageInfo info = new HtmlImageInfo(src);
-            PartTypeInfo type;
             using (response)
             {
                 // For requested url with no filename, we need to read the media mime type if provided
                 response.Headers.TryGetValue("Content-Type", out var mime);
-                if (!TryInspectMimeType(mime, out type)
+                if (!TryInspectMimeType(mime, out PartTypeInfo type)
                     && !TryGuessTypeFromUri(imageUri, out type)
                     && !TryGuessTypeFromStream(response.Content, out type))
                 {
@@ -150,7 +150,7 @@ namespace HtmlToOpenXml.IO
         // Private Implementation
 
         // http://stackoverflow.com/questions/58510/using-net-how-can-you-find-the-mime-type-of-a-file-based-on-the-file-signature
-        private static Dictionary<string, PartTypeInfo> knownContentType = new(StringComparer.OrdinalIgnoreCase) {
+        private static readonly Dictionary<string, PartTypeInfo> knownContentType = new(StringComparer.OrdinalIgnoreCase) {
             { "image/gif", ImagePartType.Gif },
             { "image/pjpeg", ImagePartType.Jpeg },
             { "image/jp2", ImagePartType.Jp2 },

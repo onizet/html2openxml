@@ -43,7 +43,7 @@ font-size:12px;
 color:red;
 text-decoration:underline;
 "">bold with italic style</b>");
-            Assert.That(elements.Count, Is.EqualTo(1));
+            Assert.That(elements, Has.Count.EqualTo(1));
 
             Run run = elements[0].GetFirstChild<Run>();
             Assert.That(run, Is.Not.Null);
@@ -90,7 +90,7 @@ text-decoration:underline;
         public void ParseQuote(string html, bool hasQuote)
         {
             var elements = converter.Parse(html);
-            Assert.That(elements.Count, Is.EqualTo(1));
+            Assert.That(elements, Has.Count.EqualTo(1));
 
             Run run = elements[0].GetFirstChild<Run>();
             Assert.That(run, Is.Not.Null);
@@ -118,19 +118,35 @@ text-decoration:underline;
         public void ParseBreak()
         {
             var elements = converter.Parse(@"Lorem<br/>Ipsum");
-            Assert.That(elements.Count, Is.EqualTo(1));
-            Assert.That(elements[0].ChildElements.Count, Is.EqualTo(3));
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements[0].ChildElements, Has.Count.EqualTo(3));
 
-            Assert.That(elements[0].ChildElements[0], Is.InstanceOf(typeof(Run)));
-            Assert.That(elements[0].ChildElements[1], Is.InstanceOf(typeof(Run)));
-            Assert.That(elements[0].ChildElements[2], Is.InstanceOf(typeof(Run)));
-            Assert.That(((Run)elements[0].ChildElements[1]).GetFirstChild<Break>(), Is.Not.Null);
+            Assert.Multiple(() =>
+            {
+                Assert.That(elements[0].ChildElements, Has.All.TypeOf<Run>());
+                Assert.That(((Run)elements[0].ChildElements[1]).GetFirstChild<Break>(), Is.Not.Null);
+            });
+        }
+
+        [Test]
+        public void ParseFigCaption()
+        {
+            var elements = converter.Parse(@"<figcaption>Fig.1 - Trulli, Puglia, Italy.</figcaption>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements[0], Is.TypeOf<Paragraph>());
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(elements[0].ChildElements, Has.Count.EqualTo(3));
+                Assert.That(elements[0].HasChild<Run>(), Is.True);
+                Assert.That(elements[0].HasChild<SimpleField>(), Is.True);
+            });
         }
 
         private T ParsePhrasing<T> (string html) where T : OpenXmlElement
         {
             var elements = converter.Parse(html);
-            Assert.That(elements.Count, Is.EqualTo(1));
+            Assert.That(elements, Has.Count.EqualTo(1));
 
             Run run = elements[0].GetFirstChild<Run>();
             Assert.That(run, Is.Not.Null);

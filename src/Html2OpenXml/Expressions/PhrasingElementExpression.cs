@@ -28,6 +28,7 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
     private readonly OpenXmlLeafElement? defaultStyleProperty = styleProperty;
 
     protected readonly RunProperties runProperties = new();
+    protected HtmlAttributeCollection? styleAttributes;
 
 
     /// <inheritdoc/>
@@ -79,11 +80,11 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
     /// </summary>
     protected virtual void ComposeStyles (ParsingContext context)
     {
-        var styleAttributes = HtmlAttributeCollection.ParseStyle(node.GetAttribute("style"));
+        styleAttributes = HtmlAttributeCollection.ParseStyle(node.GetAttribute("style"));
         if (defaultStyleProperty != null)
             runProperties.AddChild(defaultStyleProperty.CloneNode(true));
 
-        if (!string.IsNullOrWhiteSpace(node.Language))
+        if (node.Language != null && node.Language != node.Owner!.Body!.Language)
         {
             try
             {

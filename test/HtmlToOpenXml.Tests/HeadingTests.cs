@@ -51,7 +51,6 @@ namespace HtmlToOpenXml.Tests
                     Has.All.EqualTo(1),
                     "All paragraphs stand on level 1");
             });
-
         }
     }
 }

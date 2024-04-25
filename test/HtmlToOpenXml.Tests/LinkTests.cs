@@ -1,8 +1,4 @@
-using System;
-using System.Linq;
 using NUnit.Framework;
-using DocumentFormat.OpenXml;
-using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml.Tests
@@ -13,21 +9,22 @@ namespace HtmlToOpenXml.Tests
     [TestFixture]
     public class LinkTests : HtmlConverterTestBase
     {
-        [Test]
-        public void ParseLink()
+        [TestCase("://www.site.com")]
+        [TestCase("www.site.com")]
+        [TestCase("http://www.site.com")]
+        public void ParseLink(string link)
         {
-            var elements = converter.Parse(@"<a href=""www.site.com"" title=""Test Tooltip"">Test Caption</a>");
-            Assert.That(elements.Count, Is.EqualTo(1));
+            var elements = converter.Parse($@"<a href=""{link}"" title=""Test Tooltip"">Test Caption</a>");
+            Assert.That(elements, Has.Count.EqualTo(1));
             Assert.Multiple(() => {
                 Assert.That(elements[0], Is.TypeOf(typeof(Paragraph)));
-                Assert.That(elements[0].FirstChild, Is.TypeOf(typeof(Hyperlink)));
-                Assert.That(elements[0].FirstChild.FirstChild, Is.TypeOf(typeof(Run)));
-                Assert.That(elements[0].InnerText, Is.EqualTo("Test Caption"));
+                Assert.That(elements[0].HasChild<Hyperlink>(), Is.True);
             });
-
-            var hyperlink = (Hyperlink) elements[0].FirstChild;
+            var hyperlink = elements[0].GetFirstChild<Hyperlink>();
             Assert.That(hyperlink.Tooltip, Is.Not.Null);
             Assert.That(hyperlink.Tooltip.Value, Is.EqualTo("Test Tooltip"));
+            Assert.That(hyperlink.HasChild<Run>(), Is.True);
+            Assert.That(elements[0].InnerText, Is.EqualTo("Test Caption"));
 
             Assert.That(hyperlink.Id, Is.Not.Null);
             Assert.That(hyperlink.History.Value, Is.EqualTo(true));
@@ -40,13 +37,13 @@ namespace HtmlToOpenXml.Tests
         }
 
         [TestCase(@"<a href=""javascript:alert()"">Js</a>")]
-        [TestCase(@"<a href=""site.com"">Unknow site</a>")]
+        [TestCase(@"<a href=""site.com"">Unknown site</a>")]
         public void ParseInvalidLink (string html)
         {
             // invalid link leads to simple Run with no link
 
             var elements = converter.Parse(html);
-            Assert.That(elements.Count, Is.EqualTo(1));
+            Assert.That(elements, Has.Count.EqualTo(1));
             Assert.Multiple(() => {
                 Assert.That(elements[0], Is.TypeOf(typeof(Paragraph)));
                 Assert.That(elements[0].FirstChild, Is.TypeOf(typeof(Run)));
@@ -61,7 +58,7 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements[0].FirstChild, Is.TypeOf(typeof(Hyperlink)));
 
             var hyperlink = (Hyperlink) elements[0].FirstChild;
-            Assert.That(hyperlink.ChildElements.Count, Is.EqualTo(2));
+            Assert.That(hyperlink.ChildElements, Has.Count.EqualTo(2));
             Assert.That(hyperlink.FirstChild, Is.TypeOf(typeof(Run)));
             Assert.That(hyperlink.FirstChild.HasChild<Drawing>(), Is.True);
             Assert.That(hyperlink.LastChild.InnerText, Is.EqualTo(" Test Caption"));
@@ -71,20 +68,20 @@ namespace HtmlToOpenXml.Tests
         public void ParseAnchorLink ()
         {
             var elements = converter.Parse(@"<a href=""#anchor1"">Anchor1</a>");
-            Assert.That(elements.Count, Is.EqualTo(1));
+            Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements[0], Is.TypeOf(typeof(Paragraph)));
-            Assert.That(elements[0].FirstChild, Is.TypeOf(typeof(Hyperlink)));
+            Assert.That(elements[0].HasChild<Hyperlink>(), Is.True);
 
-            var hyperlink = (Hyperlink) elements[0].FirstChild;
+            var hyperlink = elements[0].GetFirstChild<Hyperlink>();
             Assert.That(hyperlink.Id, Is.Null);
-            Assert.That(hyperlink.Anchor == "anchor1", Is.True);
+            Assert.That(hyperlink.Anchor?.Value, Is.EqualTo("anchor1"));
 
             converter.ExcludeLinkAnchor = true;
 
             // _top is always present and bypass the previous rule
             elements = converter.Parse(@"<a href=""#_top"">Anchor2</a>");
             hyperlink = (Hyperlink) elements[0].FirstChild;
-            Assert.That(hyperlink.Anchor == "_top", Is.True);
+            Assert.That(hyperlink.Anchor?.Value, Is.EqualTo("_top"));
 
             // this should generate a Run and not an Hyperlink
             elements = converter.Parse(@"<a href=""#_anchor3"">Anchor3</a>");

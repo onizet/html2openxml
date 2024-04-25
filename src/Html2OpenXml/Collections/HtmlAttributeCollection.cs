@@ -9,25 +9,22 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using DocumentFormat.OpenXml.Wordprocessing;
 
-namespace HtmlToOpenXml
+namespace HtmlToOpenXml;
+
+/// <summary>
+/// Represents the collection of attributes present in the current html tag.
+/// </summary>
+sealed class HtmlAttributeCollection
 {
-    using w = DocumentFormat.OpenXml.Wordprocessing;
-
-
-    /// <summary>
-    /// Represents the collection of attributes present in the current html tag.
-    /// </summary>
-    sealed class HtmlAttributeCollection
-    {
-        // This regex split the attributes. This line is valid and all the attributes are well discovered:
-        // <table border="1" contenteditable style="text-align: center; color: #ff00e6" cellpadding=0 cellspacing='0' align="center">
-        // RegexOptions.Singleline stands for dealing with attributes that contain newline (typically for base64 image, see issue #8)
-        private static readonly Regex stripAttributesRegex = new(@"
+    // This regex split the attributes. This line is valid and all the attributes are well discovered:
+    // <table border="1" contenteditable style="text-align: center; color: #ff00e6" cellpadding=0 cellspacing='0' align="center">
+    // RegexOptions.Singleline stands for dealing with attributes that contain newline (typically for base64 image, see issue #8)
+    private static readonly Regex stripAttributesRegex = new(@"
 #tag and its value surrounded by "" or '
 ((?<tag>\w+)=(?<sep>""|')\s*(?<val>\#?.*?)(\k<sep>|>))
 |
@@ -37,220 +34,201 @@ namespace HtmlToOpenXml
 # single tag (with no value): contenteditable
 \b(?<tag>\w+)\b", RegexOptions.IgnorePatternWhitespace| RegexOptions.Singleline);
 
-        private static readonly Regex stripStyleAttributesRegex = new(@"(?<name>.+?):\s*(?<val>[^;]+);*\s*");
+    private static readonly Regex stripStyleAttributesRegex = new(@"(?<name>.+?):\s*(?<val>[^;]+);*\s*");
 
-        private readonly Dictionary<string, string> attributes = [];
+    private readonly Dictionary<string, string> attributes = [];
 
 
 
-        private HtmlAttributeCollection()
+    private HtmlAttributeCollection()
+    {
+    }
+
+    public static HtmlAttributeCollection Parse(string? htmlTag)
+    {
+        HtmlAttributeCollection collection = new();
+        if (string.IsNullOrEmpty(htmlTag)) return collection;
+
+        // We remove the name of the tag (due to our regex) and ensure there are at least one parameter
+        int startIndex;
+        for (startIndex = 0; startIndex < htmlTag!.Length; startIndex++)
         {
-        }
-
-        public static HtmlAttributeCollection Parse(string? htmlTag)
-        {
-            HtmlAttributeCollection collection = new HtmlAttributeCollection();
-            if (string.IsNullOrEmpty(htmlTag)) return collection;
-
-            // We remove the name of the tag (due to our regex) and ensure there are at least one parameter
-            int startIndex;
-            for (startIndex = 0; startIndex < htmlTag!.Length; startIndex++)
+            if (char.IsWhiteSpace(htmlTag[startIndex]))
             {
-                if (Char.IsWhiteSpace(htmlTag[startIndex]))
-                {
-                    startIndex++;
-                    break;
-                }
-                else if (htmlTag[startIndex] == '>' || htmlTag[startIndex] == '/')
-                {
-                    // no attribute in this tag
-                    return collection;
-                }
+                startIndex++;
+                break;
             }
-
-            MatchCollection matches = stripAttributesRegex.Matches(htmlTag, startIndex);
-            foreach (Match m in matches)
+            else if (htmlTag[startIndex] == '>' || htmlTag[startIndex] == '/')
             {
-                collection.attributes[m.Groups["tag"].Value] = m.Groups["val"].Value;
+                // no attribute in this tag
+                return collection;
             }
-
-            return collection;
         }
 
-        public static HtmlAttributeCollection ParseStyle(string? htmlTag)
+        MatchCollection matches = stripAttributesRegex.Matches(htmlTag, startIndex);
+        foreach (Match m in matches)
         {
-            var collection = new HtmlAttributeCollection();
-            if (string.IsNullOrEmpty(htmlTag)) return collection;
-
-            // Encoded ':' and ';' characters are valid for browser but not handled by the regex (bug #13812 reported by robin391)
-            // ex= <span style="text-decoration&#58;underline&#59;color:red">
-            MatchCollection matches = stripStyleAttributesRegex.Matches(HttpUtility.HtmlDecode(htmlTag));
-            foreach (Match m in matches)
-                collection.attributes[m.Groups["name"].Value] = m.Groups["val"].Value;
-
-            return collection;
+            collection.attributes[m.Groups["tag"].Value] = m.Groups["val"].Value;
         }
 
-        /// <summary>
-        /// Gets the number of attributes for this tag.
-        /// </summary>
-        public int Count
+        return collection;
+    }
+
+    public static HtmlAttributeCollection ParseStyle(string? htmlTag)
+    {
+        var collection = new HtmlAttributeCollection();
+        if (string.IsNullOrEmpty(htmlTag)) return collection;
+
+        // Encoded ':' and ';' characters are valid for browser but not handled by the regex (bug #13812 reported by robin391)
+        // ex= <span style="text-decoration&#58;underline&#59;color:red">
+        MatchCollection matches = stripStyleAttributesRegex.Matches(HttpUtility.HtmlDecode(htmlTag));
+        foreach (Match m in matches)
+            collection.attributes[m.Groups["name"].Value] = m.Groups["val"].Value;
+
+        return collection;
+    }
+
+    /// <summary>
+    /// Gets the named attribute.
+    /// </summary>
+    public string? this[string name]
+    {
+        get => attributes.TryGetValue(name, out var value)? value : null;
+    }
+
+    /// <summary>
+    /// Gets an attribute representing an integer.
+    /// </summary>
+    public int? GetAsInt(string name)
+    {
+        string? attrValue = this[name];
+        if (attrValue != null && int.TryParse(attrValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var val))
+            return val;
+
+        return null;
+    }
+
+    /// <summary>
+    /// Gets an attribute representing a color (named color, hexadecimal or hexadecimal 
+    /// without the preceding # character).
+    /// </summary>
+    public HtmlColor GetAsColor(string name)
+    {
+        return HtmlColor.Parse(this[name]);
+    }
+
+    /// <summary>
+    /// Gets an attribute representing an unit: 120px, 10pt, 5em, 20%, ...
+    /// </summary>
+    /// <returns>If the attribute is misformed, the <see cref="Unit.IsValid"/> property is set to false.</returns>
+    public Unit GetAsUnit(string name)
+    {
+        return Unit.Parse(this[name]);
+    }
+
+    /// <summary>
+    /// Gets an attribute representing the 4 unit sides.
+    /// If a side has been specified individually, it will override the grouped definition.
+    /// </summary>
+    /// <returns>If the attribute is misformed, the <see cref="Margin.IsValid"/> property is set to false.</returns>
+    public Margin GetAsMargin(string name)
+    {
+        Margin margin = Margin.Parse(this[name]);
+        Unit u;
+
+        u = GetAsUnit(name + "-top");
+        if (u.IsValid) margin.Top = u;
+        u = GetAsUnit(name + "-right");
+        if (u.IsValid) margin.Right = u;
+        u = GetAsUnit(name + "-bottom");
+        if (u.IsValid) margin.Bottom = u;
+        u = GetAsUnit(name + "-left");
+        if (u.IsValid) margin.Left = u;
+
+        return margin;
+    }
+
+    /// <summary>
+    /// Gets an attribute representing the 4 border sides.
+    /// If a border style/color/width has been specified individually, it will override the grouped definition.
+    /// </summary>
+    /// <returns>If the attribute is misformed, the <see cref="HtmlBorder.IsEmpty"/> property is set to false.</returns>
+    public HtmlBorder GetAsBorder(string name)
+    {
+        HtmlBorder border = new(GetAsSideBorder(name));
+        SideBorder sb;
+
+        sb = GetAsSideBorder(name + "-top");
+        if (sb.IsValid) border.Top = sb;
+        sb = GetAsSideBorder(name + "-right");
+        if (sb.IsValid) border.Right = sb;
+        sb = GetAsSideBorder(name + "-bottom");
+        if (sb.IsValid) border.Bottom = sb;
+        sb = GetAsSideBorder(name + "-left");
+        if (sb.IsValid) border.Left = sb;
+
+        return border;
+    }
+
+    /// <summary>
+    /// Gets an attribute representing a single border side.
+    /// If a border style/color/width has been specified individually, it will override the grouped definition.
+    /// </summary>
+    /// <returns>If the attribute is misformed, the <see cref="HtmlBorder.IsEmpty"/> property is set to false.</returns>
+    public SideBorder GetAsSideBorder(string name)
+    {
+        var attrValue = this[name];
+        SideBorder border = SideBorder.Parse(attrValue);
+
+        // handle attributes specified individually.
+        Unit width = SideBorder.ParseWidth(this[name + "-width"]);
+        if (!width.IsValid) width = border.Width;
+
+        var color = GetAsColor(name + "-color");
+        if (color.IsEmpty) color = border.Color;
+
+        var style = Converter.ToBorderStyle(this[name + "-style"]);
+        if (style == BorderValues.Nil) style = border.Style;
+
+        return new SideBorder(style, color, width);
+    }
+
+    /// <summary>
+    /// Gets the font attribute and combine with the style, size and family.
+    /// </summary>
+    public HtmlFont GetAsFont(string name)
+    {
+        HtmlFont font = HtmlFont.Parse(this[name]);
+        FontStyle? fontStyle = font.Style;
+        FontVariant? variant = font.Variant;
+        FontWeight? weight = font.Weight;
+        Unit fontSize = font.Size;
+        string? family = font.Family;
+
+        var attrValue = this[name + "-style"];
+        if (attrValue != null)
         {
-            get { return attributes.Count; }
+            fontStyle = Converter.ToFontStyle(attrValue) ?? font.Style;
         }
-
-        /// <summary>
-        /// Gets the named attribute.
-        /// </summary>
-        public string? this[string name]
+        attrValue = this[name + "-variant"];
+        if (attrValue != null)
         {
-            get => attributes.TryGetValue(name, out var value)? value : null;
+            variant = Converter.ToFontVariant(attrValue) ?? font.Variant;
         }
-
-        /// <summary>
-        /// Gets an attribute representing an integer.
-        /// </summary>
-        public int? GetAsInt(string name)
+        attrValue = this[name + "-weight"];
+        if (attrValue != null)
         {
-            string? attrValue = this[name];
-            if (attrValue != null && int.TryParse(attrValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var val))
-                return val;
-
-            return null;
+            weight = Converter.ToFontWeight(attrValue) ?? font.Weight;
         }
-
-        /// <summary>
-        /// Gets an attribute representing a color (named color, hexadecimal or hexadecimal 
-        /// without the preceding # character).
-        /// </summary>
-        public HtmlColor GetAsColor(string name)
+        attrValue = this[name + "-family"];
+        if (attrValue != null)
         {
-            return HtmlColor.Parse(this[name]);
+            family = Converter.ToFontFamily(attrValue) ?? font.Family;
         }
 
-        /// <summary>
-        /// Gets an attribute representing an unit: 120px, 10pt, 5em, 20%, ...
-        /// </summary>
-        /// <returns>If the attribute is misformed, the <see cref="Unit.IsValid"/> property is set to false.</returns>
-        public Unit GetAsUnit(string name)
-        {
-            return Unit.Parse(this[name]);
-        }
+        Unit unit = this.GetAsUnit(name + "-size");
+        if (unit.IsValid) fontSize = unit;
 
-        /// <summary>
-        /// Gets an attribute representing the 4 unit sides.
-        /// If a side has been specified individually, it will override the grouped definition.
-        /// </summary>
-        /// <returns>If the attribute is misformed, the <see cref="Margin.IsValid"/> property is set to false.</returns>
-        public Margin GetAsMargin(string name)
-        {
-            Margin margin = Margin.Parse(this[name]);
-            Unit u;
-
-            u = GetAsUnit(name + "-top");
-            if (u.IsValid) margin.Top = u;
-            u = GetAsUnit(name + "-right");
-            if (u.IsValid) margin.Right = u;
-            u = GetAsUnit(name + "-bottom");
-            if (u.IsValid) margin.Bottom = u;
-            u = GetAsUnit(name + "-left");
-            if (u.IsValid) margin.Left = u;
-
-            return margin;
-        }
-
-        /// <summary>
-        /// Gets an attribute representing the 4 border sides.
-        /// If a border style/color/width has been specified individually, it will override the grouped definition.
-        /// </summary>
-        /// <returns>If the attribute is misformed, the <see cref="HtmlBorder.IsEmpty"/> property is set to false.</returns>
-        public HtmlBorder GetAsBorder(string name)
-        {
-            HtmlBorder border = new(GetAsSideBorder(name));
-            SideBorder sb;
-
-            sb = GetAsSideBorder(name + "-top");
-            if (sb.IsValid) border.Top = sb;
-            sb = GetAsSideBorder(name + "-right");
-            if (sb.IsValid) border.Right = sb;
-            sb = GetAsSideBorder(name + "-bottom");
-            if (sb.IsValid) border.Bottom = sb;
-            sb = GetAsSideBorder(name + "-left");
-            if (sb.IsValid) border.Left = sb;
-
-            return border;
-        }
-
-        /// <summary>
-        /// Gets an attribute representing a single border side.
-        /// If a border style/color/width has been specified individually, it will override the grouped definition.
-        /// </summary>
-        /// <returns>If the attribute is misformed, the <see cref="HtmlBorder.IsEmpty"/> property is set to false.</returns>
-        public SideBorder GetAsSideBorder(string name)
-        {
-            var attrValue = this[name];
-            SideBorder border = SideBorder.Parse(attrValue);
-
-            // handle attributes specified individually.
-            Unit width = SideBorder.ParseWidth(this[name + "-width"]);
-            if (!width.IsValid) width = border.Width;
-
-            var color = GetAsColor(name + "-color");
-            if (color.IsEmpty) color = border.Color;
-
-            var style = Converter.ToBorderStyle(this[name + "-style"]);
-            if (style == w.BorderValues.Nil) style = border.Style;
-
-            return new SideBorder(style, color, width);
-        }
-
-        /// <summary>
-        /// Gets the class attribute that specify one or more classnames.
-        /// </summary>
-        public string[] GetClasses()
-        {
-            var attrValue = this["class"];
-            if (attrValue == null) return [];
-            return attrValue.Split(HttpUtility.WhiteSpaces, StringSplitOptions.RemoveEmptyEntries);
-        }
-
-        /// <summary>
-        /// Gets the font attribute and combine with the style, size and family.
-        /// </summary>
-        public HtmlFont GetAsFont(string name)
-        {
-            HtmlFont font = HtmlFont.Parse(this[name]);
-            FontStyle? fontStyle = font.Style;
-            FontVariant? variant = font.Variant;
-            FontWeight? weight = font.Weight;
-            Unit fontSize = font.Size;
-            string? family = font.Family;
-
-            var attrValue = this[name + "-style"];
-            if (attrValue != null)
-            {
-                fontStyle = Converter.ToFontStyle(attrValue) ?? font.Style;
-            }
-            attrValue = this[name + "-variant"];
-            if (attrValue != null)
-            {
-                variant = Converter.ToFontVariant(attrValue) ?? font.Variant;
-            }
-            attrValue = this[name + "-weight"];
-            if (attrValue != null)
-            {
-                weight = Converter.ToFontWeight(attrValue) ?? font.Weight;
-            }
-            attrValue = this[name + "-family"];
-            if (attrValue != null)
-            {
-                family = Converter.ToFontFamily(attrValue) ?? font.Family;
-            }
-
-            Unit unit = this.GetAsUnit(name + "-size");
-            if (unit.IsValid) fontSize = unit;
-
-            return new HtmlFont(fontStyle, variant, weight, fontSize, family);
-        }
+        return new HtmlFont(fontStyle, variant, weight, fontSize, family);
     }
 }

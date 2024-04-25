@@ -13,84 +13,83 @@ using System;
 using System.Collections.Generic;
 using DocumentFormat.OpenXml.Wordprocessing;
 
-namespace HtmlToOpenXml
+namespace HtmlToOpenXml;
+
+/// <summary>
+/// Holds the tables in the order we discover them (to support nested tables).
+/// </summary>
+sealed class TableContext : IComparer<CellPosition>
 {
-    /// <summary>
-    /// Holds the tables in the order we discover them (to support nested tables).
-    /// </summary>
-    sealed class TableContext : IComparer<CellPosition>
+    sealed class Tuple(Table table)
     {
-        sealed class Tuple(Table table)
+        public Table Table = table;
+        public CellPosition CellPosition = CellPosition.Empty;
+        public HtmlTableSpanCollection RowSpan = [];
+    }
+    private Stack<Tuple> tables = new Stack<Tuple>(5);
+    private Tuple? current;
+
+
+
+    // IComparer<Point> Implementation
+
+    int IComparer<CellPosition>.Compare(CellPosition x, CellPosition y)
+    {
+        // Only interested in the column part.
+        return x.Column.CompareTo(y.Column);
+    }
+
+    public void NewContext(Table table)
+    {
+        if (this.current != null)
+            tables.Push(current);
+
+        current = new Tuple(table);
+    }
+
+    public void CloseContext()
+    {
+        if (tables.Count > 0)
         {
-            public Table Table = table;
-            public CellPosition CellPosition = CellPosition.Empty;
-            public HtmlTableSpanCollection RowSpan = [];
+            current = tables.Pop();
         }
-        private Stack<Tuple> tables = new Stack<Tuple>(5);
-        private Tuple? current;
-
-
-
-        // IComparer<Point> Implementation
-
-        int IComparer<CellPosition>.Compare(CellPosition x, CellPosition y)
+        else
         {
-            // Only interested in the column part.
-            return x.Column.CompareTo(y.Column);
+            this.current = null;
         }
+    }
 
-        public void NewContext(Table table)
-        {
-            if (this.current != null)
-                tables.Push(current);
+    /// <summary>
+    /// Tells whether the Html enumerator is currently inside any table element.
+    /// </summary>
+    public bool HasContext
+    {
+        get { return current != null; }
+    }
 
-            current = new Tuple(table);
+    /// <summary>
+    /// Gets or sets the position of the current processed cell in a table.
+    /// Origins is at the top left corner.
+    /// </summary>
+    public CellPosition CellPosition
+    {
+        get { return current?.CellPosition ?? CellPosition.Empty; }
+        set {
+            if (current == null) throw new InvalidOperationException();
+            current.CellPosition = value;
         }
+    }
 
-        public void CloseContext()
-        {
-            if (tables.Count > 0)
-            {
-                current = tables.Pop();
-            }
-            else
-            {
-                this.current = null;
-            }
-        }
+    /// <summary>
+    /// Gets the concurrent remaining row span foreach columns (key: cell with rowSpan attribute, value: length of the span).
+    /// </summary>
+    public HtmlTableSpanCollection? RowSpan
+    {
+        get { return current?.RowSpan; }
+    }
 
-        /// <summary>
-        /// Tells whether the Html enumerator is currently inside any table element.
-        /// </summary>
-        public bool HasContext
-        {
-            get { return current != null; }
-        }
-
-        /// <summary>
-        /// Gets or sets the position of the current processed cell in a table.
-        /// Origins is at the top left corner.
-        /// </summary>
-        public CellPosition CellPosition
-        {
-            get { return current?.CellPosition ?? CellPosition.Empty; }
-            set {
-                if (current == null) throw new InvalidOperationException();
-                current.CellPosition = value;
-            }
-        }
-
-        /// <summary>
-        /// Gets the concurrent remaining row span foreach columns (key: cell with rowSpan attribute, value: length of the span).
-        /// </summary>
-        public HtmlTableSpanCollection? RowSpan
-        {
-            get { return current?.RowSpan; }
-        }
-
-        public Table? CurrentTable
-        {
-            get { return current?.Table; }
-        }
+    public Table? CurrentTable
+    {
+        get { return current?.Table; }
     }
 }

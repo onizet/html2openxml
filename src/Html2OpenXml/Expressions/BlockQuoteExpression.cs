@@ -46,7 +46,7 @@ sealed class BlockQuoteExpression(IHtmlElement node) : FlowElementExpression(nod
         var childElements = base.Interpret(context);
 
         // Transform the inline acronym/abbreviation to a reference to a foot note.
-        if (childElements.Any() && childElements.First() is Run)
+        if (childElements.Any() && childElements.First() is Paragraph paragraph)
         {
             string runStyle;
             FootnoteEndnoteReferenceType reference;
@@ -62,7 +62,6 @@ sealed class BlockQuoteExpression(IHtmlElement node) : FlowElementExpression(nod
                 runStyle = context.DocumentStyle.DefaultStyles.EndnoteReferenceStyle;
             }
 
-            var paragraph = new Paragraph (childElements);
             paragraph.AppendChild(new Run(reference) {
                 RunProperties = new() {
                     RunStyle = context.DocumentStyle.GetRunStyle(runStyle) }

@@ -14,32 +14,31 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 
-namespace HtmlToOpenXml.IO
+namespace HtmlToOpenXml.IO;
+
+/// <summary>
+/// Specifies what is stored when receiving data.
+/// </summary>
+public class Resource : IDisposable
 {
     /// <summary>
-    /// Specifies what is stored when receiving data.
+    /// Gets the status code that has been send with the response.
     /// </summary>
-    public class Resource : IDisposable
+    public HttpStatusCode StatusCode { get; set; }
+
+    /// <summary>
+    /// Gets the headers that have been send with the response.
+    /// </summary>
+    public IDictionary<string, string> Headers { get; private set; } = new Dictionary<string, string>();
+
+    /// <summary>
+    /// Gets the content that has been send with the response.
+    /// </summary>
+    public Stream Content { get; set; } = Stream.Null;
+
+    void IDisposable.Dispose()
     {
-        /// <summary>
-        /// Gets the status code that has been send with the response.
-        /// </summary>
-        public HttpStatusCode StatusCode { get; set; }
-
-        /// <summary>
-        /// Gets the headers that have been send with the response.
-        /// </summary>
-        public IDictionary<string, string> Headers { get; private set; } = new Dictionary<string, string>();
-
-        /// <summary>
-        /// Gets the content that has been send with the response.
-        /// </summary>
-        public Stream Content { get; set; } = Stream.Null;
-
-        void IDisposable.Dispose()
-        {
-            Content?.Dispose();
-            Headers.Clear();
-        }
+        Content?.Dispose();
+        Headers.Clear();
     }
 }

@@ -19,8 +19,11 @@ namespace HtmlToOpenXml.Tests
             using (var imageStream = ResourceHelper.GetStream(resourceName))
             {
                 Size size = ImageHeader.GetDimensions(imageStream);
-                Assert.That(size.Width, Is.EqualTo(100));
-                Assert.That(size.Height, Is.EqualTo(100));
+                Assert.Multiple(() =>
+                {
+                    Assert.That(size.Width, Is.EqualTo(100));
+                    Assert.That(size.Height, Is.EqualTo(100));
+                });
             }
         }
 
@@ -30,8 +33,11 @@ namespace HtmlToOpenXml.Tests
             using (var imageStream = ResourceHelper.GetStream("Resources.stan.gif"))
             {
                 Size size = ImageHeader.GetDimensions(imageStream);
-                Assert.That(size.Width, Is.EqualTo(252));
-                Assert.That(size.Height, Is.EqualTo(318));
+                Assert.Multiple(() =>
+                {
+                    Assert.That(size.Width, Is.EqualTo(252));
+                    Assert.That(size.Height, Is.EqualTo(318));
+                });
             }
         }
 
@@ -46,8 +52,11 @@ namespace HtmlToOpenXml.Tests
             using (var imageStream = ResourceHelper.GetStream("Resources.lumileds.png"))
             {
                 Size size = ImageHeader.GetDimensions(imageStream);
-                Assert.That(size.Width, Is.EqualTo(500));
-                Assert.That(size.Height, Is.EqualTo(500));
+                Assert.Multiple(() =>
+                {
+                    Assert.That(size.Width, Is.EqualTo(500));
+                    Assert.That(size.Height, Is.EqualTo(500));
+                });
             }
         }
 
@@ -59,8 +68,7 @@ namespace HtmlToOpenXml.Tests
         {
             using (var imageStream = ResourceHelper.GetStream(resourceName))
             {
-                IO.ImageHeader.FileType guessType;
-                bool success = IO.ImageHeader.TryDetectFileType(imageStream, out guessType);
+                bool success = ImageHeader.TryDetectFileType(imageStream, out var guessType);
 
                 Assert.That(success, Is.EqualTo(true));
                 Assert.That(guessType, Is.EqualTo(type));

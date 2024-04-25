@@ -1,5 +1,4 @@
 using DocumentFormat.OpenXml;
-using DocumentFormat.OpenXml.Vml.Wordprocessing;
 using NUnit.Framework;
 
 namespace HtmlToOpenXml.Tests

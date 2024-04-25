@@ -1,4 +1,3 @@
-using System.Linq;
 using NUnit.Framework;
 using DocumentFormat.OpenXml.Wordprocessing;
 
@@ -16,18 +15,21 @@ namespace HtmlToOpenXml.Tests
         public void ParseAbbr(string html)
         {
             var elements = converter.Parse(html);
-            Assert.That(elements.Count, Is.EqualTo(1));
+            Assert.That(elements, Has.Count.EqualTo(1));
             Assert.Multiple(() => {
                 Assert.That(elements[0], Is.TypeOf(typeof(Paragraph)));
-                Assert.That(elements[0].LastChild, Is.TypeOf(typeof(Run)));
+                Assert.That(elements[0].HasChild<Run>(), Is.True);
                 Assert.That(elements[0].InnerText, Is.EqualTo("NASA"));
             });
 
-            var noteRef = elements[0].LastChild.GetFirstChild<FootnoteReference>();
+            var noteRef = elements[0].GetLastChild<Run>().GetFirstChild<FootnoteReference>();
             Assert.That(noteRef, Is.Not.Null);
-            Assert.That(noteRef.Id.HasValue, Is.EqualTo(true));
+            Assert.Multiple(() =>
+            {
+                Assert.That(noteRef.Id.HasValue, Is.EqualTo(true));
+                Assert.That(mainPart.FootnotesPart, Is.Not.Null);
+            });
 
-            Assert.That(mainPart.FootnotesPart, Is.Not.Null);
             Assert.That(mainPart.FootnotesPart.HyperlinkRelationships.Count(), Is.EqualTo(0));
 
             var fnotes = mainPart.FootnotesPart.Footnotes.Elements<Footnote>().FirstOrDefault(f => f.Id.Value == noteRef.Id.Value);
@@ -42,18 +44,21 @@ namespace HtmlToOpenXml.Tests
         public void ParseWithLinks(string html, string expectedUri)
         {
             var elements = converter.Parse(html);
-            Assert.That(elements.Count, Is.EqualTo(1));
+            Assert.That(elements, Has.Count.EqualTo(1));
             Assert.Multiple(() => {
                 Assert.That(elements[0], Is.TypeOf(typeof(Paragraph)));
-                Assert.That(elements[0].LastChild, Is.TypeOf(typeof(Run)));
+                Assert.That(elements[0].HasChild<Run>(), Is.True);
                 Assert.That(elements[0].InnerText, Is.EqualTo("NASA"));
             });
 
-            var noteRef = elements[0].LastChild.GetFirstChild<FootnoteReference>();
+            var noteRef = elements[0].GetLastChild<Run>().GetFirstChild<FootnoteReference>();
             Assert.That(noteRef, Is.Not.Null);
-            Assert.That(noteRef.Id.HasValue, Is.EqualTo(true));
+            Assert.Multiple(() =>
+            {
+                Assert.That(noteRef.Id.HasValue, Is.EqualTo(true));
+                Assert.That(mainPart.FootnotesPart, Is.Not.Null);
+            });
 
-            Assert.That(mainPart.FootnotesPart, Is.Not.Null);
             var fnotes = mainPart.FootnotesPart.Footnotes.Elements<Footnote>().FirstOrDefault(f => f.Id.Value == noteRef.Id.Value);
             Assert.That(fnotes, Is.Not.Null);
 
@@ -62,8 +67,11 @@ namespace HtmlToOpenXml.Tests
 
             var extLink = mainPart.FootnotesPart.HyperlinkRelationships.FirstOrDefault(r => r.Id == link.Id);
             Assert.That(extLink, Is.Not.Null);
-            Assert.That(extLink.IsExternal, Is.EqualTo(true));
-            Assert.That(extLink.Uri.AbsoluteUri, Is.EqualTo(expectedUri));
+            Assert.Multiple(() =>
+            {
+                Assert.That(extLink.IsExternal, Is.EqualTo(true));
+                Assert.That(extLink.Uri.AbsoluteUri, Is.EqualTo(expectedUri));
+            });
         }
 
         [Test]
@@ -72,11 +80,14 @@ namespace HtmlToOpenXml.Tests
             converter.AcronymPosition = AcronymPosition.DocumentEnd;
             var elements = converter.Parse(@"<acronym title='www.nasa.gov'>NASA</acronym>");
 
-            var noteRef = elements[0].LastChild.GetFirstChild<EndnoteReference>();
+            var noteRef = elements[0].GetLastChild<Run>().GetFirstChild<EndnoteReference>();
             Assert.That(noteRef, Is.Not.Null);
-            Assert.That(noteRef.Id.HasValue, Is.EqualTo(true));
+            Assert.Multiple(() =>
+            {
+                Assert.That(noteRef.Id.HasValue, Is.EqualTo(true));
+                Assert.That(mainPart.EndnotesPart, Is.Not.Null);
+            });
 
-            Assert.That(mainPart.EndnotesPart, Is.Not.Null);
             var fnotes = mainPart.EndnotesPart.Endnotes.Elements<Endnote>().FirstOrDefault(f => f.Id.Value == noteRef.Id.Value);
             Assert.That(fnotes, Is.Not.Null);
         }

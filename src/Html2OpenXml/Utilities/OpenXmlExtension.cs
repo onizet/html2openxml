@@ -13,85 +13,78 @@ using System;
 using System.Runtime.CompilerServices;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
+using DocumentFormat.OpenXml.Drawing.Wordprocessing;
 
-namespace HtmlToOpenXml
+namespace HtmlToOpenXml;
+
+/// <summary>
+/// Helper class that provide some extension methods to OpenXml SDK.
+/// </summary>
+[System.Diagnostics.DebuggerStepThrough]
+static class OpenXmlExtension
 {
-    using wp = DocumentFormat.OpenXml.Drawing.Wordprocessing;
-
-    /// <summary>
-    /// Helper class that provide some extension methods to OpenXml SDK.
-    /// </summary>
-    [System.Diagnostics.DebuggerStepThrough]
-    static class OpenXmlExtension
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool HasChild<T>(this OpenXmlElement element) where T : OpenXmlElement
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool HasChild<T>(this OpenXmlElement element) where T : OpenXmlElement
+        return element.GetFirstChild<T>() != null;
+    }
+
+    public static T? GetLastChild<T>(this OpenXmlElement element) where T : OpenXmlElement
+    {
+        if (element == null) return null;
+
+        for (int i = element.ChildElements.Count - 1; i >= 0; i--)
         {
-            return element.GetFirstChild<T>() != null;
+            if (element.ChildElements[i] is T)
+                return element.ChildElements[i] as T;
         }
 
-        public static T? GetLastChild<T>(this OpenXmlElement element) where T : OpenXmlElement
-        {
-            if (element == null) return null;
+        return null;
+    }
 
-            for (int i = element.ChildElements.Count - 1; i >= 0; i--)
-            {
-                if (element.ChildElements[i] is T)
-                    return element.ChildElements[i] as T;
-            }
+    public static void InsertInProperties(this Paragraph p, Action<ParagraphProperties> @delegate)
+    {
+        p.ParagraphProperties ??= new ParagraphProperties();
+        @delegate(p.ParagraphProperties);
+    }
 
-            return null;
-        }
+    public static void InsertInProperties(this Run r, Action<RunProperties> @delegate)
+    {
+        r.RunProperties ??= new RunProperties();
+        @delegate(r.RunProperties);
+    }
 
-        public static bool Equals<T>(this IEnumValue value, T comparand) where T : struct
-        {
-            return value != null && value.Value.Equals(comparand);
-        }
+    public static void InsertInDocProperties(this Drawing d, params OpenXmlElement[] newChildren)
+    {
+        d.Inline ??= new Inline();
+        if (d.Inline.DocProperties == null) d.Inline.DocProperties = new DocProperties();
 
-        public static void InsertInProperties(this Paragraph p, Action<ParagraphProperties> @delegate)
-        {
-            p.ParagraphProperties ??= new ParagraphProperties();
-            @delegate(p.ParagraphProperties);
-        }
+        d.Inline.DocProperties.Append(newChildren);
+    }
 
-        public static void InsertInProperties(this Run r, Action<RunProperties> @delegate)
-        {
-            r.RunProperties ??= new RunProperties();
-            @delegate(r.RunProperties);
-        }
+    public static bool Compare(this PageSize pageSize, PageOrientationValues orientation)
+    {
+        PageOrientationValues pageOrientation;
 
-        public static void InsertInDocProperties(this Drawing d, params OpenXmlElement[] newChildren)
-        {
-            d.Inline ??= new wp.Inline();
-            if (d.Inline.DocProperties == null) d.Inline.DocProperties = new wp.DocProperties();
+        if (pageSize.Orient != null) pageOrientation = pageSize.Orient.Value;
+        else if (pageSize.Width > pageSize.Height) pageOrientation = PageOrientationValues.Landscape;
+        else pageOrientation = PageOrientationValues.Portrait;
 
-            d.Inline.DocProperties.Append(newChildren);
-        }
+        return pageOrientation == orientation;
+    }
 
-        public static bool Compare(this PageSize pageSize, PageOrientationValues orientation)
-        {
-            PageOrientationValues pageOrientation;
+    // needed since December 2009 CTP refactoring, where casting is not anymore an option
 
-            if (pageSize.Orient != null) pageOrientation = pageSize.Orient.Value;
-            else if (pageSize.Width > pageSize.Height) pageOrientation = PageOrientationValues.Landscape;
-            else pageOrientation = PageOrientationValues.Portrait;
-
-            return pageOrientation == orientation;
-        }
-
-        // needed since December 2009 CTP refactoring, where casting is not anymore an option
-
-        public static TableRowAlignmentValues ToTableRowAlignment(this JustificationValues val)
-        {
-            if (val == JustificationValues.Center) return TableRowAlignmentValues.Center;
-            else if (val == JustificationValues.Right) return TableRowAlignmentValues.Right;
-            else return TableRowAlignmentValues.Left;
-        }
-        public static JustificationValues ToJustification(this TableRowAlignmentValues val)
-        {
-            if (val == TableRowAlignmentValues.Left) return JustificationValues.Left;
-            else if (val == TableRowAlignmentValues.Center) return JustificationValues.Center;
-            else return JustificationValues.Right;
-        }
+    public static TableRowAlignmentValues ToTableRowAlignment(this JustificationValues val)
+    {
+        if (val == JustificationValues.Center) return TableRowAlignmentValues.Center;
+        else if (val == JustificationValues.Right) return TableRowAlignmentValues.Right;
+        else return TableRowAlignmentValues.Left;
+    }
+    public static JustificationValues ToJustification(this TableRowAlignmentValues val)
+    {
+        if (val == TableRowAlignmentValues.Left) return JustificationValues.Left;
+        else if (val == TableRowAlignmentValues.Center) return JustificationValues.Center;
+        else return JustificationValues.Right;
     }
 }

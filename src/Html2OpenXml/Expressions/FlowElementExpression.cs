@@ -97,9 +97,7 @@ class FlowElementExpression(IHtmlElement node) : PhrasingElementExpression(node)
     {
         base.ComposeStyles(context);
 
-        var styleAttributes = HtmlAttributeCollection.ParseStyle(node.GetAttribute("style"));
-
-        if (!string.IsNullOrWhiteSpace(node.Language))
+        if (node.Language != null && node.Language != node.Owner!.Body!.Language)
         {
             try
             {
@@ -119,27 +117,27 @@ class FlowElementExpression(IHtmlElement node) : PhrasingElementExpression(node)
         }
 
 
-        var attrValue = styleAttributes["text-align"];
+        var attrValue = styleAttributes!["text-align"];
         JustificationValues? align = Converter.ToParagraphAlign(attrValue);
         if (align.HasValue)
         {
-            paraProperties.Justification = new Justification { Val = align };
+            paraProperties.Justification = new() { Val = align };
         }
 
         // according to w3c, dir should be used in conjonction with lang. But whatever happens, we'll apply the RTL layout
         if ("rtl".Equals(node.Direction, StringComparison.OrdinalIgnoreCase))
         {
-            paraProperties.Justification = new Justification() { Val = JustificationValues.Right };
+            paraProperties.Justification = new() { Val = JustificationValues.Right };
         }
         else if ("ltr".Equals(node.Direction, StringComparison.OrdinalIgnoreCase))
         {
-            paraProperties.Justification = new Justification() { Val = JustificationValues.Left };
+            paraProperties.Justification = new() { Val = JustificationValues.Left };
         }
 
         var border = styleAttributes.GetAsBorder("border");
         if (!border.IsEmpty)
         {
-            ParagraphBorders borders = new ParagraphBorders();
+            ParagraphBorders borders = new();
             if (border.Top.IsValid) borders.TopBorder = 
                 new() { Val = border.Top.Style, Color = border.Top.Color.ToHexString(), Size = (uint) border.Top.Width.ValueInPx * 4, Space = 1U };
             if (border.Left.IsValid) borders.LeftBorder =
@@ -205,14 +203,17 @@ class FlowElementExpression(IHtmlElement node) : PhrasingElementExpression(node)
         foreach (var run in runs)
         {
             var textElement = run.GetFirstChild<Text>()!;
-            var text = textElement.Text;
-            // we know that the text cannot be empty because in TextExpression,
-            // we skip them
-            if (!endsWithSpace && !text[0].IsSpaceCharacter())
+            if (textElement != null) // could be null when <br/>
             {
-                textElement.Text = " " + text;
+                var text = textElement.Text;
+                // we know that the text cannot be empty because in TextExpression,
+                // we skip them
+                if (!endsWithSpace && !text[0].IsSpaceCharacter())
+                {
+                    textElement.Text = " " + text;
+                }
+                endsWithSpace = text[text.Length - 1].IsSpaceCharacter();
             }
-            endsWithSpace = text[text.Length - 1].IsSpaceCharacter();
             p.AppendChild(run);
         }
 
