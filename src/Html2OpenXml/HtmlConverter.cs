@@ -59,17 +59,31 @@ public partial class HtmlConverter
     /// <summary>
     /// Start the parse processing.
     /// </summary>
+    /// <param name="html">The HTML content to parse</param>
     /// <returns>Returns a list of parsed paragraph.</returns>
     public IList<OpenXmlCompositeElement> Parse(string? html)
     {
-        return Parse(html, default).ConfigureAwait(false).GetAwaiter().GetResult().ToList();
+        return Parse(html, CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult().ToList();
     }
 
     /// <summary>
     /// Start the parse processing.
     /// </summary>
+    /// <param name="html">The HTML content to parse</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>Returns a list of parsed paragraph.</returns>
-    public async Task<IEnumerable<OpenXmlCompositeElement>> Parse(string? html, CancellationToken cancellationToken = default)
+    public Task<IEnumerable<OpenXmlCompositeElement>> Parse(string? html, CancellationToken cancellationToken = default)
+    {
+        return Parse(html, new ParallelOptions() { CancellationToken = cancellationToken });
+    }
+
+    /// <summary>
+    /// Start the parse processing.
+    /// </summary>
+    /// <param name="html">The HTML content to parse</param>
+    /// <param name="parallelOptions">The configuration of parallelism while downloading the remote resources.</param>
+    /// <returns>Returns a list of parsed paragraph.</returns>
+    public async Task<IEnumerable<OpenXmlCompositeElement>> Parse(string? html, ParallelOptions parallelOptions)
     {
         if (string.IsNullOrEmpty(html))
             return [];
@@ -81,9 +95,11 @@ public partial class HtmlConverter
             mainPart.Document.Body = new Body();
 
         var browsingContext = BrowsingContext.New();
-        var htmlDocument = await browsingContext.OpenAsync(req => req.Content(html), cancellationToken);
+        var htmlDocument = await browsingContext.OpenAsync(req => req.Content(html), parallelOptions.CancellationToken);
         if (htmlDocument == null)
             return [];
+
+        await PreloadImages(htmlDocument, parallelOptions).ConfigureAwait(false);
 
         var parsingContext = new ParsingContext(this, mainPart);
         var body = new Expressions.BodyExpression (htmlDocument.Body!);
@@ -92,10 +108,11 @@ public partial class HtmlConverter
         return paragraphs;
     }
 
-
     /// <summary>
     /// Start the parse processing and append the converted paragraphs into the Body of the document.
     /// </summary>
+    /// <param name="html">The HTML content to parse</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
     public async Task ParseHtml(string html, CancellationToken cancellationToken = default)
     {
         // This method exists because we may ensure the SectionProperties remains the last element of the body.
@@ -226,6 +243,23 @@ public partial class HtmlConverter
         newParagraph |= htmlStyles.Paragraph.ProcessCommonAttributes(en, styleAttributes);
         return newParagraph;
     }*/
+
+    /// <summary>
+    /// Walk through all the <c>img</c> tags and preload all the remote images.
+    /// </summary>
+    private async Task PreloadImages(AngleSharp.Dom.IDocument htmlDocument, ParallelOptions parallelOptions)
+    {
+        var imageUris = htmlDocument.QuerySelectorAll("img[src]")
+            .Cast<AngleSharp.Html.Dom.IHtmlImageElement>()
+            .Where(e => AngleSharpExtensions.TryParseUrl(e.GetAttribute("src"), UriKind.RelativeOrAbsolute, out var _))
+            .Select(e => e.GetAttribute("src")!);
+        if (!imageUris.Any())
+            return;
+
+        await imageUris.ForEachAsync(
+            async (img, cts) => await ImagePrefetcher.Download(img, cts),
+            parallelOptions).ConfigureAwait(false);
+    }
 
     //____________________________________________________________________
     //

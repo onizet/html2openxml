@@ -88,10 +88,8 @@ sealed class HyperlinkExpression(IHtmlElement node) : PhrasingElementExpression(
         if (string.IsNullOrEmpty(att))
             return null;
 
-        SanitizeUrl(ref att!);
-
         // is it an anchor?
-        if (att[0] == '#' && att.Length > 1)
+        if (att![0] == '#' && att.Length > 1)
         {
             // Always accept _top anchor
             if (!context.Converter.ExcludeLinkAnchor || att == "#_top")
@@ -101,9 +99,9 @@ sealed class HyperlinkExpression(IHtmlElement node) : PhrasingElementExpression(
             }
         }
         // ensure the links does not start with javascript:
-        else if (Uri.TryCreate(att, UriKind.Absolute, out var uri) && uri.Scheme != "javascript")
+        else if (AngleSharpExtensions.TryParseUrl(att, UriKind.Absolute, out var uri))
         {
-            var extLink = context.MainPart.AddHyperlinkRelationship(uri, true);
+            var extLink = context.MainPart.AddHyperlinkRelationship(uri!, true);
 
             h = new Hyperlink(
                 ) { History = true, Id = extLink.Id };
@@ -118,15 +116,5 @@ sealed class HyperlinkExpression(IHtmlElement node) : PhrasingElementExpression(
         if (!string.IsNullOrEmpty(node.Title))
             h.Tooltip = node.Title;
         return h;
-    }
-
-    private static void SanitizeUrl(ref string url)
-    {
-        // handle link where the http:// is missing and that starts directly with www
-        if(url.StartsWith("www.", StringComparison.OrdinalIgnoreCase))
-            url = "http://" + url;
-        // or starts without the protocol
-        if (url.StartsWith("://"))
-            url = "http" + url;
     }
 }

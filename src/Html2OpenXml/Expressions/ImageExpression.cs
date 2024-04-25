@@ -78,11 +78,12 @@ sealed class ImageExpression(IHtmlElement node) : HtmlElementExpression(node)
 
     private Drawing? CreateDrawing(ParsingContext context)
     {
-        string? src = imgNode.Source;
+        string? src = imgNode.GetAttribute("src");
 
         // Bug reported by Erik2014. Inline 64 bit images can be too big and Uri.TryCreate will fail silently with a SizeLimit error.
         // To circumvent this buffer size, we will work either on the Uri, either on the original src.
-        if (src == null || (!DataUri.IsWellFormed(src) && !Uri.TryCreate(src, UriKind.RelativeOrAbsolute, out var _)))
+        if (src == null || 
+            (!DataUri.IsWellFormed(src) && !AngleSharpExtensions.TryParseUrl(src, UriKind.RelativeOrAbsolute, out var _)))
         {
             return null;
         }

@@ -13,10 +13,11 @@ namespace HtmlToOpenXml.Tests
     [TestFixture]
     public class ImgTests : HtmlConverterTestBase
     {
-        [Test]
-        public void ParseImg()
+        [TestCase(@"<img src='https://www.w3schools.com/tags/smiley.gif' alt='Smiley face' width='42' height='42'>")]
+        [TestCase(@"<img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==' alt='Smiley face' width='42' height='42'>")]
+        public void ParseImg(string html)
         {
-            var elements = converter.Parse(@"<img src='https://www.w3schools.com/tags/smiley.gif' alt='Smiley face' width='42' height='42'>");
+            var elements = converter.Parse(html);
             Assert.That(elements, Has.Count.EqualTo(1));
             AssertIsImg(elements[0]);
         }

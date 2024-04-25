@@ -88,7 +88,7 @@ namespace HtmlToOpenXml.IO
             Uri imageUri = new Uri(src, UriKind.RelativeOrAbsolute);
             Resource? response;
 
-            response = await resourceLoader.FetchAsync(imageUri, cancellationToken);
+            response = await resourceLoader.FetchAsync(imageUri, cancellationToken).ConfigureAwait(false);
             if (response?.Content == null)
                 return null;
 
