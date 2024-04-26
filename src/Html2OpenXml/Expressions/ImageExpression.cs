@@ -53,7 +53,7 @@ sealed class ImageExpression(IHtmlElement node) : HtmlElementExpression(node)
 
     private Border ComposeStyles ()
     {
-        var styleAttributes = HtmlAttributeCollection.ParseStyle(node.GetAttribute("style"));
+        var styleAttributes = node.GetStyles();
         var border = new Border() { Val = BorderValues.None };
 
         // OpenXml limits the border to 4-side of the same color and style.

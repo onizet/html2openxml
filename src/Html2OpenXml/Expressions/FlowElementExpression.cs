@@ -134,18 +134,18 @@ class FlowElementExpression(IHtmlElement node) : PhrasingElementExpression(node)
             paraProperties.Justification = new() { Val = JustificationValues.Left };
         }
 
-        var border = styleAttributes.GetAsBorder("border");
+        var border = styleAttributes.GetAsBorder();
         if (!border.IsEmpty)
         {
             ParagraphBorders borders = new();
             if (border.Top.IsValid) borders.TopBorder = 
-                new() { Val = border.Top.Style, Color = border.Top.Color.ToHexString(), Size = (uint) border.Top.Width.ValueInPx * 4, Space = 1U };
+                new() { Val = border.Top.Style, Color = border.Top.Color.ToHexString(), Size = (uint) border.Top.Width.ValueInPoint, Space = 1U };
             if (border.Left.IsValid) borders.LeftBorder =
-                new() { Val = border.Left.Style, Color = border.Left.Color.ToHexString(), Size = (uint) border.Left.Width.ValueInPx * 4, Space = 1U };
+                new() { Val = border.Left.Style, Color = border.Left.Color.ToHexString(), Size = (uint) border.Left.Width.ValueInPoint, Space = 1U };
             if (border.Bottom.IsValid) borders.BottomBorder =
-                new() { Val = border.Bottom.Style, Color = border.Bottom.Color.ToHexString(), Size = (uint) border.Bottom.Width.ValueInPx * 4, Space = 1U };
+                new() { Val = border.Bottom.Style, Color = border.Bottom.Color.ToHexString(), Size = (uint) border.Bottom.Width.ValueInPoint, Space = 1U };
             if (border.Right.IsValid) borders.RightBorder =
-                new() { Val = border.Right.Style, Color = border.Right.Color.ToHexString(), Size = (uint) border.Right.Width.ValueInPx * 4, Space = 1U };
+                new() { Val = border.Right.Style, Color = border.Right.Color.ToHexString(), Size = (uint) border.Right.Width.ValueInPoint, Space = 1U };
 
             paraProperties.ParagraphBorders = borders;
         }

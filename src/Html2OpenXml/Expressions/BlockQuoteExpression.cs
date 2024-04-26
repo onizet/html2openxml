@@ -31,7 +31,7 @@ sealed class BlockQuoteExpression(IHtmlElement node) : FlowElementExpression(nod
     public override IEnumerable<OpenXmlCompositeElement> Interpret(ParsingContext context)
     {
         string? description;
-        if (TagNames.BlockQuote.Equals(node.TagName, StringComparison.OrdinalIgnoreCase))
+        if (node.LocalName == TagNames.BlockQuote)
         {
             description = node.GetAttribute("cite");
         }

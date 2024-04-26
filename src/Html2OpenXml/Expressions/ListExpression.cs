@@ -158,7 +158,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpression(node)
     /// </summary>
     private static string GetListName(IElement listNode, string? parentName = null)
     {
-        var styleAttributes = HtmlAttributeCollection.ParseStyle(listNode.GetAttribute("style"));
+        var styleAttributes = listNode.GetStyles();
         string? type = styleAttributes["list-style-type"];
 
         if (string.IsNullOrEmpty(type) || !supportedListTypes.Contains(type!))

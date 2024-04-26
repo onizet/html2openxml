@@ -153,18 +153,18 @@ sealed class HtmlAttributeCollection
     /// If a border style/color/width has been specified individually, it will override the grouped definition.
     /// </summary>
     /// <returns>If the attribute is misformed, the <see cref="HtmlBorder.IsEmpty"/> property is set to false.</returns>
-    public HtmlBorder GetAsBorder(string name)
+    public HtmlBorder GetAsBorder()
     {
-        HtmlBorder border = new(GetAsSideBorder(name));
+        HtmlBorder border = new(GetAsSideBorder("border"));
         SideBorder sb;
 
-        sb = GetAsSideBorder(name + "-top");
+        sb = GetAsSideBorder("border-top");
         if (sb.IsValid) border.Top = sb;
-        sb = GetAsSideBorder(name + "-right");
+        sb = GetAsSideBorder("border-right");
         if (sb.IsValid) border.Right = sb;
-        sb = GetAsSideBorder(name + "-bottom");
+        sb = GetAsSideBorder("border-bottom");
         if (sb.IsValid) border.Bottom = sb;
-        sb = GetAsSideBorder(name + "-left");
+        sb = GetAsSideBorder("border-left");
         if (sb.IsValid) border.Left = sb;
 
         return border;

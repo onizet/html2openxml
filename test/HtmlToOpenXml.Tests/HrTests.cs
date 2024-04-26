@@ -25,6 +25,7 @@ namespace HtmlToOpenXml.Tests
             AssertIsHr(elements[1], false);
         }
 
+        [TestCase("<p style='border:0.1px solid black'>Before</p><hr>")]
         [TestCase("<p style='border-bottom:1px solid black'>Before</p><hr>")]
         [TestCase("<table><tr><td>Cell</td></tr></table><hr>")]
         public void ParseHrWithSpacing (string html)

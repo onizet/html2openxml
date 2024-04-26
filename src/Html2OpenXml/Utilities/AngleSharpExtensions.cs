@@ -10,6 +10,7 @@
  * PARTICULAR PURPOSE.
  */
 using System;
+using System.Runtime.CompilerServices;
 using AngleSharp.Dom;
 
 namespace HtmlToOpenXml;
@@ -19,6 +20,12 @@ namespace HtmlToOpenXml;
 /// </summary>
 static class AngleSharpExtensions
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static HtmlAttributeCollection GetStyles(this IElement element)
+    {
+        return HtmlAttributeCollection.ParseStyle(element.GetAttribute("style"));
+    }
+
     /// <summary>
     /// Gets whether the given child is preceded by any list element (<c>ol</c> or <c>ul</c>).
     /// </summary>

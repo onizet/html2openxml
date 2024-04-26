@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 namespace HtmlToOpenXml;
 
 /// <summary>
-/// Helper class that provide some extension methods to AngleSharp SDK.
+/// Helper class that provide some extension methods to <see cref="IEnumerable{T}"/> API.
 /// </summary>
 static class CollectionExtensions
 {

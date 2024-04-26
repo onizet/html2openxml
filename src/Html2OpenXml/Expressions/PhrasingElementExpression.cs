@@ -80,7 +80,7 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
     /// </summary>
     protected virtual void ComposeStyles (ParsingContext context)
     {
-        styleAttributes = HtmlAttributeCollection.ParseStyle(node.GetAttribute("style"));
+        styleAttributes = node.GetStyles();
         if (defaultStyleProperty != null)
             runProperties.AddChild(defaultStyleProperty.CloneNode(true));
 

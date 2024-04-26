@@ -51,7 +51,7 @@ abstract class HtmlDomExpression
             { TagNames.H5, el => new HeadingElementExpression(el) },
             { TagNames.H6, el => new HeadingElementExpression(el) },
             { TagNames.I, el => new PhrasingElementExpression(el, new Italic()) },
-            //{ TagNames.Hr },
+            { TagNames.Hr, el => new HorizontalLineExpression(el) },
             { TagNames.Img, el => new ImageExpression(el) },
             { TagNames.Ins, el => new PhrasingElementExpression(el, new Underline() { Val = UnderlineValues.Single }) },
             { TagNames.Ol, el => new ListExpression(el) },
