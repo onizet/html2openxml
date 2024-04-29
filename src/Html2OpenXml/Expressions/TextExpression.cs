@@ -11,6 +11,7 @@
  */
 using System.Collections.Generic;
 using AngleSharp.Dom;
+using AngleSharp.Html.Dom;
 using AngleSharp.Text;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -32,6 +33,13 @@ sealed class TextExpression(INode node) : HtmlDomExpression
 
         if (!context.PreverseLinebreaks)
             text = text.StripLineBreaks();
+        if (context.CollapseWhitespaces && text[0].IsWhiteSpaceCharacter() &&
+            node.PreviousSibling is IHtmlImageElement)
+        {
+            text = " " + text.CollapseAndStrip();
+        }
+        else if (context.CollapseWhitespaces)
+            text = text.CollapseAndStrip();
 
         Run run = new(
             new Text(text)

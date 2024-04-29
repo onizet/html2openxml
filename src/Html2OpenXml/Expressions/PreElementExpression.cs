@@ -27,6 +27,7 @@ sealed class PreElementExpression(IHtmlElement node) : FlowElementExpression(nod
         ComposeStyles(context);
         var childContext = context.CreateChild(this);
         childContext.PreverseLinebreaks = true;
+        childContext.CollapseWhitespaces = false;
         var childElements = Interpret(childContext, node.ChildNodes);
 
         // Oftenly, <pre> tag are used to renders some code examples. They look better inside a table
@@ -37,7 +38,7 @@ sealed class PreElementExpression(IHtmlElement node) : FlowElementExpression(nod
         Table preTable = new(
             new TableProperties {
                 TableStyle = context.DocumentStyle.GetTableStyle(context.DocumentStyle.DefaultStyles.PreTableStyle),
-                TableWidth = new() { Type = TableWidthUnitValues.Pct, Width = "5000" } // 100% * 50
+                TableWidth = new() { Type = TableWidthUnitValues.Auto, Width = "0" } // 100%
             },
             new TableGrid(
                 new GridColumn() { Width = "5610" }),

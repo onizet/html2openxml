@@ -15,11 +15,7 @@ namespace Demo
         static async Task Main(string[] args)
         {
             const string filename = "test.docx";
-            string html = @"<ol style='list-style-type: upper-roman'>
-                <li>One</li>
-                <li>Two</li>
-                </ol>";
-             //ResourceHelper.GetString("Resources.NumberingList.htm");
+            string html = ResourceHelper.GetString("Resources.CompleteRunTest.html");
             if (File.Exists(filename)) File.Delete(filename);
 
             using (MemoryStream generatedDocument = new MemoryStream())

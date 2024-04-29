@@ -32,23 +32,18 @@ sealed class ParsingContext(HtmlConverter converter, MainDocumentPart mainPart)
     private HtmlElementExpression? parentExpression;
     private Dictionary<string, object?> propertyBag = [];
 
-    /// <summary>Whether the text content should preserver the line breaks.</summary>
+    /// <summary>Whether the text content should preserve the line breaks.</summary>
     public bool PreverseLinebreaks { get; set; }
+
+    /// <summary>Whether the text content should collapse the whitespaces.</summary>
+    public bool CollapseWhitespaces { get; set; } = true;
+
 
 
     public void CascadeStyles (OpenXmlCompositeElement element)
     {
         parentExpression?.CascadeStyles(element);
-
-        //if (runProperties?.HasChildren != true) return;
-        //TODO: DefaultRunStyle?? && DocumentStyle..DefaultRunStyle == null) return;
-
-        //run.RunProperties = MergeStyles (run.RunProperties, runProperties);
-
-        //if (this.DefaultRunStyle != null)
-        //    run.RunProperties.RunStyle = new RunStyle() { Val = this.DefaultRunStyle };
     }
-
 
     public ParsingContext CreateChild(HtmlElementExpression expression)
     {
@@ -58,37 +53,6 @@ sealed class ParsingContext(HtmlConverter converter, MainDocumentPart mainPart)
             parentExpression = expression
         };
         return childContext;
-    }
-
-    //TODO: remove?
-    /// <summary>
-    /// Merge the properties with the tag of the previous level.
-    /// </summary>
-    private static T MergeStyles<T>(T? parentStyleProperties, T newStyleProperties)
-        where T: OpenXmlCompositeElement, new()
-    {
-        if (parentStyleProperties?.HasChildren != true)
-        {
-            return (T) newStyleProperties.CloneNode(true);
-        }
-        if (newStyleProperties?.HasChildren != true)
-        {
-            return parentStyleProperties;
-        }
-
-        var knonwTags = new HashSet<string>();
-        foreach (var prop in parentStyleProperties)
-        {
-            if (!knonwTags.Contains(prop.LocalName))
-                knonwTags.Add(prop.LocalName);
-        }
-
-        foreach (var prop in newStyleProperties)
-        {
-            if (!knonwTags.Contains(prop.LocalName))
-                parentStyleProperties.AddChild(prop.CloneNode(true), throwOnError: false);
-        }
-        return parentStyleProperties;
     }
 
     /// <summary>Retrieves a variable tied to the context of the parsing.</summary>

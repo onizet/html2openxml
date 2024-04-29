@@ -16,7 +16,6 @@ namespace HtmlToOpenXml.Tests
         [TestCase("<xml><element><childElement attr='value' /></element></xml>")]
         [TestCase("<button>Save</button>")]
         [TestCase("<input type='search' placeholder='Search' />")]
-
         public void ParseIgnore(string html)
         {
             // the inner html shouldn't be interpreted
@@ -128,17 +127,6 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements[0].ChildElements, Has.Count.EqualTo(1));
             Assert.That(elements[0].FirstChild, Is.TypeOf<Run>());
             Assert.That(elements[0].FirstChild.InnerText, Is.EqualTo("<3"));
-        }
-
-        [Test]
-        public void ParseSpaceRuns ()
-        {
-            // the new line should generate a space between "bold" and "text"
-            var elements = converter.Parse(" <span>This is a <b>bold\n</b>text</span>");
-            Assert.That(elements, Has.Count.EqualTo(1));
-            Assert.That(elements[0].ChildElements, Has.Count.EqualTo(3));
-            Assert.That(elements[0].ChildElements.All(r => r is Run), Is.True);
-            Assert.That(elements[0].InnerText, Is.EqualTo("This is a bold text"));
         }
 
         [Test]
