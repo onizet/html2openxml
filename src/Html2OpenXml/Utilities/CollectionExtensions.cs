@@ -36,7 +36,7 @@ static class CollectionExtensions
 #if NET5_0_OR_GREATER
         return Parallel.ForEachAsync(source, parallelOptions, asyncAction);
 #else
-        var throttler = new SemaphoreSlim(initialCount: Math.Min(1, parallelOptions.MaxDegreeOfParallelism));
+        var throttler = new SemaphoreSlim(initialCount: Math.Max(1, parallelOptions.MaxDegreeOfParallelism));
         var tasks = source.Select(async item =>
         {
             await throttler.WaitAsync(parallelOptions.CancellationToken);
