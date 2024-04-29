@@ -104,7 +104,6 @@ public partial class HtmlConverter
         var parsingContext = new ParsingContext(this, mainPart);
         var body = new Expressions.BodyExpression (htmlDocument.Body!);
         var paragraphs = body.Interpret (parsingContext);
-        //RemoveEmptyParagraphs(paragraphs);
         return paragraphs;
     }
 
@@ -142,51 +141,6 @@ public partial class HtmlConverter
         }
     }
 
-    /*
-    /// <summary>
-    /// Remove empty paragraph unless 2 tables are side by side.
-    /// These paragraph could be empty due to misformed html or spaces in the html source.
-    /// </summary>
-    private void RemoveEmptyParagraphs(IEnumerable<Paragraph> paragraphs)
-    {
-        if (paragraphs == null)
-            return;
-
-        bool hasRuns;
-        for (int i = 0; i < paragraphs.Count; i++)
-        {
-            OpenXmlCompositeElement p = paragraphs[i];
-
-            // If the paragraph is between 2 tables, we don't remove it (it provides some
-            // separation or Word will merge the two tables)
-            if (i > 0 && i + 1 < paragraphs.Count - 1
-                && paragraphs[i - 1].LocalName == "tbl"
-                && paragraphs[i + 1].LocalName == "tbl") continue;
-
-            if (p.HasChildren)
-            {
-                if (p is not Paragraph) continue;
-
-                // Has this paragraph some other elements than ParagraphProperties?
-                // This code ensure no default style or attribute on empty div will stay
-                hasRuns = false;
-                for (int j = p.ChildElements.Count - 1; j >= 0; j--)
-                {
-                    if (p.ChildElements[j] is not ParagraphProperties prop || prop.SectionProperties != null)
-                    {
-                        hasRuns = true;
-                        break;
-                    }
-                }
-
-                if (hasRuns) continue;
-            }
-
-            paragraphs.RemoveAt(i);
-            i--;
-        }
-    }*/
-
     /// <summary>
     /// Refresh the cache of styles presents in the document.
     /// </summary>
@@ -204,30 +158,6 @@ public partial class HtmlConverter
     private bool ProcessContainerAttributes(HtmlEnumerator en, IList<OpenXmlElement> styleAttributes)
     {
         bool newParagraph = false;
-
-        // Not applicable to a table : page break
-        if (!tables.HasContext || en.CurrentTag == "<pre>")
-        {
-            var attrValue = en.StyleAttributes["page-break-after"];
-            if (attrValue == "always")
-            {
-                paragraphs.Add(new Paragraph(
-                    new Run(
-                        new Break() { Type = BreakValues.Page })));
-            }
-
-            attrValue = en.StyleAttributes["page-break-before"];
-            if (attrValue == "always")
-            {
-                elements.Add(
-                    new Run(
-                        new Break() { Type = BreakValues.Page })
-                );
-                elements.Add(new Run(
-                        new LastRenderedPageBreak())
-                );
-            }
-        }
 
         // support left and right padding
         var padding = en.StyleAttributes.GetAsMargin("padding");

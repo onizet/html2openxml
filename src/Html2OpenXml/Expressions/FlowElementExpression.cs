@@ -40,6 +40,17 @@ class FlowElementExpression(IHtmlElement node) : PhrasingElementExpression(node)
         var runs = new List<Run>();
         var flowElements = new List<OpenXmlCompositeElement>();
 
+        if ("always".Equals(styleAttributes!["page-break-before"], StringComparison.OrdinalIgnoreCase))
+        {
+            runs.Add(
+                new Run(
+                    new Break() { Type = BreakValues.Page })
+            );
+            runs.Add(new Run(
+                new LastRenderedPageBreak())
+            );
+        }
+
         foreach (var child in childNodes)
         {
             var expression = CreateFromHtmlNode (child);
@@ -62,6 +73,12 @@ class FlowElementExpression(IHtmlElement node) : PhrasingElementExpression(node)
 
                 flowElements.Add(element);
             }
+        }
+
+        if ("always".Equals(styleAttributes!["page-break-after"], StringComparison.OrdinalIgnoreCase))
+        {
+            runs.Add(new Run(
+                new Break() { Type = BreakValues.Page }));
         }
 
         if (runs.Count > 0)
