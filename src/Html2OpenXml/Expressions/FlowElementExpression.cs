@@ -12,6 +12,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using AngleSharp.Html.Dom;
 using AngleSharp.Text;
 using DocumentFormat.OpenXml;
@@ -31,7 +32,16 @@ class FlowElementExpression(IHtmlElement node) : PhrasingElementExpression(node)
     public override IEnumerable<OpenXmlCompositeElement> Interpret (ParsingContext context)
     {
         //TODO: add break? elements.Add(new Run(new Break()));
-        return base.Interpret(context);
+        var elements = base.Interpret(context);
+
+        var isBookmarkTarget = node.GetAttribute(InternalNamespaceUri, "bookmark");
+        if (isBookmarkTarget is not null)
+        {
+            elements.First().PrependChild(new BookmarkStart() { Name = node.Id });
+            elements.First().AppendChild(new BookmarkEnd());
+        }
+
+        return elements;
     }
 
     protected override IEnumerable<OpenXmlCompositeElement> Interpret (

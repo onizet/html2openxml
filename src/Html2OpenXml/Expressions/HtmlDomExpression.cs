@@ -23,6 +23,7 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 abstract class HtmlDomExpression
 {
+    protected const string InternalNamespaceUri = "https://github.com/onizet/html2openxml";
     static readonly Dictionary<string, Func<IHtmlElement, HtmlElementExpression>> knownTags = InitKnownTags();
     static readonly HashSet<string> ignoreTags = new(StringComparer.OrdinalIgnoreCase) {
         TagNames.Xml, TagNames.AnnotationXml, TagNames.Button };
@@ -58,7 +59,7 @@ abstract class HtmlDomExpression
             { TagNames.Pre, el => new PreElementExpression(el) },
             { TagNames.Q, el => new QuoteElementExpression(el) },
             { TagNames.Quote, el => new QuoteElementExpression(el) },
-            //{ TagNames.Table, },
+            //{ TagNames.Table, el => new TableExpression(el) },
             //{ TagNames.Caption, TableCaption },
             { TagNames.Span, el => new PhrasingElementExpression(el) },
             { TagNames.S, el => new PhrasingElementExpression(el, new Strike()) },

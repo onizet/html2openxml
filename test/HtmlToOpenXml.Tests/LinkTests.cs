@@ -89,5 +89,23 @@ namespace HtmlToOpenXml.Tests
 
             converter.ExcludeLinkAnchor = false;
         }
+
+        [TestCase("h1")]
+        [TestCase("div")]
+        public void ParseInDocumentLink(string tagName)
+        {
+            string str = @$"<a href=""#heading1"">1. Heading 1</a><${tagName} id=""heading1"">Heading 1</${tagName}>";
+            var elements = converter.Parse(@$"<a href=""#heading1"">1. Heading 1</a><{tagName} id=""heading1"">Heading 1</{tagName}>");
+            Assert.That(elements, Has.Count.EqualTo(2));
+            Assert.That(elements, Has.All.TypeOf<Paragraph>());
+            Assert.Multiple(() =>
+            {
+                Assert.That(elements[0].HasChild<Hyperlink>(), Is.True);
+                Assert.That(elements[1].HasChild<BookmarkStart>(), Is.True);
+                Assert.That(elements[1].HasChild<BookmarkEnd>(), Is.True);
+                Assert.That(elements[0].GetFirstChild<Hyperlink>()?.Anchor?.Value, Is.EqualTo("heading1"));
+                Assert.That(elements[1].GetFirstChild<BookmarkStart>()?.Name.Value, Is.EqualTo("heading1"));
+            });
+        }
     }
 }

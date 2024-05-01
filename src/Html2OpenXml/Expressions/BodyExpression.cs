@@ -9,6 +9,9 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
+using System.Collections.Generic;
+using System.Linq;
+using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -21,6 +24,13 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 sealed class BodyExpression(IHtmlElement node) : FlowElementExpression(node)
 {
+    public override IEnumerable<OpenXmlCompositeElement> Interpret(ParsingContext context)
+    {
+        MarkAllBookmarks();
+
+        return base.Interpret(context);
+    }
+
     protected override void ComposeStyles(ParsingContext context)
     {
         base.ComposeStyles(context);
@@ -74,5 +84,24 @@ sealed class BodyExpression(IHtmlElement node) : FlowElementExpression(node)
             new Columns() { Space = "708" },
             new DocGrid() { LinePitch = 360 }
         );
+    }
+
+    /// <summary>
+    /// Detect all bookmarks (in-document) and mark the nodes for future processing.
+    /// </summary>
+    private void MarkAllBookmarks()
+    {
+        var links = node.QuerySelectorAll("a[href^='#']");
+        if (links.Length == 0) return;
+
+        foreach (var link in links.Cast<IHtmlAnchorElement>())
+        {
+            var id = link.Hash.Substring(1);
+            var target = node.Owner!.GetElementById(id);
+
+            // we will be able to retrieve the target during the processing
+            target?.Attributes.SetNamedItemWithNamespaceUri(
+                new Attr("h2ox", "bookmark", string.Empty, InternalNamespaceUri));
+        }
     }
 }
