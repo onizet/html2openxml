@@ -25,7 +25,7 @@ sealed class FontElementExpression(IHtmlElement node) : PhrasingElementExpressio
         base.ComposeStyles(context);
 
         string? attrValue = node.GetAttribute("size");
-        if (string.IsNullOrEmpty(attrValue))
+        if (!string.IsNullOrEmpty(attrValue))
         {
             Unit fontSize = Converter.ToFontSize(attrValue);
             if (fontSize.IsFixed)
@@ -37,7 +37,7 @@ sealed class FontElementExpression(IHtmlElement node) : PhrasingElementExpressio
         if (!string.IsNullOrEmpty(attrValue))
         {
             // Set HightAnsi. Bug fixed by xjpmauricio on github.com/onizet/html2openxml/discussions/285439
-            // where characters with accents were always using fallback font
+            // where characters with accents where always using fallback font
             runProperties.RunFonts = new() { Ascii = attrValue, HighAnsi = attrValue };
         }
     }

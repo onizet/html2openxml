@@ -52,12 +52,11 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpression(node)
         var liNodes = node.Children.Where(n => n.LocalName == "li");
         if (!liNodes.Any()) yield break;
 
-        ListContext? parentContext = null;
         var listContext = context.Properties<ListContext>("listContext");
+        var parentContext = listContext;
         var listStyle = GetListName(node, listContext.Name);
         if (listContext.InstanceId == 0 || listContext.Name != listStyle)
         {
-            parentContext = listContext;
             var abstractNumId = GetOrCreateListTemplate(context, listStyle);
             listContext = ConcretiseInstance(context, abstractNumId, listStyle, listContext.Level);
 
@@ -65,7 +64,6 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpression(node)
         }
         else
         {
-            parentContext = listContext;
             listContext = new ListContext(listContext.Name, listContext.AbsNumId, 
                 listContext.InstanceId, listContext.Level + 1);
         }
@@ -93,14 +91,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpression(node)
                 yield return child;
         }
 
-        if (parentContext.HasValue)
-        {
-             context.Properties("listContext", parentContext.Value);
-        }
-        else
-        {
-            context.Properties("listContext", null);
-        }
+        context.Properties("listContext", parentContext);
     }
 
     /// <summary>

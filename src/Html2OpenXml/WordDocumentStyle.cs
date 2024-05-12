@@ -27,7 +27,7 @@ public sealed class WordDocumentStyle
     public event EventHandler<StyleEventArgs>? StyleMissing;
 
     private readonly MainDocumentPart mainPart;
-    private readonly OpenXmlDocumentStyleCollection knownStyles;
+    private readonly OpenXmlDocumentStyleCollection knownStyles = new();
     private readonly ISet<string> lazyPredefinedStyles;
 
     private DefaultStyles? defaultStyles;
@@ -35,7 +35,7 @@ public sealed class WordDocumentStyle
 
     internal WordDocumentStyle(MainDocumentPart mainPart)
     {
-        knownStyles = PrepareStyles(mainPart);
+        PrepareStyles(mainPart);
         lazyPredefinedStyles = new HashSet<string>() { 
             PredefinedStyles.Caption,
             PredefinedStyles.EndnoteReference,
@@ -64,13 +64,12 @@ public sealed class WordDocumentStyle
     /// <summary>
     /// Preload the styles in the document to match localized style name.
     /// </summary>
-    internal static OpenXmlDocumentStyleCollection PrepareStyles(MainDocumentPart mainPart)
+    internal void PrepareStyles(MainDocumentPart mainPart)
     {
-        var knownStyles = new OpenXmlDocumentStyleCollection();
-        if (mainPart.StyleDefinitionsPart == null) return knownStyles;
+        if (mainPart.StyleDefinitionsPart == null) return;
 
         Styles? styles = mainPart.StyleDefinitionsPart.Styles;
-        if (styles == null) return knownStyles;
+        if (styles == null) return;
 
         foreach (var s in styles.Elements<Style>())
         {
@@ -85,20 +84,22 @@ public sealed class WordDocumentStyle
 
             knownStyles.Add(s.StyleId!, s);
         }
-        return knownStyles;
     }
 
-    internal ParagraphStyleId GetParagraphStyle(string name)
+    internal ParagraphStyleId? GetParagraphStyle(string name)
     {
-        return new ParagraphStyleId() { Val = GetStyle(name, StyleValues.Paragraph) };
+        var style = GetStyle(name, StyleValues.Paragraph);
+        return style is null? null : new ParagraphStyleId() { Val = style };
     }
-    internal RunStyle GetRunStyle(string name)
+    internal RunStyle? GetRunStyle(string name)
     {
-        return new RunStyle { Val = GetStyle(name, StyleValues.Character) };
+        var style = GetStyle(name, StyleValues.Character);
+        return style is null? null : new RunStyle() { Val = style };
     }
-    internal TableStyle GetTableStyle(string name)
+    internal TableStyle? GetTableStyle(string name)
     {
-        return new TableStyle { Val = GetStyle(name, StyleValues.Table) };
+        var style = GetStyle(name, StyleValues.Table);
+        return style is null? null : new TableStyle() { Val = style };
     }
 
     /// <summary>
@@ -120,7 +121,7 @@ public sealed class WordDocumentStyle
             {
                 if (StyleMissing != null)
                 {
-                    StyleMissing(this, new StyleEventArgs(name, mainPart.StyleDefinitionsPart!, styleType));
+                    StyleMissing(this, new StyleEventArgs(name, styleType));
                     if (knownStyles.TryGetValueIgnoreCase(name, styleType, out style))
                         return style?.StyleId;
                 }
@@ -142,7 +143,7 @@ public sealed class WordDocumentStyle
 
                 if (style is null)
                 {
-                    StyleMissing?.Invoke(this, new StyleEventArgs(name, mainPart.StyleDefinitionsPart!, styleType));
+                    StyleMissing?.Invoke(this, new StyleEventArgs(name, styleType));
                     return name;
                 }
             }
@@ -159,14 +160,39 @@ public sealed class WordDocumentStyle
     /// <summary>
     /// Add a new style inside the document and refresh the style cache.
     /// </summary>
+    public void AddStyle(Style style)
+    {
+        if (style is null) throw new ArgumentNullException(nameof(style));
+        if (style.StyleId == null && style.StyleName?.Val?.HasValue != true)
+            throw new ArgumentNullException(nameof(style.StyleId));
+
+        if (style.StyleName?.Val?.HasValue != true)
+            style.StyleName = new() { Val = style.StyleId };
+        else if (style.StyleId?.HasValue != true)
+            style.StyleId = style.StyleName.Val;
+
+        AddStyle(style.StyleId!.Value!, style);
+    }
+
+    /// <summary>
+    /// Add a new style inside the document and refresh the style cache.
+    /// </summary>
     internal void AddStyle(string name, Style style)
     {
+        if (name is null) throw new ArgumentNullException(nameof(name));
+        if (style is null) throw new ArgumentNullException(nameof(style));
+        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Name cannot be empty", nameof(name));
+
         if (knownStyles.ContainsKey(name))
             return;
 
         knownStyles[name] = style;
         if (mainPart.StyleDefinitionsPart == null)
             mainPart.AddNewPart<StyleDefinitionsPart>().Styles = new Styles();
+
+        if (style.StyleName?.Val?.HasValue != true)
+            style.StyleName = new() { Val = name };
+
         mainPart.StyleDefinitionsPart!.Styles!.Append(style);
     }
 
@@ -179,7 +205,6 @@ public sealed class WordDocumentStyle
     public DefaultStyles DefaultStyles
     {
         get => defaultStyles ??= new DefaultStyles();
-        set => defaultStyles = value;
     }
 
     /// <summary>

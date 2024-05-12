@@ -10,7 +10,6 @@
  * PARTICULAR PURPOSE.
  */
 using System;
-using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml;
@@ -20,10 +19,9 @@ namespace HtmlToOpenXml;
 /// </summary>
 public class StyleEventArgs : EventArgs
 {
-    internal StyleEventArgs(string styleId, StyleDefinitionsPart stylePart, StyleValues type)
+    internal StyleEventArgs(string styleId, StyleValues type)
     {
         this.Name = styleId;
-        this.StyleDefinitionsPart = stylePart;
         this.Type = type;
     }
 
@@ -31,11 +29,6 @@ public class StyleEventArgs : EventArgs
     /// Gets the invariant name of the style.
     /// </summary>
     public string Name { get; private set; }
-
-    /// <summary>
-    /// Gets the styles definition part located inside MainDocumentPart.
-    /// </summary>
-    public StyleDefinitionsPart StyleDefinitionsPart { get; private set; }
 
     /// <summary>
     /// Gets the type of style seeked (character or paragraph).

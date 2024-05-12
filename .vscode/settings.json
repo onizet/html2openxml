@@ -1,0 +1,9 @@
+{
+    "omnisharp.organizeImportsOnFormat": true,
+    "dotnet.completion.showCompletionItemsFromUnimportedNamespaces": false,
+    "coverage-gutters.coverageFileNames":[
+        "coverage.info"
+    ],
+    "coverage-gutters.showGutterCoverage": false,
+    "coverage-gutters.showLineCoverage": true
+}

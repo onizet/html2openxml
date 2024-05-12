@@ -18,10 +18,10 @@ namespace HtmlToOpenXml.Tests
                 });
             }
 
-            string filename = Path.GetFileName(requestUri.AbsoluteUri);
+            string filename = Path.GetFileName(requestUri.OriginalString);
             if (!File.Exists("../../images/" + filename))
             {
-                return null;
+                return Task.FromResult<Resource>(null);
             }
 
             return Task.FromResult(new Resource() {

@@ -44,36 +44,6 @@ sealed class HtmlAttributeCollection
     {
     }
 
-    public static HtmlAttributeCollection Parse(string? htmlTag)
-    {
-        HtmlAttributeCollection collection = new();
-        if (string.IsNullOrEmpty(htmlTag)) return collection;
-
-        // We remove the name of the tag (due to our regex) and ensure there are at least one parameter
-        int startIndex;
-        for (startIndex = 0; startIndex < htmlTag!.Length; startIndex++)
-        {
-            if (char.IsWhiteSpace(htmlTag[startIndex]))
-            {
-                startIndex++;
-                break;
-            }
-            else if (htmlTag[startIndex] == '>' || htmlTag[startIndex] == '/')
-            {
-                // no attribute in this tag
-                return collection;
-            }
-        }
-
-        MatchCollection matches = stripAttributesRegex.Matches(htmlTag, startIndex);
-        foreach (Match m in matches)
-        {
-            collection.attributes[m.Groups["tag"].Value] = m.Groups["val"].Value;
-        }
-
-        return collection;
-    }
-
     public static HtmlAttributeCollection ParseStyle(string? htmlTag)
     {
         var collection = new HtmlAttributeCollection();
@@ -94,18 +64,6 @@ sealed class HtmlAttributeCollection
     public string? this[string name]
     {
         get => attributes.TryGetValue(name, out var value)? value : null;
-    }
-
-    /// <summary>
-    /// Gets an attribute representing an integer.
-    /// </summary>
-    public int? GetAsInt(string name)
-    {
-        string? attrValue = this[name];
-        if (attrValue != null && int.TryParse(attrValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var val))
-            return val;
-
-        return null;
     }
 
     /// <summary>

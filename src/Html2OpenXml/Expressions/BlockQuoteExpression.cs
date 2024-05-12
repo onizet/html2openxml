@@ -40,37 +40,47 @@ sealed class BlockQuoteExpression(IHtmlElement node) : FlowElementExpression(nod
             description = node.Title;
         }
 
-        if (string.IsNullOrEmpty(description))
+        var childElements = base.Interpret(context);
+        if (!childElements.Any())
             return [];
 
-        var childElements = base.Interpret(context);
-
         // Transform the inline acronym/abbreviation to a reference to a foot note.
-        if (childElements.Any() && childElements.First() is Paragraph paragraph)
+        if (childElements.First() is Paragraph paragraph)
         {
-            string runStyle;
-            FootnoteEndnoteReferenceType reference;
-
-            if (context.Converter.AcronymPosition == AcronymPosition.PageEnd)
+            if (node.LocalName == TagNames.BlockQuote)
             {
-                reference = new FootnoteReference() { Id = AddFootnoteReference(context, description!) };
-                runStyle = context.DocumentStyle.DefaultStyles.FootnoteReferenceStyle;
-            }
-            else
-            {
-                reference = new EndnoteReference() { Id = AddEndnoteReference(context, description!) };
-                runStyle = context.DocumentStyle.DefaultStyles.EndnoteReferenceStyle;
+                paragraph.ParagraphProperties ??= new();
+                if (paragraph.ParagraphProperties.ParagraphStyleId is null)
+                    paragraph.ParagraphProperties.ParagraphStyleId = 
+                        context.DocumentStyle.GetParagraphStyle(context.DocumentStyle.DefaultStyles.IntenseQuoteStyle);
             }
 
-            paragraph.AppendChild(new Run(reference) {
-                RunProperties = new() {
-                    RunStyle = context.DocumentStyle.GetRunStyle(runStyle) }
-                });
             CascadeStyles(paragraph);
-            return [paragraph];
+
+            if (!string.IsNullOrEmpty(description))
+            {
+                string runStyle;
+                FootnoteEndnoteReferenceType reference;
+
+                if (context.Converter.AcronymPosition == AcronymPosition.PageEnd)
+                {
+                    reference = new FootnoteReference() { Id = AddFootnoteReference(context, description!) };
+                    runStyle = context.DocumentStyle.DefaultStyles.FootnoteReferenceStyle;
+                }
+                else
+                {
+                    reference = new EndnoteReference() { Id = AddEndnoteReference(context, description!) };
+                    runStyle = context.DocumentStyle.DefaultStyles.EndnoteReferenceStyle;
+                }
+
+                paragraph.AppendChild(new Run(reference) {
+                    RunProperties = new() {
+                        RunStyle = context.DocumentStyle.GetRunStyle(runStyle) }
+                    });
+            }
         }
 
-        return [];
+        return childElements;
     }
 
     /// <summary>
@@ -84,7 +94,12 @@ sealed class BlockQuoteExpression(IHtmlElement node) : FlowElementExpression(nod
         FootnotesPart? fpart = context.MainPart.FootnotesPart ?? context.MainPart.AddNewPart<FootnotesPart>();
         var footnotesRef = context.Properties<long?>("footnotesRef");
 
-        if (fpart.Footnotes == null)
+
+        if (footnotesRef.HasValue)
+        {
+            footnotesRef++;
+        }
+        else if (fpart.Footnotes == null)
         {
             // Insert a new Footnotes reference
             new Footnotes(
@@ -113,6 +128,7 @@ sealed class BlockQuoteExpression(IHtmlElement node) : FlowElementExpression(nod
             // The footnotesRef Id is a required field and should be unique. You can assign yourself some hard-coded
             // value but that's absolutely not safe. We will loop through the existing Footnote
             // to retrieve the highest Id.
+            footnotesRef = 0;
             foreach (var fn in fpart.Footnotes.Elements<Footnote>())
             {
                 if (fn.Id != null && fn.Id > footnotesRef) footnotesRef = fn.Id.Value;
@@ -182,7 +198,11 @@ sealed class BlockQuoteExpression(IHtmlElement node) : FlowElementExpression(nod
         EndnotesPart? fpart = context.MainPart.EndnotesPart ?? context.MainPart.AddNewPart<EndnotesPart>();
         var endnotesRef = context.Properties<long?>("endnotesRef");
 
-        if (fpart.Endnotes == null)
+        if (endnotesRef.HasValue)
+        {
+            endnotesRef++;
+        }
+        else if (fpart.Endnotes == null)
         {
             // Insert a new Footnotes reference
             new Endnotes(
@@ -211,6 +231,7 @@ sealed class BlockQuoteExpression(IHtmlElement node) : FlowElementExpression(nod
             // The endnotesRef Id is a required field and should be unique. You can assign yourself some hard-coded
             // value but that's absolutely not safe. We will loop through the existing Footnote
             // to retrieve the highest Id.
+            endnotesRef = 0;
             foreach (var p in fpart.Endnotes.Elements<Endnote>())
             {
                 if (p.Id != null && p.Id > endnotesRef) endnotesRef = p.Id.Value;

@@ -43,6 +43,22 @@ namespace HtmlToOpenXml.Tests
             AssertIsImg(elements[0]);
         }
 
+        [Test]
+        public void ParseIgnoreEmptyImg()
+        {
+            var elements = converter.Parse(@"<img alt='Smiley face' width='42' height='42'>");
+            Assert.That(elements, Is.Empty);
+        }
+
+        [Test]
+        public void ParseSkippedImgManualProvisioning()
+        {
+            converter = new HtmlConverter(mainPart, new LocalWebRequest());
+
+            var elements = converter.Parse(@$"<img src='/images/{Guid.NewGuid()}.png'>");
+            Assert.That(elements, Is.Empty);
+        }
+
         private void AssertIsImg (OpenXmlCompositeElement elements)
         {
             var run = elements.GetFirstChild<Run>();

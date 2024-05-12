@@ -67,12 +67,6 @@ public class DefaultStyles
     public string ListParagraphStyle { get; set; } = PredefinedStyles.ListParagraph;
 
     /// <summary>
-    /// Default style for paragraphs
-    /// </summary>
-    /// <value>null</value>
-    public string? ParagraphStyle { get; set; }
-
-    /// <summary>
     /// Default style for the &lt;pre&gt; table
     /// </summary>
     /// <value>TableGrid</value>

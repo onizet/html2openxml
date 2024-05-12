@@ -10,7 +10,6 @@
  * PARTICULAR PURPOSE.
  */
 using System.Collections.Generic;
-using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;

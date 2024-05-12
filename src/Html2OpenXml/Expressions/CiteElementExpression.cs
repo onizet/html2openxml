@@ -21,6 +21,9 @@ sealed class CiteElementExpression(IHtmlElement node) : PhrasingElementExpressio
     protected override void ComposeStyles(ParsingContext context)
     {
         base.ComposeStyles(context);
-        runProperties.RunStyle = context.DocumentStyle.GetRunStyle(context.DocumentStyle.DefaultStyles.QuoteStyle);
+        if (runProperties.RunStyle is null)
+        {
+            runProperties.RunStyle = context.DocumentStyle.GetRunStyle(context.DocumentStyle.DefaultStyles.QuoteStyle);
+        }
     }
 }

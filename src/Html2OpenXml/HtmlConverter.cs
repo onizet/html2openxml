@@ -61,7 +61,7 @@ public partial class HtmlConverter
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <returns>Returns a list of parsed paragraph.</returns>
-    public IList<OpenXmlCompositeElement> Parse(string? html)
+    public IList<OpenXmlCompositeElement> Parse(string html)
     {
         return Parse(html, CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult().ToList();
     }
@@ -72,7 +72,7 @@ public partial class HtmlConverter
     /// <param name="html">The HTML content to parse</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>Returns a list of parsed paragraph.</returns>
-    public Task<IEnumerable<OpenXmlCompositeElement>> Parse(string? html, CancellationToken cancellationToken = default)
+    public Task<IEnumerable<OpenXmlCompositeElement>> Parse(string html, CancellationToken cancellationToken = default)
     {
         return Parse(html, new ParallelOptions() { CancellationToken = cancellationToken });
     }
@@ -83,9 +83,9 @@ public partial class HtmlConverter
     /// <param name="html">The HTML content to parse</param>
     /// <param name="parallelOptions">The configuration of parallelism while downloading the remote resources.</param>
     /// <returns>Returns a list of parsed paragraph.</returns>
-    public async Task<IEnumerable<OpenXmlCompositeElement>> Parse(string? html, ParallelOptions parallelOptions)
+    public async Task<IEnumerable<OpenXmlCompositeElement>> Parse(string html, ParallelOptions parallelOptions)
     {
-        if (string.IsNullOrEmpty(html))
+        if (string.IsNullOrWhiteSpace(html))
             return [];
 
         // ensure a body exists to avoid any errors when trying to access it
@@ -146,7 +146,7 @@ public partial class HtmlConverter
     /// </summary>
     public void RefreshStyles()
     {
-        WordDocumentStyle.PrepareStyles(mainPart);
+        htmlStyles.PrepareStyles(mainPart);
     }
 
     /*
@@ -201,8 +201,8 @@ public partial class HtmlConverter
     public AcronymPosition AcronymPosition { get; set; }
 
     /// <summary>
-    /// Gets or sets whether the <c>div</c> tag should be processed as <c>p</c> (default false). It depends whether you consider <c>div</c>
-    /// as part of the layout or as part of a text field.
+    /// Gets or sets whether the <c>div</c> tag should be processed as <c>p</c> (default <see langword="false"/>).
+    /// It depends whether you consider <c>div</c> as part of the layout or as part of a text field.
     /// </summary>
     public bool ConsiderDivAsParagraph { get; set; }
 
@@ -235,14 +235,14 @@ public partial class HtmlConverter
     public CaptionPositionValues TableCaptionPosition { get; set; }
 
     /// <summary>
-    /// Gets or sets whether the <c>pre</c> tag should be rendered as a table.
+    /// Gets or sets whether the <c>pre</c> tag should be rendered as a table (default <see langword="false"/>).
     /// </summary>
     /// <remarks>The table will contains only one cell.</remarks>
     public bool RenderPreAsTable { get; set; }
 
     /// <summary>
     /// Defines whether ordered lists (<c>ol</c>) continue incrementing existing numbering
-    /// or restarts to 1 (default continues numbering).
+    /// or restarts to 1 (defaults continues numbering).
     /// </summary>
     public bool ContinueNumbering { get; set; } = true;
 

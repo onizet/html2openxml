@@ -10,8 +10,10 @@
  * PARTICULAR PURPOSE.
  */
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using AngleSharp.Dom;
+using AngleSharp.Html.Dom;
 
 namespace HtmlToOpenXml;
 
@@ -79,5 +81,18 @@ static class AngleSharpExtensions
 
         return Uri.TryCreate(uriString, uriKind, out result) 
             && (!result.IsAbsoluteUri || result.Scheme != "javascript");
+    }
+
+    /// <summary>
+    /// Enumerates all the table sections (<c>tbody</c>, <c>thead</c> and <c>tfoot</c>).
+    /// </summary>
+    public static IEnumerable<IHtmlTableSectionElement> AsTablePartEnumerable(this IHtmlTableElement table)
+    {
+        if (table.Head != null) yield return table.Head;
+        if (table.Foot != null) yield return table.Foot;
+
+        // AngleSharp gracefully remap the <tr> that does not expliclty sit below tbody
+        foreach (var body in table.Bodies)
+            yield return body;
     }
 }

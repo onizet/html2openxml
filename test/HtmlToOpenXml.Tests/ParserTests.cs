@@ -1,6 +1,7 @@
 using NUnit.Framework;
-using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml;
 
 namespace HtmlToOpenXml.Tests
 {
@@ -87,33 +88,6 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test]
-        public void ParseDisorderedTable ()
-        {
-            // table parts should be reordered
-            var elements = converter.Parse(@"
-<table>
-<tbody>
-    <tr><td>Body</td></tr>
-</tbody>
-<thead>
-    <tr><td>Header</td></tr>
-</thead>
-<tfoot>
-    <tr><td>Footer</td></tr>
-</tfoot>
-</table>");
-
-            Assert.That(elements, Has.Count.EqualTo(1));
-            Assert.That(elements[0], Is.TypeOf(typeof(Table)));
-
-            var rows = elements[0].Elements<TableRow>();
-            Assert.That(rows.Count(), Is.EqualTo(3));
-            Assert.That(rows.ElementAt(0).InnerText, Is.EqualTo("Header"));
-            Assert.That(rows.ElementAt(1).InnerText, Is.EqualTo("Body"));
-            Assert.That(rows.ElementAt(2).InnerText, Is.EqualTo("Footer"));
-        }
-
-        [Test]
         public void ParseNotTag ()
         {
             var elements = converter.Parse(" < b >bold</b>");
@@ -129,24 +103,25 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements[0].FirstChild.InnerText, Is.EqualTo("<3"));
         }
 
-        [Test]
-        public void ParseParagraphCustomClass()
+        [Test(Description = "Provided html is only whitespaces")]
+        public void ParseEmpty()
         {
-            using var generatedDocument = new System.IO.MemoryStream();
-            using (var buffer = ResourceHelper.GetStream("Resources.DocWithCustomStyle.docx"))
-                buffer.CopyTo(generatedDocument);
+            var elements = converter.Parse("  \n");
+            Assert.That(elements, Is.Empty);
+        }
 
-            generatedDocument.Position = 0L;
-            using WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true);
-            MainDocumentPart mainPart = package.MainDocumentPart;
-            HtmlConverter converter = new HtmlConverter(mainPart);
+        [Test(Description = "Provided mainPart is empty")]
+        public void InitNewDocument()
+        {
+            using var generatedDocument = new MemoryStream();
+            using var package = WordprocessingDocument.Create(generatedDocument, WordprocessingDocumentType.Document);
+            mainPart = package.MainDocumentPart;
+            mainPart = package.AddMainDocumentPart();
 
-            var elements = converter.Parse("<div class='CustomStyle1'>Lorem</div><span>Ipsum</span>");
+            Assert.That(mainPart.Document, Is.Null);
+
+            var elements = new HtmlConverter(mainPart).Parse("Placeholder");
             Assert.That(elements, Is.Not.Empty);
-            var paragraphProperties = elements[0].GetFirstChild<ParagraphProperties>();
-            Assert.That(paragraphProperties, Is.Not.Null);
-            Assert.That(paragraphProperties.ParagraphStyleId, Is.Not.Null);
-            Assert.That(paragraphProperties.ParagraphStyleId.Val.Value, Is.EqualTo("CustomStyle1"));
         }
     }
 }

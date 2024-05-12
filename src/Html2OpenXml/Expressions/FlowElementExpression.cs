@@ -21,7 +21,8 @@ using DocumentFormat.OpenXml.Wordprocessing;
 namespace HtmlToOpenXml.Expressions;
 
 /// <summary>
-/// Process the parsing of flow contents. Flow content are sectioning tags, body, heading and footer tags.
+/// Process the parsing of flow contents. Flow content are sectioning <c>p</c>, <c>span</c>, <c>heading</c> tags.
+/// All the 'block' html entities.
 /// </summary>
 class FlowElementExpression(IHtmlElement node) : PhrasingElementExpression(node)
 {
@@ -220,12 +221,18 @@ class FlowElementExpression(IHtmlElement node) : PhrasingElementExpression(node)
     /// <summary>
     /// Mimics the behaviour of Html rendering when 2 consecutives runs are separated by a space
     /// </summary>
-    private static Paragraph CombineRuns(IList<Run> runs)
+    private Paragraph CombineRuns(IList<Run> runs)
     {
-        if (runs.Count == 1)
-            return new Paragraph(runs);
+        Paragraph p = new();
+        if (paraProperties.HasChildren)
+            p.ParagraphProperties = (ParagraphProperties) paraProperties.CloneNode(true);
 
-        var p = new Paragraph();
+        if (runs.Count == 1)
+        {
+            p.AddChild(runs.First());
+            return p;
+        }
+
         bool endsWithSpace = true;
         foreach (var run in runs)
         {
@@ -233,8 +240,7 @@ class FlowElementExpression(IHtmlElement node) : PhrasingElementExpression(node)
             if (textElement != null) // could be null when <br/>
             {
                 var text = textElement.Text;
-                // we know that the text cannot be empty because in TextExpression,
-                // we skip them
+                // we know that the text cannot be empty because we skip them in TextExpression
                 if (!endsWithSpace && !text[0].IsSpaceCharacter())
                 {
                     textElement.Text = " " + text;

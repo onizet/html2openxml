@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using DocumentFormat.OpenXml.Wordprocessing;
+using DocumentFormat.OpenXml.Packaging;
 
 namespace HtmlToOpenXml.Tests
 {
@@ -9,6 +10,7 @@ namespace HtmlToOpenXml.Tests
     [TestFixture]
     public class AbbrTests : HtmlConverterTestBase
     {
+        [TestCase(@"<dfn title='National Aeronautics and Space Administration'>NASA</dfn>")]
         [TestCase(@"<abbr title='National Aeronautics and Space Administration'>NASA</abbr>")]
         [TestCase(@"<acronym title='National Aeronautics and Space Administration'>NASA</acronym>")]
         [TestCase(@"<acronym title='www.nasa.gov'>NASA</acronym>")]
@@ -90,6 +92,70 @@ namespace HtmlToOpenXml.Tests
 
             var fnotes = mainPart.EndnotesPart.Endnotes.Elements<Endnote>().FirstOrDefault(f => f.Id.Value == noteRef.Id.Value);
             Assert.That(fnotes, Is.Not.Null);
+        }
+
+        [Test]
+        public void ParseIgnore()
+        {
+            var elements = converter.Parse("<abbr></abbr>");
+            Assert.That(elements, Is.Empty);
+        }
+
+        [TestCase("<abbr><a href='www.google.com'>Placeholder</a></abbr>")]
+        [TestCase("<abbr>Placeholder</abbr>")]
+        [TestCase("<blockquote>Placeholder</blockquote>")]
+        public void ParseNoDescription(string html)
+        {
+            // description nor title was defined - fallback to normal run
+            var elements = converter.Parse(html);
+            Assert.That(elements, Has.Count.EqualTo(1));
+        }
+
+        [TestCase(AcronymPosition.DocumentEnd, Description = "Read existing endnotes references")]
+        [TestCase(AcronymPosition.PageEnd, Description = "Read existing footnotes references")]
+        public void ParseExistingEndnotes(AcronymPosition acronymPosition)
+        {
+            using var generatedDocument = new MemoryStream();
+            using (var buffer = ResourceHelper.GetStream("Resources.DocWithNotes.docx"))
+                buffer.CopyTo(generatedDocument);
+
+            generatedDocument.Position = 0L;
+            using WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true);
+            MainDocumentPart mainPart = package.MainDocumentPart;
+            HtmlConverter converter = new(mainPart);
+            converter.AcronymPosition = acronymPosition;
+
+            var elements = converter.Parse("<abbr title='HyperText Markup Language'>HTML</abbr>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+
+            FootnoteEndnoteReferenceType noteRef;
+
+            if (acronymPosition == AcronymPosition.PageEnd)
+            {
+                noteRef = elements[0].GetLastChild<Run>().GetFirstChild<FootnoteReference>();
+                Assert.That(mainPart.FootnotesPart.Footnotes.Elements<Footnote>().Select(fn => fn.Id.Value), Is.Unique);
+            }
+            else
+            {
+                noteRef = elements[0].GetLastChild<Run>().GetFirstChild<EndnoteReference>();
+                Assert.That(mainPart.EndnotesPart.Endnotes.Elements<Endnote>().Select(fn => fn.Id.Value), Is.Unique);
+            }
+
+            Assert.That(noteRef, Is.Not.Null);
+            Assert.That(noteRef.Id.HasValue, Is.EqualTo(true));
+
+            FootnoteEndnoteType note;
+            if (acronymPosition == AcronymPosition.PageEnd)
+            {
+                note = mainPart.FootnotesPart.Footnotes.Elements<Footnote>()
+                    .FirstOrDefault(fn => fn.Id.Value == noteRef.Id.Value);
+            }
+            else
+            {
+                note = mainPart.EndnotesPart.Endnotes.Elements<Endnote>()
+                    .FirstOrDefault(fn => fn.Id.Value == noteRef.Id.Value);
+            }
+            Assert.That(note.InnerText, Is.EqualTo(" " + "HyperText Markup Language"));
         }
     }
 }

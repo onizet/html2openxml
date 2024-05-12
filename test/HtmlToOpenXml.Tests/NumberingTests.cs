@@ -374,5 +374,34 @@ namespace HtmlToOpenXml.Tests
                 Is.EqualTo(1),
                 "Start value should be ignored for `ul`");
         }
+
+        [Test]
+        public void ParseRomanList()
+        {
+            var elements = converter.Parse(@"<ul style='list-style-type:lower-roman'>
+                    <li>Item 1</li>
+                </ul>");
+
+            Assert.That(elements, Is.Not.Empty);
+            Assert.That(elements, Is.All.TypeOf<Paragraph>());
+            var numId = (elements[0] as Paragraph).ParagraphProperties.NumberingProperties?.NumberingId?.Val?.Value;
+            Assert.That(numId, Is.Not.Null);
+
+            var numInst = mainPart.NumberingDefinitionsPart!.Numbering
+                .Elements<NumberingInstance>()
+                .Single(i => i.NumberID?.Value == numId);
+            Assert.That(numInst.AbstractNumId?.Val?.Value, Is.Not.Null);
+
+            var absNums = mainPart.NumberingDefinitionsPart.Numbering
+                .Elements<AbstractNum>();
+            var absNum = absNums.FirstOrDefault(a => a.AbstractNumberId == numInst.AbstractNumId.Val);
+            Assert.That(absNum, Is.Not.Null);
+            Assert.That(absNum.NumberingStyleLink?.Val?.Value, Is.EqualTo("Harvard"));
+
+            var style = mainPart.StyleDefinitionsPart.Styles
+                .Elements<Style>()
+                .FirstOrDefault(s => s.StyleName?.Val == "Harvard");
+            Assert.That(style, Is.Not.Null);
+        }
     }
 }
