@@ -26,7 +26,8 @@ abstract class HtmlDomExpression
     protected const string InternalNamespaceUri = "https://github.com/onizet/html2openxml";
     static readonly Dictionary<string, Func<IHtmlElement, HtmlElementExpression>> knownTags = InitKnownTags();
     static readonly HashSet<string> ignoreTags = new(StringComparer.OrdinalIgnoreCase) {
-        TagNames.Xml, TagNames.AnnotationXml, TagNames.Button };
+        TagNames.Xml, TagNames.AnnotationXml, TagNames.Button, TagNames.Progress,
+        TagNames.Select, TagNames.Input, TagNames.Textarea, TagNames.Meter };
 
     private static Dictionary<string, Func<IHtmlElement, HtmlElementExpression>> InitKnownTags()
     {
@@ -90,8 +91,7 @@ abstract class HtmlDomExpression
         if (node.NodeType == NodeType.Text)
             return new TextExpression(node);
         else if (node.NodeType == NodeType.Element
-            && !ignoreTags.Contains(node.NodeName)
-            && node is not IHtmlInputElement)
+            && !ignoreTags.Contains(node.NodeName))
         {
             if (knownTags.TryGetValue(node.NodeName, out Func<IHtmlElement, HtmlElementExpression>? handler))
                 return handler((IHtmlElement) node);

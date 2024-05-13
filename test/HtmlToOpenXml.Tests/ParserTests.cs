@@ -17,6 +17,10 @@ namespace HtmlToOpenXml.Tests
         [TestCase("<xml><element><childElement attr='value' /></element></xml>")]
         [TestCase("<button>Save</button>")]
         [TestCase("<input type='search' placeholder='Search' />")]
+        [TestCase("<progress>max='100' value='70'>70%</progress>")]
+        [TestCase("<select><option>--Please select--</option></select>")]
+        [TestCase("<textarea>Placeholder</textarea>")]
+        [TestCase("<meter min='200' max='500' value='350'>350 degrees</meter>")]
         public void ParseIgnore(string html)
         {
             // the inner html shouldn't be interpreted
