@@ -89,10 +89,11 @@ static class AngleSharpExtensions
     public static IEnumerable<IHtmlTableSectionElement> AsTablePartEnumerable(this IHtmlTableElement table)
     {
         if (table.Head != null) yield return table.Head;
-        if (table.Foot != null) yield return table.Foot;
 
         // AngleSharp gracefully remap the <tr> that does not expliclty sit below tbody
         foreach (var body in table.Bodies)
             yield return body;
+
+        if (table.Foot != null) yield return table.Foot;
     }
 }

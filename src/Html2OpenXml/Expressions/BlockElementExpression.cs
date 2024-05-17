@@ -21,10 +21,10 @@ using DocumentFormat.OpenXml.Wordprocessing;
 namespace HtmlToOpenXml.Expressions;
 
 /// <summary>
-/// Process the parsing of flow contents. Flow content are sectioning <c>p</c>, <c>span</c>, <c>heading</c> tags.
-/// All the 'block' html entities.
+/// Process the parsing of block contents (like <c>p</c>, <c>span</c>, <c>heading</c>).
+/// A block-level element always starts on a new line, and the browsers automatically add some space (a margin) before and after the element.
 /// </summary>
-class FlowElementExpression(IHtmlElement node) : PhrasingElementExpression(node)
+class BlockElementExpression(IHtmlElement node) : PhrasingElementExpression(node)
 {
     protected readonly ParagraphProperties paraProperties = new();
 
@@ -78,7 +78,7 @@ class FlowElementExpression(IHtmlElement node) : PhrasingElementExpression(node)
 
                 if (runs.Count > 0)
                 {
-                    flowElements.Add(CombineRuns(runs));
+                    flowElements.Add(CombineRuns(runs, paraProperties));
                     runs.Clear();
                 }
 
@@ -93,7 +93,7 @@ class FlowElementExpression(IHtmlElement node) : PhrasingElementExpression(node)
         }
 
         if (runs.Count > 0)
-            flowElements.Add(CombineRuns(runs));
+            flowElements.Add(CombineRuns(runs, paraProperties));
 
         return flowElements;
     }
@@ -162,18 +162,15 @@ class FlowElementExpression(IHtmlElement node) : PhrasingElementExpression(node)
             paraProperties.Justification = new() { Val = JustificationValues.Left };
         }
 
-        var border = styleAttributes.GetAsBorder();
-        if (!border.IsEmpty)
+        var styleBorder = styleAttributes.GetBorders();
+        if (!styleBorder.IsEmpty)
         {
-            ParagraphBorders borders = new();
-            if (border.Top.IsValid) borders.TopBorder = 
-                new() { Val = border.Top.Style, Color = border.Top.Color.ToHexString(), Size = (uint) border.Top.Width.ValueInPoint, Space = 1U };
-            if (border.Left.IsValid) borders.LeftBorder =
-                new() { Val = border.Left.Style, Color = border.Left.Color.ToHexString(), Size = (uint) border.Left.Width.ValueInPoint, Space = 1U };
-            if (border.Bottom.IsValid) borders.BottomBorder =
-                new() { Val = border.Bottom.Style, Color = border.Bottom.Color.ToHexString(), Size = (uint) border.Bottom.Width.ValueInPoint, Space = 1U };
-            if (border.Right.IsValid) borders.RightBorder =
-                new() { Val = border.Right.Style, Color = border.Right.Color.ToHexString(), Size = (uint) border.Right.Width.ValueInPoint, Space = 1U };
+            var borders = new ParagraphBorders {
+                LeftBorder = Converter.ToBorder<LeftBorder>(styleBorder.Left),
+                RightBorder = Converter.ToBorder<RightBorder>(styleBorder.Right),
+                TopBorder = Converter.ToBorder<TopBorder>(styleBorder.Top),
+                BottomBorder = Converter.ToBorder<BottomBorder>(styleBorder.Bottom)
+            };
 
             paraProperties.ParagraphBorders = borders;
         }
@@ -188,7 +185,7 @@ class FlowElementExpression(IHtmlElement node) : PhrasingElementExpression(node)
             }
         }
 
-        Margin margin = styleAttributes.GetAsMargin("margin");
+        Margin margin = styleAttributes.GetMargin("margin");
         Indentation? indentation = null;
         if (!margin.IsEmpty)
         {
@@ -209,7 +206,7 @@ class FlowElementExpression(IHtmlElement node) : PhrasingElementExpression(node)
         }
 
         // implemented by giorand (feature #13787)
-        Unit textIndent = styleAttributes.GetAsUnit("text-indent");
+        Unit textIndent = styleAttributes.GetUnit("text-indent");
         if (textIndent.IsValid)
         {
             indentation ??= new Indentation();
@@ -221,7 +218,7 @@ class FlowElementExpression(IHtmlElement node) : PhrasingElementExpression(node)
     /// <summary>
     /// Mimics the behaviour of Html rendering when 2 consecutives runs are separated by a space
     /// </summary>
-    private Paragraph CombineRuns(IList<Run> runs)
+    internal static Paragraph CombineRuns(IList<Run> runs, ParagraphProperties paraProperties)
     {
         Paragraph p = new();
         if (paraProperties.HasChildren)

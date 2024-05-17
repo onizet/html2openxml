@@ -97,7 +97,7 @@ abstract class HtmlDomExpression
                 return handler((IHtmlElement) node);
 
             // fallback on the flow element which will cover all the semantic Html5 tags
-            return new FlowElementExpression((IHtmlElement) node);
+            return new BlockElementExpression((IHtmlElement) node);
         }
 
         return null;

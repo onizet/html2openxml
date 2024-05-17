@@ -22,7 +22,7 @@ namespace HtmlToOpenXml.Expressions;
 /// Top parent expression, processing the <c>body</c> tag,
 /// even if it is not directly specified in the provided Html.
 /// </summary>
-sealed class BodyExpression(IHtmlElement node) : FlowElementExpression(node)
+sealed class BodyExpression(IHtmlElement node) : BlockElementExpression(node)
 {
     public override IEnumerable<OpenXmlCompositeElement> Interpret(ParsingContext context)
     {

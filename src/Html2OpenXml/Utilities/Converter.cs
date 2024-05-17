@@ -203,4 +203,16 @@ static class Converter
         }
         return decoration;
     }
+
+    public static T? ToBorder<T>(SideBorder border) where T: BorderType, new()
+    {
+        if (!border.IsValid)
+            return null;
+        return new T() { 
+            Val = border.Style,
+            Color = border.Color.ToHexString(),
+            Size = (uint) border.Width.ValueInPoint,
+            Space = 1U
+        };
+    }
 }

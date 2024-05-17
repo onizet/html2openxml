@@ -19,7 +19,7 @@ namespace HtmlToOpenXml.Expressions;
 /// <summary>
 /// Process the definition list item <c>dl</c>.
 /// </summary>
-class DefinitionListExpression(IHtmlElement node) : FlowElementExpression(node)
+class DefinitionListExpression(IHtmlElement node) : BlockElementExpression(node)
 {
     public override IEnumerable<OpenXmlCompositeElement> Interpret(ParsingContext context)
     {

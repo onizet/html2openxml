@@ -57,7 +57,7 @@ sealed class ImageExpression(IHtmlElement node) : HtmlElementExpression(node)
         var border = new Border() { Val = BorderValues.None };
 
         // OpenXml limits the border to 4-side of the same color and style.
-        SideBorder styleBorder = styleAttributes.GetAsSideBorder("border");
+        SideBorder styleBorder = styleAttributes.GetSideBorder("border");
         if (styleBorder.IsValid)
         {
             border.Val = styleBorder.Style;

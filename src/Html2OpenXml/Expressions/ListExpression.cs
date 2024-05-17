@@ -74,7 +74,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpression(node)
         var level = Math.Min(listContext.Level, MaxLevel+1);
         foreach (IHtmlElement liNode in liNodes.Cast<IHtmlElement>())
         {
-            var expression = new FlowElementExpression(liNode);
+            var expression = new BlockElementExpression(liNode);
             var childElements = expression.Interpret(context);
             Paragraph p = (Paragraph) childElements.First();
 

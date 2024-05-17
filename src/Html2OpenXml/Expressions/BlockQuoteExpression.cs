@@ -24,7 +24,7 @@ namespace HtmlToOpenXml.Expressions;
 /// <summary>
 /// Process the parsing of <c>abbreviation</c>, <c>acronym</c> or <c>blockquote</c>.
 /// </summary>
-sealed class BlockQuoteExpression(IHtmlElement node) : FlowElementExpression(node)
+sealed class BlockQuoteExpression(IHtmlElement node) : BlockElementExpression(node)
 {
 
     /// <inheritdoc/>

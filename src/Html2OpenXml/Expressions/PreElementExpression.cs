@@ -19,7 +19,7 @@ namespace HtmlToOpenXml.Expressions;
 /// <summary>
 /// Process the parsing of <c>pre</c> (preformatted) element.
 /// </summary>
-sealed class PreElementExpression(IHtmlElement node) : FlowElementExpression(node)
+sealed class PreElementExpression(IHtmlElement node) : BlockElementExpression(node)
 {
     /// <inheritdoc/>
     public override IEnumerable<OpenXmlCompositeElement> Interpret(ParsingContext context)
