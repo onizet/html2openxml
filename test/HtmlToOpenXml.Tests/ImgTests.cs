@@ -44,14 +44,14 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test]
-        public void ParseIgnoreEmptyImg()
+        public void IgnoreEmptyImg()
         {
             var elements = converter.Parse(@"<img alt='Smiley face' width='42' height='42'>");
             Assert.That(elements, Is.Empty);
         }
 
         [Test]
-        public void ParseSkippedImgManualProvisioning()
+        public void SkippedImgManualProvisioning()
         {
             converter = new HtmlConverter(mainPart, new LocalWebRequest());
 

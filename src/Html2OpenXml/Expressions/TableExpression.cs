@@ -24,17 +24,10 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 sealed class TableExpression(IHtmlElement node) : PhrasingElementExpression(node)
 {
-    /// <summary>Soft limit of the number of rows supported by MS Word</summary>
-    public const int MaxRows = 32767;
     private readonly IHtmlTableElement tableNode = (IHtmlTableElement) node;
     private readonly Table table = new();
     private readonly TableProperties tableProperties = new();
 
-
-    /*public override void CascadeStyles(OpenXmlCompositeElement element)
-    {
-        throw new NotImplementedException();
-    }*/
 
     /// <inheritdoc/>
     public override IEnumerable<OpenXmlCompositeElement> Interpret(ParsingContext context)
@@ -61,9 +54,6 @@ sealed class TableExpression(IHtmlElement node) : PhrasingElementExpression(node
                 table.AppendChild(element);
             }
         }
-
-        //if (table);
-        //    return [];
 
         var results = new List<OpenXmlCompositeElement> { table };
 
@@ -105,23 +95,18 @@ sealed class TableExpression(IHtmlElement node) : PhrasingElementExpression(node
 
             for(int i = 0; i < rows.Length; i++)
             {
-                var row = rowNodes.ElementAt(i);
-                foreach (var cell in row.Cells)
+                foreach (var cell in rowNodes.ElementAt(i).Cells)
                 {
-                    var colSpan = cell.ColumnSpan;
-                    if (colSpan == 0) colSpan = 1;
-                    rows[i] += colSpan;
-
-                    var rowSpan = cell.RowSpan;
-                    if (rowSpan > 1)
+                    var colSpan = Math.Max(1, cell.ColumnSpan);
+                    for (int r = i; r < i + cell.RowSpan; r++)
                     {
-                        for (int si = i; si < rowSpan && si < rows.Length; si++)
-                            rows[si]++;
+                        rows[r] += colSpan;
                     }
                 }
             }
 
-            columnCount = Math.Max(rows.Max(), columnCount);
+            if (rows.Any())
+                columnCount = Math.Max(rows.Max(), columnCount);
         }
 
         return columnCount;

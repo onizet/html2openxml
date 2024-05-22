@@ -25,7 +25,7 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : PhrasingElementEx
     private readonly IHtmlTableCellElement cellNode = node;
     private readonly TableCellProperties cellProperties = new();
     private readonly ParagraphProperties paraProperties = new();
-    private int columnCount = 1;
+
 
     /// <inheritdoc/>
     public override IEnumerable<OpenXmlCompositeElement> Interpret (ParsingContext context)
@@ -40,7 +40,11 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : PhrasingElementEx
         if (cellNode.ColumnSpan > 1)
         {
             cellProperties.GridSpan = new() { Val = cellNode.ColumnSpan };
-            columnCount = cellNode.ColumnSpan;
+        }
+
+        if (IsValidRowSpan(cellNode.RowSpan))
+        {
+            cellProperties.VerticalMerge = new() { Val = MergedCellValues.Restart };
         }
 
         cell.Append(childElements);
@@ -110,7 +114,6 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : PhrasingElementEx
                     //runProperties..j(en.CurrentTag!, new Justification() { Val = JustificationValues.Center });
                     break;
                 case "tb-rl":
-                case "tb":
                 case "vertical-rl":
                     cellProperties.TextDirection = new() { Val = TextDirectionValues.TopToBottomRightToLeft };
                     cellProperties.TableCellVerticalAlignment = new() { Val = TableVerticalAlignmentValues.Center };
@@ -123,22 +126,20 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : PhrasingElementEx
     /// <summary>
     /// Create a minimal TableCell to fill placeholder.
     /// </summary>
-    public static TableCell CreateEmpty()
+    public static TableCell CreateEmpty(params OpenXmlLeafElement[] cellProperties)
     {
         return new TableCell(new Paragraph(
             new Run(new Text(" ") { Space = SpaceProcessingModeValues.Preserve })
         )) {
-            TableCellProperties = new TableCellProperties {
-                TableCellWidth = new TableCellWidth() { Width = "0" },
-                VerticalMerge = new VerticalMerge() }
+            TableCellProperties = new TableCellProperties(cellProperties) {
+                TableCellWidth = new() { Width = "0" } }
         };
     }
 
-    /// <summary>
-    /// The space effectively occupied by this cell.
-    /// </summary>
-    public int ColumnCount
+    internal static bool IsValidRowSpan(int rowSpan)
     {
-        get => columnCount;
+        // 1 is the default value
+        // 0 means it extends until the end of the table grouping section
+        return rowSpan == 0 || rowSpan > 1;
     }
 }

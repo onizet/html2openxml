@@ -36,7 +36,7 @@ sealed class TableCaptionExpression(Table table, IHtmlElement node) : PhrasingEl
             new Run(
                 new FieldChar() { FieldCharType = FieldCharValues.Begin }),
             new Run(
-                new FieldCode(" SEQ TABLE \\* ARABIC ") { Space = SpaceProcessingModeValues.Preserve }),
+                new FieldCode("SEQ TABLE \\* ARABIC") { Space = SpaceProcessingModeValues.Preserve }),
             new Run(
                 new FieldChar() { FieldCharType = FieldCharValues.End })
         ) {
@@ -52,6 +52,7 @@ sealed class TableCaptionExpression(Table table, IHtmlElement node) : PhrasingEl
             if (t != null)
                 t.Text = " " + t.InnerText;
         }
+        p.Append(childElements);
 
         string? att = styleAttributes!["text-align"] ?? node.GetAttribute("align");
         if (!string.IsNullOrEmpty(att))

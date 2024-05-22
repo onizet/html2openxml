@@ -11,7 +11,7 @@ namespace HtmlToOpenXml.Tests
     {
         [TestCase("<table><tr></tr></table>", Description = "Row with no cells")]
         [TestCase("<table></table>", Description = "No rows")]
-        public void ParseEmptyTable(string html)
+        public void IgnoreEmptyTable(string html)
         {
             var elements = converter.Parse(html);
             Assert.That(elements, Is.Empty);
@@ -72,28 +72,116 @@ namespace HtmlToOpenXml.Tests
             });
         }
 
-        [TestCase(2, 2)]
-        [TestCase(1, null)]
-        [TestCase(0, null)]
-        public void ParseColSpan(int colSpan, int? expectedColSpan)
+        [TestCase(2u, 2)]
+        [TestCase(1u, null)]
+        [TestCase(0u, null)]
+        public void ParseColSpan(uint colSpan, int? expectedColSpan)
         {
             var elements = converter.Parse(@$"<table>
                     <tr><th colspan=""{colSpan}"">Cell 1.1</th></tr>
+                    <tr>{("<td>Cell</td>").Repeat(Math.Max(1, colSpan))}</tr>
                 </table>");
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements, Has.All.TypeOf<Table>());
             var rows = elements[0].Elements<TableRow>();
-            Assert.That(rows.Count(), Is.EqualTo(1));
-            Assert.That(rows.First().Elements<TableCell>().Count(), Is.EqualTo(1));
-            var cell = rows.First().GetFirstChild<TableCell>();
-            Assert.That(cell.TableCellProperties.GetFirstChild<GridSpan>()?.Val?.Value, Is.EqualTo(expectedColSpan));
+            Assert.That(rows.Count(), Is.EqualTo(2));
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(rows.First().GetFirstChild<TableCell>()?
+                    .TableCellProperties?.GetFirstChild<GridSpan>()?.Val?.Value, Is.EqualTo(expectedColSpan),
+                    $"Expected GridSpan={expectedColSpan}");
+                Assert.That(rows.First().Elements<TableCell>().Count(), Is.EqualTo(1),
+                    "1st row should contain only 1 cell");
+                Assert.That(rows.Last().Elements<TableCell>().Count(), Is.EqualTo(Math.Max(1, colSpan)),
+                    $"2nd row should contains {Math.Max(1, colSpan)} cells");
+            });
         }
 
-        [TestCase("tb-lr")]
-        [TestCase("vertical-lr")]
-        [TestCase("tb-rl")]
-        [TestCase("vertical-rl")]
-        public void ParseVerticalText(string direction)
+        [Test(Description = "rowSpan=0 should extend on all rows")]
+        public void ParseRowSpanZero()
+        {
+            var elements = converter.Parse(@"<table>
+                <tbody>
+                    <tr><td rowspan=""0"">Cell 1.1</td><td>Cell 1.2</td><td>Cell 1.3</td></tr>
+                    <tr><td>Cell 2.2</td><td>Cell 2.3</td></tr>
+                    <tr><td>Cell 3.2</td><td>Cell 3.3</td></tr>
+                </tbody>
+                <tfoot>
+                    <tr><td>Cell 4.1</td><td>Cell 4.2</td><td>Cell 4.3</td></tr>
+                </tfoot>
+                </table>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Table>());
+            var rows = elements[0].Elements<TableRow>().ToArray();
+            Assert.That(rows, Has.Length.EqualTo(4));
+            Assert.Multiple(() =>
+            {
+                Assert.That(rows.Select(r => r.Elements<TableCell>().Count()),
+                    Has.All.EqualTo(3),
+                    "All rows should have the same number of cells");
+                Assert.That(rows[0].GetFirstChild<TableCell>()?.TableCellProperties?
+                    .VerticalMerge?.Val?.Value, Is.EqualTo(MergedCellValues.Restart));
+                Assert.That(rows[1].GetFirstChild<TableCell>()?.TableCellProperties?
+                    .VerticalMerge?.Val?.Value, Is.EqualTo(MergedCellValues.Continue));
+                Assert.That(rows[2].GetFirstChild<TableCell>()?.TableCellProperties?
+                    .VerticalMerge?.Val?.Value, Is.EqualTo(MergedCellValues.Continue));
+                Assert.That(rows[3].GetFirstChild<TableCell>()?.TableCellProperties?
+                    .VerticalMerge?.Val?.Value, Is.Null,
+                    "Row on tfoot should not continue the span");
+            });
+        }
+
+        [Test]
+        public void ParseRowSpan()
+        {
+            var elements = converter.Parse(@"<table>
+                    <tr><td>Cell 1.1</td><td>Cell 1.2</td><td>Cell 1.3</td></tr>
+                    <tr><td>Cell 2.1</td><td rowspan=""2"">Cell 2.2</td><td>Cell 2.3</td></tr>
+                    <tr><td>Cell 3.1</td><td>Cell 3.3</td></tr>
+                </table>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Table>());
+            var rows = elements[0].Elements<TableRow>();
+            Assert.That(rows.Count(), Is.EqualTo(3));
+            Assert.That(rows.Select(r => r.Elements<TableCell>().Count()), 
+                Has.All.EqualTo(3),
+                "All rows should have the same number of cells");
+            
+            Assert.That(rows.ElementAt(1).Elements<TableCell>().ElementAt(1)?.TableCellProperties?.VerticalMerge?.Val?.Value, Is.EqualTo(MergedCellValues.Restart));
+            Assert.That(rows.ElementAt(2).Elements<TableCell>().ElementAt(1)?.TableCellProperties?.VerticalMerge?.Val?.Value, Is.EqualTo(MergedCellValues.Continue));
+        }
+
+        [Test]
+        public void ParseRowAndColumnSpan()
+        {
+            var elements = converter.Parse(@"<table>
+                    <tr><td rowspan=""2"" colspan=""2"">Cell 1.1</td><td>Cell 1.3</td></tr>
+                    <tr><td>Cell 2.3</td></tr>
+                    <tr><td>Cell 3.1</td><td>Cell 3.2</td><td>Cell 3.3</td></tr>
+                </table>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Table>());
+            var rows = elements[0].Elements<TableRow>();
+            Assert.That(rows.Count(), Is.EqualTo(3));
+            Assert.That(rows.Take(2).Select(r => r.Elements<TableCell>().Count()), 
+                Has.All.EqualTo(2),
+                "1st and 2nd rows should have 2 cells");
+            Assert.That(rows.Last().Elements<TableCell>().Count(), 
+                Is.EqualTo(3),
+                "3rd row should have 3 cells");
+            Assert.That(rows.First().GetFirstChild<TableCell>()?.TableCellProperties?.GridSpan?.Val?.Value, Is.EqualTo(2));
+            Assert.That(rows.First().GetFirstChild<TableCell>()?.TableCellProperties?.VerticalMerge?.Val?.Value, Is.EqualTo(MergedCellValues.Restart));
+
+            Assert.That(rows.ElementAt(1).GetFirstChild<TableCell>()?.TableCellProperties?.GridSpan, Is.Null);
+            Assert.That(rows.ElementAt(1).GetFirstChild<TableCell>()?.TableCellProperties?.VerticalMerge?.Val?.Value, Is.EqualTo(MergedCellValues.Continue));
+        }
+
+        [TestCase("tb-lr", "btLr")]
+        [TestCase("vertical-lr", "btLr")]
+        [TestCase("tb-rl", "tbRl")]
+        [TestCase("vertical-rl", "tbRl")]
+        public void ParseVerticalText(string direction, string openXmlDirection)
         {
             var elements = converter.Parse(@$"<table>
                     <tr><td style=""writing-mode:{direction}"">Cell 1.1</td></tr>
@@ -104,6 +192,50 @@ namespace HtmlToOpenXml.Tests
             Assert.That(rows.Count(), Is.EqualTo(1));
             Assert.That(rows.First().Elements<TableCell>().Count(), Is.EqualTo(1));
             var cell = rows.First().GetFirstChild<TableCell>();
+            Assert.That(cell?.TableCellProperties?.TextDirection?.Val?.Value, Is.EqualTo(new TextDirectionValues(openXmlDirection)));
+            Assert.That(cell?.TableCellProperties?.TableCellVerticalAlignment?.Val?.Value, Is.EqualTo(TableVerticalAlignmentValues.Center));
+        }
+
+        [TestCase("above", 0, 1)]
+        [TestCase("below", 1, 0)]
+        public void ParseTableCaption(string position, int captionPos, int tablePos)
+        {
+            converter.TableCaptionPosition = new (position);
+            var elements = converter.Parse(@$"<table>
+                    <caption>Some table caption</caption>
+                    <tr><td>Cell 1.1</td></tr>
+                </table>");
+            Assert.That(elements, Has.Count.EqualTo(2));
+            Assert.That(elements[captionPos], Is.TypeOf<Paragraph>());
+            Assert.That(elements[tablePos], Is.TypeOf<Table>());
+            var p = (Paragraph) elements[captionPos];
+            var runs = p.Elements<Run>();
+            Assert.That(runs.Count(), Is.AtLeast(4));
+
+            Assert.Multiple(() =>{
+                Assert.That(p.ParagraphProperties.ParagraphStyleId?.Val?.Value, Is.EqualTo(converter.HtmlStyles.DefaultStyles.CaptionStyle));
+                Assert.That(runs.First().HasChild<FieldChar>(), Is.True);
+                Assert.That(runs.ElementAt(1).HasChild<FieldCode>(), Is.True);
+                Assert.That(runs.ElementAt(2).HasChild<FieldChar>(), Is.True);
+            });
+            Assert.Multiple(() =>
+            {
+                Assert.That(runs.First().GetFirstChild<FieldChar>().FieldCharType.Value, Is.EqualTo(FieldCharValues.Begin));
+                Assert.That(runs.ElementAt(1).GetFirstChild<FieldCode>().InnerText, Is.EqualTo("SEQ TABLE \\* ARABIC"));
+                Assert.That(runs.ElementAt(2).GetFirstChild<FieldChar>().FieldCharType.Value, Is.EqualTo(FieldCharValues.End));
+                Assert.That(runs.Last().InnerText, Is.EqualTo("Some table caption"));
+            });
+        }
+
+        [Test]
+        public void IgnoreEmptyTableCaption()
+        {
+            var elements = converter.Parse(@$"<table>
+                    <caption></caption>
+                    <tr><td>Cell 1.1</td></tr>
+                </table>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements[0], Is.TypeOf<Table>());
         }
 
         [Test]

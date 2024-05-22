@@ -12,7 +12,6 @@
 using System.Collections.Generic;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
-using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml.Expressions;
 
@@ -33,13 +32,17 @@ sealed class TableSectionExpression(IHtmlTableSectionElement node, int columCoun
             yield break;
 
         var childContext = context.CreateChild(this);
+        // row spans scope extends until the end of the table grouping section
+        var rowSpans = new RowSpanCollection();
         foreach (var row in tableSectionNode.Rows)
         {
-            var expression = new TableRowExpression(row, columCount);
+            var expression = new TableRowExpression(row, columCount, rowSpans);
 
             foreach (var element in expression.Interpret(childContext))
             {
                 context.CascadeStyles(element);
+                rowSpans = expression.RowSpans;
+
                 yield return element;
             }
         }
