@@ -173,7 +173,7 @@ namespace HtmlToOpenXml.Tests
             Assert.That(rows.First().GetFirstChild<TableCell>()?.TableCellProperties?.GridSpan?.Val?.Value, Is.EqualTo(2));
             Assert.That(rows.First().GetFirstChild<TableCell>()?.TableCellProperties?.VerticalMerge?.Val?.Value, Is.EqualTo(MergedCellValues.Restart));
 
-            Assert.That(rows.ElementAt(1).GetFirstChild<TableCell>()?.TableCellProperties?.GridSpan, Is.Null);
+            Assert.That(rows.ElementAt(1).GetFirstChild<TableCell>()?.TableCellProperties?.GridSpan?.Val?.Value, Is.EqualTo(2));
             Assert.That(rows.ElementAt(1).GetFirstChild<TableCell>()?.TableCellProperties?.VerticalMerge?.Val?.Value, Is.EqualTo(MergedCellValues.Continue));
         }
 
@@ -275,6 +275,29 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(cell.TableCellProperties?.TableCellBorders.ChildElements, Has.All.InstanceOf<BorderType>());
                 Assert.That(cell.TableCellProperties?.TableCellBorders.Elements<BorderType>().All(b => b.Val.Value == BorderValues.Single), Is.True);
             });
+        }
+
+        [Test]
+        public void ParseCellStyle()
+        {
+            var elements = converter.Parse(@$"<table>
+                    <tr><td style=""font-weight:bold""><i>Cell</i></td></tr>
+                </table>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Table>());
+        }
+
+
+        [Test]
+        public void ParseNestedTable()
+        {
+            var elements = converter.Parse(@$"<table>
+                    <tr><td style=""font-weight:bold"">
+                        <table><tr><td>Cell</td></tr></table>
+                    </td></tr>
+                </table>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Table>());
         }
     }
 }

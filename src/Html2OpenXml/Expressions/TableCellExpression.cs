@@ -128,9 +128,7 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : PhrasingElementEx
     /// </summary>
     public static TableCell CreateEmpty(params OpenXmlLeafElement[] cellProperties)
     {
-        return new TableCell(new Paragraph(
-            new Run(new Text(" ") { Space = SpaceProcessingModeValues.Preserve })
-        )) {
+        return new TableCell(new Paragraph()) {
             TableCellProperties = new TableCellProperties(cellProperties) {
                 TableCellWidth = new() { Width = "0" } }
         };

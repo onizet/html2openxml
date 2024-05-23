@@ -60,11 +60,14 @@ sealed class TableRowExpression : PhrasingElementExpression
             // this is the cell we have inserted ourselves for carrying over the rowSpan
             if (cell == null)
             {
-                tableRow.AppendChild(TableCellExpression.CreateEmpty(
+                int colSpan = carriedRowSpans.Decrement(colIndex++);
+                var mergedCell = TableCellExpression.CreateEmpty(
                     new VerticalMerge() { Val = MergedCellValues.Continue }
-                ));
+                );
+                if (colSpan > 1) mergedCell.TableCellProperties!.GridSpan = new() { Val = colSpan };
+                tableRow.AppendChild(mergedCell);
 
-                occupiedColumnSpace += carriedRowSpans.Decrement(colIndex++);
+                occupiedColumnSpace += colSpan;
                 continue;
             }
 
