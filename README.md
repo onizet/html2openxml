@@ -29,7 +29,7 @@ Refer to [w3schools’ tag](http://www.w3schools.com/tags/default.asp) list to s
 * `img`, `figcaption`
 * `table`, `td`, `tr`, `th`, `tbody`, `thead`, `tfoot`, `caption` and `col`
 * `cite`
-* `div`, `span`, `font` and `p`
+* `div`, `span`, `time`, `font` and `p`
 * `pre`
 * `sub` and `sup`
 * `ul`, `ol` and `li`

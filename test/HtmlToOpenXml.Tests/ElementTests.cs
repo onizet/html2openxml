@@ -155,6 +155,17 @@ text-decoration:underline;
             });
         }
 
+        [TestCase(@"<span>Placeholder</span>")]
+        [TestCase(@"<time datetime='2024-07-05'>5 July</time>")]
+        public void ParseSimplePhrasing(string html)
+        {
+            var elements = converter.Parse(html);
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Run run = elements[0].GetFirstChild<Run>();
+            Assert.That(run, Is.Not.Null);
+            Assert.That(run.RunProperties, Is.Null);
+        }
+
         private T ParsePhrasing<T> (string html) where T : OpenXmlElement
         {
             var elements = converter.Parse(html);
