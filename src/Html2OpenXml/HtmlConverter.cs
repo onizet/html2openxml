@@ -104,7 +104,7 @@ public partial class HtmlConverter
         var parsingContext = new ParsingContext(this, mainPart);
         var body = new Expressions.BodyExpression (htmlDocument.Body!);
         var paragraphs = body.Interpret (parsingContext);
-        return paragraphs;
+        return paragraphs.Cast<OpenXmlCompositeElement>();
     }
 
     /// <summary>

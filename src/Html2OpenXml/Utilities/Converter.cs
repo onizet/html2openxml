@@ -208,10 +208,11 @@ static class Converter
     {
         if (!border.IsValid)
             return null;
+
         return new T() { 
             Val = border.Style,
             Color = border.Color.ToHexString(),
-            Size = (uint) border.Width.ValueInPoint,
+            Size = (uint) border.Width.ValueInPoint * 2,
             Space = 1U
         };
     }

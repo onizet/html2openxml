@@ -18,13 +18,13 @@ namespace HtmlToOpenXml.Expressions;
 /// <summary>
 /// Process the parsing of a <c>tbody</c>, <c>thead</c> or <c>tfoot</c> element.
 /// </summary>
-sealed class TableSectionExpression(IHtmlTableSectionElement node, int columCount) : PhrasingElementExpression(node)
+sealed class TableSectionExpression(IHtmlTableSectionElement node, int columCount) : TableElementExpressionBase(node)
 {
     private readonly IHtmlTableSectionElement tableSectionNode = node;
     private readonly int columCount = columCount;
 
     /// <inheritdoc/>
-    public override IEnumerable<OpenXmlCompositeElement> Interpret (ParsingContext context)
+    public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
     {
         ComposeStyles(context);
 

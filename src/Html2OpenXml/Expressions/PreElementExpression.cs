@@ -22,7 +22,7 @@ namespace HtmlToOpenXml.Expressions;
 sealed class PreElementExpression(IHtmlElement node) : BlockElementExpression(node)
 {
     /// <inheritdoc/>
-    public override IEnumerable<OpenXmlCompositeElement> Interpret(ParsingContext context)
+    public override IEnumerable<OpenXmlElement> Interpret(ParsingContext context)
     {
         ComposeStyles(context);
         var childContext = context.CreateChild(this);

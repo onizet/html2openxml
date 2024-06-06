@@ -278,6 +278,23 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test]
+        public void ParseRowStyle()
+        {
+            var elements = converter.Parse(@$"<table>
+                    <tr style='background-color:silver;'><td>Cell</td></tr>
+                </table>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Table>());
+            var cell = elements[0].GetFirstChild<TableRow>()?.GetFirstChild<TableCell>();
+            Assert.That(cell, Is.Not.Null);
+            Assert.That(cell.TableCellProperties, Is.Not.Null);
+            Assert.That(cell.TableCellProperties.Shading?.Fill?.Value, Is.EqualTo("C0C0C0"));
+
+            var runProperties = cell.GetFirstChild<Paragraph>()?.GetFirstChild<Run>()?.RunProperties;
+            Assert.That(runProperties?.Shading, Is.Null);
+        }
+
+        [Test]
         public void ParseCellStyle()
         {
             var elements = converter.Parse(@$"<table>
@@ -285,8 +302,22 @@ namespace HtmlToOpenXml.Tests
                 </table>");
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements, Has.All.TypeOf<Table>());
+            var cell = elements[0].GetFirstChild<TableRow>()?.GetFirstChild<TableCell>();
+            Assert.That(cell, Is.Not.Null);
+            var runProperties = cell.GetFirstChild<Paragraph>()?.GetFirstChild<Run>()?.RunProperties;
+            Assert.That(runProperties, Is.Not.Null);
+            Assert.Multiple(() => {
+                Assert.That(runProperties.Bold, Is.Not.Null);
+                Assert.That(runProperties.Italic, Is.Not.Null);
+            });
+            Assert.Multiple(() => {
+                // normally, Val should be null
+                if (runProperties.Bold.Val is not null)
+                    Assert.That(runProperties.Bold.Val, Is.EqualTo(true));
+                if (runProperties.Italic.Val is not null)
+                    Assert.That(runProperties.Italic.Val, Is.EqualTo(true));
+            });
         }
-
 
         [Test]
         public void ParseNestedTable()
@@ -298,6 +329,51 @@ namespace HtmlToOpenXml.Tests
                 </table>");
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements, Has.All.TypeOf<Table>());
+            Assert.That(elements[0].GetFirstChild<TableGrid>().Elements<GridColumn>().Count(), Is.EqualTo(1));
+            var cell = elements[0].GetFirstChild<TableRow>()?.GetFirstChild<TableCell>();
+            Assert.That(cell, Is.Not.Null);
+            Assert.That(cell.HasChild<Table>(), Is.True);
+        }
+
+        [Test]
+        public void ParseCol()
+        {
+            var elements = converter.Parse(@$"<table>
+                    <colgroup>
+                        <col style=""width:100px""/>
+                        <col style=""width:50px""/>
+                    </colgroup>
+                    <tr><td>Cell 1.1</td><td>Cell 1.2</td></tr>
+                </table>");
+            
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Table>());
+            var columns = elements[0].GetFirstChild<TableGrid>()?.Elements<GridColumn>();
+            Assert.That(columns, Is.Not.Null);
+            Assert.That(columns.Count(), Is.EqualTo(2));
+            Assert.That(columns.First().Width?.Value, Is.EqualTo("1500"));
+            Assert.That(columns.Last().Width?.Value, Is.EqualTo("750"));
+        }
+
+        [Test]
+        public void ParseColWithSpan()
+        {
+            var elements = converter.Parse(@$"<table>
+                    <colgroup>
+                        <col style=""width:100px"" span=""2"" />
+                        <col style=""width:50px""/>
+                    </colgroup>
+                    <tr><td>Cell 1.1</td><td>Cell 1.2</td><td>Cell 1.3</td></tr>
+                </table>");
+            
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Table>());
+            var columns = elements[0].GetFirstChild<TableGrid>()?.Elements<GridColumn>();
+            Assert.That(columns, Is.Not.Null);
+            Assert.That(columns.Count(), Is.EqualTo(3));
+            Assert.That(columns.First().Width?.Value, Is.EqualTo("1500"));
+            Assert.That(columns.ElementAt(1).Width?.Value, Is.EqualTo("1500"));
+            Assert.That(columns.Last().Width?.Value, Is.EqualTo("750"));
         }
     }
 }

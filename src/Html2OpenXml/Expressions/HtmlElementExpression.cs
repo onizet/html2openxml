@@ -25,5 +25,5 @@ abstract class HtmlElementExpression(IHtmlElement node) : HtmlDomExpression
     /// <summary>
     /// Apply the style properties on the provided element.
     /// </summary>
-    public abstract void CascadeStyles (OpenXmlCompositeElement element);
+    public abstract void CascadeStyles (OpenXmlElement element);
 }

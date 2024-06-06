@@ -20,12 +20,13 @@ namespace HtmlToOpenXml.Expressions;
 /// <summary>
 /// Process the parsing of a <c>tr</c> element which represent a row in a table.
 /// </summary>
-sealed class TableRowExpression : PhrasingElementExpression
+sealed class TableRowExpression : TableElementExpressionBase
 {
     private readonly IHtmlTableRowElement rowNode;
     private readonly TableRowProperties rowProperties = new();
     private readonly int columCount;
     private readonly RowSpanCollection carriedRowSpans, rowSpans = [];
+
 
     public TableRowExpression(IHtmlTableRowElement node, int columCount, RowSpanCollection carriedRowSpans)
         : base (node)
@@ -36,7 +37,7 @@ sealed class TableRowExpression : PhrasingElementExpression
     }
 
     /// <inheritdoc/>
-    public override IEnumerable<OpenXmlCompositeElement> Interpret (ParsingContext context)
+    public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
     {
         ComposeStyles(context);
 
@@ -95,6 +96,7 @@ sealed class TableRowExpression : PhrasingElementExpression
         }
 
         rowSpans.UnionWith(carriedRowSpans);
+        context.CascadeStyles(tableRow);
         return [tableRow];
     }
 

@@ -20,7 +20,7 @@ namespace HtmlToOpenXml.Expressions;
 /// <summary>
 /// Base implementation for numbering list.
 /// </summary>
-abstract class NumberingExpression(IHtmlElement node) : BlockElementExpression(node)
+abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpression(node)
 {
     /// <summary>Hard-coded value from Word</summary>
     public const int MaxLevel = 8;

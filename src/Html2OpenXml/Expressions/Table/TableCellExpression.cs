@@ -20,15 +20,13 @@ namespace HtmlToOpenXml.Expressions;
 /// <summary>
 /// Process the parsing of a <c>td</c> or <c>th</c> element which represent a cell in a table row.
 /// </summary>
-sealed class TableCellExpression(IHtmlTableCellElement node) : PhrasingElementExpression(node)
+sealed class TableCellExpression(IHtmlTableCellElement node) : TableElementExpressionBase(node)
 {
     private readonly IHtmlTableCellElement cellNode = node;
-    private readonly TableCellProperties cellProperties = new();
-    private readonly ParagraphProperties paraProperties = new();
 
 
     /// <inheritdoc/>
-    public override IEnumerable<OpenXmlCompositeElement> Interpret (ParsingContext context)
+    public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
     {
         var childElements = base.Interpret (context);
 
@@ -47,15 +45,16 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : PhrasingElementEx
             cellProperties.VerticalMerge = new() { Val = MergedCellValues.Restart };
         }
 
+        context.CascadeStyles(cell);
         cell.Append(childElements);
         return [cell];
     }
 
-    protected override IEnumerable<OpenXmlCompositeElement> Interpret (
+    protected override IEnumerable<OpenXmlElement> Interpret (
         ParsingContext context, IEnumerable<AngleSharp.Dom.INode> childNodes)
     {
         var runs = new List<Run>();
-        var flowElements = new List<OpenXmlCompositeElement>();
+        var flowElements = new List<OpenXmlElement>();
 
         foreach (var child in childNodes)
         {
@@ -73,7 +72,7 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : PhrasingElementEx
 
                 if (runs.Count > 0)
                 {
-                    flowElements.Add(BlockElementExpression.CombineRuns(runs, paraProperties));
+                    flowElements.Add(BlockElementExpression.CombineRuns(context, runs, paraProperties));
                     runs.Clear();
                 }
 
@@ -82,7 +81,7 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : PhrasingElementEx
         }
 
         if (runs.Count > 0)
-            flowElements.Add(BlockElementExpression.CombineRuns(runs, paraProperties));
+            flowElements.Add(BlockElementExpression.CombineRuns(context, runs, paraProperties));
 
         return flowElements;
     }
@@ -91,17 +90,7 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : PhrasingElementEx
     {
         base.ComposeStyles(context);
 
-        var valign = Converter.ToVAlign(styleAttributes!["vertical-align"]);
-        if (!valign.HasValue) valign = Converter.ToVAlign(cellNode.GetAttribute("valign"));
-        if (!valign.HasValue)
-        {
-            // in Html, table cell are vertically centered by default
-            valign = TableVerticalAlignmentValues.Center;
-        }
-
-        cellProperties.TableCellVerticalAlignment = new() { Val = valign };
-
-         // Manage vertical text (only for table cell)
+        // Manage vertical text (only for table cell)
         string? direction = styleAttributes!["writing-mode"];
         if (direction != null)
         {
@@ -111,13 +100,13 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : PhrasingElementEx
                 case "vertical-lr":
                     cellProperties.TextDirection = new() { Val = TextDirectionValues.BottomToTopLeftToRight };
                     cellProperties.TableCellVerticalAlignment = new() { Val = TableVerticalAlignmentValues.Center };
-                    //runProperties..j(en.CurrentTag!, new Justification() { Val = JustificationValues.Center });
+                    paraProperties.Justification = new() { Val = JustificationValues.Center };
                     break;
                 case "tb-rl":
                 case "vertical-rl":
                     cellProperties.TextDirection = new() { Val = TextDirectionValues.TopToBottomRightToLeft };
                     cellProperties.TableCellVerticalAlignment = new() { Val = TableVerticalAlignmentValues.Center };
-                    //htmlStyles.Tables.BeginTagForParagraph(new Justification() { Val = JustificationValues.Center });
+                    paraProperties.Justification = new() { Val = JustificationValues.Center };
                     break;
             }
         }

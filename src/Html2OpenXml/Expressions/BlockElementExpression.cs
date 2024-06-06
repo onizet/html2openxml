@@ -30,7 +30,7 @@ class BlockElementExpression(IHtmlElement node) : PhrasingElementExpression(node
 
 
     /// <inheritdoc/>
-    public override IEnumerable<OpenXmlCompositeElement> Interpret (ParsingContext context)
+    public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
     {
         //TODO: add break? elements.Add(new Run(new Break()));
         var elements = base.Interpret(context);
@@ -45,11 +45,11 @@ class BlockElementExpression(IHtmlElement node) : PhrasingElementExpression(node
         return elements;
     }
 
-    protected override IEnumerable<OpenXmlCompositeElement> Interpret (
+    protected override IEnumerable<OpenXmlElement> Interpret (
         ParsingContext context, IEnumerable<AngleSharp.Dom.INode> childNodes)
     {
         var runs = new List<Run>();
-        var flowElements = new List<OpenXmlCompositeElement>();
+        var flowElements = new List<OpenXmlElement>();
 
         if ("always".Equals(styleAttributes!["page-break-before"], StringComparison.OrdinalIgnoreCase))
         {
@@ -78,7 +78,7 @@ class BlockElementExpression(IHtmlElement node) : PhrasingElementExpression(node
 
                 if (runs.Count > 0)
                 {
-                    flowElements.Add(CombineRuns(runs, paraProperties));
+                    flowElements.Add(CombineRuns(context, runs, paraProperties));
                     runs.Clear();
                 }
 
@@ -93,12 +93,12 @@ class BlockElementExpression(IHtmlElement node) : PhrasingElementExpression(node
         }
 
         if (runs.Count > 0)
-            flowElements.Add(CombineRuns(runs, paraProperties));
+            flowElements.Add(CombineRuns(context, runs, paraProperties));
 
         return flowElements;
     }
 
-    public override void CascadeStyles(OpenXmlCompositeElement element)
+    public override void CascadeStyles(OpenXmlElement element)
     {
         base.CascadeStyles(element);
         if (!paraProperties.HasChildren || element is not Paragraph paragraph)
@@ -162,6 +162,7 @@ class BlockElementExpression(IHtmlElement node) : PhrasingElementExpression(node
             paraProperties.Justification = new() { Val = JustificationValues.Left };
         }
 
+
         var styleBorder = styleAttributes.GetBorders();
         if (!styleBorder.IsEmpty)
         {
@@ -218,11 +219,13 @@ class BlockElementExpression(IHtmlElement node) : PhrasingElementExpression(node
     /// <summary>
     /// Mimics the behaviour of Html rendering when 2 consecutives runs are separated by a space
     /// </summary>
-    internal static Paragraph CombineRuns(IList<Run> runs, ParagraphProperties paraProperties)
+    internal static Paragraph CombineRuns(ParsingContext context, IList<Run> runs, ParagraphProperties paraProperties)
     {
         Paragraph p = new();
         if (paraProperties.HasChildren)
             p.ParagraphProperties = (ParagraphProperties) paraProperties.CloneNode(true);
+
+        context.CascadeStyles(p);
 
         if (runs.Count == 1)
         {

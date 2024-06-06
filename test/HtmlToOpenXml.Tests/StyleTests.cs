@@ -5,7 +5,7 @@ using DocumentFormat.OpenXml.Packaging;
 namespace HtmlToOpenXml.Tests
 {
     /// <summary>
-    /// Tests Bold, Italic, Underline, Strikethrough.
+    /// Tests on custom styling.
     /// </summary>
     [TestFixture]
     public class StyleTests : HtmlConverterTestBase

@@ -28,7 +28,7 @@ sealed class BlockQuoteExpression(IHtmlElement node) : BlockElementExpression(no
 {
 
     /// <inheritdoc/>
-    public override IEnumerable<OpenXmlCompositeElement> Interpret(ParsingContext context)
+    public override IEnumerable<OpenXmlElement> Interpret(ParsingContext context)
     {
         string? description;
         if (node.LocalName == TagNames.BlockQuote)

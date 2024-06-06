@@ -24,13 +24,15 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 sealed class TableExpression(IHtmlElement node) : PhrasingElementExpression(node)
 {
+    /// <summary>MS Word has this hard-limit.</summary>
+    internal const int MaxColumns = short.MaxValue;
     private readonly IHtmlTableElement tableNode = (IHtmlTableElement) node;
     private readonly Table table = new();
     private readonly TableProperties tableProperties = new();
 
 
     /// <inheritdoc/>
-    public override IEnumerable<OpenXmlCompositeElement> Interpret(ParsingContext context)
+    public override IEnumerable<OpenXmlElement> Interpret(ParsingContext context)
     {
         ComposeStyles(context);
         TableGrid grid;
@@ -41,7 +43,7 @@ sealed class TableExpression(IHtmlElement node) : PhrasingElementExpression(node
         if (columnCount == 0)
             return [];
 
-        grid.Append(GuessGridColumns(columnCount));
+        grid.Append(InterpretGridColumns(context, columnCount));
 
         var tableContext = context.CreateChild(this);
         foreach (var part in tableNode.AsTablePartEnumerable())
@@ -55,7 +57,7 @@ sealed class TableExpression(IHtmlElement node) : PhrasingElementExpression(node
             }
         }
 
-        var results = new List<OpenXmlCompositeElement> { table };
+        var results = new List<OpenXmlElement> { table };
 
         // Prepend or append the table caption if present
         if (tableNode.Caption != null)
@@ -72,13 +74,26 @@ sealed class TableExpression(IHtmlElement node) : PhrasingElementExpression(node
         return results;
     }
 
-    private IEnumerable<OpenXmlElement> GuessGridColumns(int columnCount)
+    private IEnumerable<GridColumn> InterpretGridColumns(ParsingContext context, int columnCount)
     {
         var columns = new List<GridColumn>(columnCount);
-        for (int c = 0; c < columnCount ; c++)
+
+        var colgroup = tableNode.Children.FirstOrDefault(n => n.LocalName == "colgroup");
+        // if colgroup tag is not found, maybe the table was misformed and they stand below the root level
+        colgroup ??= tableNode;
+
+        foreach (var col in colgroup.Children
+            .Where(n => n.LocalName == "col").Cast<IHtmlTableColumnElement>())
+        {
+            var expression = new TableColExpression(col);
+            columns.AddRange(expression.Interpret(context).Cast<GridColumn>());
+        }
+
+        for (int c = columns.Count; c < columnCount ; c++)
         {
             columns.Add(new GridColumn());
         }
+
         return columns;
     }
 
@@ -109,7 +124,7 @@ sealed class TableExpression(IHtmlElement node) : PhrasingElementExpression(node
                 columnCount = Math.Max(rows.Max(), columnCount);
         }
 
-        return columnCount;
+        return Math.Min(columnCount, MaxColumns);
     }
 
     protected override void ComposeStyles (ParsingContext context)
@@ -117,14 +132,14 @@ sealed class TableExpression(IHtmlElement node) : PhrasingElementExpression(node
         tableProperties.TableStyle = context.DocumentStyle.GetTableStyle(context.DocumentStyle.DefaultStyles.TableStyle);
 
         styleAttributes = node.GetStyles();
-        var unit = styleAttributes.GetUnit("width");
-        if (!unit.IsValid) unit = Unit.Parse(node.GetAttribute("width"));
-        if (!unit.IsValid) unit = new Unit(UnitMetric.Percent, 100);
+        var width = styleAttributes.GetUnit("width");
+        if (!width.IsValid) width = Unit.Parse(node.GetAttribute("width"));
+        if (!width.IsValid) width = new Unit(UnitMetric.Percent, 100);
 
-        switch (unit.Type)
+        switch (width.Type)
         {
             case UnitMetric.Percent:
-                if (unit.Value == 100)
+                if (width.Value == 100)
                 {
                     // Use Auto=0 instead of Pct=auto
                     // bug reported by scarhand (https://html2openxml.codeplex.com/workitem/12494)
@@ -133,13 +148,13 @@ sealed class TableExpression(IHtmlElement node) : PhrasingElementExpression(node
                 else
                 {
                     tableProperties.TableWidth = new() { Type = TableWidthUnitValues.Pct, 
-                        Width = (unit.Value * 50).ToString(CultureInfo.InvariantCulture) };
+                        Width = (width.Value * 50).ToString(CultureInfo.InvariantCulture) };
                 }
                 break;
             case UnitMetric.Point:
             case UnitMetric.Pixel:
                 tableProperties.TableWidth = new() { Type = TableWidthUnitValues.Dxa, 
-                    Width = unit.ValueInDxa.ToString(CultureInfo.InvariantCulture) };
+                    Width = width.ValueInDxa.ToString(CultureInfo.InvariantCulture) };
                 break;
         }
 

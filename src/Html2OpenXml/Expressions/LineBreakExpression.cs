@@ -21,13 +21,13 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 sealed class LineBreakExpression(IHtmlElement node) : HtmlElementExpression(node)
 {
-    public override void CascadeStyles(OpenXmlCompositeElement element)
+    public override void CascadeStyles(OpenXmlElement element)
     {
         throw new System.NotSupportedException();
     }
 
     /// <inheritdoc/>
-    public override IEnumerable<OpenXmlCompositeElement> Interpret (ParsingContext context)
+    public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
     {
         return [new Run(new Break())];
     }

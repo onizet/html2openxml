@@ -30,7 +30,7 @@ sealed class HyperlinkExpression(IHtmlElement node) : PhrasingElementExpression(
 
 
     /// <inheritdoc/>
-    public override IEnumerable<OpenXmlCompositeElement> Interpret (ParsingContext context)
+    public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
     {
         var h = CreateHyperlink(context);
         var childElements = Interpret(context.CreateChild(this), node.ChildNodes);

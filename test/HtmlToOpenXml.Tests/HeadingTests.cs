@@ -22,7 +22,7 @@ namespace HtmlToOpenXml.Tests
 
             var absNum = mainPart.NumberingDefinitionsPart?.Numbering
                 .Elements<AbstractNum>()
-                .Where(abs => abs.AbstractNumDefinitionName.Val == NumberingExpression.HeadingNumberingName)
+                .Where(abs => abs.AbstractNumDefinitionName.Val == NumberingExpressionBase.HeadingNumberingName)
                 .SingleOrDefault();
             Assert.That(absNum, Is.Not.Null);
 

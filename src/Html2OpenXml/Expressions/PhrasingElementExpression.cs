@@ -32,13 +32,13 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
 
 
     /// <inheritdoc/>
-    public override IEnumerable<OpenXmlCompositeElement> Interpret (ParsingContext context)
+    public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
     {
         ComposeStyles(context);
         return Interpret(context.CreateChild(this), node.ChildNodes);
     }
 
-    protected virtual IEnumerable<OpenXmlCompositeElement> Interpret (
+    protected virtual IEnumerable<OpenXmlElement> Interpret (
         ParsingContext context, IEnumerable<INode> childNodes)
     {
         foreach (var child in childNodes)
@@ -54,7 +54,7 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
         }
     }
 
-    public override void CascadeStyles(OpenXmlCompositeElement element)
+    public override void CascadeStyles(OpenXmlElement element)
     {
         if (!runProperties.HasChildren || element is not Run run)
             return;

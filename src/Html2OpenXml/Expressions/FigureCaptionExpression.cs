@@ -25,7 +25,7 @@ class FigureCaptionExpression(IHtmlElement node) : PhrasingElementExpression(nod
 {
 
     /// <inheritdoc/>
-    public override IEnumerable<OpenXmlCompositeElement> Interpret (ParsingContext context)
+    public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
     {
         ComposeStyles(context);
         var childElements = Interpret(context.CreateChild(this), node.ChildNodes);

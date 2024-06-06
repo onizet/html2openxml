@@ -61,14 +61,13 @@ abstract class HtmlDomExpression
             { TagNames.Pre, el => new PreElementExpression(el) },
             { TagNames.Q, el => new QuoteElementExpression(el) },
             { TagNames.Quote, el => new QuoteElementExpression(el) },
-            { TagNames.Table, el => new TableExpression(el) },
-            //{ TagNames.Caption, TableCaption },
             { TagNames.Span, el => new PhrasingElementExpression(el) },
             { TagNames.S, el => new PhrasingElementExpression(el, new Strike()) },
             { TagNames.Strike, el => new PhrasingElementExpression(el, new Strike()) },
             { TagNames.Strong, el => new PhrasingElementExpression(el, new Bold()) },
             { TagNames.Sub, el => new PhrasingElementExpression(el, new VerticalTextAlignment() { Val = VerticalPositionValues.Subscript }) },
             { TagNames.Sup, el => new PhrasingElementExpression(el, new VerticalTextAlignment() { Val = VerticalPositionValues.Superscript }) },
+            { TagNames.Table, el => new TableExpression(el) },
             { TagNames.U, el => new PhrasingElementExpression(el, new Underline() { Val = UnderlineValues.Single }) },
             { TagNames.Ul, el => new ListExpression(el) },
         };
@@ -80,7 +79,7 @@ abstract class HtmlDomExpression
     /// Process the interpretation of the Html node to its Word OpenXml equivalence.
     /// </summary>
     /// <param name="context">The parsing context.</param>
-    public abstract IEnumerable<OpenXmlCompositeElement> Interpret (ParsingContext context);
+    public abstract IEnumerable<OpenXmlElement> Interpret (ParsingContext context);
 
 
     /// <summary>

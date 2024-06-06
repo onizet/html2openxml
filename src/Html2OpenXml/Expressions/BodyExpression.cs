@@ -24,7 +24,7 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 sealed class BodyExpression(IHtmlElement node) : BlockElementExpression(node)
 {
-    public override IEnumerable<OpenXmlCompositeElement> Interpret(ParsingContext context)
+    public override IEnumerable<OpenXmlElement> Interpret(ParsingContext context)
     {
         MarkAllBookmarks();
 

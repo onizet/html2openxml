@@ -32,7 +32,7 @@ sealed class ImageExpression(IHtmlElement node) : HtmlElementExpression(node)
 
 
     /// <inheritdoc/>
-    public override IEnumerable<OpenXmlCompositeElement> Interpret (ParsingContext context)
+    public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
     {
         var drawing = CreateDrawing(context);
 
@@ -46,7 +46,7 @@ sealed class ImageExpression(IHtmlElement node) : HtmlElementExpression(node)
         return [run];
     }
 
-    public override void CascadeStyles(OpenXmlCompositeElement element)
+    public override void CascadeStyles(OpenXmlElement element)
     {
         throw new NotSupportedException();
     }
