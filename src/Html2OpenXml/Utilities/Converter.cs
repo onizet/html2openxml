@@ -15,7 +15,7 @@ using DocumentFormat.OpenXml.Wordprocessing;
 namespace HtmlToOpenXml;
 
 /// <summary>
-/// Provides some utilies methods for translating Http attributes to OpenXml elements.
+/// Provides some utilities methods for translating Http attributes to OpenXml elements.
 /// </summary>
 static class Converter
 {
@@ -212,7 +212,9 @@ static class Converter
         return new T() { 
             Val = border.Style,
             Color = border.Color.ToHexString(),
-            Size = (uint) border.Width.ValueInPoint * 2,
+            // according to MSDN,  sz=24 = 3 point
+            // https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.wordprocessing.tablecellborders
+            Size = (uint) Math.Round(border.Width.ValueInPoint * 8),
             Space = 1U
         };
     }
