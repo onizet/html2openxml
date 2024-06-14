@@ -11,6 +11,7 @@ namespace HtmlToOpenXml.Tests
     {
         [TestCase("<table><tr></tr></table>", Description = "Row with no cells")]
         [TestCase("<table></table>", Description = "No rows")]
+        [TestCase("<table><tbody></tbody><thead></thead><tfoot></tfoot></table>", Description = "No rows in any parts")]
         public void IgnoreEmptyTable(string html)
         {
             var elements = converter.Parse(html);
@@ -30,6 +31,22 @@ namespace HtmlToOpenXml.Tests
             Assert.That(cells.Count(), Is.EqualTo(1));
             Assert.That(cells.First().HasChild<Paragraph>(), Is.True);
             Assert.That(cells.First().Count(c => c is not TableCellProperties), Is.EqualTo(1));
+        }
+
+        [Test(Description = "Empty tfoot should be ignored")]
+        public void IgnoreEmptyTablePart()
+        {
+            // table parts should be reordered
+            var elements = converter.Parse(@"<table>
+                <tbody><tr><td>Cell 1.1</td></tr></tbody>
+                <tfoot></tfoot>
+            </table>");
+
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements[0], Is.TypeOf(typeof(Table)));
+
+            var rows = elements[0].Elements<TableRow>();
+            Assert.That(rows.Count(), Is.EqualTo(1));
         }
 
         [Test(Description = "Second row does not contains complete number of cells")]
@@ -227,6 +244,20 @@ namespace HtmlToOpenXml.Tests
             });
         }
 
+        [TestCase("right", "right")]
+        [TestCase("", "center")]
+        public void ParseTableCaptionAlign(string alignment, string expectedAlign)
+        {
+            var elements = converter.Parse(@$"<table align=""center"">
+                    <caption align=""{alignment}"">Some table caption</caption>
+                    <tr><td>Cell 1.1</td></tr>
+                </table>");
+
+            Assert.That(elements, Has.Count.EqualTo(2));
+            var caption = (Paragraph) elements[1];
+            Assert.That(caption.ParagraphProperties?.Justification?.Val?.ToString(), Is.EqualTo(expectedAlign));
+        }
+
         [Test]
         public void IgnoreEmptyTableCaption()
         {
@@ -281,11 +312,16 @@ namespace HtmlToOpenXml.Tests
         public void ParseRowStyle()
         {
             var elements = converter.Parse(@$"<table>
-                    <tr style='background-color:silver;'><td>Cell</td></tr>
+                    <tr style='background-color:silver;height:120px'><td>Cell</td></tr>
                 </table>");
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements, Has.All.TypeOf<Table>());
-            var cell = elements[0].GetFirstChild<TableRow>()?.GetFirstChild<TableCell>();
+
+            var row = elements[0].GetFirstChild<TableRow>();
+            Assert.That(row, Is.Not.Null);
+            Assert.That(row.TableRowProperties.GetFirstChild<TableRowHeight>()?.Val?.Value, Is.EqualTo(1800));
+
+            var cell = row.GetFirstChild<TableCell>();
             Assert.That(cell, Is.Not.Null);
             Assert.That(cell.TableCellProperties, Is.Not.Null);
             Assert.That(cell.TableCellProperties.Shading?.Fill?.Value, Is.EqualTo("C0C0C0"));
@@ -336,23 +372,35 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test]
-        public void ParseCol()
+        public void ParseColstyle()
         {
             var elements = converter.Parse(@$"<table>
                     <colgroup>
                         <col style=""width:100px""/>
-                        <col style=""width:50px""/>
+                        <col style=""width:50px;border:3px double #000000""/>
                     </colgroup>
                     <tr><td>Cell 1.1</td><td>Cell 1.2</td></tr>
                 </table>");
-            
+
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements, Has.All.TypeOf<Table>());
             var columns = elements[0].GetFirstChild<TableGrid>()?.Elements<GridColumn>();
             Assert.That(columns, Is.Not.Null);
-            Assert.That(columns.Count(), Is.EqualTo(2));
-            Assert.That(columns.First().Width?.Value, Is.EqualTo("1500"));
-            Assert.That(columns.Last().Width?.Value, Is.EqualTo("750"));
+            Assert.Multiple(() =>
+            {
+                Assert.That(columns.Count(), Is.EqualTo(2));
+                Assert.That(columns.First().Width?.Value, Is.EqualTo("1500"));
+                Assert.That(columns.Last().Width?.Value, Is.EqualTo("750"));
+            });
+
+            var cells = elements[0].GetFirstChild<TableRow>().Elements<TableCell>();
+            Assert.That(cells, Is.Not.Null);
+            Assert.Multiple(() =>
+            {
+                Assert.That(cells.Count(), Is.EqualTo(2));
+                Assert.That(cells.First().TableCellProperties?.TableCellBorders, Is.Null);
+                Assert.That(cells.Last().TableCellProperties?.TableCellBorders, Is.Not.Null);
+            });
         }
 
         [Test]
@@ -360,20 +408,57 @@ namespace HtmlToOpenXml.Tests
         {
             var elements = converter.Parse(@$"<table>
                     <colgroup>
-                        <col style=""width:100px"" span=""2"" />
+                        <col style=""width:100px"" span=""2"" align=""right"" />
                         <col style=""width:50px""/>
                     </colgroup>
                     <tr><td>Cell 1.1</td><td>Cell 1.2</td><td>Cell 1.3</td></tr>
                 </table>");
-            
+
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements, Has.All.TypeOf<Table>());
             var columns = elements[0].GetFirstChild<TableGrid>()?.Elements<GridColumn>();
             Assert.That(columns, Is.Not.Null);
-            Assert.That(columns.Count(), Is.EqualTo(3));
-            Assert.That(columns.First().Width?.Value, Is.EqualTo("1500"));
-            Assert.That(columns.ElementAt(1).Width?.Value, Is.EqualTo("1500"));
-            Assert.That(columns.Last().Width?.Value, Is.EqualTo("750"));
+            Assert.Multiple(() =>
+            {
+                Assert.That(columns.Count(), Is.EqualTo(3));
+                Assert.That(columns.First().Width?.Value, Is.EqualTo("1500"));
+                Assert.That(columns.ElementAt(1).Width?.Value, Is.EqualTo("1500"));
+                Assert.That(columns.Last().Width?.Value, Is.EqualTo("750"));
+            });
+
+            var cells = elements[0].GetFirstChild<TableRow>().Elements<TableCell>();
+            Assert.That(cells, Is.Not.Null);
+            Assert.Multiple(() =>
+            {
+                Assert.That(cells.Count(), Is.EqualTo(3));
+                Assert.That(cells.First().GetFirstChild<Paragraph>()?.ParagraphProperties?.Justification?.Val?.Value, Is.EqualTo(JustificationValues.Right));
+                Assert.That(cells.ElementAt(1).GetFirstChild<Paragraph>()?.ParagraphProperties?.Justification?.Val?.Value, Is.EqualTo(JustificationValues.Right));
+                Assert.That(cells.Last().GetFirstChild<Paragraph>()?.ParagraphProperties?.Justification?.Val, Is.Null);
+            });
+        }
+
+        [Test(Description = "Table row contains more cell than specified col")]
+        public void ParseIncompleteColStyle()
+        {
+            Assert.DoesNotThrow(() => converter.Parse(@$"<table>
+                    <colgroup>
+                        <col style=""width:100px""/>
+                    </colgroup>
+                    <tr><td>Cell 1.1</td><td>Cell 1.2</td></tr>
+                </table>"));
+        }
+
+        [Test()]
+        public void ParseCellText()
+        {
+            var elements = converter.Parse(@$"<table>
+                    <tr><td>Cell <b>1</b>.<i>1</i></td></tr>
+                </table>");
+
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Table>());
+            var columns = elements[0].GetFirstChild<TableGrid>()?.Elements<GridColumn>();
+            Assert.That(columns?.Count(), Is.EqualTo(1));
         }
     }
 }

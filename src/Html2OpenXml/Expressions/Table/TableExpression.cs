@@ -29,6 +29,8 @@ sealed class TableExpression(IHtmlElement node) : PhrasingElementExpression(node
     private readonly IHtmlTableElement tableNode = (IHtmlTableElement) node;
     private readonly Table table = new();
     private readonly TableProperties tableProperties = new();
+    private TableColExpression[]? colStyleExpressions;
+    private int colIndex;
 
 
     /// <inheritdoc/>
@@ -74,9 +76,13 @@ sealed class TableExpression(IHtmlElement node) : PhrasingElementExpression(node
         return results;
     }
 
+    /// <summary>
+    /// Parse the <c>col</c> tags, defining some column styles.
+    /// </summary>
     private IEnumerable<GridColumn> InterpretGridColumns(ParsingContext context, int columnCount)
     {
         var columns = new List<GridColumn>(columnCount);
+        var colStyleExpressions = new List<TableColExpression>(columnCount);
 
         var colgroup = tableNode.Children.FirstOrDefault(n => n.LocalName == "colgroup");
         // if colgroup tag is not found, maybe the table was misformed and they stand below the root level
@@ -86,7 +92,11 @@ sealed class TableExpression(IHtmlElement node) : PhrasingElementExpression(node
             .Where(n => n.LocalName == "col").Cast<IHtmlTableColumnElement>())
         {
             var expression = new TableColExpression(col);
-            columns.AddRange(expression.Interpret(context).Cast<GridColumn>());
+            foreach (var child in expression.Interpret(context).Cast<GridColumn>())
+            {
+                columns.Add(child);
+                colStyleExpressions.Add(expression);
+            }
         }
 
         for (int c = columns.Count; c < columnCount ; c++)
@@ -94,7 +104,33 @@ sealed class TableExpression(IHtmlElement node) : PhrasingElementExpression(node
             columns.Add(new GridColumn());
         }
 
+        if (colStyleExpressions.Count > 0)
+        {
+            this.colStyleExpressions = [.. colStyleExpressions];
+        }
+
         return columns;
+    }
+
+    public override void CascadeStyles(OpenXmlElement element)
+    {
+        base.CascadeStyles(element);
+
+        if (colStyleExpressions != null)
+        {
+            if (element is TableRow)
+            {
+                colIndex = 0;
+            }
+
+            if (colIndex < colStyleExpressions.Length)
+                colStyleExpressions![colIndex].CascadeStyles(element);
+
+            if (element is TableCell)
+            {
+                colIndex++;
+            }
+        }
     }
 
     /// <summary>

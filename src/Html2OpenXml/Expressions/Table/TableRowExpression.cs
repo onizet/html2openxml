@@ -53,7 +53,7 @@ sealed class TableRowExpression : TableElementExpressionBase
         if (cells.Count == 0)
             return [];
 
-        var childContext = context.CreateChild(this);
+        var rowContext = context.CreateChild(this);
         var tableRow = new TableRow(rowProperties);
         int occupiedColumnSpace = 0, colIndex = 0;
         foreach (var cell in cells)
@@ -73,9 +73,9 @@ sealed class TableRowExpression : TableElementExpressionBase
             }
 
             var expression = new TableCellExpression(cell);
-            foreach (var element in expression.Interpret(childContext))
+            foreach (var element in expression.Interpret(rowContext))
             {
-                context.CascadeStyles(element);
+                rowContext.CascadeStyles(element);
                 tableRow.AppendChild(element);
             }
 
@@ -96,7 +96,6 @@ sealed class TableRowExpression : TableElementExpressionBase
         }
 
         rowSpans.UnionWith(carriedRowSpans);
-        context.CascadeStyles(tableRow);
         return [tableRow];
     }
 

@@ -45,7 +45,6 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : TableElementExpre
             cellProperties.VerticalMerge = new() { Val = MergedCellValues.Restart };
         }
 
-        context.CascadeStyles(cell);
         cell.Append(childElements);
         return [cell];
     }

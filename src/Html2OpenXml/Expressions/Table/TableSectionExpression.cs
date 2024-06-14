@@ -40,7 +40,7 @@ sealed class TableSectionExpression(IHtmlTableSectionElement node, int columCoun
 
             foreach (var element in expression.Interpret(childContext))
             {
-                context.CascadeStyles(element);
+                childContext.CascadeStyles(element);
                 rowSpans = expression.RowSpans;
 
                 yield return element;
