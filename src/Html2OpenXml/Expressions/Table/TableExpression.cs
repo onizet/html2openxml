@@ -50,7 +50,7 @@ sealed class TableExpression(IHtmlElement node) : PhrasingElementExpression(node
         var tableContext = context.CreateChild(this);
         foreach (var part in tableNode.AsTablePartEnumerable())
         {
-            var expression = new TableSectionExpression(part, columnCount);
+            var expression = new TablePartExpression(part, columnCount);
 
             foreach (var element in expression.Interpret(tableContext))
             {
@@ -229,8 +229,21 @@ sealed class TableExpression(IHtmlElement node) : PhrasingElementExpression(node
             tableProperties.TableCellMarginDefault = cellMargin;
         }
 
+        var styleBorder = styleAttributes.GetBorders();
+
+        if (!styleBorder.IsEmpty)
+        {
+            var tableBorders = new TableBorders {
+                TopBorder = Converter.ToBorder<TopBorder>(styleBorder.Top),
+                LeftBorder = Converter.ToBorder<LeftBorder>(styleBorder.Left),
+                RightBorder = Converter.ToBorder<RightBorder>(styleBorder.Right),
+                BottomBorder = Converter.ToBorder<BottomBorder>(styleBorder.Bottom)
+            };
+
+            tableProperties.TableBorders = tableBorders;
+        }
         // is the border=0? If so, we remove the border regardless the style in use
-        if (tableNode.Border == 0)
+        else if (tableNode.Border == 0)
         {
             tableProperties.TableBorders = new TableBorders() {
                 TopBorder = new TopBorder { Val = BorderValues.None },
@@ -265,21 +278,6 @@ sealed class TableExpression(IHtmlElement node) : PhrasingElementExpression(node
                     InsideHorizontalBorder = new() { Val = BorderValues.Single, Size = borderSize },
                     InsideVerticalBorder = new() { Val = BorderValues.Single, Size = borderSize }
                 };
-            }
-        }
-        else
-        {
-            var styleBorder = styleAttributes.GetBorders();
-            if (!styleBorder.IsEmpty)
-            {
-                var tableBorders = new TableBorders {
-                    LeftBorder = Converter.ToBorder<LeftBorder>(styleBorder.Left),
-                    RightBorder = Converter.ToBorder<RightBorder>(styleBorder.Right),
-                    TopBorder = Converter.ToBorder<TopBorder>(styleBorder.Top),
-                    BottomBorder = Converter.ToBorder<BottomBorder>(styleBorder.Bottom)
-                };
-
-                tableProperties.TableBorders = tableBorders;
             }
         }
     }

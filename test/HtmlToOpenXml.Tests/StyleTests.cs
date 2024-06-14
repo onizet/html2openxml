@@ -59,6 +59,40 @@ namespace HtmlToOpenXml.Tests
             Assert.That(paragraphProperties.ParagraphStyleId.Val.Value, Is.EqualTo("CustomStyle1"));
         }
 
+        [Test(Description = "TableNormal style define outside borders")]
+        public void ParseTableCustomClass()
+        {
+            using var generatedDocument = new MemoryStream();
+            using (var buffer = ResourceHelper.GetStream("Resources.DocWithCustomStyle.docx"))
+                buffer.CopyTo(generatedDocument);
+
+            generatedDocument.Position = 0L;
+            using WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true);
+            MainDocumentPart mainPart = package.MainDocumentPart;
+            HtmlConverter converter = new HtmlConverter(mainPart);
+
+            var elements = converter.Parse("<table class='TableNormal' border='2'><tr><td>Lorem Ipsum</td></tr></table>");
+            Assert.That(elements, Is.Not.Empty);
+            var tableProperties = elements[0].GetFirstChild<TableProperties>();
+            Assert.That(tableProperties, Is.Not.Null);
+            Assert.Multiple(() =>
+            {
+                Assert.That(tableProperties.TableStyle, Is.Not.Null);
+                Assert.That(tableProperties.TableBorders, Is.Not.Null);
+            });
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(tableProperties.TableStyle.Val.Value, Is.EqualTo("TableNormal"));
+                Assert.That(tableProperties.TableBorders.LeftBorder?.Val?.Value, Is.EqualTo(BorderValues.None));
+                Assert.That(tableProperties.TableBorders.TopBorder?.Val?.Value, Is.EqualTo(BorderValues.None));
+                Assert.That(tableProperties.TableBorders.RightBorder?.Val?.Value, Is.EqualTo(BorderValues.None));
+                Assert.That(tableProperties.TableBorders.BottomBorder?.Val?.Value, Is.EqualTo(BorderValues.None));
+                Assert.That(tableProperties.TableBorders.InsideHorizontalBorder?.Val?.Value, Is.EqualTo(BorderValues.Single));
+                Assert.That(tableProperties.TableBorders.InsideVerticalBorder?.Val?.Value, Is.EqualTo(BorderValues.Single));
+            });
+        }
+
         [Test]
         public void ChangeDefaultStyle()
         {

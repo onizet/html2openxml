@@ -18,7 +18,7 @@ namespace HtmlToOpenXml.Expressions;
 /// <summary>
 /// Process the parsing of a <c>tbody</c>, <c>thead</c> or <c>tfoot</c> element.
 /// </summary>
-sealed class TableSectionExpression(IHtmlTableSectionElement node, int columCount) : TableElementExpressionBase(node)
+sealed class TablePartExpression(IHtmlTableSectionElement node, int columCount) : TableElementExpressionBase(node)
 {
     private readonly IHtmlTableSectionElement tableSectionNode = node;
     private readonly int columCount = columCount;

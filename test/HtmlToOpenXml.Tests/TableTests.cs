@@ -213,6 +213,92 @@ namespace HtmlToOpenXml.Tests
             Assert.That(cell?.TableCellProperties?.TableCellVerticalAlignment?.Val?.Value, Is.EqualTo(TableVerticalAlignmentValues.Center));
         }
 
+        [Test]
+        public void ParseCellPadding()
+        {
+            var elements = converter.Parse(@$"<table cellpadding=""2"">
+                    <tr><td>Cell 1.1</td></tr>
+                </table>");
+             Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Table>());
+            var cellMargin = elements[0].GetFirstChild<TableProperties>()?.TableCellMarginDefault;
+            Assert.That(cellMargin, Is.Not.Null);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(cellMargin.TableCellLeftMargin?.Width?.Value, Is.EqualTo(29));
+                Assert.That(cellMargin.TableCellRightMargin?.Width?.Value, Is.EqualTo(29));
+                Assert.That(cellMargin.TopMargin?.Width?.Value, Is.EqualTo("29"));
+                Assert.That(cellMargin.BottomMargin?.Width?.Value, Is.EqualTo("29"));
+            });
+        }
+
+        [Test]
+        public void ParseCellSpacing()
+        {
+            var elements = converter.Parse(@$"<table cellspacing=""2"">
+                    <tr><td>Cell 1.1</td></tr>
+                </table>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Table>());
+            var cellSpacing = elements[0].GetFirstChild<TableProperties>()?.TableCellSpacing;
+            Assert.That(cellSpacing?.Type?.Value, Is.EqualTo(TableWidthUnitValues.Dxa));
+            Assert.That(cellSpacing?.Width?.Value, Is.EqualTo("29"));
+        }
+
+        [TestCaseSource(nameof(BorderWidthCases))]
+        public void ParseBorders(string borderAtrribute, IEnumerable<string> expectedBorderValue, IEnumerable<uint?> expectedBorderWidth)
+        {
+            // we specify a style which doesn't handle borders
+            converter.HtmlStyles.AddStyle(new Style {
+                StyleId = "NoStyle",
+                Type = StyleValues.Table
+            }); 
+            var elements = converter.Parse($@"<table {borderAtrribute} class='NoStyle'>
+                <tr><td>Cell 1 </td></tr>
+                </table>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Table>());
+            var borders = elements[0].GetFirstChild<TableProperties>()?.TableBorders;
+            Assert.That(borders, Is.Not.Null);
+            Assert.That(borders.HasChild<BorderType>(), Is.True);
+            Assert.That(new string[] { borders.TopBorder?.Val?.InnerText,
+                borders.LeftBorder?.Val?.InnerText,
+                borders.RightBorder?.Val?.InnerText,
+                borders.BottomBorder?.Val?.InnerText,
+                borders.InsideHorizontalBorder?.Val?.InnerText,
+                borders.InsideVerticalBorder?.Val?.InnerText },
+                Is.EquivalentTo(expectedBorderValue));
+
+            if (expectedBorderWidth is null)
+            {
+                Assert.That(borders.Elements<BorderType>().Any(b => b.Size?.HasValue == true), Is.False);
+            }
+            else
+            {
+                Assert.That(new uint?[] { borders.TopBorder?.Size?.Value,
+                    borders.LeftBorder?.Size?.Value,
+                    borders.RightBorder?.Size?.Value,
+                    borders.BottomBorder?.Size?.Value,
+                    borders.InsideHorizontalBorder?.Size?.Value,
+                    borders.InsideVerticalBorder?.Size?.Value },
+                    Is.EquivalentTo(expectedBorderWidth));
+            }
+        }
+
+        static readonly object[] BorderWidthCases =
+        [
+            // Negative border should be considered as zero
+            new object[] { "border='-1'", Enumerable.Repeat("none", 6), null },
+            new object[] { "border='0'", Enumerable.Repeat("none", 6), null },
+            new object[] { "border='1'",
+                new string[] { "none", "none", "none", "none", "single", "single" }, 
+                new uint?[] { null, null, null, null, 14, 14 } },
+            new object[] { "style='border:1px;border-bottom:3px dashed'",
+                new string[] { "single", "single", "single", "dashed", null, null },
+                new uint?[] { 6, 6, 6, 18, null, null } }
+        ];
+
         [TestCase("above", 0, 1)]
         [TestCase("below", 1, 0)]
         public void ParseTableCaption(string position, int captionPos, int tablePos)
@@ -448,17 +534,18 @@ namespace HtmlToOpenXml.Tests
                 </table>"));
         }
 
-        [Test()]
+        [Test(Description = "Cell with multiple runs")]
         public void ParseCellText()
         {
             var elements = converter.Parse(@$"<table>
-                    <tr><td>Cell <b>1</b>.<i>1</i></td></tr>
+                    <tr><td>Cell <div><b>1.1</b></div></td></tr>
                 </table>");
 
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements, Has.All.TypeOf<Table>());
-            var columns = elements[0].GetFirstChild<TableGrid>()?.Elements<GridColumn>();
-            Assert.That(columns?.Count(), Is.EqualTo(1));
+            var cells = elements[0].GetFirstChild<TableRow>().Elements<TableCell>();
+            Assert.That(cells?.Count(), Is.EqualTo(1));
+            Assert.That(cells.First().Elements<Paragraph>().Count(), Is.EqualTo(2));
         }
     }
 }
