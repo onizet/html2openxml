@@ -123,4 +123,11 @@ For 50 years, <b>WWF</b> has been protecting the future of nature. The world's l
             Assert.That(paragraph.ParagraphProperties?.ParagraphStyleId?.Val?.Value, Is.EqualTo("CustomIntenseQuoteStyle"));
         }
     }
+
+    [Test(Description = "Parser should consider the last occurence of a style")]
+    public void ParseDuplicateStyle()
+    {
+        var styleAttributes = HtmlAttributeCollection.ParseStyle("color:red;color:blue");
+        Assert.That(styleAttributes["color"], Is.EqualTo("blue"));
+    }
 }
