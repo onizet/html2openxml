@@ -99,7 +99,11 @@ public sealed class DataUri
         else
         {
             // the <data> represents some text (like html snippet) and must be decoded.
+#if NET462
             string? raw = HttpUtility.UrlDecode(match.Groups["data"].Value)!;
+#else
+            string? raw = System.Web.HttpUtility.UrlDecode(match.Groups["data"].Value)!;
+#endif
             try
             {
                 // we convert back to UTF-8 for easier processing later and to have a "referential" encoding

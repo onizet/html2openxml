@@ -29,7 +29,7 @@ static class HttpUtility
 
     static class HtmlEntities
     {
-        private static string[] entitiesList = new string[] { 
+        private static readonly string[] entitiesList = [ 
             "\"-quot", "&-amp", "<-lt", ">-gt", "\x00a0-nbsp", "\x00a1-iexcl", "\x00a2-cent", "\x00a3-pound", "\x00a4-curren", "\x00a5-yen", "\x00a6-brvbar", "\x00a7-sect", "\x00a8-uml", "\x00a9-copy", "\x00aa-ordf", "\x00ab-laquo", 
             "\x00ac-not", "\x00ad-shy", "\x00ae-reg", "\x00af-macr", "\x00b0-deg", "\x00b1-plusmn", "\x00b2-sup2", "\x00b3-sup3", "\x00b4-acute", "\x00b5-micro", "\x00b6-para", "\x00b7-middot", "\x00b8-cedil", "\x00b9-sup1", "\x00ba-ordm", "\x00bb-raquo", 
             "\x00bc-frac14", "\x00bd-frac12", "\x00be-frac34", "\x00bf-iquest", "\x00c0-Agrave", "\x00c1-Aacute", "\x00c2-Acirc", "\x00c3-Atilde", "\x00c4-Auml", "\x00c5-Aring", "\x00c6-AElig", "\x00c7-Ccedil", "\x00c8-Egrave", "\x00c9-Eacute", "\x00ca-Ecirc", "\x00cb-Euml", 
@@ -46,7 +46,7 @@ static class HttpUtility
             "∈-isin", "∉-notin", "∋-ni", "∏-prod", "∑-sum", "−-minus", "∗-lowast", "√-radic", "∝-prop", "∞-infin", "∠-ang", "∧-and", "∨-or", "∩-cap", "∪-cup", "∫-int", 
             "∴-there4", "∼-sim", "≅-cong", "≈-asymp", "≠-ne", "≡-equiv", "≤-le", "≥-ge", "⊂-sub", "⊃-sup", "⊄-nsub", "⊆-sube", "⊇-supe", "⊕-oplus", "⊗-otimes", "⊥-perp", 
             "⋅-sdot", "⌈-lceil", "⌉-rceil", "⌊-lfloor", "⌋-rfloor", "〈-lang", "〉-rang", "◊-loz", "♠-spades", "♣-clubs", "♥-hearts", "♦-diams"
-            };
+            ];
         private static Dictionary<string, char>? entitiesLookupTable;
         private static readonly object SyncObject = new();
 
@@ -67,8 +67,7 @@ static class HttpUtility
                 }
             }
 
-            char ch;
-            if (!entitiesLookupTable.TryGetValue(entity, out ch)) return '\0';
+            if (!entitiesLookupTable.TryGetValue(entity, out char ch)) return '\0';
             return ch;
         }
     }
@@ -90,9 +89,9 @@ static class HttpUtility
 
     /// <summary>
     /// Converts a string that has been HTML-encoded into a decoded string, and sends
-    /// the decoded string to a System.IO.TextWriter output stream.
+    /// the decoded string to a <see cref="TextWriter"/> output stream.
     /// </summary>
-    public static void HtmlDecode(string? s, TextWriter output)
+    private static void HtmlDecode(string? s, TextWriter output)
     {
         if (s == null) return;
         if (s.IndexOf('&') < 0) output.Write(s);
