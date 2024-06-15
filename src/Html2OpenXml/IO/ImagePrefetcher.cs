@@ -86,6 +86,9 @@ namespace HtmlToOpenXml.IO
         private async Task<HtmlImageInfo?> DownloadRemoteImage(string src, CancellationToken cancellationToken)
         {
             Uri imageUri = new Uri(src, UriKind.RelativeOrAbsolute);
+            if (imageUri.IsAbsoluteUri && !resourceLoader.SupportsProtocol(imageUri.Scheme))
+                return null;
+
             Resource? response;
 
             response = await resourceLoader.FetchAsync(imageUri, cancellationToken).ConfigureAwait(false);

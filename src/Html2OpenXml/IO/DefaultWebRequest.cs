@@ -40,7 +40,7 @@ public class DefaultWebRequest : IWebRequest
     /// <summary>
     /// Initialize a new instance of the <see cref="DefaultWebRequest"/> class.
     /// </summary>
-    public DefaultWebRequest() : this(DefaultHttp) { }
+    public DefaultWebRequest(ILogger? logger = null) : this(DefaultHttp, logger) { }
 
     /// <summary>
     /// Initialize a new instance of the <see cref="DefaultWebRequest"/> class with
@@ -56,16 +56,11 @@ public class DefaultWebRequest : IWebRequest
     }
 
     /// <inheritdoc/>
-    public virtual void Dispose()
-    {
-    }
-
-    /// <inheritdoc/>
     public virtual Task<Resource?> FetchAsync(Uri requestUri, CancellationToken cancellationToken)
     {
         if (!requestUri.IsAbsoluteUri && BaseImageUrl != null)
         {
-            requestUri = new Uri(BaseImageUrl, requestUri);
+            requestUri = UrlCombine(BaseImageUrl, requestUri.OriginalString);
         }
 
         if (requestUri.IsFile)
@@ -141,6 +136,24 @@ public class DefaultWebRequest : IWebRequest
     /// <inheritdoc/>
     public virtual bool SupportsProtocol(string protocol)
         => SupportedProtocols.Contains(protocol);
+
+    /// <summary>
+    /// Combine two URIs.
+    /// </summary>
+    /// <param name="baseUrl">The absolute base uri</param>
+    /// <param name="path">The relative uri</param>
+    private static Uri UrlCombine(Uri baseUrl, string path)
+    {
+        /* `new Uri(Uri baseUri, string relativeUri)` is counter intuitive.
+         Uri baseUri = new Uri("https://www.example.com/api");
+         Uri result = new Uri(baseUri, "v1/helloworld");
+         ---> https://www.example.com/v1/helloworld (missing the /api)
+        */
+        string url1 = baseUrl.AbsoluteUri.TrimEnd('/', '\\');
+        path = path.TrimStart('/', '\\');
+
+        return new Uri(string.Format("{0}/{1}", url1, path), UriKind.Absolute);
+    }
 
     /// <summary>
     /// Gets or sets the base Uri used to automaticaly resolve relative images 

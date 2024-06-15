@@ -43,20 +43,47 @@ namespace HtmlToOpenXml.Tests
             AssertIsImg(elements[0]);
         }
 
-        [Test]
-        public void ParseIgnoreEmptyImg()
+        [TestCase("<img alt='Smiley face' width='42' height='42'>", Description = "Empty image")]
+        [TestCase("<img src='tcp://192.168.0.1:53/attach.jpg'>", Description = "Unsupported protocol")]
+        public void IgnoreImage(string html)
         {
-            var elements = converter.Parse(@"<img alt='Smiley face' width='42' height='42'>");
+            var elements = converter.Parse(html);
             Assert.That(elements, Is.Empty);
         }
 
         [Test]
-        public void ParseSkippedImgManualProvisioning()
+        public void SkippedImgManualProvisioning()
         {
             converter = new HtmlConverter(mainPart, new LocalWebRequest());
 
             var elements = converter.Parse(@$"<img src='/images/{Guid.NewGuid()}.png'>");
             Assert.That(elements, Is.Empty);
+        }
+
+        [Test(Description = "Reading local file containing a space in the name")]
+        public async Task LoadLocalImage()
+        {
+            string filepath = Path.Combine(TestContext.CurrentContext.WorkDirectory, @"html2openxml copy.jpg");
+
+            using var resourceStream = ResourceHelper.GetStream("Resources.html2openxml.jpg");
+            using (var fileStream = File.OpenWrite(filepath))
+                await resourceStream.CopyToAsync(fileStream);
+
+            var localUri = "file:///" + filepath.TrimStart('/').Replace(" ", "%20");
+            var elements = await converter.Parse($"<img src='{localUri}'>", CancellationToken.None);
+            Assert.That(elements.Count(), Is.EqualTo(1));
+            AssertIsImg(elements.First());
+        }
+
+        [Test(Description = "Reading local file containing a space in the name")]
+        public async Task LoadRemoteImage_BaseUri()
+        {
+            converter = new HtmlConverter(mainPart, new IO.DefaultWebRequest() { 
+                BaseImageUrl = new Uri("http://github.com/onizet/html2openxml")
+            });
+            var elements = await converter.Parse($"<img src='/blob/dev/icon.png'>", CancellationToken.None);
+            Assert.That(elements, Is.Not.Empty);
+            AssertIsImg(elements.First());
         }
 
         private void AssertIsImg (OpenXmlCompositeElement elements)

@@ -9,11 +9,11 @@ namespace HtmlToOpenXml.Tests
     [TestFixture]
     public class DataUriTests
     {
-        [Test]
-        public void ParseInline()
+        [TestCase("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==", Description = "red dot")]
+        [TestCase("data:text/html,%3Ch1%3EHello%2C%20World%21%3C%2Fh1%3E")]
+        [TestCase("data:text/plain;charset=UTF-8,the%20data:1234,5678")]
+        public void ParseInline(string uri)
         {
-            // red dot
-            string uri = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==";
             DataUri.TryCreate(uri, out DataUri result);
             Assert.That(result, Is.Not.Null);
         }
@@ -65,6 +65,14 @@ Wilba3ihB6iNAufyoltLaZw8tvFIw6FkBNSgADA4FLRRRRRRRX//2Q==
 ";
             DataUri.TryCreate(uri, out DataUri result);
             Assert.That(result, Is.Not.Null);
+        }
+
+        [TestCase("data:text/plain;charset=utf-123,the%20data:1234,5678")]
+        [TestCase("data:image/png;base64,abc")]
+        public void ParseInvalid(string uri)
+        {
+            DataUri.TryCreate(uri, out DataUri result);
+            Assert.That(result, Is.Null);
         }
     }
 }

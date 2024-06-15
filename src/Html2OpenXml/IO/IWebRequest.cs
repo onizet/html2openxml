@@ -21,7 +21,7 @@ namespace HtmlToOpenXml.IO;
 /// resources.
 /// The expected protocols to support are: http, https and file.
 /// </summary>
-public interface IWebRequest : IDisposable
+public interface IWebRequest
 {
     /// <summary>
     /// Performs an asynchronous request that can be cancelled.
