@@ -79,6 +79,9 @@ sealed class RowSpanCollection : IEnumerable<KeyValuePair<int, RowSpanCollection
         return this.GetEnumerator();
     }
 
+    /// <summary>
+    /// Iterate through the column indexes of carried row span.
+    /// </summary>
     public IEnumerable<int> Columns
     {
         get => spans.Keys;

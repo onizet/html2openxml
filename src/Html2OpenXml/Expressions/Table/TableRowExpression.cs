@@ -55,20 +55,20 @@ sealed class TableRowExpression : TableElementExpressionBase
 
         var rowContext = context.CreateChild(this);
         var tableRow = new TableRow(rowProperties);
-        int occupiedColumnSpace = 0, colIndex = 0;
+        int colIndex = 0;
         foreach (var cell in cells)
         {
             // this is the cell we have inserted ourselves for carrying over the rowSpan
             if (cell == null)
             {
-                int colSpan = carriedRowSpans.Decrement(colIndex++);
+                int colSpan = carriedRowSpans.Decrement(colIndex);
                 var mergedCell = TableCellExpression.CreateEmpty(
                     new VerticalMerge() { Val = MergedCellValues.Continue }
                 );
                 if (colSpan > 1) mergedCell.TableCellProperties!.GridSpan = new() { Val = colSpan };
                 tableRow.AppendChild(mergedCell);
 
-                occupiedColumnSpace += colSpan;
+                colIndex += colSpan;
                 continue;
             }
 
@@ -79,18 +79,17 @@ sealed class TableRowExpression : TableElementExpressionBase
                 tableRow.AppendChild(element);
             }
 
-            // The space effectively occupied by this cell.
-            occupiedColumnSpace += Math.Max(cell.ColumnSpan, 1);
-
             if (TableCellExpression.IsValidRowSpan(cell.RowSpan))
             {
                 rowSpans.Add(colIndex, cell.RowSpan, cell.ColumnSpan);
             }
-            colIndex++;
+
+            // The space effectively occupied by this cell.
+            colIndex += cell.ColumnSpan;
         }
 
         // if the row is not complete, create empty cells
-        if (occupiedColumnSpace < columCount)
+        if (colIndex < columCount)
         {
             tableRow.AppendChild(TableCellExpression.CreateEmpty());
         }
