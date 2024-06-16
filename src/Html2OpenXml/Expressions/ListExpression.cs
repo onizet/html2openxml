@@ -22,7 +22,7 @@ namespace HtmlToOpenXml.Expressions;
 /// <summary>
 /// Process the ordered <c>ol</c> and unordered <c>ul</c> list.
 /// </summary>
-sealed class ListExpression(IHtmlElement node) : NumberingExpression(node)
+sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 {
 #if NET5_0_OR_GREATER
     readonly record struct ListContext(string Name, int AbsNumId, int InstanceId, int Level);
@@ -47,7 +47,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpression(node)
     private ParagraphStyleId? listParagraphStyleId;
 
 
-    public override IEnumerable<OpenXmlCompositeElement> Interpret(ParsingContext context)
+    public override IEnumerable<OpenXmlElement> Interpret(ParsingContext context)
     {
         var liNodes = node.Children.Where(n => n.LocalName == "li");
         if (!liNodes.Any()) yield break;
@@ -74,7 +74,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpression(node)
         var level = Math.Min(listContext.Level, MaxLevel+1);
         foreach (IHtmlElement liNode in liNodes.Cast<IHtmlElement>())
         {
-            var expression = new FlowElementExpression(liNode);
+            var expression = new BlockElementExpression(liNode);
             var childElements = expression.Interpret(context);
             Paragraph p = (Paragraph) childElements.First();
 

@@ -67,6 +67,7 @@ abstract class HtmlDomExpression
             { TagNames.Strong, el => new PhrasingElementExpression(el, new Bold()) },
             { TagNames.Sub, el => new PhrasingElementExpression(el, new VerticalTextAlignment() { Val = VerticalPositionValues.Subscript }) },
             { TagNames.Sup, el => new PhrasingElementExpression(el, new VerticalTextAlignment() { Val = VerticalPositionValues.Superscript }) },
+            { TagNames.Table, el => new TableExpression(el) },
             { TagNames.Time, el => new PhrasingElementExpression(el) },
             { TagNames.U, el => new PhrasingElementExpression(el, new Underline() { Val = UnderlineValues.Single }) },
             { TagNames.Ul, el => new ListExpression(el) },
@@ -79,7 +80,7 @@ abstract class HtmlDomExpression
     /// Process the interpretation of the Html node to its Word OpenXml equivalence.
     /// </summary>
     /// <param name="context">The parsing context.</param>
-    public abstract IEnumerable<OpenXmlCompositeElement> Interpret (ParsingContext context);
+    public abstract IEnumerable<OpenXmlElement> Interpret (ParsingContext context);
 
 
     /// <summary>
@@ -96,7 +97,7 @@ abstract class HtmlDomExpression
                 return handler((IHtmlElement) node);
 
             // fallback on the flow element which will cover all the semantic Html5 tags
-            return new FlowElementExpression((IHtmlElement) node);
+            return new BlockElementExpression((IHtmlElement) node);
         }
 
         return null;

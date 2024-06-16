@@ -22,7 +22,7 @@ namespace HtmlToOpenXml.Expressions;
 sealed class QuoteElementExpression(IHtmlElement node) : PhrasingElementExpression(node)
 {
 
-    public override IEnumerable<OpenXmlCompositeElement> Interpret(ParsingContext context)
+    public override IEnumerable<OpenXmlElement> Interpret(ParsingContext context)
     {
         // The browsers render the quote tag between a kind of separators.
         // We add the Quote style to the nested runs to match more Word.

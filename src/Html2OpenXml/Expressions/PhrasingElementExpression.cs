@@ -20,7 +20,7 @@ using DocumentFormat.OpenXml.Wordprocessing;
 namespace HtmlToOpenXml.Expressions;
 
 /// <summary>
-/// Process the parsing of a phrasing content. A Phrasing content is the content at the lower level
+/// Process the parsing of a phrasing content. A Phrasing content is an inline layout content at the lower level
 /// that consists of text and HTML elements that mark up the text within paragraphs.
 /// </summary>
 class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProperty = null) : HtmlElementExpression(node)
@@ -32,13 +32,13 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
 
 
     /// <inheritdoc/>
-    public override IEnumerable<OpenXmlCompositeElement> Interpret (ParsingContext context)
+    public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
     {
         ComposeStyles(context);
         return Interpret(context.CreateChild(this), node.ChildNodes);
     }
 
-    protected virtual IEnumerable<OpenXmlCompositeElement> Interpret (
+    protected virtual IEnumerable<OpenXmlElement> Interpret (
         ParsingContext context, IEnumerable<INode> childNodes)
     {
         foreach (var child in childNodes)
@@ -54,7 +54,7 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
         }
     }
 
-    public override void CascadeStyles(OpenXmlCompositeElement element)
+    public override void CascadeStyles(OpenXmlElement element)
     {
         if (!runProperties.HasChildren || element is not Run run)
             return;
@@ -105,7 +105,7 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
         }
 
         // OpenXml limits the border to 4-side of the same color and style.
-        SideBorder border = styleAttributes.GetAsSideBorder("border");
+        SideBorder border = styleAttributes.GetSideBorder("border");
         if (border.IsValid)
         {
             runProperties.Border = new Border() {
@@ -116,12 +116,12 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
             };
         }
 
-        var colorValue = styleAttributes.GetAsColor("color");
+        var colorValue = styleAttributes.GetColor("color");
         if (colorValue.IsEmpty) colorValue = HtmlColor.Parse(node.GetAttribute("color"));
         if (!colorValue.IsEmpty)
             runProperties.Color = new Color { Val = colorValue.ToHexString() };
 
-        colorValue = styleAttributes.GetAsColor("background-color");
+        colorValue = styleAttributes.GetColor("background-color");
         if (!colorValue.IsEmpty)
         {
             // change the way the background-color renders. It now uses Shading instead of Highlight.
@@ -150,7 +150,7 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
             }
         }
 
-        HtmlFont font = styleAttributes.GetAsFont("font");
+        HtmlFont font = styleAttributes.GetFont("font");
 
         if (font.Style == FontStyle.Italic)
             runProperties.Italic = new Italic();

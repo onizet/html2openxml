@@ -21,7 +21,7 @@ namespace HtmlToOpenXml.Tests
         [TestCase("<select><option>--Please select--</option></select>")]
         [TestCase("<textarea>Placeholder</textarea>")]
         [TestCase("<meter min='200' max='500' value='350'>350 degrees</meter>")]
-        public void ParseIgnore(string html)
+        public void IgnoreTag(string html)
         {
             // the inner html shouldn't be interpreted
             var elements = converter.Parse(html);
@@ -108,7 +108,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test(Description = "Provided html is only whitespaces")]
-        public void ParseEmpty()
+        public void IgnoreEmptyText()
         {
             var elements = converter.Parse("  \n");
             Assert.That(elements, Is.Empty);

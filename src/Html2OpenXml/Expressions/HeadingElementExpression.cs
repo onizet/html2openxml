@@ -21,12 +21,12 @@ namespace HtmlToOpenXml.Expressions;
 /// <summary>
 /// Process the parsing of a heading element.
 /// </summary>
-sealed class HeadingElementExpression(IHtmlElement node) : NumberingExpression(node)
+sealed class HeadingElementExpression(IHtmlElement node) : NumberingExpressionBase(node)
 {
     private static readonly Regex numberingRegex = new(@"(?m)^(\d+\.?)*\s+");
 
     /// <inheritdoc/>
-    public override IEnumerable<OpenXmlCompositeElement> Interpret (ParsingContext context)
+    public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
     {
         char level = node.NodeName[1];
 
@@ -65,7 +65,7 @@ sealed class HeadingElementExpression(IHtmlElement node) : NumberingExpression(n
         return [paragraph];
     }
 
-    private static bool IsNumbering(OpenXmlCompositeElement runElement)
+    private static bool IsNumbering(OpenXmlElement runElement)
     {
         // Check if the line starts with a number format (1., 1.1., 1.1.1.)
         // If it does, make sure we make the heading a numbered item

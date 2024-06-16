@@ -26,7 +26,7 @@ sealed class TextExpression(INode node) : HtmlDomExpression
     private readonly INode node = node;
 
     /// <inheritdoc/>
-    public override IEnumerable<OpenXmlCompositeElement> Interpret (ParsingContext context)
+    public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
     {
         string text = node.TextContent.Normalize();
         if (text.Trim().Length == 0) return [];
@@ -45,7 +45,6 @@ sealed class TextExpression(INode node) : HtmlDomExpression
             new Text(text)
         );
 
-        context.CascadeStyles(run);
         return [run];
     }
 }

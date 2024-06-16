@@ -30,6 +30,7 @@ sealed class ParsingContext(HtmlConverter converter, MainDocumentPart mainPart)
     public MainDocumentPart MainPart { get; } = mainPart;
 
     private HtmlElementExpression? parentExpression;
+    private ParsingContext? parentContext;
     private Dictionary<string, object?> propertyBag = [];
 
     /// <summary>Whether the text content should preserve the line breaks.</summary>
@@ -40,17 +41,18 @@ sealed class ParsingContext(HtmlConverter converter, MainDocumentPart mainPart)
 
 
 
-    public void CascadeStyles (OpenXmlCompositeElement element)
+    public void CascadeStyles (OpenXmlElement element)
     {
         parentExpression?.CascadeStyles(element);
+        parentContext?.CascadeStyles(element);
     }
 
     public ParsingContext CreateChild(HtmlElementExpression expression)
     {
-        var childContext = new ParsingContext(Converter, MainPart)
-        {
+        var childContext = new ParsingContext(Converter, MainPart) {
             propertyBag = propertyBag,
-            parentExpression = expression
+            parentExpression = expression,
+            parentContext = this
         };
         return childContext;
     }

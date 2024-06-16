@@ -19,9 +19,9 @@ namespace HtmlToOpenXml.Expressions;
 /// <summary>
 /// Process the definition list item <c>dl</c>.
 /// </summary>
-class DefinitionListExpression(IHtmlElement node) : FlowElementExpression(node)
+class DefinitionListExpression(IHtmlElement node) : BlockElementExpression(node)
 {
-    public override IEnumerable<OpenXmlCompositeElement> Interpret(ParsingContext context)
+    public override IEnumerable<OpenXmlElement> Interpret(ParsingContext context)
     {
         var childElements = base.Interpret(context);
 
@@ -30,7 +30,7 @@ class DefinitionListExpression(IHtmlElement node) : FlowElementExpression(node)
             Indentation = new() { FirstLine = "708" },
             SpacingBetweenLines = new() { After = "0" }
         };
-        CascadeStyles(paragraph);
+        context.CascadeStyles(paragraph);
         return [paragraph];
     }
 }

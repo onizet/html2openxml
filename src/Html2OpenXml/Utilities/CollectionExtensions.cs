@@ -11,7 +11,6 @@
  */
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -37,7 +36,7 @@ static class CollectionExtensions
         return Parallel.ForEachAsync(source, parallelOptions, asyncAction);
 #else
         var throttler = new SemaphoreSlim(initialCount: Math.Max(1, parallelOptions.MaxDegreeOfParallelism));
-        var tasks = source.Select(async item =>
+        var tasks = System.Linq.Enumerable.Select(source, async item =>
         {
             await throttler.WaitAsync(parallelOptions.CancellationToken);
             if (parallelOptions.CancellationToken.IsCancellationRequested) return;

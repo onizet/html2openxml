@@ -10,7 +10,6 @@
  * PARTICULAR PURPOSE.
  */
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
@@ -19,10 +18,11 @@ using DocumentFormat.OpenXml.Wordprocessing;
 namespace HtmlToOpenXml.Expressions;
 
 /// <summary>
-/// Process the parsing of a <c>figcaption</c> element, which is used to describe an image.
+/// Process the parsing of a <c>caption</c> element, which is used to describe a table.
 /// </summary>
-class FigureCaptionExpression(IHtmlElement node) : PhrasingElementExpression(node)
+sealed class TableCaptionExpression(Table table, IHtmlElement node) : PhrasingElementExpression(node)
 {
+    private readonly Table table = table;
 
     /// <inheritdoc/>
     public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
@@ -34,12 +34,11 @@ class FigureCaptionExpression(IHtmlElement node) : PhrasingElementExpression(nod
 
         var p = new Paragraph (
             new Run(
-                new Text("Figure ") { Space = SpaceProcessingModeValues.Preserve }
-            ),
-            new SimpleField(
-                new Run(
-                    new Text(AddFigureCaption(context).ToString(CultureInfo.InvariantCulture)))
-            ) { Instruction = " SEQ Figure \\* ARABIC " }
+                new FieldChar() { FieldCharType = FieldCharValues.Begin }),
+            new Run(
+                new FieldCode("SEQ TABLE \\* ARABIC") { Space = SpaceProcessingModeValues.Preserve }),
+            new Run(
+                new FieldChar() { FieldCharType = FieldCharValues.End })
         ) {
             ParagraphProperties = new ParagraphProperties {
                 ParagraphStyleId = context.DocumentStyle.GetParagraphStyle(context.DocumentStyle.DefaultStyles.CaptionStyle),
@@ -51,31 +50,30 @@ class FigureCaptionExpression(IHtmlElement node) : PhrasingElementExpression(nod
         {
             Text? t = run.GetFirstChild<Text>();
             if (t != null)
-                t.Text = " " + t.InnerText; // append a space after the numero of the picture
+                t.Text = " " + t.InnerText;
+        }
+        p.Append(childElements);
+
+        string? att = styleAttributes!["text-align"] ?? node.GetAttribute("align");
+        if (!string.IsNullOrEmpty(att))
+        {
+            JustificationValues? align = Converter.ToParagraphAlign(att);
+            if (align.HasValue)
+                p.ParagraphProperties.Justification = new() { Val = align };
+        }
+        else
+        {
+            // If no particular alignement has been specified for the legend, we will align the legend
+            // relative to the owning table
+            TableProperties? props = table.GetFirstChild<TableProperties>();
+            if (props != null)
+            {
+                TableJustification? justif = props.GetFirstChild<TableJustification>();
+                if (justif?.Val != null) 
+                    p.ParagraphProperties.Justification = new() { Val = justif.Val.Value.ToJustification() };
+            }
         }
 
         return [p];
-    }
-
-    /// <summary>
-    /// Add a new figure caption to the document.
-    /// </summary>
-    /// <returns>Returns the id of the new figure caption.</returns>
-    private static int AddFigureCaption(ParsingContext context)
-    {
-        var figCaptionRef = context.Properties<int?>("figCaptionRef");
-        if (!figCaptionRef.HasValue)
-        {
-            figCaptionRef = 0;
-            foreach (var p in context.MainPart.Document.Descendants<SimpleField>())
-            {
-                if (p.Instruction == " SEQ Figure \\* ARABIC ")
-                    figCaptionRef++;
-            }
-        }
-        figCaptionRef++;
-
-        context.Properties("figCaptionRef", figCaptionRef);
-        return figCaptionRef.Value;
     }
 }

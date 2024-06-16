@@ -22,13 +22,13 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 sealed class HorizontalLineExpression(IHtmlElement node) : HtmlElementExpression(node)
 {
-    public override void CascadeStyles(OpenXmlCompositeElement element)
+    public override void CascadeStyles(OpenXmlElement element)
     {
         throw new System.NotSupportedException();
     }
 
     /// <inheritdoc/>
-    public override IEnumerable<OpenXmlCompositeElement> Interpret (ParsingContext context)
+    public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
     {
         var paragraph = new Paragraph();
         HtmlAttributeCollection styleAttributes;
@@ -49,7 +49,7 @@ sealed class HorizontalLineExpression(IHtmlElement node) : HtmlElementExpression
             else
             {
                 styleAttributes = previousElement.GetStyles();
-                border = styleAttributes.GetAsBorder();
+                border = styleAttributes.GetBorders();
                 if (border.Bottom.IsValid && border.Bottom.Width.ValueInDxa > 0)
                 {
                     addSpacing = true;
@@ -69,7 +69,7 @@ sealed class HorizontalLineExpression(IHtmlElement node) : HtmlElementExpression
         paragraph.Append(new Run());
 
         styleAttributes = node.GetStyles();
-        border = styleAttributes.GetAsBorder();
+        border = styleAttributes.GetBorders();
 
         // Get style from border (only top) or use Default style 
         TopBorder? hrBorderStyle;
