@@ -68,6 +68,7 @@ abstract class HtmlDomExpression
             { TagNames.Sub, el => new PhrasingElementExpression(el, new VerticalTextAlignment() { Val = VerticalPositionValues.Subscript }) },
             { TagNames.Sup, el => new PhrasingElementExpression(el, new VerticalTextAlignment() { Val = VerticalPositionValues.Superscript }) },
             { TagNames.Table, el => new TableExpression(el) },
+            { TagNames.Time, el => new PhrasingElementExpression(el) },
             { TagNames.U, el => new PhrasingElementExpression(el, new Underline() { Val = UnderlineValues.Single }) },
             { TagNames.Ul, el => new ListExpression(el) },
         };

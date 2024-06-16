@@ -100,16 +100,10 @@ public sealed class DataUri
         {
             // the <data> represents some text (like html snippet) and must be decoded.
             string? raw = HttpUtility.UrlDecode(match.Groups["data"].Value)!;
-            try
-            {
-                // we convert back to UTF-8 for easier processing later and to have a "referential" encoding
-                rawData = Encoding.Convert(charSet, Encoding.UTF8, charSet.GetBytes(raw));
-            }
-            catch (ArgumentException)
-            {
-                // UTF-8 Encoded data is invalid
+            if (string.IsNullOrEmpty(raw))
                 return false;
-            }
+            // we convert back to UTF-8 for easier processing later and to have a "referential" encoding
+            rawData = Encoding.Convert(charSet, Encoding.UTF8, charSet.GetBytes(raw));
         }
 
         result = new DataUri(mime, rawData);

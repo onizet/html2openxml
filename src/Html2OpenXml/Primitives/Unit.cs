@@ -197,6 +197,6 @@ readonly struct Unit
     /// </summary>
     public bool IsFixed
     {
-        get { return IsValid && Type != UnitMetric.Auto && Type != UnitMetric.Auto; }
+        get { return IsValid && Type != UnitMetric.Percent && Type != UnitMetric.Auto; }
     }
 }

@@ -42,18 +42,21 @@ static class OpenXmlExtensions
         return null;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void InsertInProperties(this Paragraph p, Action<ParagraphProperties> @delegate)
     {
         p.ParagraphProperties ??= new ParagraphProperties();
         @delegate(p.ParagraphProperties);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void InsertInProperties(this Run r, Action<RunProperties> @delegate)
     {
         r.RunProperties ??= new RunProperties();
         @delegate(r.RunProperties);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void InsertInDocProperties(this Drawing d, params OpenXmlElement[] newChildren)
     {
         d.Inline ??= new Inline();
