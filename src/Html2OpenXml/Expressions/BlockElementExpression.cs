@@ -62,6 +62,7 @@ class BlockElementExpression(IHtmlElement node) : PhrasingElementExpression(node
             );
         }
 
+        OpenXmlElement? previousElement = null;
         foreach (var child in childNodes)
         {
             var expression = CreateFromHtmlNode (child);
@@ -75,6 +76,12 @@ class BlockElementExpression(IHtmlElement node) : PhrasingElementExpression(node
                     runs.Add(r);
                     continue;
                 }
+                // if 2 tables are consectuives, we insert a paragraph in between
+                // or Word will merge the two tables
+                else if (element is Table && previousElement is Table)
+                {
+                    flowElements.Add(new Paragraph());
+                }
 
                 if (runs.Count > 0)
                 {
@@ -82,6 +89,7 @@ class BlockElementExpression(IHtmlElement node) : PhrasingElementExpression(node
                     runs.Clear();
                 }
 
+                previousElement = element;
                 flowElements.Add(element);
             }
         }
@@ -212,6 +220,17 @@ class BlockElementExpression(IHtmlElement node) : PhrasingElementExpression(node
         {
             indentation ??= new Indentation();
             indentation.FirstLine = textIndent.ValueInDxa.ToString(CultureInfo.InvariantCulture);
+            paraProperties.Indentation = indentation;
+        }
+
+        // support left and right padding
+        var padding = styleAttributes.GetMargin("padding");
+        if (!padding.IsEmpty && (padding.Left.IsFixed || padding.Right.IsFixed))
+        {
+            indentation ??= new Indentation();
+            if (padding.Left.Value > 0) indentation.Left = padding.Left.ValueInDxa.ToString(CultureInfo.InvariantCulture);
+            if (padding.Right.Value > 0) indentation.Right = padding.Right.ValueInDxa.ToString(CultureInfo.InvariantCulture);
+
             paraProperties.Indentation = indentation;
         }
     }

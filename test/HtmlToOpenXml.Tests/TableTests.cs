@@ -547,5 +547,20 @@ namespace HtmlToOpenXml.Tests
             Assert.That(cells?.Count(), Is.EqualTo(1));
             Assert.That(cells.First().Elements<Paragraph>().Count(), Is.EqualTo(2));
         }
+
+        [Test(Description = "Prevent Word to merge two consecutive tables")]
+        public void ParseConsecutiveTables()
+        {
+            var elements = converter.Parse(@"
+                <table><tr><td>Table 1</td></tr></table>
+                <table><tr><td>Table 2</td></tr></table>");
+            Assert.That(elements, Has.Count.EqualTo(3));
+            Assert.Multiple(() =>
+            {
+                Assert.That(elements[0], Is.TypeOf<Table>());
+                Assert.That(elements[1], Is.TypeOf<Paragraph>());
+                Assert.That(elements[2], Is.TypeOf<Table>());
+            });
+        }
     }
 }
