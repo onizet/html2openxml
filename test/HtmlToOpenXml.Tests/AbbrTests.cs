@@ -157,5 +157,19 @@ namespace HtmlToOpenXml.Tests
             }
             Assert.That(note.InnerText, Is.EqualTo(" " + "HyperText Markup Language"));
         }
+
+        [Test]
+        public void ParseInline()
+        {
+            var elements = converter.Parse(@"<p>The 
+                <abbr title='National Aeronautics and Space Administration'>NASA</abbr>
+                is an independent agency of the U.S. federal government responsible for the civil space program, aeronautics research, and space research.</p>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.Multiple(() => {
+                Assert.That(elements[0], Is.TypeOf(typeof(Paragraph)));
+                Assert.That(elements[0].Elements<Run>().Count(), Is.GreaterThan(2));
+                Assert.That(elements[0].Elements<Run>().Any(r => r.HasChild<FootnoteReference>()), Is.True);
+            });
+        }
     }
 }

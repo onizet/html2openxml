@@ -53,4 +53,19 @@ static class CollectionExtensions
         return Task.WhenAll(tasks);
 #endif
     }
+
+#if NET462
+    /// <summary>
+    /// Adds a value to the end of the sequence (fallback method for .Net 4.6.2).
+    /// </summary>
+    public static IEnumerable<TSource> Append<TSource>(this IEnumerable<TSource> source, TSource element)
+    {
+         if (source == null)
+            throw new ArgumentNullException(nameof(source));
+
+        var list = new List<TSource>(source);
+        list.Add(element);
+        return list;
+    }
+#endif
 }
