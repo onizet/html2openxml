@@ -78,7 +78,7 @@ public partial class HtmlConverter
     }
 
     /// <summary>
-    /// Start the parse processing.
+    /// Start the parse processing. Use this overload if you want to control the downloading of images.
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <param name="parallelOptions">The configuration of parallelism while downloading the remote resources.</param>
@@ -148,31 +148,6 @@ public partial class HtmlConverter
     {
         htmlStyles.PrepareStyles(mainPart);
     }
-
-    /*
-    /// <summary>
-    /// There is a few attributes shared by a large number of tags. This method will check them for a limited
-    /// number of tags (&lt;p&gt;, &lt;pre&gt;, &lt;div&gt;, &lt;span&gt; and &lt;body&gt;).
-    /// </summary>
-    /// <returns>Returns true if the processing of this tag should generate a new paragraph.</returns>
-    private bool ProcessContainerAttributes(HtmlEnumerator en, IList<OpenXmlElement> styleAttributes)
-    {
-        bool newParagraph = false;
-
-        // support left and right padding
-        var padding = en.StyleAttributes.GetAsMargin("padding");
-        if (!padding.IsEmpty && (padding.Left.IsFixed || padding.Right.IsFixed))
-        {
-            Indentation indentation = new Indentation();
-            if (padding.Left.Value > 0) indentation.Left = padding.Left.ValueInDxa.ToString(CultureInfo.InvariantCulture);
-            if (padding.Right.Value > 0) indentation.Right = padding.Right.ValueInDxa.ToString(CultureInfo.InvariantCulture);
-
-            currentParagraph.InsertInProperties(prop => prop.Indentation = indentation);
-        }
-
-        newParagraph |= htmlStyles.Paragraph.ProcessCommonAttributes(en, styleAttributes);
-        return newParagraph;
-    }*/
 
     /// <summary>
     /// Walk through all the <c>img</c> tags and preload all the remote images.
