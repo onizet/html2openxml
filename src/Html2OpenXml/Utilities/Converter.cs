@@ -10,6 +10,7 @@
  * PARTICULAR PURPOSE.
  */
 using System;
+using System.Globalization;
 using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml;
@@ -217,5 +218,20 @@ static class Converter
             Size = (uint) Math.Round(border.Width.ValueInPoint * 8),
             Space = 1U
         };
+    }
+
+    public static CultureInfo? ToLanguage(string language)
+    {
+        try
+        {
+            var ci = new CultureInfo(language);
+            if (ci.LCID != 4096) // custom unspecified
+                return ci;
+        }
+        catch (ArgumentException)
+        {
+            // lang not valid, ignore it
+        }
+        return null;
     }
 }

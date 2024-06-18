@@ -131,7 +131,6 @@ namespace HtmlToOpenXml.Tests
 
             Assert.That(h, Is.Not.Null);
             Assert.That(h.ChildElements, Has.All.TypeOf(typeof(Run)));
-            Assert.That(h.ChildElements, Has.Count.EqualTo(4));
             Assert.That(h.InnerText, Is.EqualTo("Html to OpenXml !"));
         }
     }

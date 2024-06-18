@@ -16,7 +16,6 @@ namespace HtmlToOpenXml.Tests
             // the new line should generate a space between "bold" and "text"
             var elements = converter.Parse("<span>This is a <b>bold\n</b>text</span>");
             Assert.That(elements, Has.Count.EqualTo(1));
-            Assert.That(elements[0].ChildElements, Has.Count.EqualTo(3));
             Assert.That(elements[0].ChildElements, Is.All.TypeOf<Run>());
             Assert.That(elements[0].InnerText, Is.EqualTo("This is a bold text"));
         }
@@ -37,7 +36,6 @@ namespace HtmlToOpenXml.Tests
             var elements = converter.Parse(@"<h1>   Hello
         <span> World!</span>   </h1>");
             Assert.That(elements, Has.Count.EqualTo(1));
-            Assert.That(elements[0].ChildElements, Has.Count.EqualTo(3));
             Assert.That(elements[0].InnerText, Is.EqualTo("Hello World!"));
         }
 

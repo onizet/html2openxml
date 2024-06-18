@@ -111,9 +111,11 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements, Has.Count.EqualTo(1));
         }
 
-        [TestCase(AcronymPosition.DocumentEnd, Description = "Read existing endnotes references")]
-        [TestCase(AcronymPosition.PageEnd, Description = "Read existing footnotes references")]
-        public void ParseExistingEndnotes(AcronymPosition acronymPosition)
+        [TestCase("<abbr title='HyperText Markup Language'>HTML</abbr>", AcronymPosition.DocumentEnd, Description = "Read existing endnotes references")]
+        [TestCase("<abbr title='HyperText Markup Language'>HTML</abbr>", AcronymPosition.PageEnd, Description = "Read existing footnotes references")]
+        [TestCase("<blockquote cite='HyperText Markup Language'>HTML</blockquote>", AcronymPosition.DocumentEnd, Description = "Read existing endnotes references")]
+        [TestCase("<blockquote cite='HyperText Markup Language'>HTML</blockquote>", AcronymPosition.PageEnd, Description = "Read existing footnotes references")]
+        public void ParseExistingEndnotes(string html, AcronymPosition acronymPosition)
         {
             using var generatedDocument = new MemoryStream();
             using (var buffer = ResourceHelper.GetStream("Resources.DocWithNotes.docx"))
@@ -125,7 +127,7 @@ namespace HtmlToOpenXml.Tests
             HtmlConverter converter = new(mainPart);
             converter.AcronymPosition = acronymPosition;
 
-            var elements = converter.Parse("<abbr title='HyperText Markup Language'>HTML</abbr>");
+            var elements = converter.Parse(html);
             Assert.That(elements, Has.Count.EqualTo(1));
 
             FootnoteEndnoteReferenceType noteRef;

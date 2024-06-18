@@ -33,30 +33,33 @@ namespace HtmlToOpenXml.Tests
         {
             var elements = converter.Parse("<p>some text in <i>italics <b>,bold and italics</p>");
             Assert.That(elements, Has.Count.EqualTo(1));
-            Assert.That(elements[0].ChildElements, Has.Count.EqualTo(3));
+            Assert.That(elements[0].InnerText, Is.EqualTo("some text in italics ,bold and italics"));
 
             var runProperties = elements[0].ChildElements[0].GetFirstChild<RunProperties>();
             Assert.That(runProperties, Is.Null);
 
-            runProperties = elements[0].ChildElements[1].GetFirstChild<RunProperties>();
+            runProperties = elements[0].ChildElements[2].GetFirstChild<RunProperties>();
             Assert.That(runProperties, Is.Not.Null);
             Assert.That(runProperties.HasChild<Italic>(), Is.EqualTo(true));
             Assert.That(runProperties.HasChild<Bold>(), Is.EqualTo(false));
 
-            runProperties = elements[0].ChildElements[2].GetFirstChild<RunProperties>();
+            runProperties = elements[0].ChildElements[4].GetFirstChild<RunProperties>();
             Assert.That(runProperties, Is.Not.Null);
             Assert.That(runProperties.HasChild<Italic>(), Is.EqualTo(true));
             Assert.That(runProperties.HasChild<Bold>(), Is.EqualTo(true));
 
             elements = converter.Parse("<p>First paragraph in semi-<i>italics <p>Second paragraph still italic <b>but also in bold</b></p>");
             Assert.That(elements, Has.Count.EqualTo(2));
-            Assert.That(elements[0].ChildElements, Has.Count.EqualTo(2));
-            Assert.That(elements[1].ChildElements, Has.Count.EqualTo(2));
+            Assert.Multiple(() =>
+            {
+                Assert.That(elements[0].ChildElements, Has.Count.EqualTo(3));
+                Assert.That(elements[1].ChildElements, Has.Count.EqualTo(3));
+            });
 
             runProperties = elements[0].ChildElements[0].GetFirstChild<RunProperties>();
             Assert.That(runProperties, Is.Null);
 
-            runProperties = elements[0].ChildElements[1].GetFirstChild<RunProperties>();
+            runProperties = elements[0].ChildElements[2].GetFirstChild<RunProperties>();
             Assert.That(runProperties, Is.Not.Null);
             Assert.That(runProperties.HasChild<Italic>(), Is.EqualTo(true));
 
@@ -65,7 +68,7 @@ namespace HtmlToOpenXml.Tests
             Assert.That(runProperties.HasChild<Italic>(), Is.EqualTo(true));
             Assert.That(runProperties.HasChild<Bold>(), Is.EqualTo(false));
 
-            runProperties = elements[1].ChildElements[1].GetFirstChild<RunProperties>();
+            runProperties = elements[1].ChildElements[2].GetFirstChild<RunProperties>();
             Assert.That(runProperties, Is.Not.Null);
             Assert.That(runProperties.HasChild<Italic>(), Is.EqualTo(true));
             Assert.That(runProperties.HasChild<Bold>(), Is.EqualTo(true));
@@ -73,7 +76,7 @@ namespace HtmlToOpenXml.Tests
             // this should generate a new paragraph with its own style
             elements = converter.Parse("<p>First paragraph in <i>italics </i><p>Second paragraph not in italic</p>");
             Assert.That(elements, Has.Count.EqualTo(2));
-            Assert.That(elements[0].ChildElements, Has.Count.EqualTo(2));
+            Assert.That(elements[0].ChildElements, Has.Count.EqualTo(3));
             Assert.That(elements[1].ChildElements, Has.Count.EqualTo(1));
             Assert.That(elements[1].FirstChild, Is.TypeOf(typeof(Run)));
 
@@ -82,8 +85,8 @@ namespace HtmlToOpenXml.Tests
         }
 
         [TestCase("<p>Some\ntext</p>", ExpectedResult = 1)]
-        [TestCase("<p>Some <b>bold\n</b>text</p>", ExpectedResult = 3)]
-        [TestCase("\t<p>Some <b>bold\n</b>text</p>", ExpectedResult = 3)]
+        [TestCase("<p>Some <b>bold\n</b>text</p>", ExpectedResult = 5)]
+        [TestCase("\t<p>Some <b>bold\n</b>text</p>", ExpectedResult = 5)]
         [TestCase("  <p>Some text</p> ", ExpectedResult = 1)]
         public int ParseNewline (string html)
         {

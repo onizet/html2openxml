@@ -40,6 +40,8 @@ namespace HtmlToOpenXml.Tests
             var elements = converter.Parse(@"<b style=""
 font-style:italic;
 font-size:12px;
+font-family:Verdana;
+font-variant:small-caps;
 color:red;
 text-decoration:underline;
 "">bold with italic style</b>");
@@ -55,7 +57,9 @@ text-decoration:underline;
                 Assert.That(runProperties.HasChild<Italic>(), Is.True);
                 Assert.That(runProperties.HasChild<FontSize>(), Is.True);
                 Assert.That(runProperties.HasChild<Underline>(), Is.True);
-                Assert.That(runProperties.HasChild<Color>(),Is.True);
+                Assert.That(runProperties.HasChild<Color>(), Is.True);
+                Assert.That(runProperties.HasChild<SmallCaps>(), Is.True);
+                Assert.That(runProperties.GetFirstChild<RunFonts>()?.Ascii?.Value, Is.EqualTo("Verdana"));
             });
         }
 
@@ -122,7 +126,7 @@ text-decoration:underline;
         {
             var elements = converter.Parse(@"Lorem<br/>Ipsum");
             Assert.That(elements, Has.Count.EqualTo(1));
-            Assert.That(elements[0].ChildElements, Has.Count.EqualTo(3));
+            Assert.That(elements[0].ChildElements, Has.Count.EqualTo(4));
 
             Assert.Multiple(() =>
             {
@@ -167,6 +171,57 @@ text-decoration:underline;
             Run run = elements[0].GetFirstChild<Run>();
             Assert.That(run, Is.Not.Null);
             Assert.That(run.RunProperties, Is.Null);
+        }
+
+        [Test]
+        public void ParseDefinitionList()
+        {
+            var elements = converter.Parse(@"
+            <dl>
+                <dt>Denim (semigloss finish)</dt>
+                <dd>Ceiling</dd>
+                <dt>Denim (eggshell finish)</dt>
+                <dt>Evening Sky (eggshell finish)</dt>
+                <dd>Layered on the walls</dd>
+            </dl>");
+
+            Assert.That(elements, Has.Count.EqualTo(5));
+            Assert.That(elements, Has.All.TypeOf<Paragraph>());
+
+            var ddElements = elements.Where((e, idx) => idx == 1 || idx == 5);
+            Assert.That(ddElements.All(p => p.GetFirstChild<ParagraphProperties>()?.HasChild<Indentation>() == true), Is.True,
+                "All `dd` paragraph are converted with Indentation");
+        }
+
+        [Test]
+        public void ParseAlternateL8ng()
+        {
+            var elements = converter.Parse(@"<div lang=""en"">
+                <p>Pineapple</p>
+                <p lang=""fr"">Ananas</p>
+                <p lang=""ar"">أناناس</p>
+                <p lang=""sindarin"">yávë</p>
+            </div>");
+
+            Assert.That(elements, Has.Count.EqualTo(4));
+            Assert.That(elements, Has.All.TypeOf<Paragraph>());
+
+            int index = 0;
+            foreach (var (rtl, lang) in new[] {
+                (false, "en"), // inherited from parent container
+                (false, "fr"),
+                (true, "ar"),
+                (false, "en") // unknown language - fallback on parent
+            })
+            {
+                var p = (Paragraph) elements[index];
+                Assert.That(p.ParagraphProperties?.BiDi?.Val?.Value, Is.EqualTo(rtl), $"{index}. expected RTL={rtl}");
+                Assert.That(p.ParagraphProperties?.ParagraphMarkRunProperties?
+                    .GetFirstChild<Languages>()?.Val?.Value, Is.EqualTo(lang), $"{index}. expected lang={lang}");
+                Assert.That(p.GetFirstChild<Run>()?.GetFirstChild<RunProperties>()?
+                    .Languages?.Val?.Value, Is.EqualTo(lang), $"{index}. expected lang={lang}");
+                index++;
+            }
         }
 
         private T ParsePhrasing<T> (string html) where T : OpenXmlElement

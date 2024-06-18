@@ -41,7 +41,7 @@ abstract class HtmlDomExpression
             { TagNames.BlockQuote, el => new BlockQuoteExpression(el) },
             { TagNames.Br, el => new LineBreakExpression(el) },
             { TagNames.Cite, el => new CiteElementExpression(el) },
-            { TagNames.Dl, el => new DefinitionListExpression(el) },
+            { TagNames.Dd, el => new BlockElementExpression(el, new Indentation() { FirstLine = "708" }, new SpacingBetweenLines() { After = "0" }) },
             { TagNames.Del, el => new PhrasingElementExpression(el, new Strike()) },
             { TagNames.Dfn, el => new AbbreviationExpression(el) },
             { TagNames.Em, el => new PhrasingElementExpression(el, new Italic()) },

@@ -90,15 +90,10 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
 
         if (node.Language != null && node.Language != node.Owner!.Body!.Language)
         {
-            try
+            var ci = Converter.ToLanguage(node.Language);
+            if (ci != null)
             {
-                var ci = new CultureInfo(node.Language);
-                Languages lang = new () { Val = ci.TwoLetterISOLanguageName };
-                runProperties.Languages = new () { Bidi = ci.Name };
-            }
-            catch (ArgumentException)
-            {
-                // lang not valid, ignore it
+                runProperties.Languages = new () { Val = ci.TwoLetterISOLanguageName };
             }
         }
 

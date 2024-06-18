@@ -23,8 +23,9 @@ namespace HtmlToOpenXml.Expressions;
 /// Process the parsing of block contents (like <c>p</c>, <c>span</c>, <c>heading</c>).
 /// A block-level element always starts on a new line, and the browsers automatically add some space (a margin) before and after the element.
 /// </summary>
-class BlockElementExpression(IHtmlElement node) : PhrasingElementExpression(node)
+class BlockElementExpression(IHtmlElement node, params OpenXmlLeafElement[]? styleProperty) : PhrasingElementExpression(node)
 {
+    private readonly OpenXmlLeafElement[]? defaultStyleProperties = styleProperty;
     protected readonly ParagraphProperties paraProperties = new();
 
 
@@ -95,11 +96,17 @@ class BlockElementExpression(IHtmlElement node) : PhrasingElementExpression(node
     {
         base.ComposeStyles(context);
 
+        if (defaultStyleProperties != null)
+        {
+            foreach (var prop in defaultStyleProperties)
+                paraProperties.AddChild(prop.CloneNode(true));
+        }
+
         if (node.Language != null && node.Language != node.Owner!.Body!.Language)
         {
-            try
+            var ci = Converter.ToLanguage(node.Language);
+            if (ci != null)
             {
-                var ci = new CultureInfo(node.Language);
                 bool rtl = ci.TextInfo.IsRightToLeft;
 
                 var lang = new Languages() { Val = ci.TwoLetterISOLanguageName };
@@ -107,10 +114,6 @@ class BlockElementExpression(IHtmlElement node) : PhrasingElementExpression(node
 
                 paraProperties.ParagraphMarkRunProperties = new ParagraphMarkRunProperties(lang);
                 paraProperties.BiDi = new BiDi() { Val = OnOffValue.FromBoolean(rtl) };
-            }
-            catch (ArgumentException)
-            {
-                // lang not valid, ignore it
             }
         }
 
