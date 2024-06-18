@@ -1,18 +1,18 @@
 # Changelog
 
-## 3.0.0 (Next major release)
+## vNext
 
-- rely on HtmlAgilityPack for the parsing
-- todo: update readme
-- todo: pre line breaks, whitespace between 2 runs - ok
-- todo: svg tag support
-- todo: remove old code
-- todo: list
-- todo: table
-- todo: dd, dt, dl
-- todo: mathml
-- todo: run all unit test with green
-- todo: block quote char?
+- Support MathMl
+- Support SVG
+
+## 3.0.0
+
+- AngleSharp is now the backend parser for Html
+- Refactoring to use the Interpreter/Composite design pattern, which ease the code maintenance
+- Lots of new unit test cases (190+)
+- Rewriting of `list` (correct handling of nested style, restarting numbers and consecutive)
+- Rewriting of `table` (row span, col span, col tags driving styles)
+- Parallel download of images at early stage of the parsing.
 
 ## 2.4.2
 
