@@ -10,47 +10,40 @@
  * PARTICULAR PURPOSE.
  */
 
-namespace HtmlToOpenXml
+namespace HtmlToOpenXml;
+
+/// <summary>
+/// Specifies the position of an acronym or abbreviation in the resulting conversion.
+/// </summary>
+public enum AcronymPosition
 {
     /// <summary>
-    /// Specifies the position of an acronym or abbreviation in the resulting conversion.
+    /// Position at the end of the page.
     /// </summary>
-    public enum AcronymPosition
-    {
-        /// <summary>
-        /// Position at the end of the page.
-        /// </summary>
-        PageEnd = 0,
-        /// <summary>
-        /// Position at the end of the document.
-        /// </summary>
-        DocumentEnd = 1,
-    }
-
+    PageEnd = 0,
     /// <summary>
-    /// Predefined quote style as defined by the browser (used for the &lt;q&gt; tag).
+    /// Position at the end of the document.
     /// </summary>
-    public struct QuoteChars
-    {
-        /// <summary>Internet Explorer style: « abc » </summary>
-        public static readonly QuoteChars IE = new QuoteChars("« ", " »");
-        /// <summary>Firefox style: “abc”</summary>
-        public static readonly QuoteChars Gecko = new QuoteChars("“", "”");
-        /// <summary>Chrome/Safari/Opera style: "abc"</summary>
-        public static readonly QuoteChars WebKit = new QuoteChars("\"", "\"");
+    DocumentEnd = 1,
+}
 
-        /// <summary>
-        /// Initializes a new instance of <see cref="QuoteChars"/> class.
-        /// </summary>
-        /// <param name="begin">The characters at the beginning of a quote.</param>
-        /// <param name="end">The characters at the end of a quote.</param>
-        public QuoteChars(string begin, string end)
-        {
-            Prefix = begin;
-            Suffix = end;
-        }
+/// <summary>
+/// Predefined quote style as defined by the browser (used for the &lt;q&gt; tag).
+/// </summary>
+/// <remarks>
+/// Initializes a new instance of <see cref="QuoteChars"/> class.
+/// </remarks>
+/// <param name="begin">The characters at the beginning of a quote.</param>
+/// <param name="end">The characters at the end of a quote.</param>
+public readonly struct QuoteChars(string begin, string end)
+{
+    /// <summary>Internet Explorer style: « abc » </summary>
+    public static readonly QuoteChars IE = new QuoteChars("« ", " »");
+    /// <summary>Firefox style: “abc”</summary>
+    public static readonly QuoteChars Gecko = new QuoteChars("“", "”");
+    /// <summary>Chrome/Safari/Opera style: "abc"</summary>
+    public static readonly QuoteChars WebKit = new QuoteChars("\"", "\"");
 
-        internal string Prefix { get; private set; }
-        internal string Suffix { get; private set; }
-    }
+    internal string Prefix { get; } = begin;
+    internal string Suffix { get; } = end;
 }

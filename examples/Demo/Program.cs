@@ -6,13 +6,13 @@ using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Validation;
 using DocumentFormat.OpenXml.Wordprocessing;
 using HtmlToOpenXml;
-using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
+using System.Threading.Tasks;
 
 namespace Demo
 {
-    class Program
+    static class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             const string filename = "test.docx";
             string html = ResourceHelper.GetString("Resources.CompleteRunTest.html");
@@ -39,12 +39,13 @@ namespace Demo
                     }
 
                     HtmlConverter converter = new HtmlConverter(mainPart);
+                    converter.RenderPreAsTable = true;
                     Body body = mainPart.Document.Body;
 
-                    converter.ParseHtml(html);
+                    await converter.ParseHtml(html);
                     mainPart.Document.Save();
 
-                    AssertThatOpenXmlDocumentIsValid(package);
+                    //AssertThatOpenXmlDocumentIsValid(package);
                 }
 
                 File.WriteAllBytes(filename, generatedDocument.ToArray());

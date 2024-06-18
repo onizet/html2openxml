@@ -1,41 +1,52 @@
 ﻿using System.Reflection;
 using System.Resources;
 
-namespace HtmlToOpenXml
+namespace HtmlToOpenXml;
+
+/// <summary>
+/// Helper class to get chunks of OpenXml predefined style.
+/// </summary>
+internal class PredefinedStyles
 {
+    private static ResourceManager? resourceMan;
+
+    public const string Caption = "Caption";
+    public const string EndnoteText = "EndnoteText";
+    public const string EndnoteReference = "EndnoteReference";
+    public const string FootnoteText = "FootnoteText";
+    public const string FootnoteReference = "FootnoteReference";
+    public const string Heading = "Heading";
+    public const string Hyperlink = "Hyperlink";
+    public const string IntenseQuote = "IntenseQuote";
+    public const string ListParagraph = "ListParagraph";
+    public const string Quote = "Quote";
+    public const string QuoteChar = "QuoteChar";
+    public const string TableGrid = "TableGrid";
+
+
     /// <summary>
-    /// Helper class to get chunks of OpenXml predefined style.
+    /// Retrieves the embedded resource.
     /// </summary>
-    internal class PredefinedStyles
+    /// <param name="styleName">The key name of the resource to find.</param>
+    public static string? GetOuterXml(string styleName)
     {
-        private static global::System.Resources.ResourceManager? resourceMan;
+        return ResourceManager.GetString(styleName);
+    }
 
-
-        /// <summary>
-        /// Retrieves the embedded resource.
-        /// </summary>
-        /// <param name="styleName">The key name of the resource to find.</param>
-        public static string? GetOuterXml(string styleName)
+    /// <summary>
+    /// Returns the cached ResourceManager instance used by this class.
+    /// </summary>
+    private static ResourceManager ResourceManager
+    {
+        get
         {
-            return ResourceManager.GetString(styleName);
-        }
-
-
-        /// <summary>
-        /// Returns the cached ResourceManager instance used by this class.
-        /// </summary>
-        private static ResourceManager ResourceManager
-        {
-            get
+            if (resourceMan is null)
             {
-                if (object.ReferenceEquals(resourceMan, null))
-                {
-                    ResourceManager temp = new ResourceManager("HtmlToOpenXml.PredefinedStyles",
-                        typeof(PredefinedStyles).GetTypeInfo().Assembly);
-                    resourceMan = temp;
-                }
-                return resourceMan;
+                ResourceManager temp = new("HtmlToOpenXml.PredefinedStyles",
+                    typeof(PredefinedStyles).GetTypeInfo().Assembly);
+                resourceMan = temp;
             }
+            return resourceMan;
         }
     }
 }

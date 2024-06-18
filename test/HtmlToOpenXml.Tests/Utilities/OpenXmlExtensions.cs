@@ -17,7 +17,7 @@ namespace HtmlToOpenXml.Tests
     /// Helper class that provide some extension methods to OpenXml SDK.
     /// </summary>
     [System.Diagnostics.DebuggerStepThrough]
-    static class OpenXmlExtension
+    static class OpenXmlExtensions
     {
         public static bool HasChild<T>(this OpenXmlElement element) where T : OpenXmlElement
         {

@@ -14,7 +14,7 @@ namespace HtmlToOpenXml.Tests
         public void ParseHr ()
         {
             var elements = converter.Parse("<hr>");
-            AssertIsHr (elements[0], false);
+            AssertIsHr(elements[0], false);
         }
 
         [Test]
@@ -22,26 +22,30 @@ namespace HtmlToOpenXml.Tests
         {
             // this should not generate a particular spacing
             var elements = converter.Parse("<p style='border-top:1px solid black'>Before</p><hr>");
-            AssertIsHr (elements[1], false);
+            AssertIsHr(elements[1], false);
         }
 
+        [TestCase("<p style='border:0.1px solid black'>Before</p><hr>")]
         [TestCase("<p style='border-bottom:1px solid black'>Before</p><hr>")]
         [TestCase("<table><tr><td>Cell</td></tr></table><hr>")]
         public void ParseHrWithSpacing (string html)
         {
             var elements = converter.Parse(html);
-            AssertIsHr (elements[1], true);
+            AssertIsHr(elements[1], true);
         }
 
-        private void AssertIsHr (OpenXmlCompositeElement hr, bool expectSpacing)
+        private static void AssertIsHr (OpenXmlCompositeElement hr, bool expectSpacing)
         {
-            Assert.That(hr.ChildElements.Count, Is.EqualTo(2));
+            Assert.That(hr.ChildElements, Has.Count.EqualTo(2));
             var props = hr.GetFirstChild<ParagraphProperties>();
             Assert.That(props, Is.Not.Null);
 
-            Assert.That(props.ChildElements.Count, Is.EqualTo(expectSpacing? 2:1));
-            Assert.That(props.ParagraphBorders, Is.Not.Null);
-            Assert.That(props.ParagraphBorders.TopBorder, Is.Not.Null);
+            Assert.Multiple(() =>
+            {
+                Assert.That(props.ChildElements, Has.Count.EqualTo(expectSpacing ? 2 : 1));
+                Assert.That(props.ParagraphBorders, Is.Not.Null);
+                Assert.That(props.ParagraphBorders?.TopBorder, Is.Not.Null);
+            });
 
             if (expectSpacing)
                 Assert.That(props.SpacingBetweenLines, Is.Not.Null);
