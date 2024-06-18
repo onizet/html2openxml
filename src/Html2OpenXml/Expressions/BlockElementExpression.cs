@@ -14,7 +14,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using AngleSharp.Html.Dom;
-using AngleSharp.Text;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
 
@@ -32,7 +31,6 @@ class BlockElementExpression(IHtmlElement node) : PhrasingElementExpression(node
     /// <inheritdoc/>
     public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
     {
-        //TODO: add break? elements.Add(new Run(new Break()));
         var elements = base.Interpret(context);
 
         var isBookmarkTarget = node.GetAttribute(InternalNamespaceUri, "bookmark");
@@ -48,62 +46,26 @@ class BlockElementExpression(IHtmlElement node) : PhrasingElementExpression(node
     protected override IEnumerable<OpenXmlElement> Interpret (
         ParsingContext context, IEnumerable<AngleSharp.Dom.INode> childNodes)
     {
-        var runs = new List<Run>();
-        var flowElements = new List<OpenXmlElement>();
-
-        if ("always".Equals(styleAttributes!["page-break-before"], StringComparison.OrdinalIgnoreCase))
-        {
-            runs.Add(
-                new Run(
-                    new Break() { Type = BreakValues.Page })
-            );
-            runs.Add(new Run(
-                new LastRenderedPageBreak())
-            );
-        }
-
-        OpenXmlElement? previousElement = null;
-        foreach (var child in childNodes)
-        {
-            var expression = CreateFromHtmlNode (child);
-            if (expression == null) continue;
-
-            foreach (var element in expression.Interpret(context))
-            {
-                context.CascadeStyles(element);
-                if (element is Run r)
+        return ComposeChildren(context, childNodes, paraProperties,
+            (runs) => {
+                if ("always".Equals(styleAttributes!["page-break-before"], StringComparison.OrdinalIgnoreCase))
                 {
-                    runs.Add(r);
-                    continue;
+                    runs.Add(
+                        new Run(
+                            new Break() { Type = BreakValues.Page })
+                    );
+                    runs.Add(new Run(
+                        new LastRenderedPageBreak())
+                    );
                 }
-                // if 2 tables are consectuives, we insert a paragraph in between
-                // or Word will merge the two tables
-                else if (element is Table && previousElement is Table)
+            },
+            (runs) => {
+                if ("always".Equals(styleAttributes!["page-break-after"], StringComparison.OrdinalIgnoreCase))
                 {
-                    flowElements.Add(new Paragraph());
+                    runs.Add(new Run(
+                        new Break() { Type = BreakValues.Page }));
                 }
-
-                if (runs.Count > 0)
-                {
-                    flowElements.Add(CombineRuns(context, runs, paraProperties));
-                    runs.Clear();
-                }
-
-                previousElement = element;
-                flowElements.Add(element);
-            }
-        }
-
-        if ("always".Equals(styleAttributes!["page-break-after"], StringComparison.OrdinalIgnoreCase))
-        {
-            runs.Add(new Run(
-                new Break() { Type = BreakValues.Page }));
-        }
-
-        if (runs.Count > 0)
-            flowElements.Add(CombineRuns(context, runs, paraProperties));
-
-        return flowElements;
+            });
     }
 
     public override void CascadeStyles(OpenXmlElement element)
@@ -236,9 +198,68 @@ class BlockElementExpression(IHtmlElement node) : PhrasingElementExpression(node
     }
 
     /// <summary>
-    /// Mimics the behaviour of Html rendering when 2 consecutives runs are separated by a space
+    /// Intrepret all the child nodes and combine them.
     /// </summary>
-    internal static Paragraph CombineRuns(ParsingContext context, IList<Run> runs, ParagraphProperties paraProperties)
+    /// <param name="context">The child parsing context.</param>
+    /// <param name="childNodes">The list of child nodes.</param>
+    /// <param name="paragraphProperties">The parent paragraph properties to apply.</param>
+    /// <param name="preAction">Optionally insert new runs at the beginning of the processing.</param>
+    /// <param name="postAction">Optionally insert new runs at the end of the processing.</param>
+    internal static IEnumerable<OpenXmlElement> ComposeChildren(ParsingContext context, 
+        IEnumerable<AngleSharp.Dom.INode> childNodes,
+        ParagraphProperties paragraphProperties,
+        Action<IList<OpenXmlElement>>? preAction = null,
+        Action<IList<OpenXmlElement>>? postAction = null)
+    {
+        var runs = new List<OpenXmlElement>();
+        var flowElements = new List<OpenXmlElement>();
+
+        preAction?.Invoke(runs);
+
+        OpenXmlElement? previousElement = null;
+        foreach (var child in childNodes)
+        {
+            var expression = CreateFromHtmlNode (child);
+            if (expression == null) continue;
+
+            foreach (var element in expression.Interpret(context))
+            {
+                context.CascadeStyles(element);
+                if (element is Run r || element is Hyperlink)
+                {
+                    runs.Add(element);
+                    continue;
+                }
+                // if 2 tables are consectuives, we insert a paragraph in between
+                // or Word will merge the two tables
+                else if (element is Table && previousElement is Table)
+                {
+                    flowElements.Add(new Paragraph());
+                }
+
+                if (runs.Count > 0)
+                {
+                    flowElements.Add(CreateParagraph(context, runs, paragraphProperties));
+                    runs.Clear();
+                }
+
+                previousElement = element;
+                flowElements.Add(element);
+            }
+        }
+
+        postAction?.Invoke(runs);
+
+        if (runs.Count > 0)
+            flowElements.Add(CreateParagraph(context, runs, paragraphProperties));
+
+        return flowElements;
+    }
+
+    /// <summary>
+    /// Create a new Paragraph and combine all the runs.
+    /// </summary>
+    private static Paragraph CreateParagraph(ParsingContext context, IList<OpenXmlElement> runs, ParagraphProperties paraProperties)
     {
         Paragraph p = new();
         if (paraProperties.HasChildren)
@@ -246,29 +267,7 @@ class BlockElementExpression(IHtmlElement node) : PhrasingElementExpression(node
 
         context.CascadeStyles(p);
 
-        if (runs.Count == 1)
-        {
-            p.AddChild(runs.First());
-            return p;
-        }
-
-        bool endsWithSpace = true;
-        foreach (var run in runs)
-        {
-            var textElement = run.GetFirstChild<Text>()!;
-            if (textElement != null) // could be null when <br/>
-            {
-                var text = textElement.Text;
-                // we know that the text cannot be empty because we skip them in TextExpression
-                if (!endsWithSpace && !text[0].IsSpaceCharacter())
-                {
-                    textElement.Text = " " + text;
-                }
-                endsWithSpace = text[text.Length - 1].IsSpaceCharacter();
-            }
-            p.AppendChild(run);
-        }
-
+        p.Append(CombineRuns(runs));
         return p;
     }
 }

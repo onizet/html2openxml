@@ -37,11 +37,9 @@ sealed class HeadingElementExpression(IHtmlElement node) : NumberingExpressionBa
         var paragraph = childElements.FirstOrDefault() as Paragraph;
 
         paragraph ??= new Paragraph(childElements);
-
-        paragraph.InsertInProperties(prop => 
-            prop.ParagraphStyleId = 
-                context.DocumentStyle.GetParagraphStyle(context.DocumentStyle.DefaultStyles.HeadingStyle + level)
-        );
+        paragraph.ParagraphProperties ??= new();
+        paragraph.ParagraphProperties.ParagraphStyleId = 
+            context.DocumentStyle.GetParagraphStyle(context.DocumentStyle.DefaultStyles.HeadingStyle + level);
 
         var runElement = childElements.FirstOrDefault();
         if (runElement != null && IsNumbering(runElement))
@@ -89,11 +87,10 @@ sealed class HeadingElementExpression(IHtmlElement node) : NumberingExpressionBa
     private static void SetNumbering(Paragraph paragraph, int level, int instanceId)
     {
         // Apply numbering to paragraph
-        paragraph.InsertInProperties(prop => {
-            prop.NumberingProperties = new NumberingProperties {
-                NumberingLevelReference = new() { Val = level - 1 },
-                NumberingId = new() { Val = instanceId }
-            };
-        });
+        paragraph.ParagraphProperties ??= new();
+        paragraph.ParagraphProperties.NumberingProperties = new NumberingProperties {
+            NumberingLevelReference = new() { Val = level - 1 },
+            NumberingId = new() { Val = instanceId }
+        };
     }
 }

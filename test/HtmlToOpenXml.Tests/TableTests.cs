@@ -326,7 +326,7 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(runs.First().GetFirstChild<FieldChar>().FieldCharType.Value, Is.EqualTo(FieldCharValues.Begin));
                 Assert.That(runs.ElementAt(1).GetFirstChild<FieldCode>().InnerText, Is.EqualTo("SEQ TABLE \\* ARABIC"));
                 Assert.That(runs.ElementAt(2).GetFirstChild<FieldChar>().FieldCharType.Value, Is.EqualTo(FieldCharValues.End));
-                Assert.That(runs.Last().InnerText, Is.EqualTo("Some table caption"));
+                Assert.That(runs.Last().InnerText, Is.EqualTo(" Some table caption"));
             });
         }
 

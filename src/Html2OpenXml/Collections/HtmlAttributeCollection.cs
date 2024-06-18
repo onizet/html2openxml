@@ -38,10 +38,10 @@ sealed class HtmlAttributeCollection
         // Encoded ':' and ';' characters are valid for browser but not handled by the regex (bug #13812 reported by robin391)
         // ex= <span style="text-decoration&#58;underline&#59;color:red">
         MatchCollection matches = stripStyleAttributesRegex.Matches(
-#if NET462
-            HttpUtility.HtmlDecode(htmlTag)
-#else 
+#if NET5_0_OR_GREATER
             System.Web.HttpUtility.HtmlDecode(htmlTag)
+#else 
+            HttpUtility.HtmlDecode(htmlTag)
 #endif
         );
         foreach (Match m in matches)

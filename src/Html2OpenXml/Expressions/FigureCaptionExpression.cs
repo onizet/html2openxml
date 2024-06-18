@@ -21,7 +21,7 @@ namespace HtmlToOpenXml.Expressions;
 /// <summary>
 /// Process the parsing of a <c>figcaption</c> element, which is used to describe an image.
 /// </summary>
-class FigureCaptionExpression(IHtmlElement node) : PhrasingElementExpression(node)
+sealed class FigureCaptionExpression(IHtmlElement node) : PhrasingElementExpression(node)
 {
 
     /// <inheritdoc/>

@@ -66,10 +66,9 @@ sealed class HyperlinkExpression(IHtmlElement node) : PhrasingElementExpression(
         {
             if (el is Run run && !run.HasChild<Drawing>())
             {
-                run.InsertInProperties(prop =>
-                    prop.RunStyle = context.DocumentStyle.GetRunStyle(
-                            context.DocumentStyle.DefaultStyles.HyperlinkStyle)
-                );
+                run.RunProperties ??= new();
+                run.RunProperties.RunStyle = context.DocumentStyle.GetRunStyle(
+                        context.DocumentStyle.DefaultStyles.HyperlinkStyle);
                 break;
             }
         }
@@ -77,7 +76,7 @@ sealed class HyperlinkExpression(IHtmlElement node) : PhrasingElementExpression(
         // Append the processed elements and put them to the Run of the Hyperlink
         h.Append(childElements);
 
-        return [new Paragraph(h)];
+        return [h];
     }
 
     private Hyperlink? CreateHyperlink(ParsingContext context)

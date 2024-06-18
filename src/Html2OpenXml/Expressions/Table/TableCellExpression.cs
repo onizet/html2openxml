@@ -52,37 +52,7 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : TableElementExpre
     protected override IEnumerable<OpenXmlElement> Interpret (
         ParsingContext context, IEnumerable<AngleSharp.Dom.INode> childNodes)
     {
-        var runs = new List<Run>();
-        var flowElements = new List<OpenXmlElement>();
-
-        foreach (var child in childNodes)
-        {
-            var expression = CreateFromHtmlNode (child);
-            if (expression == null) continue;
-
-            foreach (var element in expression.Interpret(context))
-            {
-                context.CascadeStyles(element);
-                if (element is Run r)
-                {
-                    runs.Add(r);
-                    continue;
-                }
-
-                if (runs.Count > 0)
-                {
-                    flowElements.Add(BlockElementExpression.CombineRuns(context, runs, paraProperties));
-                    runs.Clear();
-                }
-
-                flowElements.Add(element);
-            }
-        }
-
-        if (runs.Count > 0)
-            flowElements.Add(BlockElementExpression.CombineRuns(context, runs, paraProperties));
-
-        return flowElements;
+        return BlockElementExpression.ComposeChildren(context, childNodes, paraProperties);
     }
 
     protected override void ComposeStyles(ParsingContext context)

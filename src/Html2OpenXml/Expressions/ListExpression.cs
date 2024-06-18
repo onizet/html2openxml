@@ -78,14 +78,13 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
             var childElements = expression.Interpret(context);
             Paragraph p = (Paragraph) childElements.First();
 
-            p.InsertInProperties(prop => {
-                prop.ParagraphStyleId = GetStyleIdForListItem(context.DocumentStyle, liNode);
-                prop.Indentation = level < 2? null : new() { Left = (level * Indentation).ToString() };
-                prop.NumberingProperties = new NumberingProperties {
-                    NumberingLevelReference = new() { Val = level - 1 },
-                    NumberingId = new() { Val = listContext.InstanceId }
-                };
-            });
+            p.ParagraphProperties ??= new();
+            p.ParagraphProperties.ParagraphStyleId = GetStyleIdForListItem(context.DocumentStyle, liNode);
+            p.ParagraphProperties.Indentation = level < 2? null : new() { Left = (level * Indentation).ToString() };
+            p.ParagraphProperties.NumberingProperties = new NumberingProperties {
+                NumberingLevelReference = new() { Val = level - 1 },
+                NumberingId = new() { Val = listContext.InstanceId }
+            };
 
             foreach (var child in childElements)
                 yield return child;

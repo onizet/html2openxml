@@ -32,7 +32,7 @@ abstract class TableElementExpressionBase(IHtmlElement node) : PhrasingElementEx
 
         if (paraProperties.HasChildren && element is Paragraph p)
         {
-            p.ParagraphProperties ??= new ParagraphProperties();
+            p.ParagraphProperties ??= new();
 
             var knownTags = new HashSet<string>();
             foreach (var prop in p.ParagraphProperties)
@@ -51,7 +51,7 @@ abstract class TableElementExpressionBase(IHtmlElement node) : PhrasingElementEx
 
         if (cellProperties.HasChildren && element is TableCell cell)
         {
-            cell.TableCellProperties ??= new TableCellProperties();
+            cell.TableCellProperties ??= new();
 
             var knownTags = new HashSet<string>();
             foreach (var prop in cell.TableCellProperties)

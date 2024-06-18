@@ -12,8 +12,10 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
+using AngleSharp.Text;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
 
@@ -41,6 +43,7 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
     protected virtual IEnumerable<OpenXmlElement> Interpret (
         ParsingContext context, IEnumerable<INode> childNodes)
     {
+        var runs = new List<OpenXmlElement>();
         foreach (var child in childNodes)
         {
             var expression = CreateFromHtmlNode (child);
@@ -49,9 +52,10 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
             foreach (var element in expression.Interpret(context))
             {
                 context.CascadeStyles(element);
-                yield return element;
+                runs.Add(element);
             }
         }
+        return CombineRuns(runs);
     }
 
     public override void CascadeStyles(OpenXmlElement element)
@@ -59,7 +63,7 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
         if (!runProperties.HasChildren || element is not Run run)
             return;
 
-        run.RunProperties ??= new RunProperties();
+        run.RunProperties ??= new();
 
         var knownTags = new HashSet<string>();
         foreach (var prop in run.RunProperties)
@@ -173,5 +177,34 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
         // size are half-point font size
         if (font.Size.IsFixed)
             runProperties.FontSize = new FontSize() { Val = Math.Round(font.Size.ValueInPoint * 2).ToString(CultureInfo.InvariantCulture) };
+    }
+
+    /// <summary>
+    /// Mimics the behaviour of Html rendering when 2 consecutives runs are separated by a space.
+    /// </summary>
+    protected static IEnumerable<OpenXmlElement> CombineRuns(IEnumerable<OpenXmlElement> runs)
+    {
+        if (runs.Count() == 1)
+        {
+            yield return runs.First();
+            yield break;
+        }
+
+        bool endsWithSpace = true;
+        foreach (var run in runs)
+        {
+            var textElement = run.GetFirstChild<Text>()!;
+            if (textElement != null) // could be null when <br/>
+            {
+                var text = textElement.Text;
+                // we know that the text cannot be empty because we skip them in TextExpression
+                if (!endsWithSpace && !text[0].IsSpaceCharacter())
+                {
+                    yield return new Run(new Text(" "));
+                }
+                endsWithSpace = text[text.Length - 1].IsSpaceCharacter();
+            }
+            yield return run;
+        }
     }
 }

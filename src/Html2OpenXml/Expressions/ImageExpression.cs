@@ -42,7 +42,10 @@ sealed class ImageExpression(IHtmlElement node) : HtmlElementExpression(node)
         Run run = new(drawing);
         Border border = ComposeStyles();
         if (border.Val?.Equals(BorderValues.None) == false)
-            run.InsertInProperties(prop => prop.Border = border);
+        {
+            run.RunProperties ??= new();
+            run.RunProperties.Border = border;
+        }
         return [run];
     }
 

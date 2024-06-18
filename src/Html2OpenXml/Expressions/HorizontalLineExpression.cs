@@ -82,7 +82,7 @@ sealed class HorizontalLineExpression(IHtmlElement node) : HtmlElementExpression
         else
             hrBorderStyle = new TopBorder() { Val = BorderValues.Single, Size = 4U };
 
-        paragraph.ParagraphProperties ??= new ParagraphProperties ();
+        paragraph.ParagraphProperties ??= new();
         paragraph.ParagraphProperties.ParagraphBorders = new ParagraphBorders {
             TopBorder = hrBorderStyle
         };

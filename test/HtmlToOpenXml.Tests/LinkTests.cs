@@ -107,5 +107,32 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(elements[1].GetFirstChild<BookmarkStart>()?.Name.Value, Is.EqualTo("heading1"));
             });
         }
+
+        [Test(Description = "Link inside a paragraph")]
+        public void ParseInline()
+        {
+            var elements = converter.Parse($@"Some <a href=""www.site.com"">inline</a> link.");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements[0], Is.TypeOf(typeof(Paragraph)));
+            Assert.Multiple(() => {
+                Assert.That(elements[0].ElementAt(0), Is.TypeOf<Run>());
+                Assert.That(elements[0].ElementAt(1), Is.TypeOf<Hyperlink>());
+                Assert.That(elements[0].ElementAt(2), Is.TypeOf<Run>());
+            });
+        }
+
+        [Test(Description = "Many runs inside the link should respect whitespaces")]
+        public void ParseComplexText()
+        {
+            var elements = converter.Parse(@"<a href=""https://github.com/onizet/html2openxml""><b>Html</b> to <b>OpenXml</b>!</a>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements[0], Is.TypeOf(typeof(Paragraph)));
+            var h = elements[0].GetFirstChild<Hyperlink>();
+
+            Assert.That(h, Is.Not.Null);
+            Assert.That(h.ChildElements, Has.All.TypeOf(typeof(Run)));
+            Assert.That(h.ChildElements, Has.Count.EqualTo(4));
+            Assert.That(h.InnerText, Is.EqualTo("Html to OpenXml !"));
+        }
     }
 }
