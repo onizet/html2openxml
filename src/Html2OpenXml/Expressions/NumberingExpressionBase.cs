@@ -97,7 +97,7 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
     }
 
     /// <summary>
-    /// Find or register an list template from the document.
+    /// Find or register a list template from the document.
     /// </summary>
     protected int? GetListInstance(int abstractNumId)
     {
@@ -237,12 +237,10 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
             ("lower-greek", NumberFormatValues.LowerLetter, "%{0}."),
         })
         {
-            var abstractNum = new AbstractNum(
-                new MultiLevelType() { Val = MultiLevelValues.HybridMultilevel },
-                new RunProperties(
-                    new RunFonts() { HighAnsi = "Arial Unicode MS" }
-                )
-            ) { AbstractNumDefinitionName = new() { Val = listName } };
+            var abstractNum = new AbstractNum {
+                AbstractNumDefinitionName = new() { Val = listName },
+                MultiLevelType = new() { Val = MultiLevelValues.HybridMultilevel }
+            };
 
             bool useSymbol = listName.EndsWith("-greek");
             for (var lvlIndex = 0; lvlIndex <= MaxLevel; lvlIndex++)
@@ -268,12 +266,11 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
         // tiered numbering: 1, 1.1, 1.1.1
         foreach (var listName in new[] { HeadingNumberingName, "decimal-tiered" })
         {
-            var abstractNum = new AbstractNum(
-                new MultiLevelType() { Val = MultiLevelValues.HybridMultilevel },
-                new RunProperties(
-                    new RunFonts() { HighAnsi = "Arial Unicode MS" }
-                )
-            ) { AbstractNumDefinitionName = new() { Val = listName } };
+            var abstractNum = new AbstractNum {
+                AbstractNumDefinitionName = new() { Val = listName },
+                MultiLevelType = new() { Val = MultiLevelValues.HybridMultilevel }
+            };
+
             var lvlText = new System.Text.StringBuilder();
             for (var lvlIndex = 0; lvlIndex <= MaxLevel; lvlIndex++)
             {

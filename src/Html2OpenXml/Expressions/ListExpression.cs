@@ -44,6 +44,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
          "lower-alpha", "upper-alpha", "lower-latin", "upper-latin",
          "lower-roman", "upper-roman",
          "decimal-tiered" /* not W3C compliant */];
+    private static readonly HashSet<string> nonOrderListTypes = ["disc", "decimal", "square", "circle"];
     private ParagraphStyleId? listParagraphStyleId;
 
 
@@ -101,6 +102,8 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         ListContext listContext;
 
         var instanceId = GetListInstance(abstractNumId);
+        int overrideLevelIndex = 0;
+        var isOrderedTag = node.NodeName.Equals("ol", StringComparison.OrdinalIgnoreCase);
         if (!instanceId.HasValue || context.Converter.ContinueNumbering == false)
         {
             // create a new instance of that list template
@@ -116,19 +119,25 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
             instanceId = IncrementInstanceId(context, abstractNumId, isReusable: false);
             listContext =  new ListContext(listStyle, abstractNumId, instanceId.Value, 1);
         }
+        // be sure to restart to 1 any nested ordered list
+        else if (currentLevel > 0 && isOrderedTag)
+        {
+            instanceId = IncrementInstanceId(context, abstractNumId, isReusable: false);
+            overrideLevelIndex = currentLevel;
+            listContext = new ListContext(listStyle, abstractNumId, instanceId.Value, currentLevel + 1);
+        }
         else
         {
             return new ListContext(listStyle, abstractNumId, instanceId.Value, currentLevel + 1);
         }
 
         int startValue = 1;
-        if (node.NodeName.Equals("ol", StringComparison.OrdinalIgnoreCase))
+        if (isOrderedTag)
         {
             var startAttribute = node.GetAttribute("start");
             if (startAttribute != null && int.TryParse(startAttribute, out var val) && val > 1)
                 startValue = val;
         }
-
 
         var numbering = context.MainPart.NumberingDefinitionsPart!.Numbering;
         numbering.Append(
@@ -136,7 +145,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
                 new AbstractNumId() { Val = abstractNumId },
                 new LevelOverride(
                     new StartOverrideNumberingValue() { Val = startValue }
-                )
+                ) { LevelIndex = overrideLevelIndex }
             )
             { NumberID = instanceId.Value });
 

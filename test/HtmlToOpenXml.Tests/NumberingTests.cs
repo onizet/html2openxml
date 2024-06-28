@@ -403,5 +403,41 @@ namespace HtmlToOpenXml.Tests
                 .FirstOrDefault(s => s.StyleName?.Val == "Harvard");
             Assert.That(style, Is.Not.Null);
         }
+
+        [Test(Description = "Restart indenting in second nested numbering (issue #83)")]
+        public void RestartExistingNestedNumbering()
+        {
+            var elements = converter.Parse(@"
+                <ol style='list-style-type: decimal;'>
+                <li>item 1a
+                    <ol style='list-style-type: lower-alpha;'>
+                        <li>item 1.1a</li>
+                    </ol>
+                </li>
+                </ol>
+                <ol style='list-style-type: decimal;'>
+                <li>item 1b
+                    <ol style='list-style-type: lower-alpha;'>
+                        <li>item 1.1b</li>
+                    </ol>
+                </li>
+                </ol>");
+
+            var absNum = mainPart.NumberingDefinitionsPart?.Numbering
+                .Elements<AbstractNum>();
+            Assert.That(absNum, Is.Not.Null);
+            Assert.That(absNum.Count(), Is.EqualTo(2));
+
+            var absNumIds = new HashSet<int>(absNum.Select(a => a.AbstractNumberId.Value));
+            var instances = mainPart.NumberingDefinitionsPart?.Numbering
+                .Elements<NumberingInstance>().Where(i => absNumIds.Contains(i.AbstractNumId.Val));
+            Assert.Multiple(() =>
+            {
+                Assert.That(instances.Count(), Is.EqualTo(4), "Expecting 4 distinct instances of the list");
+                Assert.That(instances.Select(i => i.NumberID.Value), Is.Unique);
+            });
+            Assert.That(instances.Last().GetFirstChild<LevelOverride>()?.LevelIndex?.Value, Is.EqualTo(1));
+            Assert.That(instances.Last().GetFirstChild<LevelOverride>()?.StartOverrideNumberingValue?.Val?.Value, Is.EqualTo(1));
+        }
     }
 }
