@@ -43,7 +43,7 @@ font-size:12px;
 font-family:Verdana;
 font-variant:small-caps;
 color:red;
-text-decoration:underline;
+text-decoration:wavy line-through double;
 "">bold with italic style</b>");
             Assert.That(elements, Has.Count.EqualTo(1));
 
@@ -57,9 +57,11 @@ text-decoration:underline;
                 Assert.That(runProperties.HasChild<Italic>(), Is.True);
                 Assert.That(runProperties.HasChild<FontSize>(), Is.True);
                 Assert.That(runProperties.HasChild<Underline>(), Is.True);
+                Assert.That(runProperties.HasChild<DoubleStrike>(), Is.True);
                 Assert.That(runProperties.HasChild<Color>(), Is.True);
                 Assert.That(runProperties.HasChild<SmallCaps>(), Is.True);
                 Assert.That(runProperties.GetFirstChild<RunFonts>()?.Ascii?.Value, Is.EqualTo("Verdana"));
+                Assert.That(runProperties.GetFirstChild<Underline>()?.Val?.Value, Is.EqualTo(UnderlineValues.Wave));
             });
         }
 

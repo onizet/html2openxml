@@ -10,6 +10,7 @@
  * PARTICULAR PURPOSE.
  */
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using DocumentFormat.OpenXml.Wordprocessing;
 
@@ -185,24 +186,28 @@ static class Converter
         return PageOrientationValues.Portrait;
     }
 
-    public static TextDecoration ToTextDecoration(string? html)
+    public static IEnumerable<TextDecoration> ToTextDecoration(string? html)
     {
         // this style could take multiple values separated by a space
         // ex: text-decoration: blink underline;
 
-        TextDecoration decoration = TextDecoration.None;
+        var decorations = new List<TextDecoration>();
 
-        if (html == null) return decoration;
+        if (html == null) return decorations;
         foreach (string part in html.ToLowerInvariant().Split(' '))
         {
             switch (part)
             {
-                case "underline": decoration |= TextDecoration.Underline; break;
-                case "line-through": decoration |= TextDecoration.LineThrough; break;
+                case "underline": decorations.Add(TextDecoration.Underline); break;
+                case "line-through": decorations.Add(TextDecoration.LineThrough); break;
+                case "double": decorations.Add(TextDecoration.Double); break;
+                case "dotted": decorations.Add(TextDecoration.Dotted); break;
+                case "dashed": decorations.Add(TextDecoration.Dashed); break;
+                case "wavy": decorations.Add(TextDecoration.Wave); break;
                 default: break; // blink and overline are not supported
             }
         }
-        return decoration;
+        return decorations;
     }
 
     public static T? ToBorder<T>(SideBorder border) where T: BorderType, new()

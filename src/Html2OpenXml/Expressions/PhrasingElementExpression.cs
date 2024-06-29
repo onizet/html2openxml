@@ -128,15 +128,28 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
             runProperties.Shading = new Shading { Val = ShadingPatternValues.Clear, Fill = colorValue.ToHexString() };
         }
 
-        var decorations = Converter.ToTextDecoration(styleAttributes["text-decoration"]);
-        if ((decorations & TextDecoration.Underline) != 0)
+        foreach (var decoration in Converter.ToTextDecoration(styleAttributes["text-decoration"]))
         {
-            runProperties.Underline = new Underline { Val = UnderlineValues.Single };
+            switch (decoration)
+            {
+                case TextDecoration.Underline:
+                    runProperties.Underline = new Underline { Val = UnderlineValues.Single }; break;
+                case TextDecoration.Dotted:
+                    runProperties.Underline = new Underline { Val = UnderlineValues.Dotted }; break;
+                case TextDecoration.Dashed:
+                    runProperties.Underline = new Underline { Val = UnderlineValues.Dash }; break;
+                case TextDecoration.Wave:
+                    runProperties.Underline = new Underline { Val = UnderlineValues.Wave }; break;
+                case TextDecoration.Double:
+                    runProperties.DoubleStrike = new DoubleStrike(); break;
+                case TextDecoration.LineThrough:
+                    runProperties.Strike = new Strike(); break;
+            }
         }
-        if ((decorations & TextDecoration.LineThrough) != 0)
-        {
-            runProperties.Strike = new Strike();
-        }
+
+        // these style cannot be defined at the same time
+        if (runProperties.DoubleStrike != null)
+            runProperties.Strike = null;
 
         foreach(string className in node.ClassList)
         {
