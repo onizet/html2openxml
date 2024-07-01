@@ -44,7 +44,6 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
          "lower-alpha", "upper-alpha", "lower-latin", "upper-latin",
          "lower-roman", "upper-roman",
          "decimal-tiered" /* not W3C compliant */];
-    private static readonly HashSet<string> nonOrderListTypes = ["disc", "decimal", "square", "circle"];
     private ParagraphStyleId? listParagraphStyleId;
 
 
