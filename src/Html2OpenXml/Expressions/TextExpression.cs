@@ -32,7 +32,7 @@ sealed class TextExpression(INode node) : HtmlDomExpression
         if (text.Trim().Length == 0) return [];
 
         if (!context.PreverseLinebreaks)
-            text = text.StripLineBreaks();
+            text = text.CollapseLineBreaks();
         if (context.CollapseWhitespaces && text[0].IsWhiteSpaceCharacter() &&
             node.PreviousSibling is IHtmlImageElement)
         {

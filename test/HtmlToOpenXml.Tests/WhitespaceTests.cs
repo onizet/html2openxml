@@ -30,11 +30,12 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements[1].InnerText, Is.EqualTo("World"));
         }
 
-        [Test]
-        public void ParseInlineElements ()
+        [TestCase("<h1>   Hello\r\n<span> World!</span>   </h1>")]
+        [TestCase("<span>   Hello \r\n World!   </span>")]
+        [TestCase("<span>   Hello\r\n\r\nWorld!   </span>")]
+        public void ParseInlineElements (string html)
         {
-            var elements = converter.Parse(@"<h1>   Hello
-        <span> World!</span>   </h1>");
+            var elements = converter.Parse(html);
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements[0].InnerText, Is.EqualTo("Hello World!"));
         }

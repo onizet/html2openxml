@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
+using AngleSharp.Text;
 
 namespace HtmlToOpenXml;
 
@@ -95,5 +96,40 @@ static class AngleSharpExtensions
             yield return body;
 
         if (table.Foot != null) yield return table.Foot;
+    }
+
+    /// <summary>
+    /// Collapse all line breaks from the given string.
+    /// </summary>
+    /// <param name="str">The string to examine.</param>
+    /// <returns>A new string, which excludes the line breaks and
+    /// ensure that two lines are merged with a space between them.</returns>
+    public static string CollapseLineBreaks(this string str)
+    {
+        char[] chars = str.ToCharArray();
+        int shift = 0, length = chars.Length, c = 0;
+        while (c < length)
+        {
+            chars[c] = chars[c + shift];
+
+            if (!chars[c].IsLineBreak())
+            {
+                c++;
+                continue;
+            }
+
+            if (c > 1 && !chars[c - 1].IsWhiteSpaceCharacter() && c < length)
+            {
+                chars[c] = ' ';
+                c++;
+            }
+            else
+            {
+                shift++;
+                length--;
+            }
+        }
+
+        return new string(chars, 0, length);
     }
 }
