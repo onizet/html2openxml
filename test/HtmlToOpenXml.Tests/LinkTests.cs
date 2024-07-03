@@ -113,13 +113,14 @@ namespace HtmlToOpenXml.Tests
         [Test(Description = "Link inside a paragraph")]
         public void ParseInline()
         {
-            var elements = converter.Parse($@"Some <a href=""www.site.com"">inline</a> link.");
+            var elements = converter.Parse(@"Some <a href=""www.site.com"">inline</a> link.");
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements[0], Is.TypeOf(typeof(Paragraph)));
             Assert.Multiple(() => {
                 Assert.That(elements[0].ElementAt(0), Is.TypeOf<Run>());
-                Assert.That(elements[0].ElementAt(1), Is.TypeOf<Hyperlink>());
-                Assert.That(elements[0].ElementAt(2), Is.TypeOf<Run>());
+                Assert.That(elements[0].ElementAt(1), Is.TypeOf<Run>());
+                Assert.That(elements[0].ElementAt(2), Is.TypeOf<Hyperlink>());
+                Assert.That(elements[0].ElementAt(3), Is.TypeOf<Run>());
             });
         }
 
