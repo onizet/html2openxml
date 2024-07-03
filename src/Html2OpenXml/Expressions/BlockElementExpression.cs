@@ -184,7 +184,7 @@ class BlockElementExpression(IHtmlElement node, params OpenXmlLeafElement[]? sty
         if (textIndent.IsValid)
         {
             indentation ??= new Indentation();
-            indentation.FirstLine = textIndent.ValueInDxa.ToString(CultureInfo.InvariantCulture);
+            indentation.FirstLine = Math.Max(0, textIndent.ValueInDxa).ToString(CultureInfo.InvariantCulture);
             paraProperties.Indentation = indentation;
         }
 
