@@ -37,7 +37,7 @@ class BlockElementExpression(IHtmlElement node, params OpenXmlLeafElement[]? sty
         var isBookmarkTarget = node.GetAttribute(InternalNamespaceUri, "bookmark");
         if (isBookmarkTarget is not null)
         {
-            elements.First().PrependChild(new BookmarkStart() { Name = node.Id });
+            elements.First().PrependChild(new BookmarkStart() { Name = node.Id ?? node.GetAttribute("name") });
             elements.First().AppendChild(new BookmarkEnd());
         }
 

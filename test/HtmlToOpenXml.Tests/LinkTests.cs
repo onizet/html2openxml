@@ -90,12 +90,14 @@ namespace HtmlToOpenXml.Tests
             converter.ExcludeLinkAnchor = false;
         }
 
-        [TestCase("h1")]
-        [TestCase("div")]
-        public void ParseInDocumentLink(string tagName)
+        [TestCase("h1", "id")]
+        [TestCase("div", "id")]
+        [TestCase("h1", "name")]
+        [TestCase("div", "name")]
+        public void ParseInDocumentLink(string tagName, string attributeName)
         {
-            string str = @$"<a href=""#heading1"">1. Heading 1</a><${tagName} id=""heading1"">Heading 1</${tagName}>";
-            var elements = converter.Parse(@$"<a href=""#heading1"">1. Heading 1</a><{tagName} id=""heading1"">Heading 1</{tagName}>");
+            string str = @$"<a href=""#heading1"">1. Heading 1</a><{tagName} {attributeName}=""heading1"">Heading 1</${tagName}>";
+            var elements = converter.Parse(str);
             Assert.That(elements, Has.Count.EqualTo(2));
             Assert.That(elements, Has.All.TypeOf<Paragraph>());
             Assert.Multiple(() =>
