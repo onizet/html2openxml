@@ -23,7 +23,7 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 sealed class HeadingElementExpression(IHtmlElement node) : NumberingExpressionBase(node)
 {
-    private static readonly Regex numberingRegex = new(@"(?m)^(\d+\.?)*\s+");
+    private static readonly Regex numberingRegex = new(@"^\s*(\d+\.?)*\s*");
 
     /// <inheritdoc/>
     public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)

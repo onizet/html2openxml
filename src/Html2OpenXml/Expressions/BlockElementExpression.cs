@@ -34,11 +34,14 @@ class BlockElementExpression(IHtmlElement node, params OpenXmlLeafElement[]? sty
     {
         var elements = base.Interpret(context);
 
-        var isBookmarkTarget = node.GetAttribute(InternalNamespaceUri, "bookmark");
-        if (isBookmarkTarget is not null)
+        var bookmarkTarget = node.GetAttribute(InternalNamespaceUri, "bookmark");
+        if (bookmarkTarget is not null)
         {
-            elements.First().PrependChild(new BookmarkStart() { Name = node.Id ?? node.GetAttribute("name") });
-            elements.First().AppendChild(new BookmarkEnd());
+            var bookmarkId = IncrementBookmarkId(context).ToString(CultureInfo.InvariantCulture);
+            var p = elements.First();
+            // need to be inserted after pPr to avoid schema warning
+            p.InsertAfter(new BookmarkStart() { Id = bookmarkId, Name = bookmarkTarget }, p.GetFirstChild<ParagraphProperties>());
+            p.AppendChild(new BookmarkEnd() { Id = bookmarkId });
         }
 
         return elements;
@@ -272,5 +275,28 @@ class BlockElementExpression(IHtmlElement node, params OpenXmlLeafElement[]? sty
 
         p.Append(CombineRuns(runs));
         return p;
+    }
+
+    /// <summary>
+    /// Resolve thje next available <see cref="BookmarkStart.Id"/> (they must be unique).
+    /// </summary>
+    private static int IncrementBookmarkId(ParsingContext context)
+    {
+        var bookmarkRef = context.Properties<int?>("bookmarkRef");
+
+        if (!bookmarkRef.HasValue)
+        {
+            bookmarkRef = 0;
+            foreach (var b in context.MainPart.Document.Body!.Descendants<BookmarkStart>())
+            {
+                // OpenXml SDK expose the ID as a string value but this is really an integer
+                if (b.Id != null && int.TryParse(b.Id.Value, out int id) && id > bookmarkRef)
+                    bookmarkRef = id;
+            }
+        }
+
+        bookmarkRef++;
+        context.Properties("bookmarkRef", bookmarkRef);
+        return bookmarkRef.Value;
     }
 }

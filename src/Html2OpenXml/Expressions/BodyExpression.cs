@@ -99,12 +99,16 @@ sealed class BodyExpression(IHtmlElement node) : BlockElementExpression(node)
             var id = link.Hash.Substring(1);
             var target = node.Owner!.GetElementById(id);
             // `id` attribute is preferred but `name` is also valid
-            if (target is null)
-                target = node.Owner!.GetElementsByName(id).FirstOrDefault();
+            target ??= node.Owner!.GetElementsByName(id).FirstOrDefault();
+
+            if (target is null) continue;
+
+            if (target.ParentElement is IHtmlHeadingElement heading)
+                target = heading;
 
             // we will be able to retrieve the target during the processing
-            target?.Attributes.SetNamedItemWithNamespaceUri(
-                new Attr("h2ox", "bookmark", string.Empty, InternalNamespaceUri));
+            target.Attributes.SetNamedItemWithNamespaceUri(
+                new Attr("h2ox", "bookmark", id, InternalNamespaceUri));
         }
     }
 }
