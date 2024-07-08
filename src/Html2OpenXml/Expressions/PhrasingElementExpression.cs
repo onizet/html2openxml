@@ -211,7 +211,7 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
                 // we know that the text cannot be empty because we skip them in TextExpression
                 if (!endsWithSpace && !text[0].IsSpaceCharacter())
                 {
-                    yield return new Run(new Text(" "));
+                    yield return new Run(new Text(" ") { Space = SpaceProcessingModeValues.Preserve });
                 }
                 endsWithSpace = text[text.Length - 1].IsSpaceCharacter();
             }
