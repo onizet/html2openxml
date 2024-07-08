@@ -1,14 +1,30 @@
 # Changelog
 
-## 3.0.0 (Next major release)
+## vNext
 
-- rely on HtmlAgilityPack for the parsing
+- Support MathMl
+- Support SVG
 
-## 2.4.0
+## 3.0.0
 
+- AngleSharp is now the backend parser for Html
+- Refactoring to use the Interpreter/Composite design pattern, which ease the code maintenance
+- Lots of new unit test cases (190+)
+- Rewriting of `list` (correct handling of nested style, restarting numbers and consecutive)
+- Rewriting of `table` (row span, col span, col tags driving styles)
+- Parallel download of images at early stage of the parsing.
+
+## 2.4.2
+
+- Fix signing the assembly
+- Enable Nullable reference types
 - support latest version of OpenXML SDK (3.1.0) which introduces breaking changes, but also support embedding SVG and JPEG2000 files.
 - fix caching the provisioned images
 - drop support for .Net Standard 1.3
+
+## 2.4.0 and 2.4.1
+
+do not use as the signing assembly was in failure #138
 
 ## 2.3.0
 

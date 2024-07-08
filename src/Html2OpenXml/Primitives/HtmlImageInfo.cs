@@ -11,37 +11,36 @@
  */
 using DocumentFormat.OpenXml.Packaging;
 
-namespace HtmlToOpenXml
+namespace HtmlToOpenXml;
+
+/// <summary>
+/// Represents an image and its metadata.
+/// </summary>
+sealed class HtmlImageInfo(string source)
 {
-	/// <summary>
-	/// Represents an image and its metadata.
-	/// </summary>
-	sealed class HtmlImageInfo
-	{
-		/// <summary>
-		/// The URI identifying this cached image information.
-		/// </summary>
-		public string Source { get; set; }
+    /// <summary>
+    /// The URI identifying this cached image information.
+    /// </summary>
+    public string Source { get; set; } = source;
 
-		/// <summary>
-		/// The Unique identifier of the ImagePart in the <see cref="MainDocumentPart"/>.
-		/// </summary>
-		public string ImagePartId { get; set; }
+    /// <summary>
+    /// The Unique identifier of the ImagePart in the <see cref="MainDocumentPart"/>.
+    /// </summary>
+    public string? ImagePartId { get; set; }
 
-		/// <summary>
-		/// Gets or sets the size of the image
-		/// </summary>
-		public Size Size { get; set; }
-	}
+    /// <summary>
+    /// Gets or sets the size of the image
+    /// </summary>
+    public Size Size { get; set; }
+}
 
-	/// <summary>
-	/// Typed dictionary of <see cref="HtmlImageInfo"/> where the Source URI is the identifier.
-	/// </summary>
-	sealed class HtmlImageInfoCollection : System.Collections.ObjectModel.KeyedCollection<string, HtmlImageInfo>
-	{
-		protected override string GetKeyForItem(HtmlImageInfo item)
-		{
-			return item.Source;
-		}
-	}
+/// <summary>
+/// Typed dictionary of <see cref="HtmlImageInfo"/> where the Source URI is the identifier.
+/// </summary>
+sealed class HtmlImageInfoCollection : System.Collections.ObjectModel.KeyedCollection<string, HtmlImageInfo>
+{
+    protected override string GetKeyForItem(HtmlImageInfo item)
+    {
+        return item.Source;
+    }
 }

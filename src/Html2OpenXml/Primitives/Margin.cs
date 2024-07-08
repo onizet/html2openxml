@@ -9,141 +9,137 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
-using System.ComponentModel;
-using System.Globalization;
 
-namespace HtmlToOpenXml
+namespace HtmlToOpenXml;
+
+/// <summary>
+/// Represents a Html Unit (ie: 120px, 10em, ...).
+/// </summary>
+struct Margin
 {
-    /// <summary>
-    /// Represents a Html Unit (ie: 120px, 10em, ...).
-    /// </summary>
-    struct Margin
+    private Unit[] sides;
+
+
+    public Margin(Unit top, Unit right, Unit bottom, Unit left)
     {
-        private Unit[] sides;
+        this.sides = [top, right, bottom, left];
+    }
 
+    /// <summary>
+    /// Parse the margin style attribute.
+    /// </summary>
+    /// <remarks>
+    /// The margin property can have from one to four values.
+    /// <b>margin:25px 50px 75px 100px;</b>
+    /// top margin is 25px
+    /// right margin is 50px
+    /// bottom margin is 75px
+    /// left margin is 100px
+    /// 
+    /// <b>margin:25px 50px 75px;</b>
+    /// top margin is 25px
+    /// right and left margins are 50px
+    /// bottom margin is 75px
+    /// 
+    /// <b>margin:25px 50px;</b>
+    /// top and bottom margins are 25px
+    /// right and left margins are 50px
+    /// 
+    /// <b>margin:25px;</b>
+    /// all four margins are 25px
+    /// </remarks>
+    public static Margin Parse(string? str)
+    {
+        if (str == null) return new Margin();
 
-        public Margin(Unit top, Unit right, Unit bottom, Unit left)
+        var parts = str.Split(HttpUtility.WhiteSpaces);
+        switch (parts.Length)
         {
-            this.sides = new[] { top, right, bottom, left };
+            case 1:
+                {
+                    Unit all = Unit.Parse(parts[0]);
+                    return new Margin(all, all, all, all);
+                }
+            case 2:
+                {
+                    Unit u1 = Unit.Parse(parts[0]);
+                    Unit u2 = Unit.Parse(parts[1]);
+                    return new Margin(u1, u2, u1, u2);
+                }
+            case 3:
+                {
+                    Unit u1 = Unit.Parse(parts[0]);
+                    Unit u2 = Unit.Parse(parts[1]);
+                    Unit u3 = Unit.Parse(parts[2]);
+                    return new Margin(u1, u2, u3, u2);
+                }
+            case 4:
+                {
+                    Unit u1 = Unit.Parse(parts[0]);
+                    Unit u2 = Unit.Parse(parts[1]);
+                    Unit u3 = Unit.Parse(parts[2]);
+                    Unit u4 = Unit.Parse(parts[3]);
+                    return new Margin(u1, u2, u3, u4);
+                }
         }
 
-        /// <summary>
-        /// Parse the margin style attribute.
-        /// </summary>
-        /// <remarks>
-        /// The margin property can have from one to four values.
-        /// <b>margin:25px 50px 75px 100px;</b>
-        /// top margin is 25px
-        /// right margin is 50px
-        /// bottom margin is 75px
-        /// left margin is 100px
-        /// 
-        /// <b>margin:25px 50px 75px;</b>
-        /// top margin is 25px
-        /// right and left margins are 50px
-        /// bottom margin is 75px
-        /// 
-        /// <b>margin:25px 50px;</b>
-        /// top and bottom margins are 25px
-        /// right and left margins are 50px
-        /// 
-        /// <b>margin:25px;</b>
-        /// all four margins are 25px
-        /// </remarks>
-        public static Margin Parse(String str)
-        {
-            if (str == null) return new Margin();
+        return new Margin();
+    }
 
-            String[] parts = str.Split(HttpUtility.WhiteSpaces);
-            switch (parts.Length)
-            {
-                case 1:
-                    {
-                        Unit all = Unit.Parse(parts[0]);
-                        return new Margin(all, all, all, all);
-                    }
-                case 2:
-                    {
-                        Unit u1 = Unit.Parse(parts[0]);
-                        Unit u2 = Unit.Parse(parts[1]);
-                        return new Margin(u1, u2, u1, u2);
-                    }
-                case 3:
-                    {
-                        Unit u1 = Unit.Parse(parts[0]);
-                        Unit u2 = Unit.Parse(parts[1]);
-                        Unit u3 = Unit.Parse(parts[2]);
-                        return new Margin(u1, u2, u3, u2);
-                    }
-                case 4:
-                    {
-                        Unit u1 = Unit.Parse(parts[0]);
-                        Unit u2 = Unit.Parse(parts[1]);
-                        Unit u3 = Unit.Parse(parts[2]);
-                        Unit u4 = Unit.Parse(parts[3]);
-                        return new Margin(u1, u2, u3, u4);
-                    }
-            }
+    private void EnsureSides()
+    {
+        if (this.sides == null) sides = new Unit[4];
+    }
 
-            return new Margin();
-        }
+    //____________________________________________________________________
+    //
 
-		private void EnsureSides()
-		{
-			if (this.sides == null) sides = new Unit[4];
-		}
+    /// <summary>
+    /// Gets or sets the unit of the bottom side.
+    /// </summary>
+    public Unit Bottom
+    {
+        readonly get { return sides == null ? Unit.Empty : sides[2]; }
+        set { EnsureSides(); sides[2] = value; }
+    }
 
-        //____________________________________________________________________
-        //
+    /// <summary>
+    /// Gets or sets the unit of the left side.
+    /// </summary>
+    public Unit Left
+    {
+        readonly get { return sides == null ? Unit.Empty : sides[3]; }
+        set { EnsureSides(); sides[3] = value; }
+    }
 
-        /// <summary>
-		/// Gets or sets the unit of the bottom side.
-        /// </summary>
-        public Unit Bottom
-        {
-            get { return sides == null ? Unit.Empty : sides[2]; }
-			set { EnsureSides(); sides[2] = value; }
-        }
+    /// <summary>
+    /// Gets or sets the unit of the top side.
+    /// </summary>
+    public Unit Top
+    {
+        readonly get { return sides == null ? Unit.Empty : sides[0]; }
+        set { EnsureSides(); sides[0] = value; }
+    }
 
-        /// <summary>
-		/// Gets or sets the unit of the left side.
-        /// </summary>
-        public Unit Left
-        {
-			get { return sides == null ? Unit.Empty : sides[3]; }
-			set { EnsureSides(); sides[3] = value; }
-        }
+    /// <summary>
+    /// Gets or sets the unit of the right side.
+    /// </summary>
+    public Unit Right
+    {
+        readonly get { return sides == null ? Unit.Empty : sides[1]; }
+        set { EnsureSides(); sides[1] = value; }
+    }
 
-        /// <summary>
-		/// Gets or sets the unit of the top side.
-        /// </summary>
-        public Unit Top
-        {
-			get { return sides == null ? Unit.Empty : sides[0]; }
-			set { EnsureSides(); sides[0] = value; }
-        }
+    public readonly bool IsValid
+    {
+        get => sides != null && Left.IsValid && Right.IsValid && Bottom.IsValid && Top.IsValid;
+    }
 
-        /// <summary>
-		/// Gets or sets the unit of the right side.
-        /// </summary>
-        public Unit Right
-        {
-			get { return sides == null ? Unit.Empty : sides[1]; }
-			set { EnsureSides(); sides[1] = value; }
-        }
-
-        public bool IsValid
-        {
-            get { return sides != null && Left.IsValid && Right.IsValid && Bottom.IsValid && Top.IsValid; }
-        }
-
-		/// <summary>
-		/// Gets whether at least one side has been specified.
-		/// </summary>
-		public bool IsEmpty
-		{
-			get { return sides == null || !(Left.IsValid || Right.IsValid || Bottom.IsValid || Top.IsValid); }
-		}
+    /// <summary>
+    /// Gets whether at least one side has been specified.
+    /// </summary>
+    public readonly bool IsEmpty
+    {
+        get => sides == null || !(Left.IsValid || Right.IsValid || Bottom.IsValid || Top.IsValid);
     }
 }

@@ -9,14 +9,25 @@
             "command": "dotnet",
             "args": [
                 "build",
-                "${workspaceRoot}/src/Html2OpenXml/HtmlToOpenXml.csproj",
-                "${workspaceRoot}/examples/Demo/Demo.csproj"
+                "${workspaceRoot}"
             ],
             "problemMatcher": "$msCompile",
             "group": {
                 "_id": "build",
                 "isDefault": false
             }
-        }
+        },
+        {
+            "label": "Build Code Coverage",
+            "type": "process",
+            "command": "dotnet",
+            "args": [
+                "test",
+                "/p:CollectCoverage=true",
+                "/p:CoverletOutputFormat=lcov",
+                "/p:CoverletOutput=./coverage"
+            ],
+            "problemMatcher": "$msCompile"
+        },
     ]
 }

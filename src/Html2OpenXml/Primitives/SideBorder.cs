@@ -11,148 +11,133 @@
  */
 using System;
 using System.Collections.Generic;
-using System.Globalization;
+using System.Text.RegularExpressions;
+using DocumentFormat.OpenXml.Wordprocessing;
 
-namespace HtmlToOpenXml
+namespace HtmlToOpenXml;
+
+/// <summary>
+/// Represents a Html Unit (ie: 120px, 10em, ...).
+/// </summary>
+readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
 {
-    using w = DocumentFormat.OpenXml.Wordprocessing;
+    /// <summary>Represents an empty border (not defined).</summary>
+    public static readonly SideBorder Empty = new(BorderValues.Nil, HtmlColor.Empty, Unit.Empty);
 
+    private readonly BorderValues style = style;
+    private readonly HtmlColor color = color;
+    private readonly Unit size = size;
 
-	/// <summary>
-	/// Represents a Html Unit (ie: 120px, 10em, ...).
-	/// </summary>
-	[System.Diagnostics.DebuggerDisplay("{DebuggerDisplay,nq}")]
-	struct SideBorder
-	{
-		/// <summary>Represents an empty border (not defined).</summary>
-		public static readonly SideBorder Empty = new SideBorder();
+    public static SideBorder Parse(string? str)
+    {
+        if (str == null) return SideBorder.Empty;
 
-		private w.BorderValues style;
-		private HtmlColor color;
-		private Unit size;
+        // The properties of a border that can be set, are (in order): border-width, border-style, and border-color.
+        // It does not matter if one of the values above are missing, e.g. border:solid #ff0000; is allowed.
+        // The main problem for parsing this attribute is that the browsers allow any permutation of the values... meaning more coding :(
+        // http://www.w3schools.com/cssref/pr_border.asp
 
+        // Remove the spaces that could appear in the color parameter: rgb(233, 233, 233) -> rgb(233,233,233)
+        str = Regex.Replace(str, @",\s+?", ",");
+        var borderParts = new List<string>(str.Split(HttpUtility.WhiteSpaces, StringSplitOptions.RemoveEmptyEntries));
+        if (borderParts.Count == 0) return SideBorder.Empty;
 
-		public SideBorder(w.BorderValues style, HtmlColor color, Unit size)
-		{
-			this.style = style;
-			this.color = color;
-			this.size = size;
-		}
+        // Initialize default values
+        Unit borderWidth = Unit.Empty;
+        HtmlColor borderColor = HtmlColor.Empty;
+        BorderValues borderStyle = BorderValues.Nil;
 
-		public static SideBorder Parse(String str)
-		{
-			if (str == null) return SideBorder.Empty;
+        // Now try to guess the values with their permutation
 
-			// The properties of a border that can be set, are (in order): border-width, border-style, and border-color.
-			// It does not matter if one of the values above are missing, e.g. border:solid #ff0000; is allowed.
-			// The main problem for parsing this attribute is that the browsers allow any permutation of the values... meaning more coding :(
-			// http://www.w3schools.com/cssref/pr_border.asp
+        // handle border style
+        for (int i = 0; i < borderParts.Count; i++)
+        {
+            borderStyle = Converter.ToBorderStyle(borderParts[i]);
+            if (borderStyle != BorderValues.Nil)
+            {
+                borderParts.RemoveAt(i); // no need to process this part anymore
+                break;
+            }
+        }
 
-			List<String> borderParts = new List<String>(str.Split(HttpUtility.WhiteSpaces, StringSplitOptions.RemoveEmptyEntries));
-			if (borderParts.Count == 0) return SideBorder.Empty;
+        for (int i = 0; i < borderParts.Count; i++)
+        {
+            borderWidth = ParseWidth(borderParts[i]);
+            if (borderWidth.IsValid)
+            {
+                borderParts.RemoveAt(i); // no need to process this part anymore
+                break;
+            }
+        }
 
-			// Initialize default values
-			Unit borderWidth = Unit.Empty;
-			HtmlColor borderColor = HtmlColor.Empty;
-			w.BorderValues borderStyle = w.BorderValues.Nil;
+        // find width
+        if(borderParts.Count > 0)
+            borderColor = HtmlColor.Parse(borderParts[0]);
 
-			// Now try to guess the values with their permutation
+        if (borderColor.IsEmpty && !borderWidth.IsValid && borderStyle == BorderValues.Nil)
+            return SideBorder.Empty;
 
-			// handle border style
-			for (int i = 0; i < borderParts.Count; i++)
-			{
-				borderStyle = Converter.ToBorderStyle(borderParts[i]);
-				if (borderStyle != w.BorderValues.Nil)
-				{
-					borderParts.RemoveAt(i); // no need to process this part anymore
-					break;
-				}
-			}
+        // returns the instance with default value if needed.
+        // These value are the ones used by the browser, i.e: solid 3px black
+        return new SideBorder(
+            borderStyle == BorderValues.Nil? BorderValues.Single : borderStyle,
+            borderColor.IsEmpty? HtmlColor.Black : borderColor,
+            borderWidth.IsFixed? borderWidth : new Unit(UnitMetric.Pixel, 4));
+    }
 
-			for (int i = 0; i < borderParts.Count; i++)
-			{
-				borderWidth = ParseWidth(borderParts[i]);
-				if (borderWidth.IsValid)
-				{
-					borderParts.RemoveAt(i); // no need to process this part anymore
-					break;
-				}
-			}
+    internal static Unit ParseWidth(string? borderWidth)
+    {
+        Unit bu = Unit.Parse(borderWidth);
+        if (bu.IsValid)
+        {
+            if (bu.Value > 0 && bu.Type == UnitMetric.Pixel)
+                return bu;
+        }
+        else
+        {
+            switch (borderWidth)
+            {
+                case "thin": return new Unit(UnitMetric.Pixel, 1);
+                case "medium": return new Unit(UnitMetric.Pixel, 3);
+                case "thick": return new Unit(UnitMetric.Pixel, 5);
+            }
+        }
 
-			// find width
-			if(borderParts.Count > 0)
-				borderColor = HtmlColor.Parse(borderParts[0]);
+        return Unit.Empty;
+    }
 
-			// returns the instance with default value if needed.
-			// These value are the ones used by the browser, i.e: solid 3px black
-			return new SideBorder(
-				borderStyle == w.BorderValues.Nil? w.BorderValues.Single : borderStyle,
-				borderColor.IsEmpty? HtmlColor.Black : borderColor,
-				borderWidth.IsFixed? borderWidth : new Unit(UnitMetric.Pixel, 4));
-		}
+    //____________________________________________________________________
+    //
 
-		internal static Unit ParseWidth(String borderWidth)
-		{
-			Unit bu = Unit.Parse(borderWidth);
-			if (bu.IsValid)
-			{
-				if (bu.Value > 0 && bu.Type == UnitMetric.Pixel)
-					return bu;
-			}
-			else
-			{
-				switch (borderWidth)
-				{
-					case "thin": return new Unit(UnitMetric.Pixel, 1);
-					case "medium": return new Unit(UnitMetric.Pixel, 3);
-					case "thick": return new Unit(UnitMetric.Pixel, 5);
-				}
-			}
+    /// <summary>
+    /// Gets or sets the type of border (solid, dashed, dotted, ...)
+    /// </summary>
+    public BorderValues Style
+    {
+        get { return style; }
+    }
 
-			return Unit.Empty;
-		}
+    /// <summary>
+    /// Gets or sets the color of the border.
+    /// </summary>
+    public HtmlColor Color
+    {
+        get { return color; }
+    }
 
-		//____________________________________________________________________
-		//
+    /// <summary>
+    /// Gets or sets the size of the border expressed with its unit.
+    /// </summary>
+    public Unit Width
+    {
+        get { return size; }
+    }
 
-		/// <summary>
-		/// Gets or sets the type of border (solid, dashed, dotted, ...)
-		/// </summary>
-		public w.BorderValues Style
-		{
-			get { return style; }
-			set { style = value; }
-		}
-
-		/// <summary>
-		/// Gets or sets the color of the border.
-		/// </summary>
-		public HtmlColor Color
-		{
-			get { return color; }
-			set { color = value; }
-		}
-
-		/// <summary>
-		/// Gets or sets the size of the border expressed with its unit.
-		/// </summary>
-		public Unit Width
-		{
-			get { return size; }
-			set { size = value; }
-		}
-
-		/// <summary>
-		/// Gets whether the border is well formed and not empty.
-		/// </summary>
-		public bool IsValid
-		{
-			get { return this.Style != w.BorderValues.Nil; }
-		}
-
-		private string DebuggerDisplay
-		{
-			get { return String.Format(CultureInfo.InvariantCulture, "{{Border={0} {1} {2}}}", Style, Width.DebuggerDisplay, Color); }
-		}
-	}
+    /// <summary>
+    /// Gets whether the border is well formed and not empty.
+    /// </summary>
+    public bool IsValid
+    {
+        get { return !BorderValues.Nil.Equals(Style); }
+    }
 }

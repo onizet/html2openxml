@@ -9,19 +9,18 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
 
 namespace HtmlToOpenXml
 {
-	/// <summary>
-	/// Specifies the font style for a text.
-	/// </summary>
-	enum FontStyle
-	{
-		Normal,
-		/// <summary>
-		/// Displays an italic font style.
-		/// </summary>
-		Italic
-	}
+    /// <summary>
+    /// Specifies the font style for a text.
+    /// </summary>
+    enum FontStyle
+    {
+        Normal,
+        /// <summary>
+        /// Displays an italic font style.
+        /// </summary>
+        Italic
+    }
 }
