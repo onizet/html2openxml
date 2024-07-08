@@ -82,7 +82,7 @@ public sealed class WordDocumentStyle
                 if (name != null && name != s.StyleId) knownStyles[name] = s;
             }
 
-            knownStyles.Add(s.StyleId!, s);
+            knownStyles.TryAdd(s.StyleId!, s);
         }
     }
 

@@ -207,7 +207,7 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
 
         foreach (NumberingInstance inst in numbering.Elements<NumberingInstance>())
         {
-            knownInstanceIds.Add(inst.AbstractNumId!.Val!.Value, inst.NumberID!.Value);
+            knownInstanceIds.TryAdd(inst.AbstractNumId!.Val!.Value, inst.NumberID!.Value);
         }
 
         context.Properties("knownAbsNumIds", knownAbsNumIds);

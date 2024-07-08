@@ -63,9 +63,25 @@ static class CollectionExtensions
          if (source == null)
             throw new ArgumentNullException(nameof(source));
 
-        var list = new List<TSource>(source);
-        list.Add(element);
+        var list = new List<TSource>(source) { element };
         return list;
     }
+#endif
+
+#if !NET5_0_OR_GREATER
+      /// <summary>
+      /// Attempts to add the specified key and value to the dictionary.
+      /// </summary>
+      /// <param name="dictionary">The dictionary in which to insert the item.</param>
+      /// <param name="key">The key of the element to add.</param>
+      /// <param name="value">The value of the element to add. It can be <see langword="null"/>.</param>
+      /// <returns><see langword="true"/> if the key/value pair was added to the dictionary successfully; otherwise, <see langword="false"/>.</returns>
+      public static bool TryAdd<TKey,TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue value)
+      {
+        if (dictionary.ContainsKey(key))
+            return false;
+        dictionary.Add(key, value);
+        return true;
+      }
 #endif
 }
