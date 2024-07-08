@@ -75,7 +75,7 @@ static class HtmlColorTranslator
             { "Navy", HtmlColor.FromArgb(0, 0, 128) },
             { "DarkKhaki", HtmlColor.FromArgb(189, 183, 107) },
             { "OldLace", HtmlColor.FromArgb(253, 245, 230) },
-            { "DarkMagena", HtmlColor.FromArgb(139, 0, 139) },
+            { "DarkMagenta", HtmlColor.FromArgb(139, 0, 139) },
             { "Olive", HtmlColor.FromArgb(128, 128, 0) },
             { "DarkOliveGreen", HtmlColor.FromArgb(85, 107, 47) },
             { "OliveDrab", HtmlColor.FromArgb(107, 142, 45) },
