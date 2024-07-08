@@ -176,12 +176,6 @@ public partial class HtmlConverter
     public AcronymPosition AcronymPosition { get; set; }
 
     /// <summary>
-    /// Gets or sets whether the <c>div</c> tag should be processed as <c>p</c> (default <see langword="false"/>).
-    /// It depends whether you consider <c>div</c> as part of the layout or as part of a text field.
-    /// </summary>
-    public bool ConsiderDivAsParagraph { get; set; }
-
-    /// <summary>
     /// Gets or sets whether anchor links are included or not in the convertion.
     /// </summary>
     /// <remarks>An anchor is a term used to define a hyperlink destination inside a document.
