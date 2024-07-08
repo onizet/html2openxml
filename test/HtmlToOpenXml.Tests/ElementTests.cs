@@ -95,6 +95,7 @@ text-decoration:wavy line-through double;
         }
 
         [TestCase(@"<q>Build a future where people live in harmony with nature.</q>", true)]
+        [TestCase(@"<quote>Build a future where people live in harmony with nature.</quote>", true)]
         [TestCase(@"<cite>Build a future where people live in harmony with nature.</cite>", false)]
         public void ParseQuote(string html, bool hasQuote)
         {

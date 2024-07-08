@@ -94,9 +94,26 @@ namespace HtmlToOpenXml.Tests
         [TestCase("div", "id")]
         [TestCase("h1", "name")]
         [TestCase("div", "name")]
-        public void ParseInDocumentLink(string tagName, string attributeName)
+        public void ParseAnchoring(string tagName, string attributeName)
         {
             string str = @$"<a href=""#heading1"">1. Heading 1</a><{tagName} {attributeName}=""heading1"">Heading 1</${tagName}>";
+            var elements = converter.Parse(str);
+            Assert.That(elements, Has.Count.EqualTo(2));
+            Assert.That(elements, Has.All.TypeOf<Paragraph>());
+            Assert.Multiple(() =>
+            {
+                Assert.That(elements[0].HasChild<Hyperlink>(), Is.True);
+                Assert.That(elements[1].HasChild<BookmarkStart>(), Is.True);
+                Assert.That(elements[1].HasChild<BookmarkEnd>(), Is.True);
+                Assert.That(elements[0].GetFirstChild<Hyperlink>()?.Anchor?.Value, Is.EqualTo("heading1"));
+                Assert.That(elements[1].GetFirstChild<BookmarkStart>()?.Name.Value, Is.EqualTo("heading1"));
+            });
+        }
+
+        [Test(Description = "Anchor is targeting an empty link inside a heading")]
+        public void ParseAnchoringHeading()
+        {
+            string str = @$"<a href=""#heading1"">1. Heading 1</a><<h1><a name=""heading1""></a>Heading 1</h1>";
             var elements = converter.Parse(str);
             Assert.That(elements, Has.Count.EqualTo(2));
             Assert.That(elements, Has.All.TypeOf<Paragraph>());

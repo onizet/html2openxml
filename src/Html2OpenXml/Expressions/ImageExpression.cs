@@ -49,6 +49,7 @@ sealed class ImageExpression(IHtmlElement node) : HtmlElementExpression(node)
         return [run];
     }
 
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     public override void CascadeStyles(OpenXmlElement element)
     {
         throw new NotSupportedException();

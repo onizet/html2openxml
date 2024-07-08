@@ -22,6 +22,7 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 sealed class HorizontalLineExpression(IHtmlElement node) : HtmlElementExpression(node)
 {
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     public override void CascadeStyles(OpenXmlElement element)
     {
         throw new System.NotSupportedException();

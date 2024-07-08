@@ -120,14 +120,6 @@ class BlockElementExpression(IHtmlElement node, params OpenXmlLeafElement[]? sty
             }
         }
 
-
-        var attrValue = styleAttributes!["text-align"];
-        JustificationValues? align = Converter.ToParagraphAlign(attrValue);
-        if (align.HasValue)
-        {
-            paraProperties.Justification = new() { Val = align };
-        }
-
         // according to w3c, dir should be used in conjonction with lang. But whatever happens, we'll apply the RTL layout
         if ("rtl".Equals(node.Direction, StringComparison.OrdinalIgnoreCase))
         {
@@ -136,6 +128,13 @@ class BlockElementExpression(IHtmlElement node, params OpenXmlLeafElement[]? sty
         else if ("ltr".Equals(node.Direction, StringComparison.OrdinalIgnoreCase))
         {
             paraProperties.Justification = new() { Val = JustificationValues.Left };
+        }
+
+        var attrValue = styleAttributes!["text-align"];
+        JustificationValues? align = Converter.ToParagraphAlign(attrValue);
+        if (align.HasValue)
+        {
+            paraProperties.Justification = new() { Val = align };
         }
 
 

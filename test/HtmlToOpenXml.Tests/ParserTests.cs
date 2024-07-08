@@ -21,6 +21,7 @@ namespace HtmlToOpenXml.Tests
         [TestCase("<select><option>--Please select--</option></select>")]
         [TestCase("<textarea>Placeholder</textarea>")]
         [TestCase("<meter min='200' max='500' value='350'>350 degrees</meter>")]
+        [TestCase("<h1><!--empty--></h1>")]
         public void IgnoreTag(string html)
         {
             // the inner html shouldn't be interpreted
