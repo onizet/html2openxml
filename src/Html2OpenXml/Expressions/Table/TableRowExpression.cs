@@ -9,7 +9,6 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
 using System.Collections.Generic;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
@@ -47,7 +46,8 @@ sealed class TableRowExpression : TableElementExpressionBase
         cells.AddRange(rowNode.Cells);
         foreach (var idx in carriedRowSpans.Columns)
         {
-            cells.Insert(idx, null);
+            if (idx < cells.Count) cells.Insert(idx, null);
+            else cells.Add(null);
         }
 
         if (cells.Count == 0)
