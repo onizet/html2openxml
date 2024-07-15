@@ -13,28 +13,19 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-
-    env:
-      NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
     strategy:
       matrix:
-        dotnet: [ '4.6.2', '2.0.x', '8.0.x' ]
-    name: dotnet ${{ matrix.dotnet }}
+        dotnet-version: [ '3.1.x', '8.0.x' ]
+
     steps:
       - uses: actions/checkout@v4
-      - name: Setup dotnet
+      - name: Setup dotnet ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v4
-        id: stepid
         with:
-          dotnet-version: ${{ matrix.dotnet }}
-          cache: true
-          cache-dependency-path: subdir/packages.lock.json
-      - name: Create temporary global.json
-        run: echo '{"sdk":{"version": "${{ steps.stepid.outputs.dotnet-version }}"}}' > ./global.json
-
+          dotnet-version: ${{ matrix.dotnet-version }}
       - name: Restore dependencies
-        run: dotnet restore --locked-mode
+        run: dotnet restore
       - name: dotnet build
-        run: dotnet build --no-restore
+        run: dotnet build --configuration Release --no-restore
       - name: dotnet test
-        run: dotnet test --no-build --verbosity normal
+        run: dotnet test --configuration Release--no-build --verbosity normal
