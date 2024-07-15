@@ -34,4 +34,7 @@ jobs:
       - name: Build
         run: msbuild HtmlToOpenXml.sln /p:Configuration=Release /p:TargetFramework=net462 /restore
       - name: Run tests (NET Framework)
-        run: vstest.console.exe test\HtmlToOpenXml.Tests\HtmlToOpenXml.Tests.dll
+        uses: microsoft/setup-vstest@v2
+        inputs:
+          testAssemblyVer2: |
+            **\*HtmlToOpenXml.Tests.dll
