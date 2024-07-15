@@ -3,7 +3,8 @@
 
 namespace System.Linq;
 
-#if !NET5_0_OR_GREATER
+#if NET462
+
 /// <summary>
 /// Helper class that provide some extension methods to <see cref="IEnumerable{T}"/> API.
 /// </summary>
