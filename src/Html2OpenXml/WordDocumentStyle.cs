@@ -164,7 +164,9 @@ public sealed class WordDocumentStyle
     {
         if (style is null) throw new ArgumentNullException(nameof(style));
         if (style.StyleId == null && style.StyleName?.Val?.HasValue != true)
-            throw new ArgumentNullException(nameof(style.StyleId));
+            throw new ArgumentNullException($"{nameof(style)}.{nameof(style.StyleId)}");
+        if (style.Type is null)
+            throw new ArgumentNullException($"{nameof(style)}.{nameof(style.Type)}");
 
         if (style.StyleName?.Val?.HasValue != true)
             style.StyleName = new() { Val = style.StyleId };
