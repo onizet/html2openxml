@@ -12,22 +12,18 @@ on:
 jobs:
   netcore:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        dotnet-version: [ '2.0.x', '8.0.x' ]
-
     steps:
       - uses: actions/checkout@v4
-      - name: Setup dotnet ${{ matrix.dotnet-version }}
+      - name: Setup .NET 8.
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: ${{ matrix.dotnet-version }}
+          dotnet-version: '8.0.x'
       - name: Restore dependencies
         run: dotnet restore
       - name: Build
         run: dotnet build --configuration Release --no-restore
       - name: Run tests
-        run: dotnet test --configuration Release --no-build --verbosity normal
+        run: dotnet test --framework net8.0 --configuration Release --no-build --verbosity normal
 
   netframework:
     runs-on: windows-latest
@@ -39,4 +35,4 @@ jobs:
       - name: Build
         run: msbuild HtmlToOpenXml.sln /p:Configuration=Release
       - name: Run tests (NET Framework)
-        run: vstest.console.exe HtmlToOpenXml.Tests.dll
+        run: vstest.console.exe /test/HtmlToOpenXml.Tests/HtmlToOpenXml.Tests.dll
