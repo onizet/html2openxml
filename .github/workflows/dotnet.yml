@@ -32,9 +32,9 @@ jobs:
       - name: Setup .NET Framework
         uses: microsoft/setup-msbuild@v2
       - name: Build
-        run: msbuild HtmlToOpenXml.sln /p:Configuration=Release /p:TargetFramework=net462 /restore
+        run: msbuild test/HtmlToOpenXml.Tests/HtmlToOpenXml.Tests.csproj /p:Configuration=Release /p:TargetFramework=net462 /restore
       - name: Run tests (NET Framework)
-        uses: microsoft/setup-vstest@v2
-        inputs:
-          testAssemblyVer2: |
-            **\*HtmlToOpenXml.Tests.dll
+        uses: microsoft-approved-actions/vstest@master
+        with:
+          testAssembly: ./test/HtmlToOpenXml.Tests/HtmlToOpenXml.Tests.dll
+          runInParallel: true
