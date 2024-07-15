@@ -33,8 +33,7 @@ jobs:
         uses: microsoft/setup-msbuild@v2
       - name: Build
         run: msbuild test/HtmlToOpenXml.Tests/HtmlToOpenXml.Tests.csproj /p:Configuration=Release /p:TargetFramework=net462 /restore
+      - name: Setup VSTest
+        uses: darenm/Setup-VSTest@v1.2
       - name: Run tests (NET Framework)
-        uses: microsoft-approved-actions/vstest@master
-        with:
-          testAssembly: ./test/HtmlToOpenXml.Tests/HtmlToOpenXml.Tests.dll
-          runInParallel: true
+        run: vstest.console.exe test/HtmlToOpenXml.Tests/HtmlToOpenXml.Tests.dll /parallel
