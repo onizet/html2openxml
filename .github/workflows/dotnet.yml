@@ -36,4 +36,4 @@ jobs:
       - name: Setup VSTest
         uses: darenm/Setup-VSTest@v1.2
       - name: Run tests (NET Framework)
-        run: vstest.console.exe test/HtmlToOpenXml.Tests/HtmlToOpenXml.Tests.dll /parallel
+        run: vstest.console.exe test\HtmlToOpenXml.Tests\bin\Release\net462\HtmlToOpenXml.Tests.dll /parallel
