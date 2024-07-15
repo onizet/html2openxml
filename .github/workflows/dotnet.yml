@@ -33,7 +33,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Setup .NET Framework 4.6.2
-        uses: actions/setup-dotnet@v2
+        uses: microsoft/setup-msbuild@v2
         with:
            dotnet-version: 4.6.2
       - name: Build
