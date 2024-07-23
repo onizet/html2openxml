@@ -387,10 +387,21 @@ namespace HtmlToOpenXml.Tests
             var cell = cells.First();
             Assert.Multiple(() =>
             {
-                Assert.That(cell.InnerText, Is.EqualTo(preformattedText));
                 Assert.That(cell.TableCellProperties?.TableCellBorders.ChildElements.Count(), Is.EqualTo(4));
                 Assert.That(cell.TableCellProperties?.TableCellBorders.ChildElements, Has.All.InstanceOf<BorderType>());
                 Assert.That(cell.TableCellProperties?.TableCellBorders.Elements<BorderType>().All(b => b.Val.Value == BorderValues.Single), Is.True);
+            });
+
+            var run = cell.GetFirstChild<Paragraph>()?.GetFirstChild<Run>();
+            Assert.Multiple(() =>
+            {
+                var odds = run.ChildElements.Where((item, index) => index % 2 != 0);
+                Assert.That(odds, Has.All.TypeOf<Break>());
+                Assert.That(run.ChildElements.ElementAt(0).InnerText, Is.EqualTo("              ^__^"));
+                Assert.That(run.ChildElements.ElementAt(2).InnerText, Is.EqualTo("              (oo)\\_______"));
+                Assert.That(run.ChildElements.ElementAt(4).InnerText, Is.EqualTo("              (__)\\       )\\/\\"));
+                Assert.That(run.ChildElements.ElementAt(6).InnerText, Is.EqualTo("                  ||----w |"));
+                Assert.That(run.ChildElements.ElementAt(8).InnerText, Is.EqualTo("                  ||     ||"));
             });
         }
 

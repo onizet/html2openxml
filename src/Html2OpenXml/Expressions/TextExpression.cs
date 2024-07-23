@@ -31,7 +31,7 @@ sealed class TextExpression(INode node) : HtmlDomExpression
         string text = node.TextContent.Normalize();
         if (text.Trim().Length == 0) return [];
 
-        if (!context.PreverseLinebreaks)
+        if (!context.PreserveLinebreaks)
             text = text.CollapseLineBreaks();
         if (context.CollapseWhitespaces && text[0].IsWhiteSpaceCharacter() &&
             node.PreviousSibling is IHtmlImageElement)
@@ -41,9 +41,36 @@ sealed class TextExpression(INode node) : HtmlDomExpression
         else if (context.CollapseWhitespaces)
             text = text.CollapseAndStrip();
 
-        Run run = new(
-            new Text(text)
-        );
+        if (!context.PreserveLinebreaks)
+            return [new Run(new Text(text))];
+
+        var run = new Run();
+        char[] chars = text.ToCharArray();
+        int shift = 0, c = 0;
+        bool wasCR = false; // avoid adding 2 breaks for \r\n
+        for ( ; c < chars.Length ; c++)
+        {
+            if (!chars[c].IsLineBreak())
+            {
+                wasCR = false;
+                continue;
+            }
+
+            if (wasCR) continue;
+            wasCR = chars[c] == Symbols.CarriageReturn;
+
+            if (c > 1)
+            {
+                run.Append(new Text(new string(chars, shift, c - shift)) 
+                    { Space = SpaceProcessingModeValues.Preserve });
+                run.Append(new Break());
+            }
+            shift = c + 1;
+        }
+
+        if (c > shift)
+            run.Append(new Text(new string(chars, shift, c - shift)) 
+                { Space = SpaceProcessingModeValues.Preserve });
 
         return [run];
     }

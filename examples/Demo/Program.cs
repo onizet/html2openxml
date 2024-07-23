@@ -17,7 +17,15 @@ namespace Demo
             const string filename = "test.docx";
             string html = ResourceHelper.GetString("Resources.CompleteRunTest.html");
             if (File.Exists(filename)) File.Delete(filename);
+const string preformattedText = @"
+              ^__^
+              (oo)\_______
+              (__)\       )\/\
+                  ||----w |
+                  ||     ||";
 
+            html = @$"<pre role='img' aria-label='ASCII COW'>
+{preformattedText}</pre>";
             using (MemoryStream generatedDocument = new MemoryStream())
             {
                 // Uncomment and comment the second using() to open an existing template document
