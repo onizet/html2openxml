@@ -6,6 +6,9 @@ name: 'dotnet.yml'
 on:
   push:
     branches: [ "dev" ]
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
   pull_request:
     branches: [ "dev" ]
 
