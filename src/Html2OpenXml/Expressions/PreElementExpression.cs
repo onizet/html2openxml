@@ -26,7 +26,7 @@ sealed class PreElementExpression(IHtmlElement node) : BlockElementExpression(no
     {
         ComposeStyles(context);
         var childContext = context.CreateChild(this);
-        childContext.PreverseLinebreaks = true;
+        childContext.PreserveLinebreaks = true;
         childContext.CollapseWhitespaces = false;
         var childElements = Interpret(childContext, node.ChildNodes);
 

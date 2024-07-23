@@ -34,7 +34,7 @@ sealed class ParsingContext(HtmlConverter converter, MainDocumentPart mainPart)
     private Dictionary<string, object?> propertyBag = [];
 
     /// <summary>Whether the text content should preserve the line breaks.</summary>
-    public bool PreverseLinebreaks { get; set; }
+    public bool PreserveLinebreaks { get; set; }
 
     /// <summary>Whether the text content should collapse the whitespaces.</summary>
     public bool CollapseWhitespaces { get; set; } = true;
