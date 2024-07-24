@@ -11,6 +11,7 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
@@ -117,12 +118,31 @@ sealed class ImageExpression(IHtmlElement node) : HtmlElementExpression(node)
 
             drawingObjId = 1; // 1 is the minimum ID set by MS Office.
             imageObjId = 1;
-            foreach (var d in context.MainPart.Document.Body!.Descendants<Drawing>())
-            {
-                if (d.Inline == null) continue; // fix some rare issue where Inline is null (reported by scwebgroup)
-                if (d.Inline!.DocProperties?.Id?.Value > drawingObjId) drawingObjId = d.Inline.DocProperties.Id;
 
-                var nvPr = d.Inline!.Graphic?.GraphicData?.GetFirstChild<pic.NonVisualPictureProperties>();
+            foreach (var part in new[] { 
+                context.MainPart.Document.Body!.Descendants<Drawing>(),
+                context.MainPart.HeaderParts.SelectMany(f => f.Header.Descendants<Drawing>()),
+                context.MainPart.FooterParts.SelectMany(f => f.Footer.Descendants<Drawing>())
+            })
+            foreach (Drawing d in part)
+            {
+                wp.DocProperties? docProperties = null;
+                pic.NonVisualPictureProperties? nvPr = null;
+
+                if (d.Anchor != null)
+                {
+                    docProperties = d.Anchor.GetFirstChild<wp.DocProperties>();
+                    nvPr = d.Anchor.GetFirstChild<a.Graphic>()?.GraphicData?.GetFirstChild<pic.Picture>()?.GetFirstChild<pic.NonVisualPictureProperties>();
+                }
+                else if (d.Inline != null)
+                {
+                    docProperties = d.Inline!.DocProperties;
+                    nvPr = d.Inline!.Graphic?.GraphicData?.GetFirstChild<pic.NonVisualPictureProperties>();
+                }
+
+                if (docProperties?.Id != null && docProperties.Id.Value > drawingObjId)
+                    drawingObjId = docProperties.Id.Value;
+
                 if (nvPr != null && nvPr.NonVisualDrawingProperties?.Id?.Value > imageObjId)
                     imageObjId = nvPr.NonVisualDrawingProperties.Id;
             }
