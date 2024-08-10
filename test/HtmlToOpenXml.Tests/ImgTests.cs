@@ -6,6 +6,7 @@ using DocumentFormat.OpenXml.Wordprocessing;
 namespace HtmlToOpenXml.Tests
 {
     using pic = DocumentFormat.OpenXml.Drawing.Pictures;
+    using wp = DocumentFormat.OpenXml.Drawing.Wordprocessing;
 
     /// <summary>
     /// Tests images.
@@ -86,9 +87,37 @@ namespace HtmlToOpenXml.Tests
             AssertIsImg(elements.First());
         }
 
-        private void AssertIsImg (OpenXmlCompositeElement elements)
+        [Test(Description = "Image ID must be unique, amongst header, body and footer parts")]
+        public async Task UniqueImageIdAcrossPackagingParts()
         {
-            var run = elements.GetFirstChild<Run>();
+            using var generatedDocument = new MemoryStream();
+            using (var buffer = ResourceHelper.GetStream("Resources.DocWithImgHeaderFooter.docx"))
+                buffer.CopyTo(generatedDocument);
+
+            generatedDocument.Position = 0L;
+            using WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true);
+            MainDocumentPart mainPart = package.MainDocumentPart;
+
+            var beforeMaxDocPropId = new[] {
+                mainPart.Document.Body!.Descendants<wp.DocProperties>(),
+                mainPart.HeaderParts.SelectMany(x => x.Header.Descendants<wp.DocProperties>()),
+                mainPart.FooterParts.SelectMany(x => x.Footer.Descendants<wp.DocProperties>())
+            }.SelectMany(x => x).MaxBy(x => x.Id?.Value ?? 0).Id.Value;
+
+            HtmlConverter converter = new(mainPart);
+            await converter.ParseHtml("<img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==' width='42' height='42'>");
+            mainPart.Document.Save();
+
+            var img = mainPart.Document.Body!.Descendants<Drawing>().FirstOrDefault();
+            Assert.That(img, Is.Not.Null);
+            Assert.That(img.Inline.DocProperties.Id.Value,
+                Is.GreaterThan(beforeMaxDocPropId),
+                "New image id is incremented considering existing images in header, body and footer");
+        }
+
+        private Drawing AssertIsImg (OpenXmlCompositeElement element)
+        {
+            var run = element.GetFirstChild<Run>();
             Assert.That(run, Is.Not.Null);
             var img = run.GetFirstChild<Drawing>();
             Assert.That(img, Is.Not.Null);
@@ -99,6 +128,7 @@ namespace HtmlToOpenXml.Tests
             var imagePartId = pic.BlipFill.Blip.Embed.Value;
             var part = mainPart.GetPartById(imagePartId);
             Assert.That(part, Is.TypeOf(typeof(ImagePart)));
+            return img;
         }
     }
 }

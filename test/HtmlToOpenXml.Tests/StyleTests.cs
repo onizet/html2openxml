@@ -99,6 +99,7 @@ namespace HtmlToOpenXml.Tests
             converter.HtmlStyles.DefaultStyles.IntenseQuoteStyle = "CustomIntenseQuoteStyle";
             converter.HtmlStyles.AddStyle(new Style {
                 StyleId = "CustomIntenseQuoteStyle",
+                Type = StyleValues.Paragraph,
                 StyleParagraphProperties = new() {
                     ParagraphBorders = new() {
                         LeftBorder = new() { Val = BorderValues.Single, Color = HtmlColor.FromArgb(255, 0, 0).ToHexString() }

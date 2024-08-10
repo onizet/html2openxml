@@ -387,10 +387,21 @@ namespace HtmlToOpenXml.Tests
             var cell = cells.First();
             Assert.Multiple(() =>
             {
-                Assert.That(cell.InnerText, Is.EqualTo(preformattedText));
                 Assert.That(cell.TableCellProperties?.TableCellBorders.ChildElements.Count(), Is.EqualTo(4));
                 Assert.That(cell.TableCellProperties?.TableCellBorders.ChildElements, Has.All.InstanceOf<BorderType>());
                 Assert.That(cell.TableCellProperties?.TableCellBorders.Elements<BorderType>().All(b => b.Val.Value == BorderValues.Single), Is.True);
+            });
+
+            var run = cell.GetFirstChild<Paragraph>()?.GetFirstChild<Run>();
+            Assert.Multiple(() =>
+            {
+                var odds = run.ChildElements.Where((item, index) => index % 2 != 0);
+                Assert.That(odds, Has.All.TypeOf<Break>());
+                Assert.That(run.ChildElements.ElementAt(0).InnerText, Is.EqualTo("              ^__^"));
+                Assert.That(run.ChildElements.ElementAt(2).InnerText, Is.EqualTo("              (oo)\\_______"));
+                Assert.That(run.ChildElements.ElementAt(4).InnerText, Is.EqualTo("              (__)\\       )\\/\\"));
+                Assert.That(run.ChildElements.ElementAt(6).InnerText, Is.EqualTo("                  ||----w |"));
+                Assert.That(run.ChildElements.ElementAt(8).InnerText, Is.EqualTo("                  ||     ||"));
             });
         }
 
@@ -561,6 +572,40 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(elements[1], Is.TypeOf<Paragraph>());
                 Assert.That(elements[2], Is.TypeOf<Table>());
             });
+        }
+
+        [Test]
+        public void ParseDoubleRowSpanSameLine()
+        {
+            var elements = converter.Parse(@"<table>
+                    <tr>
+                        <td rowspan=""2"" colspan=""2"">Cell 1.1</td>
+                        <td>Cell 1.2</td>
+                        <td rowspan=""2"">Cell 1.3</td>
+                    </tr>
+                    <tr>
+                        <td>Cell 2.2</td>
+                    </tr>
+                </table>");
+
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Table>());
+            Assert.That(elements[0].GetFirstChild<TableGrid>()?.Elements<GridColumn>().Count(), Is.EqualTo(4));
+
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Table>());
+            var rows = elements[0].Elements<TableRow>();
+            Assert.That(rows.Count(), Is.EqualTo(2));
+            Assert.That(rows.Select(r => r.Elements<TableCell>().Count()), 
+                Has.All.EqualTo(3),
+                "All should have 3 cells");
+            Assert.That(rows.First().GetFirstChild<TableCell>()?.TableCellProperties?.GridSpan?.Val?.Value, Is.EqualTo(2));
+            Assert.That(rows.First().GetFirstChild<TableCell>()?.TableCellProperties?.VerticalMerge?.Val?.Value, Is.EqualTo(MergedCellValues.Restart));
+            Assert.That(rows.First().GetLastChild<TableCell>()?.TableCellProperties?.VerticalMerge?.Val?.Value, Is.EqualTo(MergedCellValues.Restart));
+
+            Assert.That(rows.ElementAt(1).GetFirstChild<TableCell>()?.TableCellProperties?.GridSpan?.Val?.Value, Is.EqualTo(2));
+            Assert.That(rows.ElementAt(1).GetFirstChild<TableCell>()?.TableCellProperties?.VerticalMerge?.Val?.Value, Is.EqualTo(MergedCellValues.Continue));
+            Assert.That(rows.ElementAt(1).GetLastChild<TableCell>()?.TableCellProperties?.VerticalMerge?.Val?.Value, Is.EqualTo(MergedCellValues.Continue));
         }
     }
 }
