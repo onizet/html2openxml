@@ -5,6 +5,13 @@
 - Support MathMl
 - Support SVG
 
+## 3.0.1
+
+- Ensure to count existing images from header and footer too #113
+- Preserve line break pre for OSX/Windows
+- Prevent a crash when the provided style is missing its type
+- Defensive code to avoid 2 rowSpan+colSpan with a cell in between to crash #59
+
 ## 3.0.0
 
 - AngleSharp is now the backend parser for Html
