@@ -208,6 +208,12 @@ sealed class TableExpression(IHtmlElement node) : PhrasingElementExpression(node
         if (align.HasValue)
             tableProperties.TableJustification = new() { Val = align.Value.ToTableRowAlignment() };
 
+        var dir = node.GetTextDirection();
+        if (dir.HasValue)
+            tableProperties.BiDiVisual = new() { 
+                Val = dir == AngleSharp.Dom.DirectionMode.Rtl? OnOffOnlyValues.On : OnOffOnlyValues.Off
+            };
+
         var spacing = Convert.ToInt16(node.GetAttribute("cellspacing"));
         if (spacing > 0)
             tableProperties.TableCellSpacing = new() {

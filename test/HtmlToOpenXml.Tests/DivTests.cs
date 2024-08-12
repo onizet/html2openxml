@@ -82,5 +82,17 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements[1].LastChild?.HasChild<Break>(), Is.True);
             Assert.That(elements[1].LastChild?.HasChild<LastRenderedPageBreak>(), Is.False);
         }
+
+        [TestCase("rtl", ExpectedResult = true)]
+        [TestCase("ltr", ExpectedResult = false)]
+        [TestCase("", ExpectedResult = null)]
+        public bool? WithRtl_ReturnsBidi(string dir)
+        {
+            var elements = converter.Parse($@"<div dir='{dir}'>Lorem</div>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Paragraph>());
+            var bidi = elements[0].GetFirstChild<ParagraphProperties>()?.BiDi;
+            return bidi?.Val?.Value;
+        }
     }
 }

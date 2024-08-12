@@ -444,5 +444,44 @@ namespace HtmlToOpenXml.Tests
             Assert.That(instances.Last().GetFirstChild<LevelOverride>()?.LevelIndex?.Value, Is.EqualTo(1));
             Assert.That(instances.Last().GetFirstChild<LevelOverride>()?.StartOverrideNumberingValue?.Val?.Value, Is.EqualTo(1));
         }
+    
+        [TestCase("rtl", true)]
+        [TestCase("ltr", false)]
+        [TestCase("", null)]
+        public void WithRtl_ReturnsBidi(string dir, bool? expectedValue)
+        {
+            var elements = converter.Parse($@"<ol dir='{dir}'>
+                <li>Item 1</li><li>Item 2</li>
+            </ol>");
+
+            Assert.Multiple(() => {
+                Assert.That(elements, Has.Count.EqualTo(2));
+                Assert.That(elements, Is.All.TypeOf<Paragraph>());
+                Assert.That(mainPart.NumberingDefinitionsPart?.Numbering, Is.Not.Null);
+            });
+            var bidis = elements.Cast<Paragraph>().Select(p => p.ParagraphProperties?.BiDi?.Val?.Value);
+            Assert.That(bidis, Is.All.EqualTo(expectedValue));
+        }
+
+        [TestCase("rtl", "rtl", ExpectedResult = true)]
+        [TestCase("rtl", "ltr", ExpectedResult = false)]
+        [TestCase("rtl", "", ExpectedResult = true)]
+        [TestCase("", "rtl", ExpectedResult = true)]
+        public bool? WithNestedRtl_ReturnsBidi(string dir, string nestedDir)
+        {
+            var elements = converter.Parse($@"<ol dir='{dir}'>
+                    <li>Item 1
+                        <ol dir='{nestedDir}'><li>Item 1.1</li></ol>
+                    </li>
+                </ol>");
+
+            Assert.Multiple(() => {
+                Assert.That(elements, Has.Count.EqualTo(2));
+                Assert.That(elements, Is.All.TypeOf<Paragraph>());
+                Assert.That(mainPart.NumberingDefinitionsPart?.Numbering, Is.Not.Null);
+            });
+            var bidi = elements.Last().GetFirstChild<ParagraphProperties>()?.BiDi;
+            return bidi?.Val?.Value;
+        }
     }
 }

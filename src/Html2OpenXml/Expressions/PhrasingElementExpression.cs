@@ -98,7 +98,8 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
         }
 
         // according to w3c, dir should be used in conjonction with lang. But whatever happens, we'll apply the RTL layout
-        if ("rtl".Equals(node.Direction, StringComparison.OrdinalIgnoreCase))
+        var dir = node.GetTextDirection();
+        if (dir == DirectionMode.Rtl)
         {
             runProperties.RightToLeftText = new RightToLeftText();
         }

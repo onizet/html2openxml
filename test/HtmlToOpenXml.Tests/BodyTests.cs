@@ -42,5 +42,18 @@ namespace HtmlToOpenXml.Tests
             Assert.That(pageSize, Is.Not.Null);
             return pageSize.Height > pageSize.Width;
         }
+
+        [TestCase("rtl", ExpectedResult = true)]
+        [TestCase("ltr", ExpectedResult = false)]
+        [TestCase("", ExpectedResult = null)]
+        public bool? WithRtl_ReturnsBidi_DocumentScoped(string dir)
+        {
+            var elements = converter.Parse($@"<body dir='{dir}'>Lorem</body>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Paragraph>());
+
+            var bidi = mainPart.Document.Body!.GetFirstChild<SectionProperties>()?.GetFirstChild<BiDi>();
+            return bidi?.Val?.Value;
+        }
     }
 }

@@ -25,14 +25,15 @@ namespace HtmlToOpenXml.Expressions;
 sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 {
 #if NET5_0_OR_GREATER
-    readonly record struct ListContext(string Name, int AbsNumId, int InstanceId, int Level);
+    readonly record struct ListContext(string Name, int AbsNumId, int InstanceId, int Level, DirectionMode? Dir);
 #else
-    readonly struct ListContext(string listName, int absNumId, int instanceId, int level)
+    readonly struct ListContext(string listName, int absNumId, int instanceId, int level, DirectionMode? dir)
     {
         public readonly string Name = listName;
         public readonly int AbsNumId = absNumId;
         public readonly int InstanceId = instanceId;
         public readonly int Level = level;
+        public readonly DirectionMode? Dir = dir;
     }
 #endif
 
@@ -64,8 +65,9 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         }
         else
         {
+            var dir = node.GetTextDirection();
             listContext = new ListContext(listContext.Name, listContext.AbsNumId, 
-                listContext.InstanceId, listContext.Level + 1);
+                listContext.InstanceId, listContext.Level + 1, dir ?? listContext.Dir);
         }
 
         context.Properties("listContext", listContext);
@@ -85,6 +87,11 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
                 NumberingLevelReference = new() { Val = level - 1 },
                 NumberingId = new() { Val = listContext.InstanceId }
             };
+            if (listContext.Dir.HasValue) {
+                p.ParagraphProperties.BiDi = new() {
+                    Val = OnOffValue.FromBoolean(listContext.Dir == DirectionMode.Rtl)
+                };
+            }
 
             foreach (var child in childElements)
                 yield return child;
@@ -103,11 +110,12 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         var instanceId = GetListInstance(abstractNumId);
         int overrideLevelIndex = 0;
         var isOrderedTag = node.NodeName.Equals("ol", StringComparison.OrdinalIgnoreCase);
+        var dir = node.GetTextDirection();
         if (!instanceId.HasValue || context.Converter.ContinueNumbering == false)
         {
             // create a new instance of that list template
             instanceId = IncrementInstanceId(context, abstractNumId, isReusable: context.Converter.ContinueNumbering);
-            listContext = new ListContext(listStyle, abstractNumId, instanceId.Value, currentLevel + 1);
+            listContext = new ListContext(listStyle, abstractNumId, instanceId.Value, currentLevel + 1, dir);
         }
         else
             // if the previous element is the same list style,
@@ -116,18 +124,18 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
                 && GetListName(precedingElement!) == listStyle)
         {
             instanceId = IncrementInstanceId(context, abstractNumId, isReusable: false);
-            listContext =  new ListContext(listStyle, abstractNumId, instanceId.Value, 1);
+            listContext =  new ListContext(listStyle, abstractNumId, instanceId.Value, 1, dir);
         }
         // be sure to restart to 1 any nested ordered list
         else if (currentLevel > 0 && isOrderedTag)
         {
             instanceId = IncrementInstanceId(context, abstractNumId, isReusable: false);
             overrideLevelIndex = currentLevel;
-            listContext = new ListContext(listStyle, abstractNumId, instanceId.Value, currentLevel + 1);
+            listContext = new ListContext(listStyle, abstractNumId, instanceId.Value, currentLevel + 1, dir);
         }
         else
         {
-            return new ListContext(listStyle, abstractNumId, instanceId.Value, currentLevel + 1);
+            return new ListContext(listStyle, abstractNumId, instanceId.Value, currentLevel + 1, dir);
         }
 
         int startValue = 1;

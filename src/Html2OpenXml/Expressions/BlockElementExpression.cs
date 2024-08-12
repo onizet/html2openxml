@@ -121,13 +121,11 @@ class BlockElementExpression(IHtmlElement node, params OpenXmlLeafElement[]? sty
         }
 
         // according to w3c, dir should be used in conjonction with lang. But whatever happens, we'll apply the RTL layout
-        if ("rtl".Equals(node.Direction, StringComparison.OrdinalIgnoreCase))
-        {
-            paraProperties.Justification = new() { Val = JustificationValues.Right };
-        }
-        else if ("ltr".Equals(node.Direction, StringComparison.OrdinalIgnoreCase))
-        {
-            paraProperties.Justification = new() { Val = JustificationValues.Left };
+        var dir = node.GetTextDirection();
+        if (dir.HasValue) {
+            paraProperties.BiDi = new() {
+                Val = OnOffValue.FromBoolean(dir == AngleSharp.Dom.DirectionMode.Rtl)
+            };
         }
 
         var attrValue = styleAttributes!["text-align"];
