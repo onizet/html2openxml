@@ -11,17 +11,19 @@ namespace HtmlToOpenXml.Tests
     public class WhitespaceTests : HtmlConverterTestBase
     {
         [Test]
-        public void ParseConsecutiveRuns ()
+        public void ConsecutivePhrasing_ReturnsOneParagraphWithMulitpleRuns ()
         {
             // the new line should generate a space between "bold" and "text"
             var elements = converter.Parse("<span>This is a <b>bold\n</b>text</span>");
             Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Paragraph>());
             Assert.That(elements[0].ChildElements, Is.All.TypeOf<Run>());
+            Assert.That(elements[0].Elements<Run>().Count(), Is.GreaterThan(1));
             Assert.That(elements[0].InnerText, Is.EqualTo("This is a bold text"));
         }
 
         [Test]
-        public void ParseConsecutiveParagraphs ()
+        public void ConsecutiveDivs_ReturnsMultipleParagraphs ()
         {
             var elements = converter.Parse("<div>Hello</div><div>World</div>");
             Assert.That(elements, Has.Count.EqualTo(2));
@@ -33,40 +35,50 @@ namespace HtmlToOpenXml.Tests
         [TestCase("<h1>   Hello\r\n<span> World!</span>   </h1>")]
         [TestCase("<span>   Hello \r\n World!   </span>")]
         [TestCase("<span>   Hello\r\n\r\nWorld!   </span>")]
-        public void ParseInlineElements (string html)
+        public void Multiline_ReturnsCollapsedText (string html)
         {
             var elements = converter.Parse(html);
             Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Paragraph>());
             Assert.That(elements[0].InnerText, Is.EqualTo("Hello World!"));
         }
 
-        [TestCase("h1", false)]
-        [TestCase("pre", true)]
-        [TestCase("span", false)]
-        [TestCase("p", false)]
-        [TestCase("a", false)]
-        public void ParseWhitespace(string tagName, bool expectWhitespaces)
+        [TestCase("h1")]
+        [TestCase("span")]
+        [TestCase("p")]
+        [TestCase("a")]
+        public void HtmlTag_ReturnsTrimmedSpaces(string tagName)
         {
             var elements = converter.Parse($"<{tagName}>      Hello      World!     </{tagName}>");
             Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Paragraph>());
+            Assert.That(elements[0].InnerText, Is.EqualTo("Hello World!"));
+        }
 
-            string expectedText = expectWhitespaces? "      Hello      World!     " : "Hello World!";
-            Assert.That(elements[0].InnerText, Is.EqualTo(expectedText));
+        [Test]
+        public void PreTag_ReturnsPreservedSpaces()
+        {
+            var elements = converter.Parse($"<pre>      Hello      World!     </pre>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Paragraph>());
+            Assert.That(elements[0].InnerText, Is.EqualTo("      Hello      World!     "));
         }
 
         [Test(Description = "When the anchor is prefixed by an image, the initial whitespace is collapsed")]
-        public void ParseWhitespaceAnchorWithImg()
+        public void AnchorWithImgThenText_ReturnsCollapsedStartingWhitespace()
         {
             var elements = converter.Parse(@"<a><img src=""data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==""/>     Hello      World!     </a>");
             Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Paragraph>());
             Assert.That(elements[0].InnerText, Is.EqualTo(" Hello World!"));
         }
 
         [Test(Description = "`nbsp` entities should not be collapsed")]
-        public void ParseNonBreakingSpace()
+        public void NonBreakingSpaceEntities_ReturnsPreserveedWhitespace()
         {
             var elements = converter.Parse("<h1>&nbsp;&nbsp; Hello      World!     </h1>");
             Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Paragraph>());
             Assert.That(elements[0].InnerText, Is.EqualTo("   Hello World!"));
         }
     }

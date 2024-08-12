@@ -1,6 +1,5 @@
 using NUnit.Framework;
 using DocumentFormat.OpenXml.Wordprocessing;
-using DocumentFormat.OpenXml.Packaging;
 
 namespace HtmlToOpenXml.Tests
 {
@@ -8,15 +7,15 @@ namespace HtmlToOpenXml.Tests
     /// Tests on <c>div</c> and other block elements.
     /// </summary>
     [TestFixture]
-    public class FlowTests : HtmlConverterTestBase
+    public class DivTests : HtmlConverterTestBase
     {
         [Test]
-        public void ParseStyles()
+        public void StyleAttribute_WithMultipleValues_ShouldBeAllApplied()
         {
             var elements = converter.Parse(@"<div style='text-indent:1em;border:1px dotted red;text-align:center'>Lorem</div>");
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements, Has.All.TypeOf<Paragraph>());
-            var p = elements[0] as Paragraph;
+            var p = (Paragraph) elements[0];
             Assert.Multiple(() =>
             {
                 Assert.That(p.ParagraphProperties?.Indentation?.FirstLine?.HasValue, Is.True);
@@ -24,7 +23,8 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(p.ParagraphProperties?.Justification?.Val?.Value, Is.EqualTo(JustificationValues.Center));
             });
 
-            var borders = p.ParagraphProperties?.ParagraphBorders.Elements<BorderType>();
+            var borders = p.ParagraphProperties?.ParagraphBorders?.Elements<BorderType>();
+            Assert.That(borders, Is.Not.Null);
             Assert.Multiple(() =>
             {
                 Assert.That(borders.Count(), Is.EqualTo(4));
@@ -34,7 +34,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test]
-        public void ParsePageBreakBefore()
+        public void PageBreakBefore_ReturnsOneParagraphThenTwo()
         {
             var elements = converter.Parse(@"Lorem
                 <div style='page-break-before:always'>Placeholder</div>
@@ -62,7 +62,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test]
-        public void ParsePageBreakAfter()
+        public void PageBreakAfter_ReturnsTwoParagraphsThenOne()
         {
             var elements = converter.Parse(@"Lorem
                 <div style='page-break-after:always'>Placeholder</div>
@@ -79,41 +79,8 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(elements[2].ChildElements, Has.All.TypeOf<Run>());
                 Assert.That(elements[2].InnerText, Is.EqualTo("Ipsum"));
             });
-            Assert.That(elements[1].LastChild.HasChild<Break>(), Is.True);
-            Assert.That(elements[1].LastChild.HasChild<LastRenderedPageBreak>(), Is.False);
-        }
-
-        [TestCase("landscape")]
-        [TestCase("portrait")]
-        public void ParsePageOrientation(string orientation)
-        {
-            var _ = converter.Parse($@"<body style=""page-orientation:{orientation}""><body>");
-            var sectionProperties = mainPart.Document.Body!.GetFirstChild<SectionProperties>();
-            Assert.That(sectionProperties, Is.Not.Null);
-            var pageSize = sectionProperties.GetFirstChild<PageSize>();
-            if (orientation == "landscape")
-                Assert.That(pageSize.Width, Is.GreaterThan(pageSize.Height));
-            else
-                Assert.That(pageSize.Height, Is.GreaterThan(pageSize.Width));
-        }
-
-        [Test]
-        public void ParsePageExistingOrientation()
-        {
-            using var generatedDocument = new MemoryStream();
-            using (var buffer = ResourceHelper.GetStream("Resources.DocWithLandscape.docx"))
-                buffer.CopyTo(generatedDocument);
-
-            generatedDocument.Position = 0L;
-            using WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true);
-            MainDocumentPart mainPart = package.MainDocumentPart;
-            HtmlConverter converter = new(mainPart);
-
-            var _ = converter.Parse($@"<body style=""page-orientation:portrait""><body>");
-            var sectionProperties = mainPart.Document.Body!.GetFirstChild<SectionProperties>();
-            Assert.That(sectionProperties, Is.Not.Null);
-            var pageSize = sectionProperties.GetFirstChild<PageSize>();
-            Assert.That(pageSize.Height, Is.GreaterThan(pageSize.Width));
+            Assert.That(elements[1].LastChild?.HasChild<Break>(), Is.True);
+            Assert.That(elements[1].LastChild?.HasChild<LastRenderedPageBreak>(), Is.False);
         }
     }
 }

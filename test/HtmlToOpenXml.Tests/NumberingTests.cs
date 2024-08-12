@@ -11,7 +11,7 @@ namespace HtmlToOpenXml.Tests
     public class NumberingTests : HtmlConverterTestBase
     {
         [Test(Description = "Skip any elements that is not a `li` tag")]
-        public void ExcludeNonLiElement()
+        public void NonLiElement_ShouldBeIgnored()
         {
             var elements = converter.Parse(@"<ol>
                 <p>Must be ignored</p>
@@ -27,7 +27,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test(Description = "Two consecutive lists should restart numbering to 1")]
-        public void RestartConsecutiveList()
+        public void ConsecutiveList_ReturnsList_RestartingOrder()
         {
             var elements = converter.Parse(@"
                 <oL><li>Item 1.1</li></oL>
@@ -44,25 +44,25 @@ namespace HtmlToOpenXml.Tests
             Assert.That(absNum, Is.Not.Null);
 
             var instances = mainPart.NumberingDefinitionsPart?.Numbering
-                .Elements<NumberingInstance>().Where(i => i.AbstractNumId.Val == absNum.AbstractNumberId);
-            Assert.That(instances.Count(), Is.EqualTo(2));
+                .Elements<NumberingInstance>().Where(i => i.AbstractNumId?.Val == absNum.AbstractNumberId);
+            Assert.That(instances?.Count(), Is.EqualTo(2));
 
             Paragraph p1 = (Paragraph) elements[0];
             Paragraph p2 = (Paragraph) elements[2];
             Assert.Multiple(() =>
             {
                 Assert.That(new[]{p1, p2}.Select(e => 
-                    e.ParagraphProperties.NumberingProperties?.NumberingLevelReference?.Val?.Value),
+                    e.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value),
                     Has.All.EqualTo(0),
                     "All paragraphs stand on level 0");
-                Assert.That(p1.ParagraphProperties.NumberingProperties?.NumberingId?.Val?.Value,
-                    Is.Not.EqualTo(p2.ParagraphProperties.NumberingProperties?.NumberingId?.Val?.Value),
+                Assert.That(p1.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value,
+                    Is.Not.EqualTo(p2.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value),
                     "Expected two different list instances");
             });
         }
 
         [Test]
-        public void NestedNumberList()
+        public void NestedNumberList_ReturnsMultilevelList()
         {
             var elements = converter.Parse(
                 @"<ol>
@@ -94,7 +94,7 @@ namespace HtmlToOpenXml.Tests
             });
 
             var inst = mainPart.NumberingDefinitionsPart?.Numbering
-                .Elements<NumberingInstance>().Where(i => i.AbstractNumId.Val == absNum.AbstractNumberId)
+                .Elements<NumberingInstance>().Where(i => i.AbstractNumId?.Val == absNum.AbstractNumberId)
                 .SingleOrDefault();
             Assert.That(inst, Is.Not.Null);
             Assert.That(inst.NumberID?.Value, Is.Not.Null);
@@ -106,17 +106,17 @@ namespace HtmlToOpenXml.Tests
             Assert.Multiple(() =>
             {
                 Assert.That(elements.Cast<Paragraph>().Select(e => 
-                    e.ParagraphProperties.NumberingProperties?.NumberingId?.Val?.Value),
+                    e.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value),
                     Has.All.EqualTo(inst.NumberID.Value),
                     "All paragraphs are linked to the same list instance");
-                Assert.That(p1.ParagraphProperties.NumberingProperties.NumberingLevelReference?.Val?.Value, Is.EqualTo(0));
-                Assert.That(p1_1.ParagraphProperties.NumberingProperties.NumberingLevelReference?.Val?.Value, Is.EqualTo(1));
-                Assert.That(p2.ParagraphProperties.NumberingProperties.NumberingLevelReference?.Val?.Value, Is.EqualTo(0));
+                Assert.That(p1.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value, Is.EqualTo(0));
+                Assert.That(p1_1.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value, Is.EqualTo(1));
+                Assert.That(p2.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value, Is.EqualTo(0));
             });
         }
 
         [Test(Description = "Empty list should not be registred")]
-        public void IgnoreEmptyList()
+        public void EmptyList_ShouldBeIgnored()
         {
             var elements = converter.Parse("<ol></ol>");
             Assert.That(elements, Is.Empty);
@@ -131,8 +131,8 @@ namespace HtmlToOpenXml.Tests
             }
         }
 
-        [Test] 
-        public void ReuseExistingNumbering()
+        [Test(Description = "Increment instanceId based on existing lists")]
+        public void WithExistingNumbering_ReturnsUniqueInstanceId()
         {
             using var generatedDocument = new MemoryStream();
             using (var buffer = ResourceHelper.GetStream("Resources.DocWithNumbering.docx"))
@@ -140,11 +140,11 @@ namespace HtmlToOpenXml.Tests
 
             generatedDocument.Position = 0L;
             using WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true);
-            MainDocumentPart mainPart = package.MainDocumentPart;
+            MainDocumentPart mainPart = package.MainDocumentPart!;
             var numbering = mainPart.NumberingDefinitionsPart?.Numbering;
             Assert.That(numbering, Is.Not.Null);
             var instances = numbering.Elements<NumberingInstance>();
-            var beforeMaxInstanceId = instances.MaxBy(i => i.NumberID.Value).NumberID.Value;
+            var beforeMaxInstanceId = instances.MaxBy(i => i.NumberID?.Value)!.NumberID!.Value;
             var beforeInstanceCount = instances.Count();
             Assert.That(beforeInstanceCount, Is.GreaterThan(0));
 
@@ -156,7 +156,7 @@ namespace HtmlToOpenXml.Tests
             Assert.That(instances.Count(), 
                 Is.GreaterThan(beforeInstanceCount),
                 "New list instance is appended to existing instances");
-            var afterMaxInstanceId = instances.MaxBy(i => i.NumberID.Value).NumberID.Value;
+            var afterMaxInstanceId = instances.MaxBy(i => i.NumberID?.Value)!.NumberID!.Value;
             Assert.That(afterMaxInstanceId, Is.EqualTo(beforeMaxInstanceId + 1),
                 "The new list instance should have been registred incrementally");
         }
@@ -164,9 +164,10 @@ namespace HtmlToOpenXml.Tests
         /// <summary>
         /// Even if Word won't display the 10th levels, the conversion should not fail
         /// </summary>
-        [TestCase(8, Description = "Word doesn't display more than 8 deep levels.")]
-        public void MaxNumberingLevel(int maxLevel)
+        [Test(Description = "Word doesn't display more than 8 deep levels.")]
+        public void MaxNumberingLevel_ShouldBeIgnored()
         {
+            const int maxLevel = 8;
             var sb = new System.Text.StringBuilder();
             for (int i = 0; i <= maxLevel; i++)
                 sb.AppendFormat("<ol><li>Item {0}", i+1);
@@ -181,23 +182,23 @@ namespace HtmlToOpenXml.Tests
             Assert.That(absNum, Is.Not.Null);
 
             var inst = mainPart.NumberingDefinitionsPart?.Numbering
-                .Elements<NumberingInstance>().Where(i => i.AbstractNumId.Val == absNum.AbstractNumberId)
+                .Elements<NumberingInstance>().Where(i => i.AbstractNumId?.Val == absNum.AbstractNumberId)
                 .SingleOrDefault();
             Assert.That(inst, Is.Not.Null);
             Assert.That(inst.NumberID?.Value, Is.Not.Null);
 
             Assert.That(elements, Has.Count.EqualTo(maxLevel + 1));
             Assert.That(elements.Cast<Paragraph>().Select(e => 
-                e.ParagraphProperties.NumberingProperties?.NumberingId?.Val?.Value),
+                e.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value),
                 Has.All.EqualTo(inst.NumberID.Value),
                 "All paragraphs are linked to the same list instance");
-            Assert.That(elements.Last().GetFirstChild<ParagraphProperties>()
-                .NumberingProperties.NumberingLevelReference.Val.Value, Is.EqualTo(maxLevel),
+            Assert.That(elements.Last().GetFirstChild<ParagraphProperties>()?
+                .NumberingProperties?.NumberingLevelReference?.Val?.Value, Is.EqualTo(maxLevel),
                 "Level must be maxed out");
         }
 
         [Test(Description = "Apply Word document style on list scope")]
-        public void NumberingWithListCssClass()
+        public void UseVariantStyle_List_ReturnsAppliedStyle()
         {
             using var generatedDocument = new MemoryStream();
             using (var buffer = ResourceHelper.GetStream("Resources.DocWithCustomStyle.docx"))
@@ -205,7 +206,7 @@ namespace HtmlToOpenXml.Tests
 
             generatedDocument.Position = 0L;
             using WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true);
-            MainDocumentPart mainPart = package.MainDocumentPart;
+            MainDocumentPart mainPart = package.MainDocumentPart!;
             HtmlConverter converter = new(mainPart);
 
             var elements = converter.Parse(@"<ul class='no-mapping-cls CustomStyle1'>
@@ -216,13 +217,13 @@ namespace HtmlToOpenXml.Tests
 
             Assert.That(elements, Has.Count.EqualTo(3));
             Assert.That(elements.Cast<Paragraph>().Select(e => 
-                e.ParagraphProperties.ParagraphStyleId?.Val?.Value),
+                e.ParagraphProperties?.ParagraphStyleId?.Val?.Value),
                 Has.All.EqualTo("CustomStyle1"),
                 "All paragraphs are linked to the same list instance");
         }
 
         [Test(Description = "Apply Word document style on list item scope")]
-        public void NumberingWithListItemCssClass()
+        public void UseVariantStyle_ListItem_ReturnsAppliedStyle()
         {
             using var generatedDocument = new MemoryStream();
             using (var buffer = ResourceHelper.GetStream("Resources.DocWithCustomStyle.docx"))
@@ -230,7 +231,7 @@ namespace HtmlToOpenXml.Tests
 
             generatedDocument.Position = 0L;
             using WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true);
-            MainDocumentPart mainPart = package.MainDocumentPart;
+            MainDocumentPart mainPart = package.MainDocumentPart!;
             HtmlConverter converter = new(mainPart);
 
             var elements = converter.Parse(@"<ul>
@@ -253,8 +254,8 @@ namespace HtmlToOpenXml.Tests
             });
         }
 
-        [Test(Description = "Resume indenting from existing numbering")]
-        public async Task ContinueExistingNumbering()
+        [Test(Description = "Resume indenting from existing numbering (default behaviour)")]
+        public async Task ContinueNumbering_ReturnsSecondList_ContinueOrder()
         {
             await converter.ParseHtml(@"<ol><li>Item 1</li></ol>");
 
@@ -266,23 +267,24 @@ namespace HtmlToOpenXml.Tests
             Assert.That(absNum, Is.Not.Null);
 
             var instances = mainPart.NumberingDefinitionsPart?.Numbering
-                .Elements<NumberingInstance>().Where(i => i.AbstractNumId.Val == absNum.AbstractNumberId);
+                .Elements<NumberingInstance>().Where(i => i.AbstractNumId!.Val == absNum.AbstractNumberId);
+            Assert.That(instances, Is.Not.Null);
             Assert.Multiple(() =>
             {
                 Assert.That(instances.Count(), Is.EqualTo(1));
                 Assert.That(instances.Select(i => i.NumberID?.HasValue), Has.All.True);
             });
 
-            var paragraphs = mainPart.Document.Body.Elements<Paragraph>();
+            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
             Assert.That(paragraphs, Is.Not.Empty);
             Assert.That(paragraphs.Select(e => 
-                e.ParagraphProperties.NumberingProperties?.NumberingId?.Val?.Value),
-                Has.All.EqualTo(instances.First().NumberID.Value),
+                e.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value),
+                Has.All.EqualTo(instances.First().NumberID!.Value),
                 "All paragraphs are linked to the same list instance");
         }
 
         [Test(Description = "Stop indenting from existing numbering (issue #57)")]
-        public async Task RestartExistingNumbering()
+        public async Task DisableContinueNumbering_ReturnsSecondList_RestartingOrder()
         {
             await converter.ParseHtml(@"<ol><li>Item 1</li></ol>");
 
@@ -295,17 +297,18 @@ namespace HtmlToOpenXml.Tests
             Assert.That(absNum, Is.Not.Null);
 
             var instances = mainPart.NumberingDefinitionsPart?.Numbering
-                .Elements<NumberingInstance>().Where(i => i.AbstractNumId.Val == absNum.AbstractNumberId);
+                .Elements<NumberingInstance>().Where(i => i.AbstractNumId!.Val == absNum.AbstractNumberId);
+            Assert.That(instances, Is.Not.Null);
             Assert.Multiple(() =>
             {
                 Assert.That(instances.Count(), Is.EqualTo(2), "Expecting 2 distinct instances of the list");
                 Assert.That(instances.Select(i => i.NumberID?.HasValue), Has.All.True);
             });
 
-            var paragraphs = mainPart.Document.Body.Elements<Paragraph>();
+            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
             Assert.That(paragraphs, Is.Not.Empty);
             Assert.That(paragraphs.Select(e => 
-                e.ParagraphProperties.NumberingProperties?.NumberingId?.Val?.Value),
+                e.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value),
                 Is.Unique,
                 "All paragraphs use different list instances");
         }
@@ -314,7 +317,7 @@ namespace HtmlToOpenXml.Tests
         /// Tiered numbering such as: 1, 1.1, 1.1.1
         /// </summary>
         [Test(Description = "Nested numbering (issue #81)")]
-        public void DecimalTieredNumbering()
+        public void DecimalTieredStyle_ReturnsListWithTieredNumbering()
         {
             var elements = converter.Parse(
                 @"<ol style='list-style-type:decimal-tiered'>
@@ -330,7 +333,8 @@ namespace HtmlToOpenXml.Tests
             Assert.That(absNum, Is.Not.Null);
 
             var instances = mainPart.NumberingDefinitionsPart?.Numbering
-                .Elements<NumberingInstance>().Where(i => i.AbstractNumId.Val == absNum.AbstractNumberId);
+                .Elements<NumberingInstance>().Where(i => i.AbstractNumId!.Val == absNum.AbstractNumberId);
+            Assert.That(instances, Is.Not.Null);
             Assert.Multiple(() =>
             {
                 Assert.That(instances.Count(), Is.EqualTo(1));
@@ -340,13 +344,13 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements, Is.Not.Empty);
             // exception rule: this style should cascade to nested lists
             Assert.That(elements.Cast<Paragraph>().Select(e => 
-                e.ParagraphProperties.NumberingProperties?.NumberingId?.Val?.Value),
-                Has.All.EqualTo(instances.First().NumberID.Value),
+                e.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value),
+                Has.All.EqualTo(instances.First().NumberID!.Value),
                 "All paragraphs are linked to the same list instance");
         }
 
         [Test(Description = "Allow to specify another start value for the first item of a `ol` list")]
-        public void OverrideStartNumberingOl()
+        public void OverrideStartNumber_WithOl_ShouldSucceed()
         {
             const short startLevel = 3;
             var elements = converter.Parse($"<ol start='{startLevel}'><li>Item</li></ol>");
@@ -361,7 +365,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test(Description = "Allow to specify another start value for the first item of a `ul` list")]
-        public void IgnoreOverrideStartNumberUl()
+        public void OverrideStartNumber_WithUl_ShouldBeIgnored()
         {
             var elements = converter.Parse($"<ul start='3'><li>Item</li></ul>");
             Assert.That(elements, Is.Not.Empty);
@@ -376,7 +380,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test]
-        public void ParseRomanList()
+        public void RomanList_ReturnsListWithCustomStyle()
         {
             var elements = converter.Parse(@"<ul style='list-style-type:lower-roman'>
                     <li>Item 1</li>
@@ -384,7 +388,7 @@ namespace HtmlToOpenXml.Tests
 
             Assert.That(elements, Is.Not.Empty);
             Assert.That(elements, Is.All.TypeOf<Paragraph>());
-            var numId = (elements[0] as Paragraph).ParagraphProperties.NumberingProperties?.NumberingId?.Val?.Value;
+            var numId = ((Paragraph) elements[0]).ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value;
             Assert.That(numId, Is.Not.Null);
 
             var numInst = mainPart.NumberingDefinitionsPart!.Numbering
@@ -398,14 +402,14 @@ namespace HtmlToOpenXml.Tests
             Assert.That(absNum, Is.Not.Null);
             Assert.That(absNum.NumberingStyleLink?.Val?.Value, Is.EqualTo("Harvard"));
 
-            var style = mainPart.StyleDefinitionsPart.Styles
+            var style = mainPart.StyleDefinitionsPart!.Styles!
                 .Elements<Style>()
                 .FirstOrDefault(s => s.StyleName?.Val == "Harvard");
             Assert.That(style, Is.Not.Null);
         }
 
         [Test(Description = "Restart indenting in second nested numbering (issue #83)")]
-        public void RestartExistingNestedNumbering()
+        public void NestedNumbering_ReturnsNestedList_RestartingOrder()
         {
             var elements = converter.Parse(@"
                 <ol style='list-style-type: decimal;'>
@@ -428,13 +432,14 @@ namespace HtmlToOpenXml.Tests
             Assert.That(absNum, Is.Not.Null);
             Assert.That(absNum.Count(), Is.EqualTo(2));
 
-            var absNumIds = new HashSet<int>(absNum.Select(a => a.AbstractNumberId.Value));
+            var absNumIds = new HashSet<int>(absNum.Select(a => a.AbstractNumberId!.Value));
             var instances = mainPart.NumberingDefinitionsPart?.Numbering
-                .Elements<NumberingInstance>().Where(i => absNumIds.Contains(i.AbstractNumId.Val));
+                .Elements<NumberingInstance>().Where(i => absNumIds.Contains(i.AbstractNumId!.Val!));
+            Assert.That(instances, Is.Not.Null);
             Assert.Multiple(() =>
             {
                 Assert.That(instances.Count(), Is.EqualTo(4), "Expecting 4 distinct instances of the list");
-                Assert.That(instances.Select(i => i.NumberID.Value), Is.Unique);
+                Assert.That(instances.Select(i => i.NumberID?.Value), Is.Unique);
             });
             Assert.That(instances.Last().GetFirstChild<LevelOverride>()?.LevelIndex?.Value, Is.EqualTo(1));
             Assert.That(instances.Last().GetFirstChild<LevelOverride>()?.StartOverrideNumberingValue?.Val?.Value, Is.EqualTo(1));

@@ -10,11 +10,11 @@ namespace HtmlToOpenXml.Tests
     [TestFixture]
     public class StyleTests : HtmlConverterTestBase
     {
-        [Test]
-        public void ProvisionCustomStyle()
+        [Test(Description = "Define on the fly a new Paragraph style and apply it")]
+        public void UseVariantStyle_ReturnsAppliedStyle()
         {
             bool wasTriggered = false;
-            converter.HtmlStyles.StyleMissing += delegate(object sender, StyleEventArgs args) {
+            converter.HtmlStyles.StyleMissing += delegate(object? sender, StyleEventArgs args) {
                 if (args.Type != StyleValues.Paragraph)
                     return;
                 wasTriggered = true;
@@ -39,8 +39,8 @@ namespace HtmlToOpenXml.Tests
             Assert.That(paragraph.ParagraphProperties?.ParagraphStyleId?.Val?.Value, Is.EqualTo("custom-style"));
         }
 
-        [Test]
-        public void ParseParagraphCustomClass()
+        [Test(Description = "CustomStyle1 is defined in the provided document and must be discover")]
+        public void UseVariantParagraphStyle_ReturnsAppliedStyle()
         {
             using var generatedDocument = new MemoryStream();
             using (var buffer = ResourceHelper.GetStream("Resources.DocWithCustomStyle.docx"))
@@ -48,7 +48,7 @@ namespace HtmlToOpenXml.Tests
 
             generatedDocument.Position = 0L;
             using WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true);
-            MainDocumentPart mainPart = package.MainDocumentPart;
+            MainDocumentPart mainPart = package.MainDocumentPart!;
             HtmlConverter converter = new HtmlConverter(mainPart);
 
             var elements = converter.Parse("<div class='CustomStyle1'>Lorem</div><span>Ipsum</span>");
@@ -56,11 +56,11 @@ namespace HtmlToOpenXml.Tests
             var paragraphProperties = elements[0].GetFirstChild<ParagraphProperties>();
             Assert.That(paragraphProperties, Is.Not.Null);
             Assert.That(paragraphProperties.ParagraphStyleId, Is.Not.Null);
-            Assert.That(paragraphProperties.ParagraphStyleId.Val.Value, Is.EqualTo("CustomStyle1"));
+            Assert.That(paragraphProperties.ParagraphStyleId?.Val?.Value, Is.EqualTo("CustomStyle1"));
         }
 
         [Test(Description = "TableNormal style define outside borders")]
-        public void ParseTableCustomClass()
+        public void UseVariantTableStyle_ReturnsAppliedStyle()
         {
             using var generatedDocument = new MemoryStream();
             using (var buffer = ResourceHelper.GetStream("Resources.DocWithCustomStyle.docx"))
@@ -68,7 +68,7 @@ namespace HtmlToOpenXml.Tests
 
             generatedDocument.Position = 0L;
             using WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true);
-            MainDocumentPart mainPart = package.MainDocumentPart;
+            MainDocumentPart mainPart = package.MainDocumentPart!;
             HtmlConverter converter = new HtmlConverter(mainPart);
 
             var elements = converter.Parse("<table class='TableNormal' border='2'><tr><td>Lorem Ipsum</td></tr></table>");
@@ -81,9 +81,10 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(tableProperties.TableBorders, Is.Not.Null);
             });
 
+            // the TableNormal doesn't define any borders while default shipped Table style does
             Assert.Multiple(() =>
             {
-                Assert.That(tableProperties.TableStyle.Val.Value, Is.EqualTo("TableNormal"));
+                Assert.That(tableProperties.TableStyle?.Val?.Value, Is.EqualTo("TableNormal"));
                 Assert.That(tableProperties.TableBorders.LeftBorder?.Val?.Value, Is.EqualTo(BorderValues.None));
                 Assert.That(tableProperties.TableBorders.TopBorder?.Val?.Value, Is.EqualTo(BorderValues.None));
                 Assert.That(tableProperties.TableBorders.RightBorder?.Val?.Value, Is.EqualTo(BorderValues.None));
@@ -94,7 +95,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test]
-        public void ChangeDefaultStyle()
+        public void SetDefaultStyle_Paragraph_ReturnsAppliedStyle()
         {
             converter.HtmlStyles.DefaultStyles.IntenseQuoteStyle = "CustomIntenseQuoteStyle";
             converter.HtmlStyles.AddStyle(new Style {
@@ -108,7 +109,7 @@ namespace HtmlToOpenXml.Tests
             });
 
             bool wasTriggered = false;
-            converter.HtmlStyles.StyleMissing += delegate(object sender, StyleEventArgs args) {
+            converter.HtmlStyles.StyleMissing += delegate(object? sender, StyleEventArgs args) {
                 wasTriggered = true;
                 Assert.That(args.Type, Is.EqualTo(StyleValues.Paragraph));
                 Assert.That(args.Name, Is.EqualTo("CustomIntenseQuoteStyle"));
@@ -126,7 +127,7 @@ For 50 years, <b>WWF</b> has been protecting the future of nature. The world's l
         }
 
         [Test(Description = "Appending style into StyleDefinionsPart requires a call to RefreshStyles")]
-        public void RefreshStyles()
+        public void ManualAddStyle_ThenRefreshStyles_ShouldSucceed()
         {
             var stylePart = mainPart.StyleDefinitionsPart ?? mainPart.AddNewPart<StyleDefinitionsPart>();
             stylePart.Styles ??= new();
@@ -144,7 +145,7 @@ For 50 years, <b>WWF</b> has been protecting the future of nature. The world's l
             converter.RefreshStyles();
 
             bool wasTriggered = false;
-            converter.HtmlStyles.StyleMissing += delegate(object sender, StyleEventArgs args) {
+            converter.HtmlStyles.StyleMissing += delegate(object? sender, StyleEventArgs args) {
                 if (args.Name == "CustomIntenseQuoteStyle" && args.Type == StyleValues.Paragraph) {
                     wasTriggered = true;
                 }
@@ -159,7 +160,7 @@ For 50 years, <b>WWF</b> has been protecting the future of nature. The world's l
         }
 
         [Test(Description = "Parser should consider the last occurence of a style")]
-        public void ParseDuplicateStyle()
+        public void DuplicateStyle_ReturnsLatter()
         {
             var styleAttributes = HtmlAttributeCollection.ParseStyle("color:red;color:blue");
             Assert.That(styleAttributes["color"], Is.EqualTo("blue"));

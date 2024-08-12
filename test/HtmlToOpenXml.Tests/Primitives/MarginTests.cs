@@ -1,6 +1,6 @@
 using NUnit.Framework;
 
-namespace HtmlToOpenXml.Tests
+namespace HtmlToOpenXml.Tests.Primitives
 {
     /// <summary>
     /// Tests Html margin style attribute.
@@ -12,7 +12,7 @@ namespace HtmlToOpenXml.Tests
         [TestCase("25px 50px 75px", 25, 50, 75, 50)]
         [TestCase("25px 50px", 25, 50, 25, 50)]
         [TestCase("25px", 25, 25, 25, 25)]
-        public void Parse (string html, int top, int right, int bottom, int left)
+        public void ParseHtmlString_ShouldSucceed (string html, int top, int right, int bottom, int left)
         {
             var margin = Margin.Parse(html);
 
@@ -26,7 +26,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test]
-        public void ParseFloat ()
+        public void ParseWithFloat_ShouldSucceed ()
         {
             var margin = Margin.Parse("0 50% 9.5pt .00001pt");
 

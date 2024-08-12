@@ -20,7 +20,7 @@ namespace HtmlToOpenXml.Tests
             generatedDocument = new System.IO.MemoryStream();
             package = WordprocessingDocument.Create(generatedDocument, WordprocessingDocumentType.Document);
 
-            mainPart = package.MainDocumentPart;
+            mainPart = package.MainDocumentPart!;
             if (mainPart == null)
             {
                 mainPart = package.AddMainDocumentPart();

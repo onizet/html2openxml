@@ -12,29 +12,29 @@ namespace HtmlToOpenXml.Tests
         [TestCase("<table><tr></tr></table>", Description = "Row with no cells")]
         [TestCase("<table></table>", Description = "No rows")]
         [TestCase("<table><tbody></tbody><thead></thead><tfoot></tfoot></table>", Description = "No rows in any parts")]
-        public void IgnoreEmptyTable(string html)
+        public void EmptyTable_ShouldBeIgnored(string html)
         {
             var elements = converter.Parse(html);
             Assert.That(elements, Is.Empty);
         }
 
         [Test(Description = "Empty cell should generate an empty Paragraph")]
-        public void ParseEmptyCell()
+        public void EmptyCell_ReturnsEmpty()
         {
-            var elements = converter.Parse(@"<table><tr><td></td></tr></table>");
+            var elements = converter.Parse(@"<table><tr><td>Next cell is empty</td><td></td></tr></table>");
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements, Has.All.TypeOf<Table>());
 
             var rows = elements[0].Elements<TableRow>();
             Assert.That(rows.Count(), Is.EqualTo(1));
             var cells = rows.First().Elements<TableCell>();
-            Assert.That(cells.Count(), Is.EqualTo(1));
-            Assert.That(cells.First().HasChild<Paragraph>(), Is.True);
-            Assert.That(cells.First().Count(c => c is not TableCellProperties), Is.EqualTo(1));
+            Assert.That(cells.Count(), Is.EqualTo(2));
+            Assert.That(cells.All(c => c.HasChild<Paragraph>()), Is.True);
+            Assert.That(cells.Last().Count(c => c is not TableCellProperties), Is.EqualTo(1));
         }
 
         [Test(Description = "Empty tfoot should be ignored")]
-        public void IgnoreEmptyTablePart()
+        public void EmptyTablePart_ShouldBeIgnored()
         {
             // table parts should be reordered
             var elements = converter.Parse(@"<table>
@@ -50,7 +50,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test(Description = "Second row does not contains complete number of cells")]
-        public void ParseRowWithNoCell()
+        public void RowWithNoCell_ReturnsCompletelyFilledRow()
         {
             var elements = converter.Parse(@"<table>
                 <tr><td>Cell 1.1</td><td>Cell 1.2</td></tr>
@@ -67,7 +67,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test(Description = "Respect the order header-body-footer even if provided disordered")]
-        public void ParseDisorderedTableParts ()
+        public void DisorderedTableParts_ReturnsOrderedTable ()
         {
             // table parts should be reordered
             var elements = converter.Parse(@"<table>
@@ -92,7 +92,7 @@ namespace HtmlToOpenXml.Tests
         [TestCase(2u, 2)]
         [TestCase(1u, null)]
         [TestCase(0u, null)]
-        public void ParseColSpan(uint colSpan, int? expectedColSpan)
+        public void ColSpan_ReturnsGridSpan(uint colSpan, int? expectedColSpan)
         {
             var elements = converter.Parse(@$"<table>
                     <tr><th colspan=""{colSpan}"">Cell 1.1</th></tr>
@@ -116,7 +116,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test(Description = "rowSpan=0 should extend on all rows")]
-        public void ParseRowSpanZero()
+        public void RowSpanZero_ReturnsExtendedToAllRows()
         {
             var elements = converter.Parse(@"<table>
                 <tbody>
@@ -150,7 +150,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test]
-        public void ParseRowSpan()
+        public void RowSpan_ReturnsVerticalMerge()
         {
             var elements = converter.Parse(@"<table>
                     <tr><td>Cell 1.1</td><td>Cell 1.2</td><td>Cell 1.3</td></tr>
@@ -170,7 +170,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test]
-        public void ParseRowAndColumnSpan()
+        public void RowAndColumnSpan_ReturnsVerticalMergeAndGridSpan()
         {
             var elements = converter.Parse(@"<table>
                     <tr><td rowspan=""2"" colspan=""2"">Cell 1.1</td><td>Cell 1.3</td></tr>
@@ -194,11 +194,11 @@ namespace HtmlToOpenXml.Tests
             Assert.That(rows.ElementAt(1).GetFirstChild<TableCell>()?.TableCellProperties?.VerticalMerge?.Val?.Value, Is.EqualTo(MergedCellValues.Continue));
         }
 
-        [TestCase("tb-lr", "btLr")]
-        [TestCase("vertical-lr", "btLr")]
-        [TestCase("tb-rl", "tbRl")]
-        [TestCase("vertical-rl", "tbRl")]
-        public void ParseVerticalText(string direction, string openXmlDirection)
+        [TestCase("tb-lr", ExpectedResult = "btLr")]
+        [TestCase("vertical-lr", ExpectedResult ="btLr")]
+        [TestCase("tb-rl", ExpectedResult = "tbRl")]
+        [TestCase("vertical-rl", ExpectedResult = "tbRl")]
+        public string? VerticalText_ReturnsTableCellWithTextAlignment(string direction)
         {
             var elements = converter.Parse(@$"<table>
                     <tr><td style=""writing-mode:{direction}"">Cell 1.1</td></tr>
@@ -209,12 +209,12 @@ namespace HtmlToOpenXml.Tests
             Assert.That(rows.Count(), Is.EqualTo(1));
             Assert.That(rows.First().Elements<TableCell>().Count(), Is.EqualTo(1));
             var cell = rows.First().GetFirstChild<TableCell>();
-            Assert.That(cell?.TableCellProperties?.TextDirection?.Val?.Value, Is.EqualTo(new TextDirectionValues(openXmlDirection)));
             Assert.That(cell?.TableCellProperties?.TableCellVerticalAlignment?.Val?.Value, Is.EqualTo(TableVerticalAlignmentValues.Center));
+            return cell?.TableCellProperties?.TextDirection?.Val?.InnerText;
         }
 
-        [Test]
-        public void ParseCellPadding()
+        [Test(Description = "Table padding is not supported in OpenXml, only margin")]
+        public void CellPadding_ReturnsTableWithCellMargin()
         {
             var elements = converter.Parse(@$"<table cellpadding=""2"">
                     <tr><td>Cell 1.1</td></tr>
@@ -234,7 +234,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test]
-        public void ParseCellSpacing()
+        public void CellSpacing_ReturnsTableCellWithSpacing()
         {
             var elements = converter.Parse(@$"<table cellspacing=""2"">
                     <tr><td>Cell 1.1</td></tr>
@@ -247,7 +247,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [TestCaseSource(nameof(BorderWidthCases))]
-        public void ParseBorders(string borderAtrribute, IEnumerable<string> expectedBorderValue, IEnumerable<uint?> expectedBorderWidth)
+        public void HtmlBorders_ShouldSucceed(string borderAtrribute, IEnumerable<string> expectedBorderValue, IEnumerable<uint?> expectedBorderWidth)
         {
             // we specify a style which doesn't handle borders
             converter.HtmlStyles.AddStyle(new Style {
@@ -262,7 +262,7 @@ namespace HtmlToOpenXml.Tests
             var borders = elements[0].GetFirstChild<TableProperties>()?.TableBorders;
             Assert.That(borders, Is.Not.Null);
             Assert.That(borders.HasChild<BorderType>(), Is.True);
-            Assert.That(new string[] { borders.TopBorder?.Val?.InnerText,
+            Assert.That(new string?[] { borders.TopBorder?.Val?.InnerText,
                 borders.LeftBorder?.Val?.InnerText,
                 borders.RightBorder?.Val?.InnerText,
                 borders.BottomBorder?.Val?.InnerText,
@@ -289,19 +289,19 @@ namespace HtmlToOpenXml.Tests
         static readonly object[] BorderWidthCases =
         [
             // Negative border should be considered as zero
-            new object[] { "border='-1'", Enumerable.Repeat("none", 6), null },
-            new object[] { "border='0'", Enumerable.Repeat("none", 6), null },
+            new object[] { "border='-1'", Enumerable.Repeat("none", 6), null! },
+            new object[] { "border='0'", Enumerable.Repeat("none", 6), null! },
             new object[] { "border='1'",
                 new string[] { "none", "none", "none", "none", "single", "single" }, 
                 new uint?[] { null, null, null, null, 14, 14 } },
             new object[] { "style='border:1px;border-bottom:3px dashed'",
-                new string[] { "single", "single", "single", "dashed", null, null },
+                new string[] { "single", "single", "single", "dashed", null!, null! },
                 new uint?[] { 6, 6, 6, 18, null, null } }
         ];
 
         [TestCase("above", 0, 1)]
         [TestCase("below", 1, 0)]
-        public void ParseTableCaption(string position, int captionPos, int tablePos)
+        public void TableCaption_ReturnsPositionedParagraph(string position, int captionPos, int tablePos)
         {
             converter.TableCaptionPosition = new (position);
             var elements = converter.Parse(@$"<table>
@@ -316,23 +316,23 @@ namespace HtmlToOpenXml.Tests
             Assert.That(runs.Count(), Is.AtLeast(4));
 
             Assert.Multiple(() =>{
-                Assert.That(p.ParagraphProperties.ParagraphStyleId?.Val?.Value, Is.EqualTo(converter.HtmlStyles.DefaultStyles.CaptionStyle));
+                Assert.That(p.ParagraphProperties?.ParagraphStyleId?.Val?.Value, Is.EqualTo(converter.HtmlStyles.DefaultStyles.CaptionStyle));
                 Assert.That(runs.First().HasChild<FieldChar>(), Is.True);
                 Assert.That(runs.ElementAt(1).HasChild<FieldCode>(), Is.True);
                 Assert.That(runs.ElementAt(2).HasChild<FieldChar>(), Is.True);
             });
             Assert.Multiple(() =>
             {
-                Assert.That(runs.First().GetFirstChild<FieldChar>().FieldCharType.Value, Is.EqualTo(FieldCharValues.Begin));
-                Assert.That(runs.ElementAt(1).GetFirstChild<FieldCode>().InnerText, Is.EqualTo("SEQ TABLE \\* ARABIC"));
-                Assert.That(runs.ElementAt(2).GetFirstChild<FieldChar>().FieldCharType.Value, Is.EqualTo(FieldCharValues.End));
+                Assert.That(runs.First().GetFirstChild<FieldChar>()?.FieldCharType?.Value, Is.EqualTo(FieldCharValues.Begin));
+                Assert.That(runs.ElementAt(1).GetFirstChild<FieldCode>()?.InnerText, Is.EqualTo("SEQ TABLE \\* ARABIC"));
+                Assert.That(runs.ElementAt(2).GetFirstChild<FieldChar>()?.FieldCharType?.Value, Is.EqualTo(FieldCharValues.End));
                 Assert.That(runs.Last().InnerText, Is.EqualTo(" Some table caption"));
             });
         }
 
         [TestCase("right", "right")]
         [TestCase("", "center")]
-        public void ParseTableCaptionAlign(string alignment, string expectedAlign)
+        public void TableCaptionAlign_ReturnsPositionedParagraph_AlignedWithTable(string alignment, string expectedAlign)
         {
             var elements = converter.Parse(@$"<table align=""center"">
                     <caption align=""{alignment}"">Some table caption</caption>
@@ -345,7 +345,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test]
-        public void IgnoreEmptyTableCaption()
+        public void EmptyTableCaption_ShouldBeIgnored()
         {
             var elements = converter.Parse(@$"<table>
                     <caption></caption>
@@ -356,7 +356,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test]
-        public void ParsePreAsTable()
+        public void PreAsTable_ReturnsTableWithPreservedWhitespaces()
         {
             const string preformattedText = @"
               ^__^
@@ -387,12 +387,13 @@ namespace HtmlToOpenXml.Tests
             var cell = cells.First();
             Assert.Multiple(() =>
             {
-                Assert.That(cell.TableCellProperties?.TableCellBorders.ChildElements.Count(), Is.EqualTo(4));
-                Assert.That(cell.TableCellProperties?.TableCellBorders.ChildElements, Has.All.InstanceOf<BorderType>());
-                Assert.That(cell.TableCellProperties?.TableCellBorders.Elements<BorderType>().All(b => b.Val.Value == BorderValues.Single), Is.True);
+                Assert.That(cell.TableCellProperties?.TableCellBorders?.ChildElements.Count(), Is.EqualTo(4));
+                Assert.That(cell.TableCellProperties?.TableCellBorders?.ChildElements, Has.All.InstanceOf<BorderType>());
+                Assert.That(cell.TableCellProperties?.TableCellBorders?.Elements<BorderType>().All(b => b.Val?.Value == BorderValues.Single), Is.True);
             });
 
             var run = cell.GetFirstChild<Paragraph>()?.GetFirstChild<Run>();
+            Assert.That(run, Is.Not.Null);
             Assert.Multiple(() =>
             {
                 var odds = run.ChildElements.Where((item, index) => index % 2 != 0);
@@ -406,7 +407,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test]
-        public void ParseRowStyle()
+        public void RowStyle_ReturnsRunCellsWithCascadedStyle()
         {
             var elements = converter.Parse(@$"<table>
                     <tr style='background-color:silver;height:120px'><td>Cell</td></tr>
@@ -416,7 +417,7 @@ namespace HtmlToOpenXml.Tests
 
             var row = elements[0].GetFirstChild<TableRow>();
             Assert.That(row, Is.Not.Null);
-            Assert.That(row.TableRowProperties.GetFirstChild<TableRowHeight>()?.Val?.Value, Is.EqualTo(1800));
+            Assert.That(row.TableRowProperties?.GetFirstChild<TableRowHeight>()?.Val?.Value, Is.EqualTo(1800));
 
             var cell = row.GetFirstChild<TableCell>();
             Assert.That(cell, Is.Not.Null);
@@ -428,7 +429,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test]
-        public void ParseCellStyle()
+        public void CellStyle_ReturnsRunWithCascadeStyle()
         {
             var elements = converter.Parse(@$"<table>
                     <tr><td style=""font-weight:bold""><i>Cell</i></td></tr>
@@ -453,7 +454,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test]
-        public void ParseNestedTable()
+        public void NestedTable_ReturnsTableInsideTable()
         {
             var elements = converter.Parse(@$"<table>
                     <tr><td style=""font-weight:bold"">
@@ -462,14 +463,14 @@ namespace HtmlToOpenXml.Tests
                 </table>");
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements, Has.All.TypeOf<Table>());
-            Assert.That(elements[0].GetFirstChild<TableGrid>().Elements<GridColumn>().Count(), Is.EqualTo(1));
+            Assert.That(elements[0].GetFirstChild<TableGrid>()?.Elements<GridColumn>().Count(), Is.EqualTo(1));
             var cell = elements[0].GetFirstChild<TableRow>()?.GetFirstChild<TableCell>();
             Assert.That(cell, Is.Not.Null);
             Assert.That(cell.HasChild<Table>(), Is.True);
         }
 
         [Test]
-        public void ParseColstyle()
+        public void Colstyle_ReturnsStyleAppliedOnCell()
         {
             var elements = converter.Parse(@$"<table>
                     <colgroup>
@@ -490,7 +491,7 @@ namespace HtmlToOpenXml.Tests
                 //Assert.That(columns.Last().Width?.Value, Is.EqualTo("750"));
             });
 
-            var cells = elements[0].GetFirstChild<TableRow>().Elements<TableCell>();
+            var cells = elements[0].GetFirstChild<TableRow>()?.Elements<TableCell>();
             Assert.That(cells, Is.Not.Null);
             Assert.Multiple(() =>
             {
@@ -501,7 +502,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test]
-        public void ParseColWithSpan()
+        public void ColWithSpan_ReturnsStyleAppliedOnMultipleCells()
         {
             var elements = converter.Parse(@$"<table>
                     <colgroup>
@@ -523,7 +524,7 @@ namespace HtmlToOpenXml.Tests
                 //Assert.That(columns.Last().Width?.Value, Is.EqualTo("750"));
             });
 
-            var cells = elements[0].GetFirstChild<TableRow>().Elements<TableCell>();
+            var cells = elements[0].GetFirstChild<TableRow>()?.Elements<TableCell>();
             Assert.That(cells, Is.Not.Null);
             Assert.Multiple(() =>
             {
@@ -535,7 +536,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test(Description = "Table row contains more cell than specified col")]
-        public void ParseIncompleteColStyle()
+        public void IncompleteColStyle_ShouldNotThrow()
         {
             Assert.DoesNotThrow(() => converter.Parse(@$"<table>
                     <colgroup>
@@ -546,7 +547,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test(Description = "Cell with multiple runs")]
-        public void ParseCellText()
+        public void CellWithMultipleDivs_ReturnsOneCellWithMultipleParagraphs()
         {
             var elements = converter.Parse(@$"<table>
                     <tr><td>Cell <div><b>1.1</b></div></td></tr>
@@ -554,13 +555,13 @@ namespace HtmlToOpenXml.Tests
 
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements, Has.All.TypeOf<Table>());
-            var cells = elements[0].GetFirstChild<TableRow>().Elements<TableCell>();
+            var cells = elements[0].GetFirstChild<TableRow>()?.Elements<TableCell>();
             Assert.That(cells?.Count(), Is.EqualTo(1));
             Assert.That(cells.First().Elements<Paragraph>().Count(), Is.EqualTo(2));
         }
 
         [Test(Description = "Prevent Word to merge two consecutive tables")]
-        public void ParseConsecutiveTables()
+        public void ConsecutiveTables_ReturnsTablesWithPlaceholderParagraphInBetween()
         {
             var elements = converter.Parse(@"
                 <table><tr><td>Table 1</td></tr></table>
@@ -574,8 +575,8 @@ namespace HtmlToOpenXml.Tests
             });
         }
 
-        [Test]
-        public void ParseDoubleRowSpanSameLine()
+        [Test(Description = "Insert the empty paragraph on right location, based on combinated rowSpan and colSpan #59")]
+        public void DoubleRowSpanSameLine_ShouldSucceed()
         {
             var elements = converter.Parse(@"<table>
                     <tr>

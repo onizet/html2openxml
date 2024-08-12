@@ -1,10 +1,10 @@
 using HtmlToOpenXml.IO;
 using NUnit.Framework;
 
-namespace HtmlToOpenXml.Tests
+namespace HtmlToOpenXml.Tests.ImageFormats
 {
     /// <summary>
-    /// Tests acronym, abbreviation and blockquotes.
+    /// Tests on guessing the image format and finding its size.
     /// </summary>
     [TestFixture]
     public class ImageHeaderTests
@@ -14,7 +14,7 @@ namespace HtmlToOpenXml.Tests
         [TestCase("Resources.html2openxml.jpg")]
         [TestCase("Resources.html2openxml.png")]
         [TestCase("Resources.html2openxml.emf")]
-        public void ReadSize(string resourceName)
+        public void GuessFormat_ReturnsImageSize(string resourceName)
         {
             using (var imageStream = ResourceHelper.GetStream(resourceName))
             {
@@ -28,7 +28,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test]
-        public void ReadSizeAnimatedGif()
+        public void AnimatedGif_ReturnsImageSize()
         {
             using (var imageStream = ResourceHelper.GetStream("Resources.stan.gif"))
             {
@@ -47,7 +47,7 @@ namespace HtmlToOpenXml.Tests
         /// </summary>
         /// <remarks>https://github.com/onizet/html2openxml/issues/40</remarks>
         [Test]
-        public void ReadSizePngSof2()
+        public void PngSof2_ReturnsImageSize()
         {
             using (var imageStream = ResourceHelper.GetStream("Resources.lumileds.png"))
             {
@@ -60,19 +60,17 @@ namespace HtmlToOpenXml.Tests
             }
         }
 
-        [TestCase("Resources.html2openxml.bmp", IO.ImageHeader.FileType.Bitmap)]
-        [TestCase("Resources.html2openxml.gif", IO.ImageHeader.FileType.Gif)]
-        [TestCase("Resources.html2openxml.jpg", IO.ImageHeader.FileType.Jpeg)]
-        [TestCase("Resources.html2openxml.png", IO.ImageHeader.FileType.Png)]
-        public void DetectFileType(string resourceName, IO.ImageHeader.FileType type)
+        [TestCase("Resources.html2openxml.bmp", ExpectedResult = ImageHeader.FileType.Bitmap)]
+        [TestCase("Resources.html2openxml.gif", ExpectedResult = ImageHeader.FileType.Gif)]
+        [TestCase("Resources.html2openxml.jpg", ExpectedResult = ImageHeader.FileType.Jpeg)]
+        [TestCase("Resources.html2openxml.png", ExpectedResult = ImageHeader.FileType.Png)]
+        public ImageHeader.FileType GuessFormat_ReturnsFileType(string resourceName)
         {
-            using (var imageStream = ResourceHelper.GetStream(resourceName))
-            {
-                bool success = ImageHeader.TryDetectFileType(imageStream, out var guessType);
+            using var imageStream = ResourceHelper.GetStream(resourceName);
+            bool success = ImageHeader.TryDetectFileType(imageStream, out var guessType);
 
-                Assert.That(success, Is.EqualTo(true));
-                Assert.That(guessType, Is.EqualTo(type));
-            }
+            Assert.That(success, Is.EqualTo(true));
+            return guessType;
         }
     }
 }
