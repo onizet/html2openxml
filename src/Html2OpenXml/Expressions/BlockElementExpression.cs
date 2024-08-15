@@ -198,6 +198,44 @@ class BlockElementExpression(IHtmlElement node, params OpenXmlLeafElement[]? sty
 
             paraProperties.Indentation = indentation;
         }
+
+        var lineHeight = styleAttributes.GetUnit("line-height");
+        if (!lineHeight.IsValid 
+            && "normal".Equals(styleAttributes["line-height"], StringComparison.OrdinalIgnoreCase))
+        {
+            // if `normal` is specified, reset any values
+            lineHeight = new Unit(UnitMetric.Unitless, 1);
+        }
+
+        if (lineHeight.IsValid)
+        {
+            if (lineHeight.Type == UnitMetric.Unitless)
+            {
+                // auto should be considered as 240ths of a line
+                // https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.wordprocessing.spacingbetweenlines.line?view=openxml-3.0.1
+                paraProperties.SpacingBetweenLines = new() {
+                    LineRule = LineSpacingRuleValues.Auto,
+                    Line = Math.Round(lineHeight.Value * 240).ToString(CultureInfo.InvariantCulture)
+                };
+            }
+            else if (lineHeight.Type == UnitMetric.Percent)
+            {
+                // percentage depends on the font size which is hard to determine here
+                // let's rely this to "auto" behaviour
+                paraProperties.SpacingBetweenLines = new() {
+                    LineRule = LineSpacingRuleValues.Auto,
+                    Line = Math.Round(lineHeight.Value / 100 * 240).ToString(CultureInfo.InvariantCulture)
+                };
+            }
+            else
+            {
+                // twentieths of a point
+                paraProperties.SpacingBetweenLines = new() {
+                    LineRule = LineSpacingRuleValues.Exact,
+                    Line = Math.Round(lineHeight.ValueInPoint * 20).ToString(CultureInfo.InvariantCulture)
+                };
+            }
+        }
     }
 
     /// <summary>

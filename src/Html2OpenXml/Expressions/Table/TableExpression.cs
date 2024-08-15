@@ -168,8 +168,8 @@ sealed class TableExpression(IHtmlElement node) : PhrasingElementExpression(node
         tableProperties.TableStyle = context.DocumentStyle.GetTableStyle(context.DocumentStyle.DefaultStyles.TableStyle);
 
         styleAttributes = node.GetStyles();
-        var width = styleAttributes.GetUnit("width");
-        if (!width.IsValid) width = Unit.Parse(node.GetAttribute("width"));
+        var width = styleAttributes.GetUnit("width", UnitMetric.Pixel);
+        if (!width.IsValid) width = Unit.Parse(node.GetAttribute("width"), UnitMetric.Pixel);
         if (!width.IsValid) width = new Unit(UnitMetric.Percent, 100);
 
         switch (width.Type)

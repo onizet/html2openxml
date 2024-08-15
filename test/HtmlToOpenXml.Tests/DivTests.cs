@@ -94,5 +94,23 @@ namespace HtmlToOpenXml.Tests
             var bidi = elements[0].GetFirstChild<ParagraphProperties>()?.BiDi;
             return bidi?.Val?.Value;
         }
+
+        [TestCase("1.5", "auto", "360", Description = "Unitless")]
+        [TestCase("150%", "auto", "360")]
+        [TestCase("100%", "auto", "240")]
+        [TestCase("25px", "exact", "375")]
+        [TestCase("3em", "exact", "720")]
+        [TestCase("normal", "auto", "240", Description = "Depend on the user agent")]
+        public void WithLineHeight_ReturnsSpacingBetweenLines(string lineHeight, string expectedRule, string expectedSpace)
+        {
+            var elements = converter.Parse($@"<div style='line-height: {lineHeight}'>
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer accumsan placerat sem in consequat. Quisque viverra ex elit, et volutpat libero finibus eget. Vivamus placerat velit ex, quis rutrum justo molestie eget.
+            </div>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Paragraph>());
+            var spaces = elements[0].GetFirstChild<ParagraphProperties>()?.SpacingBetweenLines;
+            Assert.That(spaces?.LineRule?.InnerText, Is.EqualTo(expectedRule));
+            Assert.That(spaces?.Line?.Value, Is.EqualTo(expectedSpace));
+        }
     }
 }

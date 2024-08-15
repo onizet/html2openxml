@@ -76,7 +76,7 @@ static class Converter
             case "xx-large": return new Unit(UnitMetric.Point, 72);
             default:
                 // the font-size is specified in positive half-points
-                Unit unit = Unit.Parse(htmlSize);
+                Unit unit = Unit.Parse(htmlSize, UnitMetric.Pixel);
                 if (!unit.IsValid || unit.Value <= 0)
                     return Unit.Empty;
 
@@ -162,7 +162,7 @@ static class Converter
 
     public static UnitMetric ToUnitMetric(string? type)
     {
-        if (type == null) return UnitMetric.Unknown;
+        if (type == null) return UnitMetric.Unitless;
         return type.ToLowerInvariant() switch
         {
             "%" => UnitMetric.Percent,

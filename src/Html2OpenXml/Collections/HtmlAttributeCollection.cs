@@ -71,9 +71,9 @@ sealed class HtmlAttributeCollection
     /// Gets an attribute representing an unit: 120px, 10pt, 5em, 20%, ...
     /// </summary>
     /// <returns>If the attribute is misformed, the <see cref="Unit.IsValid"/> property is set to false.</returns>
-    public Unit GetUnit(string name)
+    public Unit GetUnit(string name, UnitMetric defaultMetric = UnitMetric.Unitless)
     {
-        return Unit.Parse(this[name]);
+        return Unit.Parse(this[name], defaultMetric);
     }
 
     /// <summary>
@@ -86,13 +86,13 @@ sealed class HtmlAttributeCollection
         Margin margin = Margin.Parse(this[name]);
         Unit u;
 
-        u = GetUnit(name + "-top");
+        u = GetUnit(name + "-top", UnitMetric.Pixel);
         if (u.IsValid) margin.Top = u;
-        u = GetUnit(name + "-right");
+        u = GetUnit(name + "-right", UnitMetric.Pixel);
         if (u.IsValid) margin.Right = u;
-        u = GetUnit(name + "-bottom");
+        u = GetUnit(name + "-bottom", UnitMetric.Pixel);
         if (u.IsValid) margin.Bottom = u;
-        u = GetUnit(name + "-left");
+        u = GetUnit(name + "-left", UnitMetric.Pixel);
         if (u.IsValid) margin.Left = u;
 
         return margin;
