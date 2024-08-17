@@ -88,7 +88,7 @@ readonly struct Unit
     /// <summary>
     /// Gets the value expressed in the English Metrics Units.
     /// </summary>
-    private static Int64 ComputeInEmus(UnitMetric type, double value)
+    private static long ComputeInEmus(UnitMetric type, double value)
     {
         /* Compute width and height in English Metrics Units.
             * There are 360000 EMUs per centimeter, 914400 EMUs per inch, 12700 EMUs per point

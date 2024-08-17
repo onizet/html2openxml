@@ -17,7 +17,7 @@ namespace HtmlToOpenXml;
 /// <summary>
 /// Represents an ARGB color.
 /// </summary>
-readonly struct HtmlColor
+readonly struct HtmlColor : IEquatable<HtmlColor>
 {
     private static readonly char[] hexDigits = {
         '0', '1', '2', '3', '4', '5', '6', '7',

@@ -73,7 +73,7 @@ struct HtmlBorder
     /// <summary>
     /// Gets whether at least one side has been specified.
     /// </summary>
-    public bool IsEmpty
+    public readonly bool IsEmpty
     {
         get => sides == null || !(Left.IsValid || Right.IsValid || Bottom.IsValid || Top.IsValid);
     }
