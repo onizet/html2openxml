@@ -121,12 +121,13 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
         if (!colorValue.IsEmpty)
             runProperties.Color = new Color { Val = colorValue.ToHexString() };
 
-        colorValue = styleAttributes.GetColor("background-color");
-        if (!colorValue.IsEmpty)
+        var bgcolor = styleAttributes.GetColor("background-color");
+        if (bgcolor.IsEmpty) bgcolor = styleAttributes.GetColor("background");
+        if (!bgcolor.IsEmpty)
         {
             // change the way the background-color renders. It now uses Shading instead of Highlight.
             // Changes brought by Wude on http://html2openxml.codeplex.com/discussions/277570
-            runProperties.Shading = new Shading { Val = ShadingPatternValues.Clear, Fill = colorValue.ToHexString() };
+            runProperties.Shading = new Shading { Val = ShadingPatternValues.Clear, Fill = bgcolor.ToHexString() };
         }
 
         foreach (var decoration in Converter.ToTextDecoration(styleAttributes["text-decoration"]))

@@ -410,7 +410,7 @@ namespace HtmlToOpenXml.Tests
         public void RowStyle_ReturnsRunCellsWithCascadedStyle()
         {
             var elements = converter.Parse(@$"<table>
-                    <tr style='background-color:silver;height:120px'><td>Cell</td></tr>
+                    <tr style='background:silver;height:120px'><td>Cell</td></tr>
                 </table>");
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements, Has.All.TypeOf<Table>());

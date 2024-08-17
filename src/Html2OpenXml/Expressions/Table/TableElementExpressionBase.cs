@@ -84,6 +84,7 @@ abstract class TableElementExpressionBase(IHtmlElement node) : PhrasingElementEx
 
         var bgcolor = styleAttributes.GetColor("background-color");
         if (bgcolor.IsEmpty) bgcolor = HtmlColor.Parse(node.GetAttribute("bgcolor"));
+        if (bgcolor.IsEmpty) bgcolor = styleAttributes.GetColor("background");
         if (!bgcolor.IsEmpty)
         {
             cellProperties.Shading = new() { Val = ShadingPatternValues.Clear, Color = "auto", Fill = bgcolor.ToHexString() };
