@@ -15,7 +15,7 @@ namespace HtmlToOpenXml;
 /// <summary>
 /// Represents a dimension in 2D coordinate space.
 /// </summary>
-public struct Size
+public struct Size : System.IEquatable<Size>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref='HtmlToOpenXml.Size'/> class.
@@ -46,4 +46,18 @@ public struct Size
     /// Represents the vertical component of this size.
     /// </summary>
     public int Height { get; set; }
+
+    /// <inheritdoc/>
+    public bool Equals(Size other)
+    {
+        return this.Width == other.Width && this.Height == other.Height;
+    }
+
+    /// <summary>
+    /// Gets a representation of this size.
+    /// </summary>
+    public override string ToString()
+    {
+        return string.Format("({0},{1})", Width, Height);
+    }
 }

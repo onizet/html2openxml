@@ -51,5 +51,24 @@ namespace HtmlToOpenXml.Tests.Primitives
                 Assert.That(Math.Round(margin.Left.ValueInPoint * 2).ToString(), Is.EqualTo("0"));
             });
         }
+
+        [Test]
+        public void ParseWithAuto_ShouldSucceed ()
+        {
+            var margin = Margin.Parse("0 auto");
+
+            Assert.Multiple(() => {
+                Assert.That(margin.IsValid, Is.EqualTo(true));
+
+                Assert.That(margin.Top.Value, Is.EqualTo(0));
+                Assert.That(margin.Top.Type, Is.EqualTo(UnitMetric.Pixel));
+
+                Assert.That(margin.Bottom.Value, Is.EqualTo(0));
+                Assert.That(margin.Bottom.Type, Is.EqualTo(UnitMetric.Pixel));
+
+                Assert.That(margin.Left.Type, Is.EqualTo(UnitMetric.Auto));
+                Assert.That(margin.Right.Type, Is.EqualTo(UnitMetric.Auto));
+            });
+        }
     }
 }

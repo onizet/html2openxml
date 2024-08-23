@@ -9,36 +9,25 @@ namespace HtmlToOpenXml.Tests.ImageFormats
     [TestFixture]
     public class ImageHeaderTests
     {
-        [TestCase("Resources.html2openxml.bmp")]
-        [TestCase("Resources.html2openxml.gif")]
-        [TestCase("Resources.html2openxml.jpg")]
-        [TestCase("Resources.html2openxml.png")]
-        [TestCase("Resources.html2openxml.emf")]
-        public void GuessFormat_ReturnsImageSize(string resourceName)
+        [TestCaseSource(nameof(GuessImageSizeTestCases))]
+        public void GuessFormat_ReturnsImageSize((string resourceName, Size expectedSize) td)
         {
-            using (var imageStream = ResourceHelper.GetStream(resourceName))
+            using (var imageStream = ResourceHelper.GetStream(td.resourceName))
             {
                 Size size = ImageHeader.GetDimensions(imageStream);
-                Assert.Multiple(() =>
-                {
-                    Assert.That(size.Width, Is.EqualTo(100));
-                    Assert.That(size.Height, Is.EqualTo(100));
-                });
+                Assert.That(size, Is.EqualTo(td.expectedSize));
             }
         }
 
-        [Test]
-        public void AnimatedGif_ReturnsImageSize()
+        private static IEnumerable<(string, Size)> GuessImageSizeTestCases()
         {
-            using (var imageStream = ResourceHelper.GetStream("Resources.stan.gif"))
-            {
-                Size size = ImageHeader.GetDimensions(imageStream);
-                Assert.Multiple(() =>
-                {
-                    Assert.That(size.Width, Is.EqualTo(252));
-                    Assert.That(size.Height, Is.EqualTo(318));
-                });
-            }
+            yield return ("Resources.html2openxml.bmp", new Size(100, 100));
+            yield return ("Resources.html2openxml.gif", new Size(100, 100));
+            yield return ("Resources.html2openxml.jpg", new Size(100, 100));
+            yield return ("Resources.html2openxml.png", new Size(100, 100));
+            yield return ("Resources.html2openxml.emf", new Size(100, 100));
+            // animated gif:
+            yield return ("Resources.stan.gif", new Size(252, 318));
         }
 
         /// <summary>
