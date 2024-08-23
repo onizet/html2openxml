@@ -28,9 +28,6 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 sealed class SvgExpression(ISvgSvgElement node) : ImageExpressionBase(node)
 {
-    /// <summary>Specify that local BLIP compression setting overrides the document default compression setting.</summary>
-    /// <see href="https://learn.microsoft.com/en-us/openspecs/office_standards/ms-odrawxml/c05c287f-f63e-4fa9-8163-e3e106b4105f?redirectedfrom=MSDN"/>
-    const string UseLocalDpi = "{28A0092B-C50C-407E-A947-70E740481C1C}";
     private readonly ISvgSvgElement svgNode = node;
 
 
@@ -72,19 +69,14 @@ sealed class SvgExpression(ISvgSvgElement node) : ImageExpressionBase(node)
                                     Id = imageObjId, Name = title
                                 },
                                 NonVisualPictureDrawingProperties = new()
-                                    //new a.PictureLocks() { NoChangeAspect = true, NoChangeArrowheads = true })
                             },
                             new pic.BlipFill(
                                 new a.Blip(
                                     new a.BlipExtensionList(
-                                        new a.BlipExtension(
-                                            new DocumentFormat.OpenXml.Office2010.Drawing.UseLocalDpi() { Val = false }
-                                        ) { Uri = UseLocalDpi },
-                                        /* Extra Blip extension for SVG support */
                                         new a.BlipExtension(new SVGBlip { Embed = imagePartId }) {
                                             Uri = "{96DAC541-7B7A-43D3-8B79-37D633B846F1}"
                                         })
-                                ) { Embed = imagePartId, CompressionState = a.BlipCompressionValues.Print },
+                                ) { Embed = imagePartId /* ideally, that should be a png representation of the png */ },
                                 new a.Stretch(
                                     new a.FillRectangle())
                             ),
