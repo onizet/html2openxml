@@ -67,6 +67,7 @@ abstract class HtmlDomExpression
             { TagNames.Strong, el => new PhrasingElementExpression((IHtmlElement) el, new Bold()) },
             { TagNames.Sub, el => new PhrasingElementExpression((IHtmlElement) el, new VerticalTextAlignment() { Val = VerticalPositionValues.Subscript }) },
             { TagNames.Sup, el => new PhrasingElementExpression((IHtmlElement) el, new VerticalTextAlignment() { Val = VerticalPositionValues.Superscript }) },
+            { TagNames.Svg, el => new SvgExpression((AngleSharp.Svg.Dom.ISvgSvgElement) el) },
             { TagNames.Table, el => new TableExpression((IHtmlTableElement) el) },
             { TagNames.Time, el => new PhrasingElementExpression((IHtmlElement) el) },
             { TagNames.U, el => new PhrasingElementExpression((IHtmlElement) el, new Underline() { Val = UnderlineValues.Single }) },
