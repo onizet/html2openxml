@@ -94,6 +94,16 @@ namespace HtmlToOpenXml.Tests
             AssertIsImg(mainPart, elements.First());
         }
 
+        [Test]
+        public void Svg_ReturnsImage()
+        {
+            var elements = converter.Parse(ResourceHelper.GetString("Resources.kiwi.svg"));
+            Assert.That(elements, Has.Count.EqualTo(1));
+            var drawing = AssertIsImg(elements[0]);
+            Assert.That(drawing.Inline!.DocProperties?.Name?.Value, Is.EqualTo("Illustration of a Kiwi"));
+            Assert.That(drawing.Inline!.DocProperties?.Description?.Value, Is.EqualTo("Kiwi (/ˈkiːwiː/ KEE-wee)[4] are flightless birds endemic to New Zealand of the order Apterygiformes."));
+        }
+
         [Test(Description = "Reading local file containing a space in the name")]
         public async Task RemoteImage_WithBaseUri_ShouldSucceed()
         {
