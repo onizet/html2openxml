@@ -22,11 +22,11 @@ namespace HtmlToOpenXml.Expressions;
 /// <summary>
 /// Process the parsing of <c>pre</c> (preformatted) element.
 /// </summary>
-sealed class TableExpression(IHtmlElement node) : PhrasingElementExpression(node)
+sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression(node)
 {
     /// <summary>MS Word has this hard-limit.</summary>
     internal const int MaxColumns = short.MaxValue;
-    private readonly IHtmlTableElement tableNode = (IHtmlTableElement) node;
+    private readonly IHtmlTableElement tableNode = node;
     private readonly Table table = new();
     private readonly TableProperties tableProperties = new();
     private TableColExpression[]? colStyleExpressions;
@@ -167,9 +167,9 @@ sealed class TableExpression(IHtmlElement node) : PhrasingElementExpression(node
     {
         tableProperties.TableStyle = context.DocumentStyle.GetTableStyle(context.DocumentStyle.DefaultStyles.TableStyle);
 
-        styleAttributes = node.GetStyles();
-        var width = styleAttributes.GetUnit("width");
-        if (!width.IsValid) width = Unit.Parse(node.GetAttribute("width"));
+        styleAttributes = tableNode.GetStyles();
+        var width = styleAttributes.GetUnit("width", UnitMetric.Pixel);
+        if (!width.IsValid) width = Unit.Parse(tableNode.GetAttribute("width"), UnitMetric.Pixel);
         if (!width.IsValid) width = new Unit(UnitMetric.Percent, 100);
 
         switch (width.Type)
@@ -194,7 +194,7 @@ sealed class TableExpression(IHtmlElement node) : PhrasingElementExpression(node
                 break;
         }
 
-        foreach (string className in node.ClassList)
+        foreach (string className in tableNode.ClassList)
         {
             var matchClassName = context.DocumentStyle.GetStyle(className, StyleValues.Table, ignoreCase: true);
             if (matchClassName != null)
@@ -204,18 +204,24 @@ sealed class TableExpression(IHtmlElement node) : PhrasingElementExpression(node
             }
         }
 
-        var align = Converter.ToParagraphAlign(node.GetAttribute("align"));
+        var align = Converter.ToParagraphAlign(tableNode.GetAttribute("align"));
         if (align.HasValue)
             tableProperties.TableJustification = new() { Val = align.Value.ToTableRowAlignment() };
 
-        var spacing = Convert.ToInt16(node.GetAttribute("cellspacing"));
+        var dir = tableNode.GetTextDirection();
+        if (dir.HasValue)
+            tableProperties.BiDiVisual = new() { 
+                Val = dir == AngleSharp.Dom.DirectionMode.Rtl? OnOffOnlyValues.On : OnOffOnlyValues.Off
+            };
+
+        var spacing = Convert.ToInt16(tableNode.GetAttribute("cellspacing"));
         if (spacing > 0)
             tableProperties.TableCellSpacing = new() {
                 Type = TableWidthUnitValues.Dxa, 
                 Width = new Unit(UnitMetric.Pixel, spacing).ValueInDxa.ToString(CultureInfo.InvariantCulture)
         };
 
-        var padding = Convert.ToInt16(node.GetAttribute("cellpadding"));
+        var padding = Convert.ToInt16(tableNode.GetAttribute("cellpadding"));
         if (padding > 0)
         {
             int paddingDxa = (int) new Unit(UnitMetric.Pixel, padding).ValueInDxa;

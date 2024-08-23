@@ -11,16 +11,15 @@ namespace HtmlToOpenXml.Tests
     public class HrTests : HtmlConverterTestBase
     {
         [Test]
-        public void ParseHr ()
+        public void Standalone_ReturnsWithNoSpacing ()
         {
             var elements = converter.Parse("<hr>");
             AssertIsHr(elements[0], false);
         }
 
-        [Test]
-        public void ParseHrNoSpacing ()
+        [Test(Description = "should not generate a particular spacing because border-bottom is empty")]
+        public void AfterBorderlessContent_ReturnsWithNoSpacing ()
         {
-            // this should not generate a particular spacing
             var elements = converter.Parse("<p style='border-top:1px solid black'>Before</p><hr>");
             AssertIsHr(elements[1], false);
         }
@@ -28,7 +27,7 @@ namespace HtmlToOpenXml.Tests
         [TestCase("<p style='border:0.1px solid black'>Before</p><hr>")]
         [TestCase("<p style='border-bottom:1px solid black'>Before</p><hr>")]
         [TestCase("<table><tr><td>Cell</td></tr></table><hr>")]
-        public void ParseHrWithSpacing (string html)
+        public void AfterBorderedContent_ReturnsWithSpacing (string html)
         {
             var elements = converter.Parse(html);
             AssertIsHr(elements[1], true);
@@ -47,8 +46,7 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(props.ParagraphBorders?.TopBorder, Is.Not.Null);
             });
 
-            if (expectSpacing)
-                Assert.That(props.SpacingBetweenLines, Is.Not.Null);
+            Assert.That(props.SpacingBetweenLines, expectSpacing? Is.Not.Null : Is.Null);
         }
     }
 }

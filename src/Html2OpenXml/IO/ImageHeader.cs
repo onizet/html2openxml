@@ -114,8 +114,9 @@ public static class ImageHeader
     }
 
     /// <summary>
-    /// Examines the a file's first bytes and estimates the file's type.
+    /// Examines the first bytes of the file and estimates its image type if possible.
     /// </summary>
+    /// <returns>Returns <see cref="FileType.Unrecognized"/> if not recognized.</returns>
     private static FileType DetectFileType (SequentialBinaryReader reader)
     {
         byte[] magicBytes = new byte[MaxMagicBytesLength];

@@ -24,16 +24,16 @@ using pic = DocumentFormat.OpenXml.Drawing.Pictures;
 /// <summary>
 /// Process the parsing of a link element.
 /// </summary>
-sealed class HyperlinkExpression(IHtmlElement node) : PhrasingElementExpression(node)
+sealed class HyperlinkExpression(IHtmlAnchorElement node) : PhrasingElementExpression(node)
 {
-    private readonly IHtmlAnchorElement linkNode = (IHtmlAnchorElement) node;
+    private readonly IHtmlAnchorElement linkNode = node;
 
 
     /// <inheritdoc/>
     public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
     {
         var h = CreateHyperlink(context);
-        var childElements = Interpret(context.CreateChild(this), node.ChildNodes);
+        var childElements = Interpret(context.CreateChild(this), linkNode.ChildNodes);
         if (h is null)
         {
             return childElements;
@@ -112,8 +112,8 @@ sealed class HyperlinkExpression(IHtmlElement node) : PhrasingElementExpression(
             return null;
         }
 
-        if (!string.IsNullOrEmpty(node.Title))
-            h.Tooltip = node.Title;
+        if (!string.IsNullOrEmpty(linkNode.Title))
+            h.Tooltip = linkNode.Title;
         return h;
     }
 }

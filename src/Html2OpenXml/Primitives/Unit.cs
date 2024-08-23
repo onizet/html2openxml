@@ -30,14 +30,14 @@ readonly struct Unit
     private readonly long valueInEmus;
 
 
-    public Unit(UnitMetric type, Double value)
+    public Unit(UnitMetric type, double value)
     {
         this.type = type;
         this.value = value;
         this.valueInEmus = ComputeInEmus(type, value);
     }
 
-    public static Unit Parse(string? str)
+    public static Unit Parse(string? str, UnitMetric defaultMetric = UnitMetric.Unitless)
     {
         if (str == null) return Unit.Empty;
 
@@ -62,7 +62,7 @@ readonly struct Unit
         if (digitLength < length - 1)
             type = Converter.ToUnitMetric(str.Substring(digitLength + 1).Trim());
         else
-            type = UnitMetric.Pixel;
+            type = defaultMetric;
 
         string v = str.Substring(0, digitLength + 1);
         double value;
@@ -70,7 +70,7 @@ readonly struct Unit
         {
             value = Convert.ToDouble(v, CultureInfo.InvariantCulture);
 
-            if (value < Int16.MinValue || value > Int16.MaxValue)
+            if (value < short.MinValue || value > short.MaxValue)
                 return Unit.Empty;
         }
         catch (FormatException)
@@ -88,7 +88,7 @@ readonly struct Unit
     /// <summary>
     /// Gets the value expressed in the English Metrics Units.
     /// </summary>
-    private static Int64 ComputeInEmus(UnitMetric type, double value)
+    private static long ComputeInEmus(UnitMetric type, double value)
     {
         /* Compute width and height in English Metrics Units.
             * There are 360000 EMUs per centimeter, 914400 EMUs per inch, 12700 EMUs per point
@@ -106,6 +106,7 @@ readonly struct Unit
         switch (type)
         {
             case UnitMetric.Auto:
+            case UnitMetric.Unitless:
             case UnitMetric.Percent: return 0L; // not applicable
             case UnitMetric.Emus: return (long) value;
             case UnitMetric.Inch: return (long) (value * 914400L);

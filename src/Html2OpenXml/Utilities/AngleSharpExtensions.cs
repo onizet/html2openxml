@@ -29,6 +29,16 @@ static class AngleSharpExtensions
         return HtmlAttributeCollection.ParseStyle(element.GetAttribute("style"));
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static DirectionMode? GetTextDirection(this IHtmlElement element)
+    {
+        if ("rtl".Equals(element.Direction, StringComparison.OrdinalIgnoreCase))
+            return DirectionMode.Rtl;
+        if ("ltr".Equals(element.Direction, StringComparison.OrdinalIgnoreCase))
+            return DirectionMode.Ltr;
+        return null;
+    }
+
     /// <summary>
     /// Gets whether the given child is preceded by any list element (<c>ol</c> or <c>ul</c>).
     /// </summary>

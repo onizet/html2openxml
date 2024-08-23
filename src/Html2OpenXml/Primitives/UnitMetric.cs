@@ -34,5 +34,7 @@ enum UnitMetric
     Emus,
 
     /// <summary>Not convertible to any other units.</summary>
-    Auto
+    Auto,
+    /// <summary>Raw value, not convertible to any other units</summary>
+    Unitless
 }

@@ -1,7 +1,7 @@
 using DocumentFormat.OpenXml;
 using NUnit.Framework;
 
-namespace HtmlToOpenXml.Tests
+namespace HtmlToOpenXml.Tests.Primitives
 {
     /// <summary>
     /// Tests Html border style attribute.
@@ -12,7 +12,7 @@ namespace HtmlToOpenXml.Tests
         [TestCase("solid #ff0000", "single", 255, 0, 0)]
         [TestCase("1px dashed rgb(233, 233, 233)", "dashed", 233, 233, 233)]
         [TestCase("thin dotted white", "dotted", 255, 255, 255)]
-        public void ParseBorder(string htmlBorder, string borderStyle, byte red, byte green, byte blue)
+        public void ParseHtmlBorder_ShouldSucceed(string htmlBorder, string borderStyle, byte red, byte green, byte blue)
         {
             var border = SideBorder.Parse(htmlBorder);
 
@@ -27,14 +27,14 @@ namespace HtmlToOpenXml.Tests
 
         [TestCase("")]
         [TestCase("abc")]
-        public void ParseInvalidBorder(string htmlBorder)
+        public void InvalidBorder_ShouldFail(string htmlBorder)
         {
             var border = SideBorder.Parse(htmlBorder);
             Assert.That(border.IsValid, Is.False);
         }
 
         [Test]
-        public void ParseTableBorder()
+        public void Border_ShouldSucceed()
         {
             var border = SideBorder.Parse("3px solid black");
             Assert.That(border.IsValid, Is.True);

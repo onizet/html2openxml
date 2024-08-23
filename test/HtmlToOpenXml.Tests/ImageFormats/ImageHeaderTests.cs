@@ -1,44 +1,33 @@
 using HtmlToOpenXml.IO;
 using NUnit.Framework;
 
-namespace HtmlToOpenXml.Tests
+namespace HtmlToOpenXml.Tests.ImageFormats
 {
     /// <summary>
-    /// Tests acronym, abbreviation and blockquotes.
+    /// Tests on guessing the image format and finding its size.
     /// </summary>
     [TestFixture]
     public class ImageHeaderTests
     {
-        [TestCase("Resources.html2openxml.bmp")]
-        [TestCase("Resources.html2openxml.gif")]
-        [TestCase("Resources.html2openxml.jpg")]
-        [TestCase("Resources.html2openxml.png")]
-        [TestCase("Resources.html2openxml.emf")]
-        public void ReadSize(string resourceName)
+        [TestCaseSource(nameof(GuessImageSizeTestCases))]
+        public void GuessFormat_ReturnsImageSize((string resourceName, Size expectedSize) td)
         {
-            using (var imageStream = ResourceHelper.GetStream(resourceName))
+            using (var imageStream = ResourceHelper.GetStream(td.resourceName))
             {
                 Size size = ImageHeader.GetDimensions(imageStream);
-                Assert.Multiple(() =>
-                {
-                    Assert.That(size.Width, Is.EqualTo(100));
-                    Assert.That(size.Height, Is.EqualTo(100));
-                });
+                Assert.That(size, Is.EqualTo(td.expectedSize));
             }
         }
 
-        [Test]
-        public void ReadSizeAnimatedGif()
+        private static IEnumerable<(string, Size)> GuessImageSizeTestCases()
         {
-            using (var imageStream = ResourceHelper.GetStream("Resources.stan.gif"))
-            {
-                Size size = ImageHeader.GetDimensions(imageStream);
-                Assert.Multiple(() =>
-                {
-                    Assert.That(size.Width, Is.EqualTo(252));
-                    Assert.That(size.Height, Is.EqualTo(318));
-                });
-            }
+            yield return ("Resources.html2openxml.bmp", new Size(100, 100));
+            yield return ("Resources.html2openxml.gif", new Size(100, 100));
+            yield return ("Resources.html2openxml.jpg", new Size(100, 100));
+            yield return ("Resources.html2openxml.png", new Size(100, 100));
+            yield return ("Resources.html2openxml.emf", new Size(100, 100));
+            // animated gif:
+            yield return ("Resources.stan.gif", new Size(252, 318));
         }
 
         /// <summary>
@@ -47,7 +36,7 @@ namespace HtmlToOpenXml.Tests
         /// </summary>
         /// <remarks>https://github.com/onizet/html2openxml/issues/40</remarks>
         [Test]
-        public void ReadSizePngSof2()
+        public void PngSof2_ReturnsImageSize()
         {
             using (var imageStream = ResourceHelper.GetStream("Resources.lumileds.png"))
             {
@@ -60,19 +49,17 @@ namespace HtmlToOpenXml.Tests
             }
         }
 
-        [TestCase("Resources.html2openxml.bmp", IO.ImageHeader.FileType.Bitmap)]
-        [TestCase("Resources.html2openxml.gif", IO.ImageHeader.FileType.Gif)]
-        [TestCase("Resources.html2openxml.jpg", IO.ImageHeader.FileType.Jpeg)]
-        [TestCase("Resources.html2openxml.png", IO.ImageHeader.FileType.Png)]
-        public void DetectFileType(string resourceName, IO.ImageHeader.FileType type)
+        [TestCase("Resources.html2openxml.bmp", ExpectedResult = ImageHeader.FileType.Bitmap)]
+        [TestCase("Resources.html2openxml.gif", ExpectedResult = ImageHeader.FileType.Gif)]
+        [TestCase("Resources.html2openxml.jpg", ExpectedResult = ImageHeader.FileType.Jpeg)]
+        [TestCase("Resources.html2openxml.png", ExpectedResult = ImageHeader.FileType.Png)]
+        public ImageHeader.FileType GuessFormat_ReturnsFileType(string resourceName)
         {
-            using (var imageStream = ResourceHelper.GetStream(resourceName))
-            {
-                bool success = ImageHeader.TryDetectFileType(imageStream, out var guessType);
+            using var imageStream = ResourceHelper.GetStream(resourceName);
+            bool success = ImageHeader.TryDetectFileType(imageStream, out var guessType);
 
-                Assert.That(success, Is.EqualTo(true));
-                Assert.That(guessType, Is.EqualTo(type));
-            }
+            Assert.That(success, Is.EqualTo(true));
+            return guessType;
         }
     }
 }

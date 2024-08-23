@@ -87,7 +87,7 @@ readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
 
     internal static Unit ParseWidth(string? borderWidth)
     {
-        Unit bu = Unit.Parse(borderWidth);
+        Unit bu = Unit.Parse(borderWidth, UnitMetric.Pixel);
         if (bu.IsValid)
         {
             if (bu.Value > 0 && bu.Type == UnitMetric.Pixel)

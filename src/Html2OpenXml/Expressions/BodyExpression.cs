@@ -58,6 +58,17 @@ sealed class BodyExpression(IHtmlElement node) : BlockElementExpression(node)
                 }
             }
         }
+
+        if (paraProperties.BiDi is not null)
+        {
+            var sectionProperties = context.MainPart.Document.Body!.GetFirstChild<SectionProperties>();
+            if (sectionProperties == null || sectionProperties.GetFirstChild<PageSize>() == null)
+            {
+                context.MainPart.Document.Body.Append(sectionProperties = new());
+            }
+
+            sectionProperties.AddChild(paraProperties.BiDi.CloneNode(true));
+        }
     }
 
     /// <summary>

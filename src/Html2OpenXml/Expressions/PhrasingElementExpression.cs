@@ -25,12 +25,13 @@ namespace HtmlToOpenXml.Expressions;
 /// Process the parsing of a phrasing content. A Phrasing content is an inline layout content at the lower level
 /// that consists of text and HTML elements that mark up the text within paragraphs.
 /// </summary>
-class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProperty = null) : HtmlElementExpression(node)
+class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProperty = null) : HtmlElementExpression
 {
     private readonly OpenXmlLeafElement? defaultStyleProperty = styleProperty;
 
     protected readonly RunProperties runProperties = new();
     protected HtmlAttributeCollection? styleAttributes;
+    protected IHtmlElement node = node;
 
 
     /// <inheritdoc/>
@@ -98,7 +99,8 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
         }
 
         // according to w3c, dir should be used in conjonction with lang. But whatever happens, we'll apply the RTL layout
-        if ("rtl".Equals(node.Direction, StringComparison.OrdinalIgnoreCase))
+        var dir = node.GetTextDirection();
+        if (dir == DirectionMode.Rtl)
         {
             runProperties.RightToLeftText = new RightToLeftText();
         }
@@ -120,12 +122,13 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
         if (!colorValue.IsEmpty)
             runProperties.Color = new Color { Val = colorValue.ToHexString() };
 
-        colorValue = styleAttributes.GetColor("background-color");
-        if (!colorValue.IsEmpty)
+        var bgcolor = styleAttributes.GetColor("background-color");
+        if (bgcolor.IsEmpty) bgcolor = styleAttributes.GetColor("background");
+        if (!bgcolor.IsEmpty)
         {
             // change the way the background-color renders. It now uses Shading instead of Highlight.
             // Changes brought by Wude on http://html2openxml.codeplex.com/discussions/277570
-            runProperties.Shading = new Shading { Val = ShadingPatternValues.Clear, Fill = colorValue.ToHexString() };
+            runProperties.Shading = new Shading { Val = ShadingPatternValues.Clear, Fill = bgcolor.ToHexString() };
         }
 
         foreach (var decoration in Converter.ToTextDecoration(styleAttributes["text-decoration"]))

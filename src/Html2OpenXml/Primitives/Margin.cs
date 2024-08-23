@@ -57,28 +57,28 @@ struct Margin
         {
             case 1:
                 {
-                    Unit all = Unit.Parse(parts[0]);
+                    Unit all = Unit.Parse(parts[0], UnitMetric.Pixel);
                     return new Margin(all, all, all, all);
                 }
             case 2:
                 {
-                    Unit u1 = Unit.Parse(parts[0]);
-                    Unit u2 = Unit.Parse(parts[1]);
+                    Unit u1 = Unit.Parse(parts[0], UnitMetric.Pixel);
+                    Unit u2 = Unit.Parse(parts[1], UnitMetric.Pixel);
                     return new Margin(u1, u2, u1, u2);
                 }
             case 3:
                 {
-                    Unit u1 = Unit.Parse(parts[0]);
-                    Unit u2 = Unit.Parse(parts[1]);
-                    Unit u3 = Unit.Parse(parts[2]);
+                    Unit u1 = Unit.Parse(parts[0], UnitMetric.Pixel);
+                    Unit u2 = Unit.Parse(parts[1], UnitMetric.Pixel);
+                    Unit u3 = Unit.Parse(parts[2], UnitMetric.Pixel);
                     return new Margin(u1, u2, u3, u2);
                 }
             case 4:
                 {
-                    Unit u1 = Unit.Parse(parts[0]);
-                    Unit u2 = Unit.Parse(parts[1]);
-                    Unit u3 = Unit.Parse(parts[2]);
-                    Unit u4 = Unit.Parse(parts[3]);
+                    Unit u1 = Unit.Parse(parts[0], UnitMetric.Pixel);
+                    Unit u2 = Unit.Parse(parts[1], UnitMetric.Pixel);
+                    Unit u3 = Unit.Parse(parts[2], UnitMetric.Pixel);
+                    Unit u4 = Unit.Parse(parts[3], UnitMetric.Pixel);
                     return new Margin(u1, u2, u3, u4);
                 }
         }

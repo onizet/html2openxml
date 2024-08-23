@@ -27,8 +27,8 @@ public sealed class WordDocumentStyle
     public event EventHandler<StyleEventArgs>? StyleMissing;
 
     private readonly MainDocumentPart mainPart;
-    private readonly OpenXmlDocumentStyleCollection knownStyles = new();
-    private readonly ISet<string> lazyPredefinedStyles;
+    private readonly OpenXmlDocumentStyleCollection knownStyles = [];
+    private readonly HashSet<string> lazyPredefinedStyles;
 
     private DefaultStyles? defaultStyles;
     
@@ -36,7 +36,7 @@ public sealed class WordDocumentStyle
     internal WordDocumentStyle(MainDocumentPart mainPart)
     {
         PrepareStyles(mainPart);
-        lazyPredefinedStyles = new HashSet<string>() { 
+        lazyPredefinedStyles = [ 
             PredefinedStyles.Caption,
             PredefinedStyles.EndnoteReference,
             PredefinedStyles.EndnoteText,
@@ -54,7 +54,7 @@ public sealed class WordDocumentStyle
             PredefinedStyles.Quote,
             PredefinedStyles.QuoteChar,
             PredefinedStyles.TableGrid
-        };
+        ];
         this.mainPart = mainPart;
     }
 

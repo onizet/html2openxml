@@ -68,5 +68,5 @@ Logo provided with the permission of [Enhanced Labs Design Studio](http://www.en
 
 ## Support
 
-This project is open source and I do my best to support it in my spare time. I'm always happy to receive Pull Request and grateful for the time you have taken
+This project is open source and I do my best to support it in my spare time. I'm always happy to receive Pull Request and grateful for the time you have taken. Please target branch `dev` only.
 If you have questions, don't hesitate to get in touch with me!

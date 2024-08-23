@@ -1,6 +1,6 @@
 using NUnit.Framework;
 
-namespace HtmlToOpenXml.Tests
+namespace HtmlToOpenXml.Tests.Primitives
 {
     /// <summary>
     /// Tests Html color style attribute.
@@ -22,7 +22,7 @@ namespace HtmlToOpenXml.Tests
         // Failure that leads to empty
         [TestCase("rgba(1.06, 90, 205, 0.6)", 0, 0, 0, 0.0d)]
         [TestCase("rgba(a, r, g, b)", 0, 0, 0, 0.0d)]
-        public void ParseColor(string htmlColor, byte red, byte green, byte blue, double alpha)
+        public void ParseHtmlColor_ShouldSucceed(string htmlColor, byte red, byte green, byte blue, double alpha)
         {
             var color = HtmlColor.Parse(htmlColor);
 
@@ -34,14 +34,18 @@ namespace HtmlToOpenXml.Tests
             });
         }
 
-        [Test]
-        public void HexColor()
+        [TestCase(255, 0, 0, 0, ExpectedResult = "FF0000")]
+        public string ArgColor_ToHex_ShouldSucceed(byte red, byte green, byte blue, double alpha)
         {
-            var color = HtmlColor.FromArgb(255, 0, 0);
-            Assert.That(color.ToHexString(), Is.EqualTo("FF0000"));
+            var color = HtmlColor.FromArgb(alpha, red, green, blue);
+            return color.ToHexString();
+        }
 
-            color = HtmlColor.FromHsl(0, 248, 0.53, 0.58);
-            Assert.That(color.ToHexString(), Is.EqualTo("6A5BCD"));
+        [TestCase(0, 248, 0.53, 0.58, ExpectedResult = "6A5BCD")]
+        public string HslColor_ToHex_ShouldSucceed(double alpha, double hue, double saturation, double luminosity)
+        {
+            var color = HtmlColor.FromHsl(alpha, hue, saturation, luminosity);
+            return color.ToHexString();
         }
     }
 }

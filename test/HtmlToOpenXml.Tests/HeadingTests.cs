@@ -10,25 +10,22 @@ namespace HtmlToOpenXml.Tests
     [TestFixture]
     public class HeadingTests : HtmlConverterTestBase
     {
-        [Test]
-        public void ParseNumberingHeading()
+        [TestCase("<h1>1. Heading 1</h1><h2>1.1 Heading Normal Case</h1>")]
+        [TestCase("<h1>1. Heading 1</h1><h2>1.1  Heading Double Space</h2>", Description = "Double space after number")]
+        [TestCase("<h1>1. Heading 1</h1><h2>1.2&#09;Heading Tab</h2>", Description = "Tab after number")]
+        [TestCase("<h1>1. Heading 1</h1><h2>1.3Heading No Space</h2>", Description = "No space after number")]
+        public void OrderedPattern_ReturnsNumberingHeading(string html)
         {
-            // the inner html shouldn't be interpreted
-            var elements = converter.Parse(@"
-                <h1>1. Heading 1</h1>
-                <h2>1.1  Heading 1.1</h2><!-- double space after number -->
-                <h2>1.2 Heading 1.2</h2><!-- tab after number -->
-                <h2>1.3Heading 1.3</h2><!-- no space after number -->
-            ");
+            var elements = converter.Parse(html);
 
             var absNum = mainPart.NumberingDefinitionsPart?.Numbering
                 .Elements<AbstractNum>()
-                .Where(abs => abs.AbstractNumDefinitionName.Val == NumberingExpressionBase.HeadingNumberingName)
+                .Where(abs => abs.AbstractNumDefinitionName?.Val == NumberingExpressionBase.HeadingNumberingName)
                 .SingleOrDefault();
             Assert.That(absNum, Is.Not.Null);
 
             var inst = mainPart.NumberingDefinitionsPart?.Numbering
-                .Elements<NumberingInstance>().Where(i => i.AbstractNumId.Val == absNum.AbstractNumberId)
+                .Elements<NumberingInstance>().Where(i => i.AbstractNumId?.Val == absNum.AbstractNumberId)
                 .FirstOrDefault();
             Assert.That(inst, Is.Not.Null);
             Assert.That(inst.NumberID?.Value, Is.Not.Null);
@@ -36,43 +33,47 @@ namespace HtmlToOpenXml.Tests
             var paragraphs = elements.Cast<Paragraph>();
             Assert.Multiple(() =>
             {
-                Assert.That(paragraphs.Count(), Is.EqualTo(4));
+                Assert.That(paragraphs.Count(), Is.EqualTo(2));
                 Assert.That(paragraphs.Select(p => p.InnerText),
                     Has.All.StartsWith("Heading"),
                     "Number and whitespaces are trimmed");
                 Assert.That(paragraphs.Select(e =>
-                     e.ParagraphProperties.NumberingProperties?.NumberingId?.Val?.Value),
+                     e.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value),
                      Has.All.EqualTo(inst.NumberID.Value),
                      "All paragraphs are linked to the same list instance");
-                Assert.That(paragraphs.First().ParagraphProperties.NumberingProperties?.NumberingLevelReference?.Val?.Value,
+                Assert.That(paragraphs.First().ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value,
                     Is.EqualTo(0),
                     "First paragraph stands on level 0");
                 Assert.That(paragraphs.Skip(1).Select(e => 
-                    e.ParagraphProperties.NumberingProperties?.NumberingLevelReference?.Val?.Value),
+                    e.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value),
                     Has.All.EqualTo(1),
                     "All paragraphs stand on level 1");
             });
         }
 
         [Test]
-        public void ParseHeadings()
+        public void MaxLevel_ShouldBeIgnored()
         {
-            // the inner html shouldn't be interpreted
-            var elements = converter.Parse(@"
-                <h1>Heading 1</h1>
-                <h2>Heading 2</h2>
-                <h3>Heading 3</h3>
-                <h4>Heading 4</h4>
-                <h5>Heading 5</h5>
-                <h6>Heading 6</h6>
-                <h7>Heading 7</h7>
-            ");
-            Assert.That(elements.Count(), Is.EqualTo(7));
-            Assert.That(elements, Has.All.TypeOf<Paragraph>());
-            Assert.That(elements.Take(6).Select(p => p.GetFirstChild<ParagraphProperties>()?.ParagraphStyleId?.Val?.Value),
-                Has.All.StartsWith("Heading"));
-            Assert.That(elements.Last().GetFirstChild<ParagraphProperties>()?.ParagraphStyleId, 
-                Is.Null, "Only 6 levels of heading supported");
+            const int maxLevel = 6;
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i <= maxLevel; i++)
+                sb.AppendFormat("<h{0}>Heading {0}</h{0}>", i+1);
+
+            var elements = converter.Parse(sb.ToString());
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(elements.Count(), Is.EqualTo(maxLevel + 1));
+                Assert.That(elements, Has.All.TypeOf<Paragraph>());
+            });
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(elements.Take(maxLevel).Select(p => p.GetFirstChild<ParagraphProperties>()?.ParagraphStyleId?.Val?.Value),
+                            Has.All.StartsWith("Heading"));
+                Assert.That(elements.Last().GetFirstChild<ParagraphProperties>()?.ParagraphStyleId,
+                    Is.Null, $"Only {maxLevel+1} levels of heading supported");
+            });
         }
     }
 }
