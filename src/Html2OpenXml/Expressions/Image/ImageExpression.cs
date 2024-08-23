@@ -10,8 +10,6 @@
  * PARTICULAR PURPOSE.
  */
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
@@ -27,61 +25,12 @@ namespace HtmlToOpenXml.Expressions;
 /// <summary>
 /// Process the parsing of an image.
 /// </summary>
-sealed class ImageExpression(IHtmlElement node) : HtmlElementExpression(node)
+class ImageExpression(IHtmlImageElement node) : ImageExpressionBase(node)
 {
-    private readonly IHtmlImageElement imgNode = (IHtmlImageElement) node;
+    private readonly IHtmlImageElement imgNode = node;
 
 
-    /// <inheritdoc/>
-    public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
-    {
-        var drawing = CreateDrawing(context);
-
-        if (drawing == null)
-            return [];
-
-        Run run = new(drawing);
-        Border border = ComposeStyles();
-        if (border.Val?.Equals(BorderValues.None) == false)
-        {
-            run.RunProperties ??= new();
-            run.RunProperties.Border = border;
-        }
-        return [run];
-    }
-
-    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    public override void CascadeStyles(OpenXmlElement element)
-    {
-        throw new NotSupportedException();
-    }
-
-    private Border ComposeStyles ()
-    {
-        var styleAttributes = node.GetStyles();
-        var border = new Border() { Val = BorderValues.None };
-
-        // OpenXml limits the border to 4-side of the same color and style.
-        SideBorder styleBorder = styleAttributes.GetSideBorder("border");
-        if (styleBorder.IsValid)
-        {
-            border.Val = styleBorder.Style;
-            border.Color = styleBorder.Color.ToHexString();
-            border.Size = (uint) styleBorder.Width.ValueInPx * 4;
-        }
-        else
-        {
-            var borderWidth = Unit.Parse(imgNode.GetAttribute("border"));
-            if (borderWidth.IsValid)
-            {
-                border.Val = BorderValues.Single;
-                border.Size = (uint) borderWidth.ValueInPx * 4;
-            }
-        }
-        return border;
-    }
-
-    private Drawing? CreateDrawing(ParsingContext context)
+    protected override Drawing? CreateDrawing(ParsingContext context)
     {
         string? src = imgNode.GetAttribute("src");
 
@@ -108,47 +57,7 @@ sealed class ImageExpression(IHtmlElement node) : HtmlElementExpression(node)
             preferredSize.Height = imgNode.DisplayHeight;
         }
 
-        var imageObjId = context.Properties<uint?>("imageObjId");
-        var drawingObjId = context.Properties<uint?>("drawingObjId");
-        if (!imageObjId.HasValue)
-        {
-            // In order to add images in the document, we need to asisgn an unique id
-            // to each Drawing object. So we'll loop through all of the existing <wp:docPr> elements
-            // to find the largest Id, then increment it for each new image.
-
-            drawingObjId = 1; // 1 is the minimum ID set by MS Office.
-            imageObjId = 1;
-
-            foreach (var part in new[] { 
-                context.MainPart.Document.Body!.Descendants<Drawing>(),
-                context.MainPart.HeaderParts.SelectMany(f => f.Header.Descendants<Drawing>()),
-                context.MainPart.FooterParts.SelectMany(f => f.Footer.Descendants<Drawing>())
-            })
-            foreach (Drawing d in part)
-            {
-                wp.DocProperties? docProperties = null;
-                pic.NonVisualPictureProperties? nvPr = null;
-
-                if (d.Anchor != null)
-                {
-                    docProperties = d.Anchor.GetFirstChild<wp.DocProperties>();
-                    nvPr = d.Anchor.GetFirstChild<a.Graphic>()?.GraphicData?.GetFirstChild<pic.Picture>()?.GetFirstChild<pic.NonVisualPictureProperties>();
-                }
-                else if (d.Inline != null)
-                {
-                    docProperties = d.Inline!.DocProperties;
-                    nvPr = d.Inline!.Graphic?.GraphicData?.GetFirstChild<pic.NonVisualPictureProperties>();
-                }
-
-                if (docProperties?.Id != null && docProperties.Id.Value > drawingObjId)
-                    drawingObjId = docProperties.Id.Value;
-
-                if (nvPr != null && nvPr.NonVisualDrawingProperties?.Id?.Value > imageObjId)
-                    imageObjId = nvPr.NonVisualDrawingProperties.Id;
-            }
-            if (drawingObjId > 1) drawingObjId++;
-            if (imageObjId > 1) imageObjId++;
-        }
+        var (imageObjId, drawingObjId) = IncrementDrawingObjId(context);
 
         HtmlImageInfo? iinfo = context.Converter.ImagePrefetcher.Download(src, CancellationToken.None)
             .ConfigureAwait(false).GetAwaiter().GetResult();
@@ -168,9 +77,6 @@ sealed class ImageExpression(IHtmlElement node) : HtmlElementExpression(node)
 
         long widthInEmus = new Unit(UnitMetric.Pixel, preferredSize.Width).ValueInEmus;
         long heightInEmus = new Unit(UnitMetric.Pixel, preferredSize.Height).ValueInEmus;
-
-        ++drawingObjId;
-        ++imageObjId;
 
         var img = new Drawing(
             new wp.Inline(
@@ -207,9 +113,6 @@ sealed class ImageExpression(IHtmlElement node) : HtmlElementExpression(node)
                     ) { Uri = "http://schemas.openxmlformats.org/drawingml/2006/picture" })
             ) { DistanceFromTop = (UInt32Value) 0U, DistanceFromBottom = (UInt32Value) 0U, DistanceFromLeft = (UInt32Value) 0U, DistanceFromRight = (UInt32Value) 0U }
         );
-
-        context.Properties("imageObjId", imageObjId);
-        context.Properties("drawingObjId", drawingObjId!);
 
         return img;
     }

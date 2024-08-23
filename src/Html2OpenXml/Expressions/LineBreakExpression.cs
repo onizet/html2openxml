@@ -10,7 +10,6 @@
  * PARTICULAR PURPOSE.
  */
 using System.Collections.Generic;
-using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
 
@@ -19,14 +18,8 @@ namespace HtmlToOpenXml.Expressions;
 /// <summary>
 /// Process the parsing of a <c>br</c> element.
 /// </summary>
-sealed class LineBreakExpression(IHtmlElement node) : HtmlElementExpression(node)
+sealed class LineBreakExpression : HtmlDomExpression
 {
-    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    public override void CascadeStyles(OpenXmlElement element)
-    {
-        throw new System.NotSupportedException();
-    }
-
     /// <inheritdoc/>
     public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
     {

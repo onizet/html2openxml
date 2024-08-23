@@ -25,12 +25,13 @@ namespace HtmlToOpenXml.Expressions;
 /// Process the parsing of a phrasing content. A Phrasing content is an inline layout content at the lower level
 /// that consists of text and HTML elements that mark up the text within paragraphs.
 /// </summary>
-class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProperty = null) : HtmlElementExpression(node)
+class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProperty = null) : HtmlElementExpression
 {
     private readonly OpenXmlLeafElement? defaultStyleProperty = styleProperty;
 
     protected readonly RunProperties runProperties = new();
     protected HtmlAttributeCollection? styleAttributes;
+    protected IHtmlElement node = node;
 
 
     /// <inheritdoc/>

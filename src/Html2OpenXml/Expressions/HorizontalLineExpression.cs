@@ -20,14 +20,8 @@ namespace HtmlToOpenXml.Expressions;
 /// Process the parsing of a <c>hr</c> element
 /// by inserting an horizontal line as it stands in many emails.
 /// </summary>
-sealed class HorizontalLineExpression(IHtmlElement node) : HtmlElementExpression(node)
+sealed class HorizontalLineExpression(IHtmlElement node) : HtmlDomExpression
 {
-    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    public override void CascadeStyles(OpenXmlElement element)
-    {
-        throw new System.NotSupportedException();
-    }
-
     /// <inheritdoc/>
     public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
     {

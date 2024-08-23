@@ -9,8 +9,6 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
-using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
 
 namespace HtmlToOpenXml.Expressions;
@@ -18,10 +16,8 @@ namespace HtmlToOpenXml.Expressions;
 /// <summary>
 /// Represents the base definition of the processor of an HTML tag.
 /// </summary>
-abstract class HtmlElementExpression(IHtmlElement node) : HtmlDomExpression
+abstract class HtmlElementExpression : HtmlDomExpression
 {
-    protected readonly IHtmlElement node = node ?? throw new ArgumentNullException(nameof(node));
-
     /// <summary>
     /// Apply the style properties on the provided element.
     /// </summary>
