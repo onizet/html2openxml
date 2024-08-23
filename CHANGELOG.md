@@ -5,12 +5,13 @@
 - Support MathMl
 - Support SVG
 
-## 3.0.1
+## 3.1.0
 
-- Ensure to count existing images from header and footer too #113
-- Preserve line break pre for OSX/Windows
-- Prevent a crash when the provided style is missing its type
-- Defensive code to avoid 2 rowSpan+colSpan with a cell in between to crash #59
+- Fix table Cell borders are wrongly applied on the run #156
+- Correctly handle RTL layout for text, list, table and document scope #86 #66
+- Support property line-height #52
+- Fallback to `background` style attribute as many users use this simplified attribute version
+- In `HtmlDomExpression.CreateFromHtmlNode`, use the correct casting to `IElement` rather than `IHtmlElement`, to prevent crash if `svg` node is encountered
 
 ## 3.0.0
 
