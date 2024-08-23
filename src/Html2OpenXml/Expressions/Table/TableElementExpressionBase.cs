@@ -111,6 +111,8 @@ abstract class TableElementExpressionBase(IHtmlElement node) : PhrasingElementEx
             };
 
             cellProperties.TableCellBorders = borders;
+            // we apply the borders on the cell level, not the run
+            runProperties.Border = null;
         }
     }
 }

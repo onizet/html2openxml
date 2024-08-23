@@ -593,8 +593,6 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements, Has.All.TypeOf<Table>());
             Assert.That(elements[0].GetFirstChild<TableGrid>()?.Elements<GridColumn>().Count(), Is.EqualTo(4));
 
-            Assert.That(elements, Has.Count.EqualTo(1));
-            Assert.That(elements, Has.All.TypeOf<Table>());
             var rows = elements[0].Elements<TableRow>();
             Assert.That(rows.Count(), Is.EqualTo(2));
             Assert.That(rows.Select(r => r.Elements<TableCell>().Count()), 
@@ -607,6 +605,27 @@ namespace HtmlToOpenXml.Tests
             Assert.That(rows.ElementAt(1).GetFirstChild<TableCell>()?.TableCellProperties?.GridSpan?.Val?.Value, Is.EqualTo(2));
             Assert.That(rows.ElementAt(1).GetFirstChild<TableCell>()?.TableCellProperties?.VerticalMerge?.Val?.Value, Is.EqualTo(MergedCellValues.Continue));
             Assert.That(rows.ElementAt(1).GetLastChild<TableCell>()?.TableCellProperties?.VerticalMerge?.Val?.Value, Is.EqualTo(MergedCellValues.Continue));
+        }
+
+        [Test(Description = "Cell borders should not be applied on inner runs #156")]
+        public void CellBorders_ShouldNotPropagate_OnRuns()
+        {
+            var elements = converter.Parse(@"<table>
+                <tr>
+                    <td style='width: 120px; border: 1px solid #ababab'>Placeholder</td>
+                </tr>
+            </table>");
+
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Table>());
+            var cells = elements[0].GetFirstChild<TableRow>()?.Elements<TableCell>();
+            Assert.That(cells?.Count(), Is.EqualTo(1));
+            Assert.That(cells.First().TableCellProperties?.TableCellBorders, Is.Not.Null);
+            var paragraphs = cells.First().Elements<Paragraph>();
+            Assert.That(paragraphs.Count(), Is.EqualTo(1));
+            var runs = paragraphs.First().Elements<Run>();
+            Assert.That(runs.Count(), Is.EqualTo(1));
+            Assert.That(runs.First().RunProperties?.Border, Is.Null);
         }
     }
 }
