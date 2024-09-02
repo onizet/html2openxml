@@ -133,6 +133,24 @@ namespace HtmlToOpenXml.Tests
                 "New image id is incremented considering existing images in header, body and footer");
         }
 
+        [GenericTestCase(typeof(HeaderPart), Description = "Incomplete header or footer definition must be skipped #159")]
+        [GenericTestCase(typeof(FooterPart))]
+        public void WithIncompleteHeader_ShouldNotThrow<T>() where T : OpenXmlPart, IFixedContentTypePart
+        {
+            using var generatedDocument = new MemoryStream();
+            using (var buffer = ResourceHelper.GetStream("Resources.DocWithImgHeaderFooter.docx"))
+                buffer.CopyTo(generatedDocument);
+
+            generatedDocument.Position = 0L;
+            using WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true);
+            MainDocumentPart mainPart = package.MainDocumentPart!;
+            mainPart.AddNewPart<T>(); // this code is incomplete as it's missing the header content
+
+            HtmlConverter converter = new(mainPart);
+            Assert.DoesNotThrowAsync(async () =>
+                await converter.ParseHtml("<img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==' width='42' height='42'>"));
+        }
+
         private Drawing AssertIsImg (OpenXmlCompositeElement element)
         {
             var run = element.GetFirstChild<Run>();

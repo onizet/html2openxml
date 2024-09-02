@@ -87,8 +87,8 @@ abstract class ImageExpressionBase(AngleSharp.Dom.IElement node)  : HtmlDomExpre
 
             foreach (var part in new[] { 
                 context.MainPart.Document.Body!.Descendants<Drawing>(),
-                context.MainPart.HeaderParts.SelectMany(f => f.Header.Descendants<Drawing>()),
-                context.MainPart.FooterParts.SelectMany(f => f.Footer.Descendants<Drawing>())
+                context.MainPart.HeaderParts.Where(f => f.Header != null).SelectMany(f => f.Header.Descendants<Drawing>()),
+                context.MainPart.FooterParts.Where(f => f.Footer != null).SelectMany(f => f.Footer.Descendants<Drawing>())
             })
             foreach (Drawing d in part)
             {
