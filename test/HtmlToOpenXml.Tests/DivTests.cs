@@ -79,7 +79,6 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(elements[2].ChildElements, Has.All.TypeOf<Run>());
                 Assert.That(elements[2].InnerText, Is.EqualTo("Ipsum"));
             });
-            Assert.That(elements[1].LastChild?.HasChild<Break>(), Is.True);
             Assert.That(elements[1].LastChild?.HasChild<LastRenderedPageBreak>(), Is.False);
         }
 
@@ -111,6 +110,39 @@ namespace HtmlToOpenXml.Tests
             var spaces = elements[0].GetFirstChild<ParagraphProperties>()?.SpacingBetweenLines;
             Assert.That(spaces?.LineRule?.InnerText, Is.EqualTo(expectedRule));
             Assert.That(spaces?.Line?.Value, Is.EqualTo(expectedSpace));
+        }
+
+        [Test(Description = "Block endings with line break, should ignore it #158")]
+        public void WithEndingLineBreak_ReturnsIgnoredBreak()
+        {
+            var elements = converter.Parse("line1<div>line2<br><div>line3<br></div></div>");
+            Assert.That(elements, Has.Count.EqualTo(3));
+            Assert.That(elements, Has.All.TypeOf<Paragraph>());
+            Assert.That(elements.Any(p => p.LastChild?.LastChild is Break), Is.False);
+        }
+
+        [Test(Description = "Block endings with 2 line breaks, should keep only one")]
+        public void WithEndingDoubleLineBreak_ReturnsOneBreak()
+        {
+            var elements = converter.Parse("line1<div>line2<br><br><div>line3<br></div></div>");
+            Assert.That(elements, Has.Count.EqualTo(3));
+            Assert.That(elements, Has.All.TypeOf<Paragraph>());
+            Assert.That(elements.ElementAt(1).LastChild?.LastChild, Is.TypeOf<Break>());
+        }
+
+        [Test(Description = "Block containing only 1 line break, should display empty run")]
+        public void WithOnlyLineBreak_ReturnsEmptyRun()
+        {
+            var elements = converter.Parse("<div><br></div>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Paragraph>());
+            var lastRun = elements.First().LastChild;
+            Assert.That(lastRun, Is.Not.Null);
+            Assert.Multiple(() => {
+                Assert.That(lastRun.LastChild, Is.Not.TypeOf<Break>());
+                Assert.That(lastRun.LastChild, Is.TypeOf<Text>());
+            });
+            Assert.That(((Text)lastRun.LastChild).Text, Is.Empty);
         }
     }
 }

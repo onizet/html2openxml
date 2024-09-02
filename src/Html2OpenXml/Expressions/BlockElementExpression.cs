@@ -271,7 +271,7 @@ class BlockElementExpression(IHtmlElement node, params OpenXmlLeafElement[]? sty
                     runs.Add(element);
                     continue;
                 }
-                // if 2 tables are consectuives, we insert a paragraph in between
+                // if 2 tables are consecutives, we insert a paragraph in between
                 // or Word will merge the two tables
                 else if (element is Table && previousElement is Table)
                 {
@@ -309,6 +309,16 @@ class BlockElementExpression(IHtmlElement node, params OpenXmlLeafElement[]? sty
         context.CascadeStyles(p);
 
         p.Append(CombineRuns(runs));
+
+        // in Html, if a paragraph is ending with a line break, it is ignored
+        if (p.LastChild is Run run && run.LastChild is Break lineBreak)
+        {
+            // is this a standalone <br> inside the block? If so, replace the lineBreak with an empty paragraph
+            if (runs.Count == 1) run.Append(new Text());
+            if (run.ChildElements.Count == 1) run.Remove();
+            else lineBreak.Remove();
+        }
+
         return p;
     }
 
