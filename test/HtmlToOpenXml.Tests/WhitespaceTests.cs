@@ -74,12 +74,28 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test(Description = "`nbsp` entities should not be collapsed")]
-        public void NonBreakingSpaceEntities_ReturnsPreserveedWhitespace()
+        public void NonBreakingSpaceEntities_ReturnsPreservedWhitespace()
         {
             var elements = converter.Parse("<h1>&nbsp;&nbsp; Hello      World!     </h1>");
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements, Has.All.TypeOf<Paragraph>());
             Assert.That(elements[0].InnerText, Is.EqualTo("   Hello World!"));
+        }
+
+        [Test(Description = "Consecutive runs separated by a break should not prefix the 2nd line with a space")]
+        public void ConsecutivePhrasingWithBreak_ReturnsSecondLineWithNoSpaces()
+        {
+            var elements = converter.Parse("<span>Hello<br><span>World</span></span>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Paragraph>());
+            Assert.That(elements[0].InnerText, Is.EqualTo("HelloWorld"));
+            var runs = elements[0].Elements<Run>();
+            Assert.That(runs.Count(), Is.EqualTo(3));
+            Assert.Multiple(() => {
+                Assert.That(runs.ElementAt(1).LastChild, Is.TypeOf<Break>());
+                Assert.That(runs.ElementAt(2).FirstChild, Is.TypeOf<Text>());
+            });
+            Assert.That(((Text)runs.ElementAt(2).FirstChild).Text, Is.EqualTo("World"));
         }
     }
 }

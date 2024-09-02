@@ -218,6 +218,10 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
                 }
                 endsWithSpace = text[text.Length - 1].IsSpaceCharacter();
             }
+            else if (run.LastChild is Break)
+            {
+                endsWithSpace = true;
+            }
             yield return run;
         }
     }

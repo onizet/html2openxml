@@ -136,7 +136,7 @@ background:red;
         {
             var elements = converter.Parse(@"Lorem<br/>Ipsum");
             Assert.That(elements, Has.Count.EqualTo(1));
-            Assert.That(elements[0].ChildElements, Has.Count.EqualTo(4));
+            Assert.That(elements[0].ChildElements, Has.Count.EqualTo(3));
 
             Assert.Multiple(() =>
             {
