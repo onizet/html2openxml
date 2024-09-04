@@ -10,6 +10,8 @@ This library supports both **.Net Framework 4.6.2**, **.NET Standard 2.0** and *
 
 Depends on [DocumentFormat.OpenXml](https://www.nuget.org/packages/DocumentFormat.OpenXml/) and [AngleSharp](https://www.nuget.org/packages/AngleSharp).
 
+-> [Official Nuget Package](https://www.nuget.org/packages/HtmlToOpenXml.dll)
+
 ## See Also
 
 * [Documentation](https://github.com/onizet/html2openxml/wiki)
