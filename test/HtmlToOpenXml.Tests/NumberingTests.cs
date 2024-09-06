@@ -131,6 +131,16 @@ namespace HtmlToOpenXml.Tests
             }
         }
 
+        [Test(Description = "Empty list item should not be registred")]
+        public void EmptyLiElement_ShouldBeIgnored()
+        {
+            var elements = converter.Parse(@"<ul>
+                <li>not empty</li>
+                <li></li>
+                </ul>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+        }
+
         [Test(Description = "Increment instanceId based on existing lists")]
         public void WithExistingNumbering_ReturnsUniqueInstanceId()
         {

@@ -78,6 +78,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         {
             var expression = new BlockElementExpression(liNode);
             var childElements = expression.Interpret(context);
+            if (!childElements.Any()) continue;
             Paragraph p = (Paragraph) childElements.First();
 
             p.ParagraphProperties ??= new();
