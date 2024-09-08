@@ -63,7 +63,17 @@ public class DefaultWebRequest : IWebRequest
             requestUri = UrlCombine(BaseImageUrl, requestUri.OriginalString);
         }
 
-        if (requestUri.IsFile)
+        bool isLocalFile;
+        try
+        {
+            isLocalFile = requestUri.IsFile;
+        }
+        catch (InvalidOperationException)
+        {
+            isLocalFile = false;
+        }
+
+        if (isLocalFile)
         {
             return DownloadLocalFile(requestUri, cancellationToken);
         }
@@ -107,6 +117,9 @@ public class DefaultWebRequest : IWebRequest
         try
         {
             logger?.LogDebug("Downloading remote file: {0}", requestUri);
+
+            if (httpClient.BaseAddress is null && !requestUri.IsAbsoluteUri)
+                return null;
 
             var response = await httpClient.GetAsync(requestUri, cancellationToken).ConfigureAwait(false);
             if (response == null) return null;

@@ -16,228 +16,227 @@ using System.Threading;
 using System.Threading.Tasks;
 using DocumentFormat.OpenXml.Packaging;
 
-namespace HtmlToOpenXml.IO
+namespace HtmlToOpenXml.IO;
+
+/// <summary>
+/// Download and provison the metadata of a requested image.
+/// </summary>
+sealed class ImagePrefetcher
 {
-    /// <summary>
-    /// Download and provison the metadata of a requested image.
-    /// </summary>
-    sealed class ImagePrefetcher
+    // Map extension to PartTypeInfo
+    private static readonly Dictionary<string, PartTypeInfo> knownExtensions = new(StringComparer.OrdinalIgnoreCase) {
+        { ".gif", ImagePartType.Gif },
+        { ".bmp", ImagePartType.Bmp },
+        { ".emf", ImagePartType.Emf },
+        { ".ico", ImagePartType.Icon },
+        { ".jp2", ImagePartType.Jp2 },
+        { ".jpeg", ImagePartType.Jpeg },
+        { ".jpg", ImagePartType.Jpeg },
+        { ".jpe", ImagePartType.Jpeg },
+        { ".pcx", ImagePartType.Pcx },
+        { ".png", ImagePartType.Png },
+        { ".svg", ImagePartType.Svg },
+        { ".tif", ImagePartType.Tif },
+        { ".tiff", ImagePartType.Tiff },
+        { ".wmf", ImagePartType.Wmf }
+    };
+    private readonly MainDocumentPart mainPart;
+    private readonly IWebRequest resourceLoader;
+    private readonly HtmlImageInfoCollection prefetchedImages;
+
+
+    public ImagePrefetcher(MainDocumentPart mainPart, IWebRequest resourceLoader)
     {
-        // Map extension to PartTypeInfo
-        private static readonly Dictionary<string, PartTypeInfo> knownExtensions = new(StringComparer.OrdinalIgnoreCase) {
-            { ".gif", ImagePartType.Gif },
-            { ".bmp", ImagePartType.Bmp },
-            { ".emf", ImagePartType.Emf },
-            { ".ico", ImagePartType.Icon },
-            { ".jp2", ImagePartType.Jp2 },
-            { ".jpeg", ImagePartType.Jpeg },
-            { ".jpg", ImagePartType.Jpeg },
-            { ".jpe", ImagePartType.Jpeg },
-            { ".pcx", ImagePartType.Pcx },
-            { ".png", ImagePartType.Png },
-            { ".svg", ImagePartType.Svg },
-            { ".tif", ImagePartType.Tif },
-            { ".tiff", ImagePartType.Tiff },
-            { ".wmf", ImagePartType.Wmf }
-        };
-        private readonly MainDocumentPart mainPart;
-        private readonly IWebRequest resourceLoader;
-        private readonly HtmlImageInfoCollection prefetchedImages;
+        this.mainPart = mainPart;
+        this.resourceLoader = resourceLoader;
+        this.prefetchedImages = new HtmlImageInfoCollection();
+    }
 
+    //____________________________________________________________________
+    //
+    // Public Functionality
 
-        public ImagePrefetcher(MainDocumentPart mainPart, IWebRequest resourceLoader)
+    /// <summary>
+    /// Download the remote or local image located at the specified url.
+    /// </summary>
+    public async Task<HtmlImageInfo?> Download(string imageUri, CancellationToken cancellationToken)
+    {
+        if (prefetchedImages.Contains(imageUri))
+            return prefetchedImages[imageUri];
+
+        HtmlImageInfo? iinfo;
+        if (DataUri.IsWellFormed(imageUri)) // data inline, encoded in base64
         {
-            this.mainPart = mainPart;
-            this.resourceLoader = resourceLoader;
-            this.prefetchedImages = new HtmlImageInfoCollection();
+            iinfo = ReadDataUri(imageUri);
+        }
+        else
+        {
+            iinfo = await DownloadRemoteImage(imageUri, cancellationToken);
         }
 
-        //____________________________________________________________________
-        //
-        // Public Functionality
+        if (iinfo != null)
+            prefetchedImages.Add(iinfo);
 
-        /// <summary>
-        /// Download the remote or local image located at the specified url.
-        /// </summary>
-        public async Task<HtmlImageInfo?> Download(string imageUri, CancellationToken cancellationToken)
-        {
-            if (prefetchedImages.Contains(imageUri))
-                return prefetchedImages[imageUri];
+        return iinfo;
+    }
 
-            HtmlImageInfo? iinfo;
-            if (DataUri.IsWellFormed(imageUri)) // data inline, encoded in base64
-            {
-                iinfo = ReadDataUri(imageUri);
-            }
-            else
-            {
-                iinfo = await DownloadRemoteImage(imageUri, cancellationToken);
-            }
-
-            if (iinfo != null)
-                prefetchedImages.Add(iinfo);
-
-            return iinfo;
-        }
-
-        /// <summary>
-        /// Download the image and try to find its format type.
-        /// </summary>
-        private async Task<HtmlImageInfo?> DownloadRemoteImage(string src, CancellationToken cancellationToken)
-        {
-            Uri imageUri = new Uri(src, UriKind.RelativeOrAbsolute);
-            if (imageUri.IsAbsoluteUri && !resourceLoader.SupportsProtocol(imageUri.Scheme))
-                return null;
-
-            Resource? response;
-
-            response = await resourceLoader.FetchAsync(imageUri, cancellationToken).ConfigureAwait(false);
-            if (response?.Content == null)
-                return null;
-
-            HtmlImageInfo info = new HtmlImageInfo(src);
-            using (response)
-            {
-                // For requested url with no filename, we need to read the media mime type if provided
-                response.Headers.TryGetValue("Content-Type", out var mime);
-                if (!TryInspectMimeType(mime, out PartTypeInfo type)
-                    && !TryGuessTypeFromUri(imageUri, out type)
-                    && !TryGuessTypeFromStream(response.Content, out type))
-                {
-                    return null;
-                }
-
-                var ipart = mainPart.AddImagePart(type);
-                using (var outputStream = ipart.GetStream(FileMode.Create))
-                {
-                    response.Content.CopyTo(outputStream);
-
-                    outputStream.Seek(0L, SeekOrigin.Begin);
-                    info.Size = GetImageSize(outputStream);
-                }
-
-                info.ImagePartId = mainPart.GetIdOfPart(ipart);
-                return info;
-            }
-        }
-
-        /// <summary>
-        /// Parse the Data inline image.
-        /// </summary>
-        private HtmlImageInfo? ReadDataUri(string src)
-        {
-            if (DataUri.TryCreate(src, out var dataUri))
-            {
-                Size size;
-                knownContentType.TryGetValue(dataUri!.Mime, out PartTypeInfo type);
-                var ipart = mainPart.AddImagePart(type);
-                using (var outputStream = ipart.GetStream(FileMode.Create))
-                {
-                    outputStream.Write(dataUri.Data, 0, dataUri.Data.Length);
-
-                    outputStream.Seek(0L, SeekOrigin.Begin);
-                    size = GetImageSize(outputStream);
-                }
-
-                return new HtmlImageInfo(src) {
-                    ImagePartId = mainPart.GetIdOfPart(ipart),
-                    Size = size
-                };
-            }
-
+    /// <summary>
+    /// Download the image and try to find its format type.
+    /// </summary>
+    private async Task<HtmlImageInfo?> DownloadRemoteImage(string src, CancellationToken cancellationToken)
+    {
+        Uri imageUri = new Uri(src, UriKind.RelativeOrAbsolute);
+        if (imageUri.IsAbsoluteUri && !resourceLoader.SupportsProtocol(imageUri.Scheme))
             return null;
-        }
 
-        //____________________________________________________________________
-        //
-        // Private Implementation
+        Resource? response;
 
-        // http://stackoverflow.com/questions/58510/using-net-how-can-you-find-the-mime-type-of-a-file-based-on-the-file-signature
-        private static readonly Dictionary<string, PartTypeInfo> knownContentType = new(StringComparer.OrdinalIgnoreCase) {
-            { "image/gif", ImagePartType.Gif },
-            { "image/pjpeg", ImagePartType.Jpeg },
-            { "image/jp2", ImagePartType.Jp2 },
-            { "image/jpg", ImagePartType.Jpeg },
-            { "image/jpeg", ImagePartType.Jpeg },
-            { "image/x-png", ImagePartType.Png },
-            { "image/png", ImagePartType.Png },
-            { "image/tiff", ImagePartType.Tiff },
-            { "image/vnd.microsoft.icon", ImagePartType.Icon },
-            // these icons mime type are wrong but we should nevertheless take care (http://en.wikipedia.org/wiki/ICO_%28file_format%29#MIME_type)
-            { "image/x-icon", ImagePartType.Icon },
-            { "image/icon", ImagePartType.Icon },
-            { "image/ico", ImagePartType.Icon },
-            { "text/ico", ImagePartType.Icon },
-            { "text/application-ico", ImagePartType.Icon },
-            { "image/bmp", ImagePartType.Bmp },
-            { "image/svg+xml", ImagePartType.Svg },
-        };
+        response = await resourceLoader.FetchAsync(imageUri, cancellationToken).ConfigureAwait(false);
+        if (response?.Content == null)
+            return null;
 
-        /// <summary>
-        /// Inspect the response headers of a web request and decode the mime type if provided
-        /// </summary>
-        /// <returns>Returns the extension of the image if provideds.</returns>
-        private static bool TryInspectMimeType(string? contentType, out PartTypeInfo type)
+        HtmlImageInfo info = new HtmlImageInfo(src);
+        using (response)
         {
-            // can be null when the protocol used doesn't allow response headers
-            if (contentType != null &&
-                knownContentType.TryGetValue(contentType, out type))
-                return true;
-
-            type = default;
-            return false;
-        }
-
-        /// <summary>
-        /// Gets the OpenXml PartTypeInfo associated to an image.
-        /// </summary>
-        private static bool TryGuessTypeFromUri(Uri uri, out PartTypeInfo type)
-        {
-            string extension = Path.GetExtension(uri.IsAbsoluteUri ? uri.Segments[uri.Segments.Length - 1] : uri.OriginalString);
-            if (knownExtensions.TryGetValue(extension, out type)) return true;
-
-            // extension not recognized, try with checking the query string. Expecting to resolve something like:
-            // ./image.axd?picture=img1.jpg
-            extension = Path.GetExtension(uri.IsAbsoluteUri ? uri.AbsoluteUri : uri.ToString());
-            if (knownExtensions.TryGetValue(extension, out type)) return true;
-
-            return false;
-        }
-
-        /// <summary>
-        /// Gets the OpenXml PartTypeInfo associated to an image.
-        /// </summary>
-        private static bool TryGuessTypeFromStream(Stream stream, out PartTypeInfo type)
-        {
-            if (ImageHeader.TryDetectFileType(stream, out ImageHeader.FileType guessType))
+            // For requested url with no filename, we need to read the media mime type if provided
+            response.Headers.TryGetValue("Content-Type", out var mime);
+            if (!TryInspectMimeType(mime, out PartTypeInfo type)
+                && !TryGuessTypeFromUri(imageUri, out type)
+                && !TryGuessTypeFromStream(response.Content, out type))
             {
-                switch (guessType)
-                {
-                    case ImageHeader.FileType.Bitmap: type = ImagePartType.Bmp; return true;
-                    case ImageHeader.FileType.Emf: type = ImagePartType.Emf; return true;
-                    case ImageHeader.FileType.Gif: type = ImagePartType.Gif; return true;
-                    case ImageHeader.FileType.Jpeg: type = ImagePartType.Jpeg; return true;
-                    case ImageHeader.FileType.Png: type = ImagePartType.Png; return true;
-                }
+                return null;
             }
-            type = ImagePartType.Bmp;
-            return false;
+
+            var ipart = mainPart.AddImagePart(type);
+            using (var outputStream = ipart.GetStream(FileMode.Create))
+            {
+                response.Content.CopyTo(outputStream);
+
+                outputStream.Seek(0L, SeekOrigin.Begin);
+                info.Size = GetImageSize(outputStream);
+            }
+
+            info.ImagePartId = mainPart.GetIdOfPart(ipart);
+            return info;
+        }
+    }
+
+    /// <summary>
+    /// Parse the Data inline image.
+    /// </summary>
+    private HtmlImageInfo? ReadDataUri(string src)
+    {
+        if (DataUri.TryCreate(src, out var dataUri))
+        {
+            Size size;
+            knownContentType.TryGetValue(dataUri!.Mime, out PartTypeInfo type);
+            var ipart = mainPart.AddImagePart(type);
+            using (var outputStream = ipart.GetStream(FileMode.Create))
+            {
+                outputStream.Write(dataUri.Data, 0, dataUri.Data.Length);
+
+                outputStream.Seek(0L, SeekOrigin.Begin);
+                size = GetImageSize(outputStream);
+            }
+
+            return new HtmlImageInfo(src) {
+                ImagePartId = mainPart.GetIdOfPart(ipart),
+                Size = size
+            };
         }
 
-        /// <summary>
-        /// Loads an image from a stream and grab its size.
-        /// </summary>
-        private static Size GetImageSize(Stream imageStream)
+        return null;
+    }
+
+    //____________________________________________________________________
+    //
+    // Private Implementation
+
+    // http://stackoverflow.com/questions/58510/using-net-how-can-you-find-the-mime-type-of-a-file-based-on-the-file-signature
+    private static readonly Dictionary<string, PartTypeInfo> knownContentType = new(StringComparer.OrdinalIgnoreCase) {
+        { "image/gif", ImagePartType.Gif },
+        { "image/pjpeg", ImagePartType.Jpeg },
+        { "image/jp2", ImagePartType.Jp2 },
+        { "image/jpg", ImagePartType.Jpeg },
+        { "image/jpeg", ImagePartType.Jpeg },
+        { "image/x-png", ImagePartType.Png },
+        { "image/png", ImagePartType.Png },
+        { "image/tiff", ImagePartType.Tiff },
+        { "image/vnd.microsoft.icon", ImagePartType.Icon },
+        // these icons mime type are wrong but we should nevertheless take care (http://en.wikipedia.org/wiki/ICO_%28file_format%29#MIME_type)
+        { "image/x-icon", ImagePartType.Icon },
+        { "image/icon", ImagePartType.Icon },
+        { "image/ico", ImagePartType.Icon },
+        { "text/ico", ImagePartType.Icon },
+        { "text/application-ico", ImagePartType.Icon },
+        { "image/bmp", ImagePartType.Bmp },
+        { "image/svg+xml", ImagePartType.Svg },
+    };
+
+    /// <summary>
+    /// Inspect the response headers of a web request and decode the mime type if provided
+    /// </summary>
+    /// <returns>Returns the extension of the image if provideds.</returns>
+    private static bool TryInspectMimeType(string? contentType, out PartTypeInfo type)
+    {
+        // can be null when the protocol used doesn't allow response headers
+        if (contentType != null &&
+            knownContentType.TryGetValue(contentType, out type))
+            return true;
+
+        type = default;
+        return false;
+    }
+
+    /// <summary>
+    /// Gets the OpenXml PartTypeInfo associated to an image.
+    /// </summary>
+    private static bool TryGuessTypeFromUri(Uri uri, out PartTypeInfo type)
+    {
+        string extension = Path.GetExtension(uri.IsAbsoluteUri ? uri.Segments[uri.Segments.Length - 1] : uri.OriginalString);
+        if (knownExtensions.TryGetValue(extension, out type)) return true;
+
+        // extension not recognized, try with checking the query string. Expecting to resolve something like:
+        // ./image.axd?picture=img1.jpg
+        extension = Path.GetExtension(uri.IsAbsoluteUri ? uri.AbsoluteUri : uri.ToString());
+        if (knownExtensions.TryGetValue(extension, out type)) return true;
+
+        return false;
+    }
+
+    /// <summary>
+    /// Gets the OpenXml PartTypeInfo associated to an image.
+    /// </summary>
+    private static bool TryGuessTypeFromStream(Stream stream, out PartTypeInfo type)
+    {
+        if (ImageHeader.TryDetectFileType(stream, out ImageHeader.FileType guessType))
         {
-            // Read only the size of the image
-            try
+            switch (guessType)
             {
-                return ImageHeader.GetDimensions(imageStream);
+                case ImageHeader.FileType.Bitmap: type = ImagePartType.Bmp; return true;
+                case ImageHeader.FileType.Emf: type = ImagePartType.Emf; return true;
+                case ImageHeader.FileType.Gif: type = ImagePartType.Gif; return true;
+                case ImageHeader.FileType.Jpeg: type = ImagePartType.Jpeg; return true;
+                case ImageHeader.FileType.Png: type = ImagePartType.Png; return true;
             }
-            catch (ArgumentException)
-            {
-                return Size.Empty;
-            }
+        }
+        type = ImagePartType.Bmp;
+        return false;
+    }
+
+    /// <summary>
+    /// Loads an image from a stream and grab its size.
+    /// </summary>
+    private static Size GetImageSize(Stream imageStream)
+    {
+        // Read only the size of the image
+        try
+        {
+            return ImageHeader.GetDimensions(imageStream);
+        }
+        catch (ArgumentException)
+        {
+            return Size.Empty;
         }
     }
 }

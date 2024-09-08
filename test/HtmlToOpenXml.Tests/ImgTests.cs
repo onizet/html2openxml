@@ -60,6 +60,7 @@ namespace HtmlToOpenXml.Tests
 
         [TestCase("<img alt='Smiley face' width='42' height='42'>", Description = "Empty image")]
         [TestCase("<img src='tcp://192.168.0.1:53/attach.jpg'>", Description = "Unsupported protocol")]
+        [TestCase("<img src='/attach.jpg'>", Description = "Relative url without providing BaseImagerUri")]
         public void IgnoreImage_ShouldBeIgnored(string html)
         {
             var elements = converter.Parse(html);
