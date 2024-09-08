@@ -38,6 +38,8 @@ namespace HtmlToOpenXml.Tests
 
         [TestCase(@"<a href=""javascript:alert()"">Js</a>")]
         [TestCase(@"<a href=""site.com"">Unknown site</a>")]
+        [TestCase(@"<a href=''>Empty link</a>")]
+        [TestCase(@"<a href='#'>Empty bookmark</a>")]
         public void InvalidLink_ReturnsSimpleRun (string html)
         {
             // invalid link leads to simple Run with no link

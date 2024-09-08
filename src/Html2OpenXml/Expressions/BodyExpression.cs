@@ -105,7 +105,7 @@ sealed class BodyExpression(IHtmlElement node) : BlockElementExpression(node)
         var links = node.QuerySelectorAll("a[href^='#']");
         if (links.Length == 0) return;
 
-        foreach (var link in links.Cast<IHtmlAnchorElement>())
+        foreach (var link in links.Cast<IHtmlAnchorElement>().Where(l => l.Hash.Length > 0))
         {
             var id = link.Hash.Substring(1);
             var target = node.Owner!.GetElementById(id);
