@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml.Expressions;
@@ -26,6 +27,10 @@ sealed class BlockQuoteExpression(IHtmlElement node) : BlockElementExpression(no
     /// <inheritdoc/>
     public override IEnumerable<OpenXmlElement> Interpret(ParsingContext context)
     {
+        // Footnote or endnote are invalid inside header and footer
+        if (context.HostingPart is not MainDocumentPart)
+            return [];
+
         string? description = node.GetAttribute("cite");
 
         var childElements = base.Interpret(context);

@@ -29,6 +29,10 @@ sealed class AbbreviationExpression(IHtmlElement node) : PhrasingElementExpressi
     /// <inheritdoc/>
     public override IEnumerable<OpenXmlElement> Interpret(ParsingContext context)
     {
+        // Footnote or endnote are invalid inside header and footer
+        if (context.HostingPart is not MainDocumentPart)
+            return [];
+
         var childElements = base.Interpret(context);
 
         // Transform the inline acronym/abbreviation to a reference to a foot note.
