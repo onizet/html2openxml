@@ -70,19 +70,20 @@ public partial class HtmlConverter
     }
 
     /// <summary>
-    /// Start the asynchroneous parse processing.
+    /// Start the asynchroneous parse processing where the output is intented to be inserted in <see cref="MainDocumentPart"/>.
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>Returns a list of parsed paragraph.</returns>
     [Obsolete("Use ParseAsync instead to respect naming convention")]
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     public Task<IEnumerable<OpenXmlCompositeElement>> Parse(string html, CancellationToken cancellationToken = default)
     {
         return ParseAsync(html, cancellationToken);
     }
 
     /// <summary>
-    /// Start the asynchroneous parse processing.
+    /// Start the asynchroneous parse processing where the output is intented to be inserted in <see cref="MainDocumentPart"/>.
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <param name="cancellationToken">The cancellation token.</param>
@@ -93,7 +94,7 @@ public partial class HtmlConverter
     }
 
     /// <summary>
-    /// Start the asynchroneous parse processing.
+    /// Start the asynchroneous parse processing where the output is intented to be inserted in <see cref="MainDocumentPart"/>.
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <param name="parallelOptions">The configuration of parallelism while downloading the remote resources.</param>
@@ -113,7 +114,7 @@ public partial class HtmlConverter
     /// <seealso cref="HeaderPart"/>
     public async Task ParseHeader(string html, CancellationToken cancellationToken = default)
     {
-        if (mainPart.HeaderParts is null)
+        if (mainPart.HeaderParts is null || !mainPart.HeaderParts.Any())
             mainPart.AddNewPart<HeaderPart>();
         var headerPart = mainPart.HeaderParts!.First();
         headerPart.Header ??= new();
@@ -134,7 +135,7 @@ public partial class HtmlConverter
     /// <seealso cref="FooterPart"/>
     public async Task ParseFooter(string html, CancellationToken cancellationToken = default)
     {
-        if (mainPart.FooterParts is null)
+        if (mainPart.FooterParts is null || !mainPart.FooterParts.Any())
             mainPart.AddNewPart<FooterPart>();
         var footerPart = mainPart.FooterParts!.First();
         footerPart.Footer ??= new();
@@ -191,6 +192,7 @@ public partial class HtmlConverter
     /// <param name="parallelOptions">The configuration of parallelism while downloading the remote resources.</param>
     /// <returns>Returns a list of parsed paragraph.</returns>
     [Obsolete("Use ParseAsync instead to respect naming convention")]
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     public Task<IEnumerable<OpenXmlCompositeElement>> Parse(string html, ParallelOptions parallelOptions)
     {
         bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester);
@@ -203,7 +205,8 @@ public partial class HtmlConverter
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    [Obsolete("Use ParseBody instead for clarification")]
+    [Obsolete("Use ParseBody instead for output clarification")]
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     public Task ParseHtml(string html, CancellationToken cancellationToken = default)
     {
         return ParseBody(html, cancellationToken);

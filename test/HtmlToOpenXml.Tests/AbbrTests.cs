@@ -177,5 +177,21 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(elements[0].Elements<Run>().Any(r => r.HasChild<FootnoteReference>()), Is.True);
             });
         }
+
+        [TestCase("<abbr title='National Aeronautics and Space Administration'>NASA</abbr>")]
+        [TestCase("<blockquote cite='https://en.wikipedia.org/wiki/NASA'>NASA</blockquote>")]
+        public async Task ParseIntoHeader_ShouldBeIgnored(string html)
+        {
+            await converter.ParseHeader(html);
+            Assert.That(mainPart.HeaderParts.First().Header.ChildElements, Is.Empty);
+        }
+
+        [TestCase("<abbr title='National Aeronautics and Space Administration'>NASA</abbr>")]
+        [TestCase("<blockquote cite='https://en.wikipedia.org/wiki/NASA'>NASA</blockquote>")]
+        public async Task ParseIntoFooter_ShouldBeIgnored(string html)
+        {
+            await converter.ParseFooter(html);
+            Assert.That(mainPart.FooterParts.First().Footer.ChildElements, Is.Empty);
+        }
     }
 }

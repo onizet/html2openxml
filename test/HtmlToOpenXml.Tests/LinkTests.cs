@@ -1,5 +1,7 @@
 using NUnit.Framework;
 using DocumentFormat.OpenXml.Wordprocessing;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml;
 
 namespace HtmlToOpenXml.Tests
 {
@@ -15,25 +17,7 @@ namespace HtmlToOpenXml.Tests
         public void ExternalLink_ShouldSucceed (string link)
         {
             var elements = converter.Parse($@"<a href=""{link}"" title=""Test Tooltip"">Test Caption</a>");
-            Assert.That(elements, Has.Count.EqualTo(1));
-            Assert.Multiple(() => {
-                Assert.That(elements[0], Is.TypeOf(typeof(Paragraph)));
-                Assert.That(elements[0].HasChild<Hyperlink>(), Is.True);
-            });
-            var hyperlink = elements[0].GetFirstChild<Hyperlink>()!;
-            Assert.That(hyperlink.Tooltip, Is.Not.Null);
-            Assert.That(hyperlink.Tooltip.Value, Is.EqualTo("Test Tooltip"));
-            Assert.That(hyperlink.HasChild<Run>(), Is.True);
-            Assert.That(elements[0].InnerText, Is.EqualTo("Test Caption"));
-
-            Assert.That(hyperlink.Id, Is.Not.Null);
-            Assert.That(hyperlink.History?.Value, Is.EqualTo(true));
-            Assert.That(mainPart.HyperlinkRelationships.Count(), Is.GreaterThan(0));
-
-            var extLink = mainPart.HyperlinkRelationships.FirstOrDefault(r => r.Id == hyperlink.Id);
-            Assert.That(extLink, Is.Not.Null);
-            Assert.That(extLink.IsExternal, Is.EqualTo(true));
-            Assert.That(extLink.Uri.AbsoluteUri, Is.EqualTo("http://www.site.com/"));
+            AssertHyperlink(mainPart, elements);
         }
 
         [TestCase(@"<a href=""javascript:alert()"">Js</a>")]
@@ -160,6 +144,67 @@ namespace HtmlToOpenXml.Tests
             Assert.That(h, Is.Not.Null);
             Assert.That(h.ChildElements, Has.All.TypeOf(typeof(Run)));
             Assert.That(h.InnerText, Is.EqualTo("Html to OpenXml !"));
+        }
+
+        [TestCase(typeof(HeaderPart))]
+        [TestCase(typeof(FooterPart))]
+        [TestCase(typeof(MainDocumentPart))]
+        public async Task ParseIntoDocumentPart_ReturnsHyperlinkParentedToPart (Type openXmlPartType)
+        {
+            string html = @"<a href=""www.site.com"" title=""Test Tooltip"">Test Caption</a>";
+            OpenXmlElement host;
+            OpenXmlPartContainer container;
+
+            if (openXmlPartType == typeof(HeaderPart))
+            {
+                await converter.ParseHeader(html);
+                container = mainPart.HeaderParts.First();
+                host = mainPart.HeaderParts.First().Header;
+            }
+            else if (openXmlPartType == typeof(FooterPart))
+            {
+                await converter.ParseFooter(html);
+                container = mainPart.FooterParts.First();
+                host = mainPart.FooterParts.First().Footer;
+            }
+            else if (openXmlPartType == typeof(MainDocumentPart))
+            {
+                await converter.ParseBody(html);
+                container = mainPart;
+                host = mainPart.Document.Body!;
+            }
+            else
+            {
+                throw new NotSupportedException($"Test case not supported for {openXmlPartType.FullName}");
+            }
+
+            AssertHyperlink(container, host.ChildElements);
+        }
+
+        private static void AssertHyperlink(OpenXmlPartContainer container, IEnumerable<OpenXmlElement> elements)
+        {
+            Assert.That(elements.Count(), Is.EqualTo(1));
+            Assert.Multiple(() => {
+                Assert.That(elements.First(), Is.TypeOf(typeof(Paragraph)));
+                Assert.That(elements.First().HasChild<Hyperlink>(), Is.True);
+            });
+            var hyperlink = elements.First().GetFirstChild<Hyperlink>()!;
+            Assert.That(hyperlink.Tooltip, Is.Not.Null);
+            Assert.That(hyperlink.Tooltip.Value, Is.EqualTo("Test Tooltip"));
+            Assert.That(hyperlink.HasChild<Run>(), Is.True);
+            Assert.That(elements.First().InnerText, Is.EqualTo("Test Caption"));
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(hyperlink.Id, Is.Not.Null);
+                Assert.That(hyperlink.History?.Value, Is.EqualTo(true));
+                Assert.That(container.HyperlinkRelationships.Count(), Is.GreaterThan(0));
+            });
+
+            var extLink = container.HyperlinkRelationships.FirstOrDefault(r => r.Id == hyperlink.Id);
+            Assert.That(extLink, Is.Not.Null);
+            Assert.That(extLink.IsExternal, Is.EqualTo(true));
+            Assert.That(extLink.Uri.AbsoluteUri, Is.EqualTo("http://www.site.com/"));
         }
     }
 }
