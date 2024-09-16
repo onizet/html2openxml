@@ -36,8 +36,7 @@ sealed class BodyExpression(IHtmlElement node) : BlockElementExpression(node)
     {
         base.ComposeStyles(context);
 
-        var mainPart = context.MainPart as MainDocumentPart;
-        if (mainPart is null) return;
+        var mainPart = context.MainPart;
 
         // Unsupported W3C attribute but claimed by users. Specified at <body> level, the page
         // orientation is applied on the whole document
