@@ -17,11 +17,23 @@ namespace HtmlToOpenXml.Tests
             AssertIsHr(elements[0], false);
         }
 
-        [Test(Description = "should not generate a particular spacing because border-bottom is empty")]
+        [Test(Description = "Should not generate a particular spacing because border-bottom is empty")]
         public void AfterBorderlessContent_ReturnsWithNoSpacing ()
         {
             var elements = converter.Parse("<p style='border-top:1px solid black'>Before</p><hr>");
             AssertIsHr(elements[1], false);
+        }
+
+        [Test(Description = "User can provide his own stylised horizontal separator")]
+        public void Bordered_ReturnsWithStylisedBorder ()
+        {
+            var elements = converter.Parse("<hr style='border:3px dotted red'>");
+            AssertIsHr(elements[0], false);
+            var borders = elements[0].GetFirstChild<ParagraphProperties>()?.ParagraphBorders;
+            Assert.That(borders, Is.Not.Null);
+            Assert.That(borders.TopBorder?.Val?.Value, Is.EqualTo(BorderValues.Dotted));
+            Assert.That(borders.TopBorder?.Color?.Value, Is.EqualTo("FF0000"));
+            Assert.That(borders.TopBorder?.Size?.Value, Is.EqualTo(2));
         }
 
         [TestCase("<p style='border:0.1px solid black'>Before</p><hr>")]
