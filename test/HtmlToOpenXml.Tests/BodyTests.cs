@@ -55,5 +55,29 @@ namespace HtmlToOpenXml.Tests
             var bidi = mainPart.Document.Body!.GetFirstChild<SectionProperties>()?.GetFirstChild<BiDi>();
             return bidi?.Val?.Value;
         }
+
+        [Test(Description = "Bookmark _GoBack is reserved and must stand after the last edit change")]
+        public async Task WithGoBackBookmark_ShouldBeAfterAppendedOutput()
+        {
+            using var generatedDocument = new MemoryStream();
+            using (var buffer = ResourceHelper.GetStream("Resources.DocWithCustomStyle.docx"))
+                buffer.CopyTo(generatedDocument);
+
+            generatedDocument.Position = 0L;
+            using WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true);
+            MainDocumentPart mainPart = package.MainDocumentPart!;
+
+            var goBackBookmark = mainPart.Document.Body!.Elements<Paragraph>()
+                .FirstOrDefault(p => p.GetFirstChild<BookmarkStart>()?.Name?.Value == "_GoBack");
+            Assert.That(goBackBookmark, Is.Not.Null);
+
+            HtmlConverter converter = new HtmlConverter(mainPart);
+            await converter.ParseHtml("<p>Placeholder</p>");
+
+            Assert.That(mainPart.Document.Body!.LastChild, Is.TypeOf<SectionProperties>());
+            var paragrahs = mainPart.Document.Body!.Elements<Paragraph>();
+            Assert.That(paragrahs.Count(), Is.EqualTo(2));
+            Assert.That(paragrahs.Last().GetFirstChild<BookmarkStart>()?.Name?.Value, Is.EqualTo("_GoBack"));
+        }
     }
 }

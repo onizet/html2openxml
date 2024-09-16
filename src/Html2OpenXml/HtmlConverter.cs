@@ -125,8 +125,9 @@ public partial class HtmlConverter
             body.Append(para);
 
         // move the paragraph with BookmarkStart `_GoBack` as the last child
+        // That bookmark is continuously moved after the last edit
         var p = body.GetFirstChild<Paragraph>();
-        if (p != null && p.GetFirstChild<BookmarkStart>()?.Id == "_GoBack")
+        if (p != null && p.GetFirstChild<BookmarkStart>()?.Name == "_GoBack")
         {
             p.Remove();
             body.Append(p);
