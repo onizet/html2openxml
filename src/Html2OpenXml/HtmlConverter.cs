@@ -114,9 +114,18 @@ public partial class HtmlConverter
     /// <seealso cref="HeaderPart"/>
     public async Task ParseHeader(string html, CancellationToken cancellationToken = default)
     {
+        string? partId = null;
+        HeaderPart headerPart;
         if (mainPart.HeaderParts is null || !mainPart.HeaderParts.Any())
-            mainPart.AddNewPart<HeaderPart>();
-        var headerPart = mainPart.HeaderParts!.First();
+        {
+            headerPart = mainPart.AddNewPart<HeaderPart>();
+            partId = mainPart.GetIdOfPart(headerPart);
+        }
+        else
+        {
+            headerPart = mainPart.HeaderParts.First();
+        }
+
         headerPart.Header ??= new();
         headerImageLoader ??= new ImagePrefetcher<HeaderPart>(headerPart, webRequester);
 
@@ -125,6 +134,16 @@ public partial class HtmlConverter
 
         foreach (var p in paragraphs)
             headerPart.Header.AddChild(p);
+
+        if (partId != null)
+        {
+            var sectionProps = mainPart.Document.Body!.Elements<SectionProperties>();
+            foreach (var sectPr in sectionProps)
+            {
+                sectPr.RemoveAllChildren<HeaderReference>();
+                sectPr.PrependChild(new HeaderReference() { Id = partId, Type = HeaderFooterValues.Default });
+            }
+        }
     }
 
     /// <summary>
@@ -135,9 +154,18 @@ public partial class HtmlConverter
     /// <seealso cref="FooterPart"/>
     public async Task ParseFooter(string html, CancellationToken cancellationToken = default)
     {
+        string? partId = null;
+        FooterPart footerPart;
         if (mainPart.FooterParts is null || !mainPart.FooterParts.Any())
-            mainPart.AddNewPart<FooterPart>();
-        var footerPart = mainPart.FooterParts!.First();
+        {
+            footerPart = mainPart.AddNewPart<FooterPart>();
+            partId = mainPart.GetIdOfPart(footerPart);
+        }
+        else
+        {
+            footerPart = mainPart.FooterParts.First();
+        }
+
         footerPart.Footer ??= new();
         footerImageLoader ??= new ImagePrefetcher<FooterPart>(footerPart, webRequester);
 
@@ -146,6 +174,16 @@ public partial class HtmlConverter
 
         foreach (var p in paragraphs)
             footerPart.Footer.AddChild(p);
+
+        if (partId != null)
+        {
+            var sectionProps = mainPart.Document.Body!.Elements<SectionProperties>();
+            foreach (var sectPr in sectionProps)
+            {
+                sectPr.RemoveAllChildren<FooterReference>();
+                sectPr.PrependChild(new FooterReference() { Id = partId, Type = HeaderFooterValues.Default });
+            }
+        }
     }
 
     /// <summary>
