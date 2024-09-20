@@ -291,6 +291,7 @@ namespace HtmlToOpenXml.Tests
                 e.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value),
                 Has.All.EqualTo(instances.First().NumberID!.Value),
                 "All paragraphs are linked to the same list instance");
+            AssertThatOpenXmlDocumentIsValid();
         }
 
         [Test(Description = "Stop indenting from existing numbering (issue #57)")]
@@ -321,6 +322,7 @@ namespace HtmlToOpenXml.Tests
                 e.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value),
                 Is.Unique,
                 "All paragraphs use different list instances");
+            AssertThatOpenXmlDocumentIsValid();
         }
 
         /// <summary>

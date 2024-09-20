@@ -179,6 +179,7 @@ namespace HtmlToOpenXml.Tests
             }
 
             AssertHyperlink(container, host.ChildElements);
+            AssertThatOpenXmlDocumentIsValid();
         }
 
         private static void AssertHyperlink(OpenXmlPartContainer container, IEnumerable<OpenXmlElement> elements)

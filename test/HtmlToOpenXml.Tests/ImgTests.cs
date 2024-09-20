@@ -188,6 +188,7 @@ namespace HtmlToOpenXml.Tests
             var p = host.ChildElements.FirstOrDefault(c => c is Paragraph);
             Assert.That(p, Is.Not.Null);
             AssertIsImg(container, p);
+            AssertThatOpenXmlDocumentIsValid();
         }
 
         private static Drawing AssertIsImg (OpenXmlPartContainer container, OpenXmlElement paragraph)

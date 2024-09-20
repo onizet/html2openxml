@@ -138,6 +138,12 @@ public partial class HtmlConverter
         if (partId != null)
         {
             var sectionProps = mainPart.Document.Body!.Elements<SectionProperties>();
+            if (!sectionProps.Any())
+            {
+                sectionProps = [new SectionProperties()];
+                mainPart.Document.Body!.AddChild(sectionProps.First());
+            }
+
             foreach (var sectPr in sectionProps)
             {
                 sectPr.RemoveAllChildren<HeaderReference>();
@@ -178,6 +184,12 @@ public partial class HtmlConverter
         if (partId != null)
         {
             var sectionProps = mainPart.Document.Body!.Elements<SectionProperties>();
+            if (!sectionProps.Any())
+            {
+                sectionProps = [new SectionProperties()];
+                mainPart.Document.Body!.AddChild(sectionProps.First());
+            }
+
             foreach (var sectPr in sectionProps)
             {
                 sectPr.RemoveAllChildren<FooterReference>();
