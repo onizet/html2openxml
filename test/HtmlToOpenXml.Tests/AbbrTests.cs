@@ -110,6 +110,8 @@ namespace HtmlToOpenXml.Tests
             var elements = converter.Parse(html);
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements, Is.All.TypeOf<Paragraph>());
+            Assert.That(mainPart.FootnotesPart, Is.Null);
+            Assert.That(mainPart.EndnotesPart, Is.Null);
         }
 
         [TestCase("<abbr title='HyperText Markup Language'>HTML</abbr>", AcronymPosition.DocumentEnd, Description = "Read existing endnotes references")]
@@ -180,10 +182,20 @@ namespace HtmlToOpenXml.Tests
 
         [TestCase("<abbr title='National Aeronautics and Space Administration'>NASA</abbr>")]
         [TestCase("<blockquote cite='https://en.wikipedia.org/wiki/NASA'>NASA</blockquote>")]
-        public async Task ParseIntoHeader_ShouldBeIgnored(string html)
+        public async Task ParseIntoHeader_ReturnsSimpleParagraph(string html)
         {
             await converter.ParseHeader(html);
-            Assert.That(mainPart.HeaderParts.First().Header.ChildElements, Is.Empty);
+            var header = mainPart.HeaderParts?.FirstOrDefault()?.Header;
+            Assert.That(header, Is.Not.Null);
+            Assert.That(header.ChildElements, Has.Count.EqualTo(1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(header.ChildElements, Is.All.TypeOf<Paragraph>());
+                Assert.That(header.FirstChild!.InnerText, Is.EqualTo("NASA"));
+                Assert.That(mainPart.FootnotesPart, Is.Null);
+                Assert.That(mainPart.EndnotesPart, Is.Null);
+                AssertThatOpenXmlDocumentIsValid();
+            });
         }
 
         [TestCase("<abbr title='National Aeronautics and Space Administration'>NASA</abbr>")]
@@ -191,7 +203,17 @@ namespace HtmlToOpenXml.Tests
         public async Task ParseIntoFooter_ShouldBeIgnored(string html)
         {
             await converter.ParseFooter(html);
-            Assert.That(mainPart.FooterParts.First().Footer.ChildElements, Is.Empty);
+            var footer = mainPart.FooterParts?.FirstOrDefault()?.Footer;
+            Assert.That(footer, Is.Not.Null);
+            Assert.That(footer.ChildElements, Has.Count.EqualTo(1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(footer.ChildElements, Is.All.TypeOf<Paragraph>());
+                Assert.That(footer.FirstChild!.InnerText, Is.EqualTo("NASA"));
+                Assert.That(mainPart.FootnotesPart, Is.Null);
+                Assert.That(mainPart.EndnotesPart, Is.Null);
+                AssertThatOpenXmlDocumentIsValid();
+            });
         }
     }
 }
