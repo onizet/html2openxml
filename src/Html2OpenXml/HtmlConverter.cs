@@ -110,21 +110,15 @@ public partial class HtmlConverter
     /// Parse asynchroneously the Html and append the output into the Header of the document.
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
+    /// <param name="headerType">Determines the page(s) on which the current header shall be displayed.
+    /// If omitted, the value <see cref="HeaderFooterValues.Default"/> is used.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <seealso cref="HeaderPart"/>
-    public async Task ParseHeader(string html, CancellationToken cancellationToken = default)
+    public async Task ParseHeader(string html, HeaderFooterValues? headerType = null,
+        CancellationToken cancellationToken = default)
     {
-        string? partId = null;
-        HeaderPart headerPart;
-        if (mainPart.HeaderParts is null || !mainPart.HeaderParts.Any())
-        {
-            headerPart = mainPart.AddNewPart<HeaderPart>();
-            partId = mainPart.GetIdOfPart(headerPart);
-        }
-        else
-        {
-            headerPart = mainPart.HeaderParts.First();
-        }
+        headerType ??= HeaderFooterValues.Default;
+        var headerPart = ResolveHeaderFooterPart<HeaderReference, HeaderPart>(headerType);
 
         headerPart.Header ??= new();
         headerImageLoader ??= new ImagePrefetcher<HeaderPart>(headerPart, webRequester);
@@ -134,43 +128,21 @@ public partial class HtmlConverter
 
         foreach (var p in paragraphs)
             headerPart.Header.AddChild(p);
-
-        if (partId != null)
-        {
-            var sectionProps = mainPart.Document.Body!.Elements<SectionProperties>();
-            if (!sectionProps.Any())
-            {
-                sectionProps = [new SectionProperties()];
-                mainPart.Document.Body!.AddChild(sectionProps.First());
-            }
-
-            foreach (var sectPr in sectionProps)
-            {
-                sectPr.RemoveAllChildren<HeaderReference>();
-                sectPr.PrependChild(new HeaderReference() { Id = partId, Type = HeaderFooterValues.Default });
-            }
-        }
     }
 
     /// <summary>
     /// Parse asynchroneously the Html and append the output into the Footer of the document.
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
+    /// <param name="footerType">Determines the page(s) on which the current footer shall be displayed.
+    /// If omitted, the value <see cref="HeaderFooterValues.Default"/> is used.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <seealso cref="FooterPart"/>
-    public async Task ParseFooter(string html, CancellationToken cancellationToken = default)
+    public async Task ParseFooter(string html, HeaderFooterValues? footerType = null,
+        CancellationToken cancellationToken = default)
     {
-        string? partId = null;
-        FooterPart footerPart;
-        if (mainPart.FooterParts is null || !mainPart.FooterParts.Any())
-        {
-            footerPart = mainPart.AddNewPart<FooterPart>();
-            partId = mainPart.GetIdOfPart(footerPart);
-        }
-        else
-        {
-            footerPart = mainPart.FooterParts.First();
-        }
+        footerType ??= HeaderFooterValues.Default;
+        var footerPart = ResolveHeaderFooterPart<FooterReference, FooterPart>(footerType);
 
         footerPart.Footer ??= new();
         footerImageLoader ??= new ImagePrefetcher<FooterPart>(footerPart, webRequester);
@@ -180,22 +152,6 @@ public partial class HtmlConverter
 
         foreach (var p in paragraphs)
             footerPart.Footer.AddChild(p);
-
-        if (partId != null)
-        {
-            var sectionProps = mainPart.Document.Body!.Elements<SectionProperties>();
-            if (!sectionProps.Any())
-            {
-                sectionProps = [new SectionProperties()];
-                mainPart.Document.Body!.AddChild(sectionProps.First());
-            }
-
-            foreach (var sectPr in sectionProps)
-            {
-                sectPr.RemoveAllChildren<FooterReference>();
-                sectPr.PrependChild(new FooterReference() { Id = partId, Type = HeaderFooterValues.Default });
-            }
-        }
     }
 
     /// <summary>
@@ -324,6 +280,46 @@ public partial class HtmlConverter
         await imageUris.ForEachAsync(
             async (img, cts) => await imageLoader.Download(img, cts),
             parallelOptions).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Create or resolve the header/footer related to the type.
+    /// </summary>
+    private TPart ResolveHeaderFooterPart<TRefType, TPart>(HeaderFooterValues? type)
+        where TPart: OpenXmlPart, IFixedContentTypePart
+        where TRefType: HeaderFooterReferenceType, new()
+    {
+        bool wasRefSet = false;
+        TPart? part = null;
+
+        var sectionProps = mainPart.Document.Body!.Elements<SectionProperties>();
+        if (!sectionProps.Any())
+        {
+            sectionProps = [new SectionProperties()];
+            mainPart.Document.Body!.AddChild(sectionProps.First());
+        }
+        else
+        {
+            var reference = sectionProps.SelectMany(sectPr => sectPr.Elements<TRefType>())
+                .Where(r => r.Id?.HasValue == true)
+                .FirstOrDefault(r => r.Type?.Value == type);
+
+            if (reference != null)
+                part = (TPart) mainPart.GetPartById(reference.Id!);
+            wasRefSet = part is not null;
+        }
+
+        part ??= mainPart.AddNewPart<TPart>();
+
+        if (!wasRefSet)
+        {
+            sectionProps.First().PrependChild(new TRefType() {
+                Id = mainPart.GetIdOfPart(part),
+                Type = type
+            });
+        }
+
+        return part;
     }
 
     //____________________________________________________________________

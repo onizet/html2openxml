@@ -51,7 +51,7 @@ namespace HtmlToOpenXml.Tests
                 TestContext.Error.Write("{0}\n\t{1}\n", error.Path?.XPath, error.Description);
             }
 
-            Assert.Fail("The document doesn't look 100% compatible with Office 2021");
+            Assert.Fail("The document isn't conformant with Office 2021");
         }
     }
 }

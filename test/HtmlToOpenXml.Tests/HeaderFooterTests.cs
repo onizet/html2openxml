@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using DocumentFormat.OpenXml.Wordprocessing;
+using DocumentFormat.OpenXml.Packaging;
 
 namespace HtmlToOpenXml.Tests
 {
@@ -12,7 +13,7 @@ namespace HtmlToOpenXml.Tests
         [Test]
         public async Task Header_ReturnsHeaderPartLinkedToBody()
         {
-            await converter.ParseHeader("<p>Header content</p>");
+            await converter.ParseHeader("<p>Header content</p>", HeaderFooterValues.First);
 
             var headerPart = mainPart.HeaderParts?.FirstOrDefault();
             Assert.That(headerPart, Is.Not.Null);
@@ -20,7 +21,8 @@ namespace HtmlToOpenXml.Tests
 
             var sectionProperties = mainPart.Document.Body!.Elements<SectionProperties>();
             Assert.That(sectionProperties, Is.Not.Empty);
-            Assert.That(sectionProperties.Any(s => s.HasChild<HeaderReference>()), Is.True);
+            Assert.That(sectionProperties.SelectMany(s => s.Elements<HeaderReference>())
+                .Any(r => r.Type?.Value == HeaderFooterValues.First), Is.True);
             AssertThatOpenXmlDocumentIsValid();
         }
 
@@ -36,6 +38,50 @@ namespace HtmlToOpenXml.Tests
             var sectionProperties = mainPart.Document.Body!.Elements<SectionProperties>();
             Assert.That(sectionProperties, Is.Not.Empty);
             Assert.That(sectionProperties.Any(s => s.HasChild<FooterReference>()), Is.True);
+            AssertThatOpenXmlDocumentIsValid();
+        }
+
+        [Test(Description = "Overwrite existing Default header")]
+        public async Task WithExistingHeader_Default_ReturnsOverridenHeaderPart()
+        {
+            using var generatedDocument = new MemoryStream();
+            using (var buffer = ResourceHelper.GetStream("Resources.DocWithImgHeaderFooter.docx"))
+                buffer.CopyTo(generatedDocument);
+
+            generatedDocument.Position = 0L;
+            using WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true);
+            MainDocumentPart mainPart = package.MainDocumentPart!;
+            HtmlConverter converter = new(mainPart);
+
+            await converter.ParseHeader("Header content");
+
+            var sectionProperties = mainPart.Document.Body!.Elements<SectionProperties>();
+            Assert.That(sectionProperties, Is.Not.Empty);
+            Assert.That(sectionProperties.SelectMany(s => s.Elements<HeaderReference>())
+                .Count(r => r.Type?.Value == HeaderFooterValues.Default), Is.EqualTo(1));
+            AssertThatOpenXmlDocumentIsValid();
+        }
+
+        [Test(Description = "Create additional header for even pages")]
+        public async Task WithExistingHeader_Even_ReturnsAnotherHeaderPart()
+        {
+            using var generatedDocument = new MemoryStream();
+            using (var buffer = ResourceHelper.GetStream("Resources.DocWithImgHeaderFooter.docx"))
+                buffer.CopyTo(generatedDocument);
+
+            generatedDocument.Position = 0L;
+            using WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true);
+            MainDocumentPart mainPart = package.MainDocumentPart!;
+            HtmlConverter converter = new(mainPart);
+
+            await converter.ParseHeader("Header even content", HeaderFooterValues.Even);
+
+            var sectionProperties = mainPart.Document.Body!.Elements<SectionProperties>();
+            Assert.That(sectionProperties, Is.Not.Empty);
+            Assert.That(sectionProperties.Count(s => s.HasChild<HeaderReference>()), Is.EqualTo(1));
+            var headerRefs = sectionProperties.SelectMany(s => s.Elements<HeaderReference>());
+            Assert.That(headerRefs.Count(r => r.Type?.Value == HeaderFooterValues.Default), Is.EqualTo(1));
+            Assert.That(headerRefs.Count(r => r.Type?.Value == HeaderFooterValues.Even), Is.EqualTo(1));
             AssertThatOpenXmlDocumentIsValid();
         }
     }
