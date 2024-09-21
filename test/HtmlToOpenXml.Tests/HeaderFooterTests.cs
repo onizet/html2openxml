@@ -18,6 +18,10 @@ namespace HtmlToOpenXml.Tests
             var headerPart = mainPart.HeaderParts?.FirstOrDefault();
             Assert.That(headerPart, Is.Not.Null);
             Assert.That(headerPart.Header, Is.Not.Null);
+            var p = headerPart.Header.Elements<Paragraph>();
+            Assert.That(p, Is.Not.Empty);
+            Assert.That(p.Select(p => p.ParagraphProperties?.ParagraphStyleId?.Val?.Value), 
+                Has.All.EqualTo(converter.HtmlStyles.DefaultStyles.HeaderStyle));
 
             var sectionProperties = mainPart.Document.Body!.Elements<SectionProperties>();
             Assert.That(sectionProperties, Is.Not.Empty);
@@ -51,11 +55,20 @@ namespace HtmlToOpenXml.Tests
             generatedDocument.Position = 0L;
             using WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true);
             MainDocumentPart mainPart = package.MainDocumentPart!;
-            HtmlConverter converter = new(mainPart);
-
-            await converter.ParseHeader("Header content");
 
             var sectionProperties = mainPart.Document.Body!.Elements<SectionProperties>();
+            Assert.That(sectionProperties, Is.Not.Empty);
+            var headerRefs = sectionProperties.SelectMany(s => s.Elements<HeaderReference>());
+            Assert.Multiple(() =>
+            {
+                Assert.That(headerRefs.Count(), Is.EqualTo(1));
+                Assert.That(headerRefs.Count(r => r.Type?.Value == HeaderFooterValues.Default), Is.EqualTo(1), "Default header exist");
+            });
+
+            HtmlConverter converter = new(mainPart);
+            await converter.ParseHeader("Header content");
+
+            sectionProperties = mainPart.Document.Body!.Elements<SectionProperties>();
             Assert.That(sectionProperties, Is.Not.Empty);
             Assert.That(sectionProperties.SelectMany(s => s.Elements<HeaderReference>())
                 .Count(r => r.Type?.Value == HeaderFooterValues.Default), Is.EqualTo(1));
@@ -72,16 +85,28 @@ namespace HtmlToOpenXml.Tests
             generatedDocument.Position = 0L;
             using WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true);
             MainDocumentPart mainPart = package.MainDocumentPart!;
-            HtmlConverter converter = new(mainPart);
-
-            await converter.ParseHeader("Header even content", HeaderFooterValues.Even);
 
             var sectionProperties = mainPart.Document.Body!.Elements<SectionProperties>();
             Assert.That(sectionProperties, Is.Not.Empty);
-            Assert.That(sectionProperties.Count(s => s.HasChild<HeaderReference>()), Is.EqualTo(1));
             var headerRefs = sectionProperties.SelectMany(s => s.Elements<HeaderReference>());
-            Assert.That(headerRefs.Count(r => r.Type?.Value == HeaderFooterValues.Default), Is.EqualTo(1));
-            Assert.That(headerRefs.Count(r => r.Type?.Value == HeaderFooterValues.Even), Is.EqualTo(1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(headerRefs.Count(r => r.Type?.Value == HeaderFooterValues.Default), Is.EqualTo(1), "Default header exist");
+                Assert.That(headerRefs.Count(r => r.Type?.Value == HeaderFooterValues.Even), Is.Zero, "No event header has been yet defined");
+            });
+
+            HtmlConverter converter = new(mainPart);
+            await converter.ParseHeader("Header even content", HeaderFooterValues.Even);
+
+            sectionProperties = mainPart.Document.Body!.Elements<SectionProperties>();
+            Assert.That(sectionProperties, Is.Not.Empty);
+            Assert.That(sectionProperties.Count(s => s.HasChild<HeaderReference>()), Is.EqualTo(1));
+            headerRefs = sectionProperties.SelectMany(s => s.Elements<HeaderReference>());
+            Assert.Multiple(() =>
+            {
+                Assert.That(headerRefs.Count(r => r.Type?.Value == HeaderFooterValues.Default), Is.EqualTo(1));
+                Assert.That(headerRefs.Count(r => r.Type?.Value == HeaderFooterValues.Even), Is.EqualTo(1));
+            });
             AssertThatOpenXmlDocumentIsValid();
         }
     }

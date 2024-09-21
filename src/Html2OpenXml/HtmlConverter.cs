@@ -124,7 +124,8 @@ public partial class HtmlConverter
         headerImageLoader ??= new ImagePrefetcher<HeaderPart>(headerPart, webRequester);
 
         var paragraphs = await ParseCoreAsync(html, headerPart, headerImageLoader,
-            new ParallelOptions() { CancellationToken = cancellationToken });
+            new ParallelOptions() { CancellationToken = cancellationToken },
+            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.HeaderStyle));
 
         foreach (var p in paragraphs)
             headerPart.Header.AddChild(p);
@@ -148,7 +149,8 @@ public partial class HtmlConverter
         footerImageLoader ??= new ImagePrefetcher<FooterPart>(footerPart, webRequester);
 
         var paragraphs = await ParseCoreAsync(html, footerPart, footerImageLoader,
-            new ParallelOptions() { CancellationToken = cancellationToken });
+            new ParallelOptions() { CancellationToken = cancellationToken },
+            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.FooterStyle));
 
         foreach (var p in paragraphs)
             footerPart.Footer.AddChild(p);
@@ -233,10 +235,12 @@ public partial class HtmlConverter
     /// <param name="hostingPart">The OpenXml container where the content will be inserted into.</param>
     /// <param name="imageLoader">The image resolver service linked to the <paramref name="hostingPart"/>.</param>
     /// <param name="parallelOptions">The configuration of parallelism while downloading the remote resources.</param>
+    /// <param name="defaultParagraphStyleId">The default OpenXml style to apply on paragraphs.</param> 
     /// <returns>Returns a list of parsed paragraph.</returns>
     private async Task<IEnumerable<OpenXmlCompositeElement>> ParseCoreAsync(string html,
         OpenXmlPartContainer hostingPart, IImageLoader imageLoader,
-        ParallelOptions parallelOptions)
+        ParallelOptions parallelOptions,
+        ParagraphStyleId? defaultParagraphStyleId = null)
     {
         if (string.IsNullOrWhiteSpace(html))
             return [];
@@ -256,6 +260,8 @@ public partial class HtmlConverter
         Expressions.HtmlDomExpression expression;
         if (hostingPart is MainDocumentPart)
             expression = new Expressions.BodyExpression(htmlDocument.Body!);
+        else if (defaultParagraphStyleId?.Val?.HasValue == true)
+            expression = new Expressions.BlockElementExpression(htmlDocument.Body!, defaultParagraphStyleId);
         else
             expression = new Expressions.BlockElementExpression(htmlDocument.Body!);
 

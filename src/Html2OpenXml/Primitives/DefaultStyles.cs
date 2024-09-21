@@ -67,7 +67,7 @@ public class DefaultStyles
     public string ListParagraphStyle { get; set; } = PredefinedStyles.ListParagraph;
 
     /// <summary>
-    /// Default style for the &lt;pre&gt; table
+    /// Default style for the <c>pre</c> table
     /// </summary>
     /// <value>TableGrid</value>
     public string PreTableStyle { get; set; } = PredefinedStyles.TableGrid;
@@ -89,4 +89,16 @@ public class DefaultStyles
     /// </summary>
     /// <value>TableGrid</value>
     public string TableStyle { get; set; } = PredefinedStyles.TableGrid;
+
+    /// <summary>
+    /// Default style for header paragraphs.
+    /// </summary>
+    /// <value>Header</value>
+    public string HeaderStyle { get; set; } = PredefinedStyles.Header;
+
+    /// <summary>
+    /// Default style for footer paragraphs.
+    /// </summary>
+    /// <value>Footer</value>
+    public string FooterStyle { get; set; } = PredefinedStyles.Footer;
 }

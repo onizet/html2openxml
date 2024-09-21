@@ -22,6 +22,9 @@ internal class PredefinedStyles
     public const string Quote = "Quote";
     public const string QuoteChar = "QuoteChar";
     public const string TableGrid = "TableGrid";
+    public const string Header = "Header";
+    public const string Footer = "Footer";
+
 
 
     /// <summary>
