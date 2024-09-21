@@ -99,7 +99,7 @@ namespace HtmlToOpenXml.Tests
         {
             var elements = converter.Parse(ResourceHelper.GetString("Resources.kiwi.svg"));
             Assert.That(elements, Has.Count.EqualTo(1));
-            var drawing = AssertIsImg(elements[0]);
+            var drawing = AssertIsImg(mainPart, elements[0]);
             Assert.That(drawing.Inline!.DocProperties?.Name?.Value, Is.EqualTo("Illustration of a Kiwi"));
             Assert.That(drawing.Inline!.DocProperties?.Description?.Value, Is.EqualTo("Kiwi (/ˈkiːwiː/ KEE-wee)[4] are flightless birds endemic to New Zealand of the order Apterygiformes."));
         }

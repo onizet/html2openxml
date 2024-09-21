@@ -72,7 +72,7 @@ namespace HtmlToOpenXml.Tests
             Assert.That(goBackBookmark, Is.Not.Null);
 
             HtmlConverter converter = new HtmlConverter(mainPart);
-            await converter.ParseHtml("<p>Placeholder</p>");
+            await converter.ParseBody("<p>Placeholder</p>");
 
             Assert.That(mainPart.Document.Body!.LastChild, Is.TypeOf<SectionProperties>());
             var paragrahs = mainPart.Document.Body!.Elements<Paragraph>();
