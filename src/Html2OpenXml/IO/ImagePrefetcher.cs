@@ -18,10 +18,19 @@ using DocumentFormat.OpenXml.Packaging;
 
 namespace HtmlToOpenXml.IO;
 
+interface IImageLoader
+{
+    /// <summary>
+    /// Download the remote or local image located at the specified url.
+    /// </summary>
+    Task<HtmlImageInfo?> Download(string imageUri, CancellationToken cancellationToken);
+}
+
 /// <summary>
 /// Download and provison the metadata of a requested image.
 /// </summary>
-sealed class ImagePrefetcher
+sealed class ImagePrefetcher<T> : IImageLoader
+    where T: OpenXmlPartContainer, ISupportedRelationship<ImagePart>
 {
     // Map extension to PartTypeInfo
     private static readonly Dictionary<string, PartTypeInfo> knownExtensions = new(StringComparer.OrdinalIgnoreCase) {
@@ -40,14 +49,20 @@ sealed class ImagePrefetcher
         { ".tiff", ImagePartType.Tiff },
         { ".wmf", ImagePartType.Wmf }
     };
-    private readonly MainDocumentPart mainPart;
+    private readonly T hostingPart;
     private readonly IWebRequest resourceLoader;
     private readonly HtmlImageInfoCollection prefetchedImages;
 
 
-    public ImagePrefetcher(MainDocumentPart mainPart, IWebRequest resourceLoader)
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="hostingPart">The image will be linked to that hosting part.
+    /// Images are not shared between header, footer and body.</param>
+    /// <param name="resourceLoader">Service to resolve an image.</param>
+    public ImagePrefetcher(T hostingPart, IWebRequest resourceLoader)
     {
-        this.mainPart = mainPart;
+        this.hostingPart = hostingPart;
         this.resourceLoader = resourceLoader;
         this.prefetchedImages = new HtmlImageInfoCollection();
     }
@@ -107,7 +122,7 @@ sealed class ImagePrefetcher
                 return null;
             }
 
-            var ipart = mainPart.AddImagePart(type);
+            var ipart = hostingPart.AddImagePart(type);
             using (var outputStream = ipart.GetStream(FileMode.Create))
             {
                 response.Content.CopyTo(outputStream);
@@ -116,7 +131,7 @@ sealed class ImagePrefetcher
                 info.Size = GetImageSize(outputStream);
             }
 
-            info.ImagePartId = mainPart.GetIdOfPart(ipart);
+            info.ImagePartId = hostingPart.GetIdOfPart(ipart);
             return info;
         }
     }
@@ -130,7 +145,7 @@ sealed class ImagePrefetcher
         {
             Size size;
             knownContentType.TryGetValue(dataUri!.Mime, out PartTypeInfo type);
-            var ipart = mainPart.AddImagePart(type);
+            var ipart = hostingPart.AddImagePart(type);
             using (var outputStream = ipart.GetStream(FileMode.Create))
             {
                 outputStream.Write(dataUri.Data, 0, dataUri.Data.Length);
@@ -140,7 +155,7 @@ sealed class ImagePrefetcher
             }
 
             return new HtmlImageInfo(src) {
-                ImagePartId = mainPart.GetIdOfPart(ipart),
+                ImagePartId = hostingPart.GetIdOfPart(ipart),
                 Size = size
             };
         }

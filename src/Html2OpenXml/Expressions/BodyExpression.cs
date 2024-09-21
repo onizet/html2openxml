@@ -14,6 +14,7 @@ using System.Linq;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml.Expressions;
@@ -35,6 +36,8 @@ sealed class BodyExpression(IHtmlElement node) : BlockElementExpression(node)
     {
         base.ComposeStyles(context);
 
+        var mainPart = context.MainPart;
+
         // Unsupported W3C attribute but claimed by users. Specified at <body> level, the page
         // orientation is applied on the whole document
         string? attr = styleAttributes!["page-orientation"];
@@ -42,10 +45,10 @@ sealed class BodyExpression(IHtmlElement node) : BlockElementExpression(node)
         {
             PageOrientationValues orientation = Converter.ToPageOrientation(attr);
 
-            var sectionProperties = context.MainPart.Document.Body!.GetFirstChild<SectionProperties>();
+            var sectionProperties = mainPart.Document.Body!.GetFirstChild<SectionProperties>();
             if (sectionProperties == null || sectionProperties.GetFirstChild<PageSize>() == null)
             {
-                context.MainPart.Document.Body.Append(ChangePageOrientation(orientation));
+                mainPart.Document.Body.Append(ChangePageOrientation(orientation));
             }
             else
             {
@@ -61,10 +64,10 @@ sealed class BodyExpression(IHtmlElement node) : BlockElementExpression(node)
 
         if (paraProperties.BiDi is not null)
         {
-            var sectionProperties = context.MainPart.Document.Body!.GetFirstChild<SectionProperties>();
+            var sectionProperties = mainPart.Document.Body!.GetFirstChild<SectionProperties>();
             if (sectionProperties == null || sectionProperties.GetFirstChild<PageSize>() == null)
             {
-                context.MainPart.Document.Body.Append(sectionProperties = new());
+               mainPart.Document.Body.Append(sectionProperties = new());
             }
 
             sectionProperties.AddChild(paraProperties.BiDi.CloneNode(true));

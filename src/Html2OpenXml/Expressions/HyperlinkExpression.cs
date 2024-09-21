@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml.Expressions;
@@ -42,8 +43,10 @@ sealed class HyperlinkExpression(IHtmlAnchorElement node) : PhrasingElementExpre
         // Let's see whether the link tag include an image inside its body.
         // If so, the Hyperlink OpenXmlElement is lost and we'll keep only the images
         // and applied a HyperlinkOnClick attribute.
-        var imagesInLink = childElements.Where(e => e.HasChild<Drawing>());
-        if (imagesInLink.Any())
+        IEnumerable<OpenXmlElement> imagesInLink;
+        // Clickable image is only supported in body but not in header/footer
+        if (context.HostingPart is MainDocumentPart &&
+            (imagesInLink = childElements.Where(e => e.HasChild<Drawing>())).Any())
         {
             foreach (var img in imagesInLink)
             {
@@ -100,7 +103,7 @@ sealed class HyperlinkExpression(IHtmlAnchorElement node) : PhrasingElementExpre
         // ensure the links does not start with javascript:
         else if (AngleSharpExtensions.TryParseUrl(att, UriKind.Absolute, out var uri))
         {
-            var extLink = context.MainPart.AddHyperlinkRelationship(uri!, true);
+            var extLink = context.HostingPart.AddHyperlinkRelationship(uri!, true);
 
             h = new Hyperlink(
                 ) { History = true, Id = extLink.Id };

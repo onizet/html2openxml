@@ -59,7 +59,7 @@ class ImageExpression(IHtmlImageElement node) : ImageExpressionBase(node)
 
         var (imageObjId, drawingObjId) = IncrementDrawingObjId(context);
 
-        HtmlImageInfo? iinfo = context.Converter.ImagePrefetcher.Download(src, CancellationToken.None)
+        HtmlImageInfo? iinfo = context.ImageLoader.Download(src, CancellationToken.None)
             .ConfigureAwait(false).GetAwaiter().GetResult();
 
         if (iinfo == null)
