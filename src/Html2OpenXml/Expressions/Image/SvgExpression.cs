@@ -76,7 +76,7 @@ sealed class SvgExpression(ISvgSvgElement node) : ImageExpressionBase(node)
                                         new a.BlipExtension(new SVGBlip { Embed = imagePartId }) {
                                             Uri = "{96DAC541-7B7A-43D3-8B79-37D633B846F1}"
                                         })
-                                ) { Embed = imagePartId /* ideally, that should be a png representation of the png */ },
+                                ) { Embed = imagePartId /* ideally, that should be a png representation of the svg */ },
                                 new a.Stretch(
                                     new a.FillRectangle())
                             ),
