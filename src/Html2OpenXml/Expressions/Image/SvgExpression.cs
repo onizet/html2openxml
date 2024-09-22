@@ -57,8 +57,7 @@ sealed class SvgExpression(ISvgSvgElement node) : ImageExpressionBase(node)
                 new wp.Extent() { Cx = widthInEmus, Cy = heightInEmus },
                 new wp.EffectExtent() { LeftEdge = 0L, TopEdge = 0L, RightEdge = 0L, BottomEdge = 0L },
                 new wp.DocProperties() { Id = drawingObjId, Name = title, Description = description },
-                new wp.NonVisualGraphicFrameDrawingProperties
-                {
+                new wp.NonVisualGraphicFrameDrawingProperties {
                     GraphicFrameLocks = new a.GraphicFrameLocks() { NoChangeAspect = true }
                 },
                 new a.Graphic(
