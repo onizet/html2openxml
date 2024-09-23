@@ -101,7 +101,7 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements, Is.Empty);
         }
 
-        [TestCase("<abbr><a href='www.google.com'>Placeholder</a></abbr>")]
+        [TestCase("<abbr><a href='www.site.com'>Placeholder</a></abbr>")]
         [TestCase("<abbr>Placeholder</abbr>")]
         [TestCase("<blockquote>Placeholder</blockquote>")]
         public void WithNoDescription_ReturnsSimpleParagraph(string html)

@@ -50,6 +50,20 @@ namespace HtmlToOpenXml.Tests
             Assert.That(hyperlink.LastChild?.InnerText, Is.EqualTo(" Test Caption"));
         }
 
+        [Test(Description = "Assert that `figcaption` tag doesn't generate paragraphs")]
+        public void ImageFigcaptionLink_ReturnsHyperlinkWithTextAndImage ()
+        {
+            var elements = converter.Parse(@"<a href='www.site.com'>Go to
+                <img src=""data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=="" />
+                <figcaption>Caption for the image</figcaption></a>");
+            Assert.That(elements[0].FirstChild, Is.TypeOf(typeof(Hyperlink)));
+
+            var hyperlink = (Hyperlink) elements[0].FirstChild;
+            Assert.That(hyperlink.ChildElements, Has.Count.EqualTo(4));
+            Assert.That(hyperlink.ChildElements, Has.All.TypeOf(typeof(Run)), "Hyperlinks don't accept inner paragraphs");
+            Assert.That(hyperlink.Descendants<Drawing>(), Is.Not.Null);
+        }
+
         [Test]
         public void Anchoring_WithUnknownTarget_ReturnsHyperlinkWithBookmark ()
         {
@@ -180,7 +194,7 @@ namespace HtmlToOpenXml.Tests
 
             AssertHyperlink(container, host.ChildElements);
             AssertThatOpenXmlDocumentIsValid();
-        }
+        } 
 
         private static void AssertHyperlink(OpenXmlPartContainer container, IEnumerable<OpenXmlElement> elements)
         {
