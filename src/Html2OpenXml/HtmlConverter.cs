@@ -188,15 +188,6 @@ public partial class HtmlConverter
             p.Remove();
         }
 
-        // move the paragraph with BookmarkStart `_GoBack` as the last child
-        // That bookmark is continuously moved after the last edit
-        p = body.GetFirstChild<Paragraph>();
-        if (p != null && p.GetFirstChild<BookmarkStart>()?.Name == "_GoBack")
-        {
-            p.Remove();
-            body.Append(p);
-        }
-
         // Push the sectionProperties as the last element of the Body
         // (required by OpenXml schema to avoid the bad formatting of the document)
         if (sectionProperties != null)
