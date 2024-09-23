@@ -2,12 +2,12 @@
 
 ## 3.2.0
 
-- Add new public API to allow parsing into Header and Footer. Some API methods as been flagged as obsolete with a clear message of what to use instead.
+- Add new public API to allow parsing into Header and Footer #162. Some API methods as been flagged as obsolete with a clear message of what to use instead.
   This is not a breaking changes as it keep existing behaviour.
 - Add support for `SVG` format (either from img src or the SVG node tag)
 - Automatically create the `_top` bookmark if needed
 - Fix a crash when a hyperlink contains both `img` and `figcation`
-- Fix a crash when `li` is empty #151
+- Fix a crash when `li` is empty #161
 
 ## 3.1.1
 
