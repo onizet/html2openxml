@@ -325,7 +325,7 @@ class BlockElementExpression(IHtmlElement node, params OpenXmlLeafElement[]? sty
     /// <summary>
     /// Resolve the next available <see cref="BookmarkStart.Id"/> (they must be unique).
     /// </summary>
-    private static int IncrementBookmarkId(ParsingContext context)
+    protected static int IncrementBookmarkId(ParsingContext context)
     {
         var bookmarkRef = context.Properties<int?>("bookmarkRef");
 

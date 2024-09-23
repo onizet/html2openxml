@@ -62,8 +62,18 @@ sealed class HyperlinkExpression(IHtmlAnchorElement node) : PhrasingElementExpre
                 d.Inline ??= new a.Wordprocessing.Inline();
                 d.Inline.DocProperties ??= new a.Wordprocessing.DocProperties();
 
-                d.Inline.DocProperties.Append(
-                    new a.HyperlinkOnClick() { Id = h.Id ?? h.Anchor, Tooltip = alt });
+                if (h.Anchor == "_top")
+                {
+                    // exception case: clickable image requires the _top bookmark get registred with a relationship
+                    var extLink = context.HostingPart.AddHyperlinkRelationship(new Uri("#_top", UriKind.Relative), false);
+                    d.Inline.DocProperties.Append(
+                        new a.HyperlinkOnClick() { Id = extLink.Id, Tooltip = alt });
+                }
+                else
+                {
+                    d.Inline.DocProperties.Append(
+                        new a.HyperlinkOnClick() { Id = h.Id ?? h.Anchor, Tooltip = alt });
+                }
             }
         }
 
@@ -97,15 +107,16 @@ sealed class HyperlinkExpression(IHtmlAnchorElement node) : PhrasingElementExpre
         if (string.IsNullOrEmpty(att))
             return null;
 
-        // is it an anchor?
-        if (att![0] == '#' && att.Length > 1)
+        // Always accept _top anchor
+        if (linkNode.IsTopAnchor())
         {
-            // Always accept _top anchor
-            if (!context.Converter.ExcludeLinkAnchor || att == "#_top")
-            {
-                h = new Hyperlink(
-                    ) { History = true, Anchor = att.Substring(1) };
-            }
+            h = new Hyperlink() { History = true, Anchor = "_top" };
+        }
+        // is it an anchor?
+        else if (!context.Converter.ExcludeLinkAnchor && linkNode.Hash.Length > 1 && linkNode.Hash[0] == '#')
+        {
+            h = new Hyperlink(
+                ) { History = true, Anchor = linkNode.Hash.Substring(1) };
         }
         // ensure the links does not start with javascript:
         else if (AngleSharpExtensions.TryParseUrl(att, UriKind.Absolute, out var uri))

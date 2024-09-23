@@ -10,11 +10,11 @@
  * PARTICULAR PURPOSE.
  */
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
-using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml.Expressions;
@@ -25,11 +25,32 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 sealed class BodyExpression(IHtmlElement node) : BlockElementExpression(node)
 {
+    private bool shouldRegisterTopBookmark;
+ 
     public override IEnumerable<OpenXmlElement> Interpret(ParsingContext context)
     {
         MarkAllBookmarks();
 
-        return base.Interpret(context);
+        var elements = base.Interpret(context);
+
+        if (shouldRegisterTopBookmark && elements.Any())
+        {
+            // Check whether it already exists
+            var body = context.MainPart.Document.Body!;
+            if (body.Descendants<BookmarkStart>().Where(b => b.Name?.Value == "_top").Any())
+            {
+                return elements;
+            }
+
+            var bookmarkId = IncrementBookmarkId(context).ToString(CultureInfo.InvariantCulture);
+            // this is expected to stand in the 1st paragraph
+            Paragraph? p = body.FirstChild as Paragraph;
+            p ??= body.PrependChild(new Paragraph());
+            p.InsertAfter(new BookmarkEnd() { Id = bookmarkId }, p.ParagraphProperties);
+            p.InsertAfter(new BookmarkStart() { Id = bookmarkId, Name = "_top" }, p.ParagraphProperties);
+        }
+
+        return elements;
     }
 
     protected override void ComposeStyles(ParsingContext context)
@@ -110,8 +131,15 @@ sealed class BodyExpression(IHtmlElement node) : BlockElementExpression(node)
 
         foreach (var link in links.Cast<IHtmlAnchorElement>().Where(l => l.Hash.Length > 0))
         {
+            if (link.IsTopAnchor())
+            {
+                shouldRegisterTopBookmark = true;
+                return;
+            }
+
             var id = link.Hash.Substring(1);
             var target = node.Owner!.GetElementById(id);
+
             // `id` attribute is preferred but `name` is also valid
             target ??= node.Owner!.GetElementsByName(id).FirstOrDefault();
 
