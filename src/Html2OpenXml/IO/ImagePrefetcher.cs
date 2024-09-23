@@ -110,7 +110,6 @@ sealed class ImagePrefetcher<T> : IImageLoader
         if (response?.Content == null)
             return null;
 
-        HtmlImageInfo info = new HtmlImageInfo(src);
         using (response)
         {
             // For requested url with no filename, we need to read the media mime type if provided
@@ -123,16 +122,19 @@ sealed class ImagePrefetcher<T> : IImageLoader
             }
 
             var ipart = hostingPart.AddImagePart(type);
+            Size originalSize;
             using (var outputStream = ipart.GetStream(FileMode.Create))
             {
                 response.Content.CopyTo(outputStream);
 
                 outputStream.Seek(0L, SeekOrigin.Begin);
-                info.Size = GetImageSize(outputStream);
+                originalSize = GetImageSize(outputStream);
             }
 
-            info.ImagePartId = hostingPart.GetIdOfPart(ipart);
-            return info;
+            return new HtmlImageInfo(src, hostingPart.GetIdOfPart(ipart)) {
+                TypeInfo = type,
+                Size = originalSize
+            };
         }
     }
 
@@ -143,7 +145,7 @@ sealed class ImagePrefetcher<T> : IImageLoader
     {
         if (DataUri.TryCreate(src, out var dataUri))
         {
-            Size size;
+            Size originalSize;
             knownContentType.TryGetValue(dataUri!.Mime, out PartTypeInfo type);
             var ipart = hostingPart.AddImagePart(type);
             using (var outputStream = ipart.GetStream(FileMode.Create))
@@ -151,12 +153,12 @@ sealed class ImagePrefetcher<T> : IImageLoader
                 outputStream.Write(dataUri.Data, 0, dataUri.Data.Length);
 
                 outputStream.Seek(0L, SeekOrigin.Begin);
-                size = GetImageSize(outputStream);
+                originalSize = GetImageSize(outputStream);
             }
 
-            return new HtmlImageInfo(src) {
-                ImagePartId = hostingPart.GetIdOfPart(ipart),
-                Size = size
+            return new HtmlImageInfo(src, hostingPart.GetIdOfPart(ipart)) {
+                TypeInfo = type,
+                Size = originalSize
             };
         }
 

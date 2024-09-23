@@ -28,6 +28,7 @@ namespace HtmlToOpenXml.Tests.ImageFormats
             yield return ("Resources.html2openxml.emf", new Size(100, 100));
             // animated gif:
             yield return ("Resources.stan.gif", new Size(252, 318));
+            yield return ("Resources.kiwi.svg", new Size(612, 502));
         }
 
         /// <summary>
@@ -53,6 +54,7 @@ namespace HtmlToOpenXml.Tests.ImageFormats
         [TestCase("Resources.html2openxml.gif", ExpectedResult = ImageHeader.FileType.Gif)]
         [TestCase("Resources.html2openxml.jpg", ExpectedResult = ImageHeader.FileType.Jpeg)]
         [TestCase("Resources.html2openxml.png", ExpectedResult = ImageHeader.FileType.Png)]
+        [TestCase("Resources.kiwi.svg", ExpectedResult = ImageHeader.FileType.Xml)]
         public ImageHeader.FileType GuessFormat_ReturnsFileType(string resourceName)
         {
             using var imageStream = ResourceHelper.GetStream(resourceName);
