@@ -37,17 +37,26 @@ sealed class SvgExpression(ISvgSvgElement node) : ImageExpressionBase(node)
         using var stream = new System.IO.MemoryStream(Encoding.UTF8.GetBytes(svgNode.OuterHtml), writable: false);
             imgPart.FeedData(stream);
         var imagePartId = context.MainPart.GetIdOfPart(imgPart);
+        return CreateSvgDrawing(context, svgNode, imagePartId, Size.Empty);
+    }
 
-        Size preferredSize = Size.Empty;
+    internal static Drawing CreateSvgDrawing(ParsingContext context, ISvgSvgElement svgNode, string imagePartId, Size preferredSize)
+    {
         var width = Unit.Parse(svgNode.GetAttribute("width"));
         var height = Unit.Parse(svgNode.GetAttribute("height"));
+        long widthInEmus, heightInEmus;
         if (width.IsValid && height.IsValid)
-            preferredSize = new Size(width.ValueInPx, height.ValueInPx);
+        {
+            widthInEmus = width.ValueInEmus;
+            heightInEmus = height.ValueInEmus;
+        }
+        else
+        {
+            widthInEmus = new Unit(UnitMetric.Pixel, preferredSize.Width).ValueInEmus;
+            heightInEmus = new Unit(UnitMetric.Pixel, preferredSize.Height).ValueInEmus;
+        }
 
         var (imageObjId, drawingObjId) = IncrementDrawingObjId(context);
-
-        long widthInEmus = new Unit(UnitMetric.Pixel, preferredSize.Width).ValueInEmus;
-        long heightInEmus = new Unit(UnitMetric.Pixel, preferredSize.Height).ValueInEmus;
 
         string? title = svgNode.QuerySelector("title")?.TextContent?.CollapseAndStrip() ?? "Picture " + imageObjId;
         string? description = svgNode.QuerySelector("desc")?.TextContent?.CollapseAndStrip() ?? string.Empty;

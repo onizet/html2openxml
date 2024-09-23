@@ -11,8 +11,11 @@
  */
 using System;
 using System.Threading;
+using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
+using AngleSharp.Svg.Dom;
 using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using HtmlToOpenXml.IO;
 
@@ -57,13 +60,23 @@ class ImageExpression(IHtmlImageElement node) : ImageExpressionBase(node)
             preferredSize.Height = imgNode.DisplayHeight;
         }
 
-        var (imageObjId, drawingObjId) = IncrementDrawingObjId(context);
-
         HtmlImageInfo? iinfo = context.ImageLoader.Download(src, CancellationToken.None)
             .ConfigureAwait(false).GetAwaiter().GetResult();
 
         if (iinfo == null)
             return null;
+
+        if (iinfo.TypeInfo == ImagePartType.Svg)
+        {
+            var imagePart = context.HostingPart.GetPartById(iinfo.ImagePartId);
+            using var stream = imagePart.GetStream(System.IO.FileMode.Open);
+            using var sreader = new System.IO.StreamReader(stream);
+            imgNode.Insert(AdjacentPosition.AfterBegin, sreader.ReadToEnd());
+
+            var svgNode = imgNode.FindChild<ISvgSvgElement>();
+            if (svgNode is null) return null;
+            return SvgExpression.CreateSvgDrawing(context, svgNode, iinfo.ImagePartId, preferredSize);
+        }
 
         if (preferredSize.IsEmpty)
         {
@@ -78,6 +91,7 @@ class ImageExpression(IHtmlImageElement node) : ImageExpressionBase(node)
         long widthInEmus = new Unit(UnitMetric.Pixel, preferredSize.Width).ValueInEmus;
         long heightInEmus = new Unit(UnitMetric.Pixel, preferredSize.Height).ValueInEmus;
 
+        var (imageObjId, drawingObjId) = IncrementDrawingObjId(context);
         var img = new Drawing(
             new wp.Inline(
                 new wp.Extent() { Cx = widthInEmus, Cy = heightInEmus },

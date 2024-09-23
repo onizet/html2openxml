@@ -15,7 +15,7 @@ namespace Demo
         static async Task Main(string[] args)
         {
             const string filename = "test.docx";
-            string html = ResourceHelper.GetString("Resources.Document.html");
+            string html = ResourceHelper.GetString("Resources.AdvancedTable.html");
             if (File.Exists(filename)) File.Delete(filename);
 
             using (MemoryStream generatedDocument = new MemoryStream())
@@ -39,13 +39,8 @@ namespace Demo
                     }
 
                     HtmlConverter converter = new HtmlConverter(mainPart);
-                   // HeaderPart headerPart = mainPart.AddNewPart<HeaderPart>();
-                    //FooterPart footerPart = mainPart.AddNewPart<FooterPart>();
                     converter.RenderPreAsTable = true;
                     Body body = mainPart.Document.Body;
-
-                    await converter.ParseHeader(@"<a href=""www.github.com"">
-                        <img src=""data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=="" alt=""Red dot"" /> Red Dot</a>");
 
                     await converter.ParseBody(html);
                     mainPart.Document.Save();
