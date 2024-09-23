@@ -14,6 +14,11 @@
     <ProjectReference Include="..\..\src\Html2OpenXml\HtmlToOpenXml.csproj" />
   </ItemGroup>
 
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <DefineConstants>$(DefineConstants);DEBUG</DefineConstants>
+    <Optimize>false</Optimize>
+  </PropertyGroup>
+
   <ItemGroup>
     <EmbeddedResource Include="Resources\*" />
   </ItemGroup>
