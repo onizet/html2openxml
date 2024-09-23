@@ -111,7 +111,7 @@ readonly struct Unit
             case UnitMetric.Emus: return (long) value;
             case UnitMetric.Inch: return (long) (value * 914400L);
             case UnitMetric.Centimeter: return (long) (value * 360000L);
-            case UnitMetric.Millimeter: return (long) (value * 3600000L);
+            case UnitMetric.Millimeter: return (long) (value * 36000L);
             case UnitMetric.EM:
                 // well this is a rough conversion but considering 1em = 12pt (http://sureshjain.wordpress.com/2007/07/06/53/)    
                 return (long) (value / 72 * 914400L * 12);
