@@ -15,12 +15,14 @@ namespace HtmlToOpenXml.Tests
     [TestFixture]
     public class ImgTests : HtmlConverterTestBase
     {
-        [Test]
-        public void AbsoluteUri_ReturnsDrawing_WithDownloadedData()
+        [TestCase("https://www.w3schools.com/tags/smiley.gif", "image/gif")]
+        [TestCase("https://dev.w3.org/SVG/tools/svgweb/samples/svg-files/helloworld.svg", "image/svg+xml")]
+        public void AbsoluteUri_ReturnsDrawing_WithDownloadedData(string imageUri, string contentType)
         {
-            var elements = converter.Parse(@"<img src='https://www.w3schools.com/tags/smiley.gif' alt='Smiley face' width='42' height='42'>");
+            var elements = converter.Parse(@$"<img src='{imageUri}' alt='Smiley face' width='42' height='42'>");
             Assert.That(elements, Has.Count.EqualTo(1));
-            AssertIsImg(elements[0]);
+            var (_, imagePart) = AssertIsImg(mainPart, elements[0]);
+            Assert.That(imagePart.ContentType, Is.EqualTo(contentType));
         }
 
         [Test]
@@ -28,14 +30,14 @@ namespace HtmlToOpenXml.Tests
         {
             var elements = converter.Parse(@"<img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==' alt='Smiley face' width='42' height='42'>");
             Assert.That(elements, Has.Count.EqualTo(1));
-            AssertIsImg(elements[0]);
+            AssertIsImg(mainPart, elements[0]);
         }
 
         [Test]
         public void WithBorder_ReturnsRunWithBorder()
         {
             var elements = converter.Parse(@"<img src='https://www.w3schools.com/tags/smiley.gif' border='1'>");
-            AssertIsImg(elements[0]);
+            AssertIsImg(mainPart, elements[0]);
             var run = elements[0].GetFirstChild<Run>();
             var runProperties = run?.GetFirstChild<RunProperties>();
             Assert.That(runProperties, Is.Not.Null);
@@ -55,11 +57,11 @@ namespace HtmlToOpenXml.Tests
 
             var elements = converter.Parse(@"<img src='/img/black-dot' alt='Smiley face' width='42' height='42'>");
             Assert.That(elements, Has.Count.EqualTo(1));
-            AssertIsImg(elements[0]);
+            AssertIsImg(mainPart, elements[0]);
         }
 
-        [TestCase("<img alt='Smiley face' width='42' height='42'>", Description = "Empty image")]
         [TestCase("<img src='tcp://192.168.0.1:53/attach.jpg'>", Description = "Unsupported protocol")]
+        [TestCase("<img src='/attach.jpg'>", Description = "Relative url without providing BaseImagerUri")]
         public void IgnoreImage_ShouldBeIgnored(string html)
         {
             var elements = converter.Parse(html);
@@ -88,9 +90,20 @@ namespace HtmlToOpenXml.Tests
                 await resourceStream.CopyToAsync(fileStream);
 
             var localUri = "file:///" + filepath.TrimStart('/').Replace(" ", "%20");
-            var elements = await converter.Parse($"<img src='{localUri}'>", CancellationToken.None);
+            var elements = await converter.ParseAsync($"<img src='{localUri}'>");
             Assert.That(elements.Count(), Is.EqualTo(1));
-            AssertIsImg(elements.First());
+            AssertIsImg(mainPart, elements.First());
+        }
+
+        [Test]
+        public void SvgNode_ReturnsImage()
+        {
+            var elements = converter.Parse(ResourceHelper.GetString("Resources.kiwi.svg"));
+            Assert.That(elements, Has.Count.EqualTo(1));
+            var (drawing, imagePart) = AssertIsImg(mainPart, elements[0]);
+            Assert.That(drawing.Inline!.DocProperties?.Name?.Value, Is.EqualTo("Illustration of a Kiwi"));
+            Assert.That(drawing.Inline!.DocProperties?.Description?.Value, Is.EqualTo("Kiwi (/ˈkiːwiː/ KEE-wee)[4] are flightless birds endemic to New Zealand of the order Apterygiformes."));
+            Assert.That(imagePart.ContentType, Is.EqualTo("image/svg+xml"));
         }
 
         [Test(Description = "Reading local file containing a space in the name")]
@@ -99,9 +112,9 @@ namespace HtmlToOpenXml.Tests
             converter = new HtmlConverter(mainPart, new IO.DefaultWebRequest() { 
                 BaseImageUrl = new Uri("http://github.com/onizet/html2openxml")
             });
-            var elements = await converter.Parse($"<img src='/blob/dev/icon.png'>", CancellationToken.None);
+            var elements = await converter.ParseAsync($"<img src='/blob/dev/icon.png'>");
             Assert.That(elements, Is.Not.Empty);
-            AssertIsImg(elements.First());
+            AssertIsImg(mainPart, elements.First());
         }
 
         [Test(Description = "Image ID must be unique, amongst header, body and footer parts")]
@@ -123,7 +136,7 @@ namespace HtmlToOpenXml.Tests
             Assert.That(beforeMaxDocPropId, Is.Not.Null);
 
             HtmlConverter converter = new(mainPart);
-            await converter.ParseHtml("<img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==' width='42' height='42'>");
+            await converter.ParseBody("<img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==' width='42' height='42'>");
             mainPart.Document.Save();
 
             var img = mainPart.Document.Body!.Descendants<Drawing>().FirstOrDefault();
@@ -148,24 +161,63 @@ namespace HtmlToOpenXml.Tests
 
             HtmlConverter converter = new(mainPart);
             Assert.DoesNotThrowAsync(async () =>
-                await converter.ParseHtml("<img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==' width='42' height='42'>"));
+                await converter.ParseBody("<img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==' width='42' height='42'>"));
         }
 
-        private Drawing AssertIsImg (OpenXmlCompositeElement element)
+        [TestCase(typeof(HeaderPart))]
+        [TestCase(typeof(FooterPart))]
+        [TestCase(typeof(MainDocumentPart))]
+        public async Task ParseIntoDocumentPart_ReturnsImageParentedToPart (Type openXmlPartType)
         {
-            var run = element.GetFirstChild<Run>();
+            string html = @"<img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==' alt='Smiley face' width='42' height='42'>";
+            OpenXmlElement host;
+            OpenXmlPartContainer container;
+
+            if (openXmlPartType == typeof(HeaderPart))
+            {
+                await converter.ParseHeader(html);
+                container = mainPart.HeaderParts.First();
+                host = mainPart.HeaderParts.First().Header;
+            }
+            else if (openXmlPartType == typeof(FooterPart))
+            {
+                await converter.ParseFooter(html);
+                container = mainPart.FooterParts.First();
+                host = mainPart.FooterParts.First().Footer;
+            }
+            else if (openXmlPartType == typeof(MainDocumentPart))
+            {
+                await converter.ParseBody(html);
+                container = mainPart;
+                host = mainPart.Document.Body!;
+            }
+            else
+            {
+                throw new NotSupportedException($"Test case not supported for {openXmlPartType.FullName}");
+            }
+
+            Assert.That(host.ChildElements, Has.Count.EqualTo(1));
+            var p = host.ChildElements.FirstOrDefault(c => c is Paragraph);
+            Assert.That(p, Is.Not.Null);
+            AssertIsImg(container, p);
+            AssertThatOpenXmlDocumentIsValid();
+        }
+
+        private static (Drawing, ImagePart) AssertIsImg (OpenXmlPartContainer container, OpenXmlElement paragraph)
+        {
+            var run = paragraph.GetFirstChild<Run>();
             Assert.That(run, Is.Not.Null);
-            var img = run.GetFirstChild<Drawing>();
-            Assert.That(img, Is.Not.Null);
-            Assert.That(img.Inline?.Graphic?.GraphicData, Is.Not.Null);
-            var pic = img.Inline.Graphic.GraphicData.GetFirstChild<pic.Picture>();
+            var drawing = run.GetFirstChild<Drawing>();
+            Assert.That(drawing, Is.Not.Null);
+            Assert.That(drawing.Inline?.Graphic?.GraphicData, Is.Not.Null);
+            var pic = drawing.Inline.Graphic.GraphicData.GetFirstChild<pic.Picture>();
             Assert.That(pic?.BlipFill?.Blip?.Embed, Is.Not.Null);
 
             var imagePartId = pic.BlipFill.Blip.Embed.Value;
             Assert.That(imagePartId, Is.Not.Null);
-            var part = mainPart.GetPartById(imagePartId);
-            Assert.That(part, Is.TypeOf(typeof(ImagePart)));
-            return img;
+            var imagePart = container.GetPartById(imagePartId);
+            Assert.That(imagePart, Is.TypeOf(typeof(ImagePart)));
+            return (drawing, (ImagePart) imagePart);
         }
     }
 }

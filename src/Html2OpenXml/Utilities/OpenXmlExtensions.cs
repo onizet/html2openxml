@@ -42,15 +42,6 @@ static class OpenXmlExtensions
         return null;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void InsertInDocProperties(this Drawing d, params OpenXmlElement[] newChildren)
-    {
-        d.Inline ??= new Inline();
-        if (d.Inline.DocProperties == null) d.Inline.DocProperties = new DocProperties();
-
-        d.Inline.DocProperties.Append(newChildren);
-    }
-
     public static bool Compare(this PageSize pageSize, PageOrientationValues orientation)
     {
         PageOrientationValues pageOrientation;

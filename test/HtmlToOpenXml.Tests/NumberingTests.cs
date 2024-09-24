@@ -131,6 +131,16 @@ namespace HtmlToOpenXml.Tests
             }
         }
 
+        [Test(Description = "Empty list item should not be registred")]
+        public void EmptyLiElement_ShouldBeIgnored()
+        {
+            var elements = converter.Parse(@"<ul>
+                <li>not empty</li>
+                <li></li>
+                </ul>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+        }
+
         [Test(Description = "Increment instanceId based on existing lists")]
         public void WithExistingNumbering_ReturnsUniqueInstanceId()
         {
@@ -257,9 +267,9 @@ namespace HtmlToOpenXml.Tests
         [Test(Description = "Resume indenting from existing numbering (default behaviour)")]
         public async Task ContinueNumbering_ReturnsSecondList_ContinueOrder()
         {
-            await converter.ParseHtml(@"<ol><li>Item 1</li></ol>");
+            await converter.ParseBody(@"<ol><li>Item 1</li></ol>");
 
-            await converter.ParseHtml("<ol><li>Item 2</li></ol>");
+            await converter.ParseBody("<ol><li>Item 2</li></ol>");
 
             var absNum = mainPart.NumberingDefinitionsPart?.Numbering
                 .Elements<AbstractNum>()
@@ -281,15 +291,16 @@ namespace HtmlToOpenXml.Tests
                 e.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value),
                 Has.All.EqualTo(instances.First().NumberID!.Value),
                 "All paragraphs are linked to the same list instance");
+            AssertThatOpenXmlDocumentIsValid();
         }
 
         [Test(Description = "Stop indenting from existing numbering (issue #57)")]
         public async Task DisableContinueNumbering_ReturnsSecondList_RestartingOrder()
         {
-            await converter.ParseHtml(@"<ol><li>Item 1</li></ol>");
+            await converter.ParseBody(@"<ol><li>Item 1</li></ol>");
 
             converter.ContinueNumbering = false;
-            await converter.ParseHtml("<ol><li>Item 2</li></ol>");
+            await converter.ParseBody("<ol><li>Item 2</li></ol>");
 
             var absNum = mainPart.NumberingDefinitionsPart?.Numbering
                 .Elements<AbstractNum>()
@@ -311,6 +322,7 @@ namespace HtmlToOpenXml.Tests
                 e.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value),
                 Is.Unique,
                 "All paragraphs use different list instances");
+            AssertThatOpenXmlDocumentIsValid();
         }
 
         /// <summary>

@@ -40,6 +40,17 @@ static class AngleSharpExtensions
     }
 
     /// <summary>
+    /// Gets whether the anchor is redirect to the `top` of the document.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool IsTopAnchor(this IHtmlAnchorElement element)
+    {
+        if (element.Hash.Length <= 1) return false; 
+        return "#top".Equals(element.Hash, StringComparison.OrdinalIgnoreCase)
+            || "#_top".Equals(element.Hash, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
     /// Gets whether the given child is preceded by any list element (<c>ol</c> or <c>ul</c>).
     /// </summary>
     public static bool IsPrecededByListElement(this INode child, out IElement? precedingElement)

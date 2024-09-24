@@ -2,9 +2,9 @@
 ![Download Counts](https://img.shields.io/nuget/dt/HtmlToOpenXml.dll.svg)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/onizet/html2openxml/blob/dev/LICENSE)
 
-# What is Html2OpenXml?
+# What is HtmlToOpenXml?
 
-Html2OpenXml is a small .Net library that convert simple or advanced HTML to plain OpenXml components. This program has started in 2009, initially to convert user's comments into Word.
+HtmlToOpenXml is a small .Net library that convert simple or advanced HTML to plain OpenXml components. This program has started in 2009, initially to convert user's comments into Word.
 
 This library supports both **.Net Framework 4.6.2**, **.NET Standard 2.0** and **.NET 8** which are all LTS.
 
@@ -28,7 +28,7 @@ Refer to [w3schools’ tag](http://www.w3schools.com/tags/default.asp) list to s
 * `abbr` and `acronym`
 * `b`, `i`, `u`, `s`, `del`, `ins`, `em`, `strike`, `strong`
 * `br` and `hr`
-* `img`, `figcaption`
+* `img`, `figcaption` and `svg`
 * `table`, `td`, `tr`, `th`, `tbody`, `thead`, `tfoot`, `caption` and `col`
 * `cite`
 * `div`, `span`, `time`, `font` and `p`

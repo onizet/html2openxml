@@ -20,14 +20,19 @@ namespace HtmlToOpenXml;
 /// Contains information that is global to the parsing.
 /// </summary>
 /// <remarks>The list of paragraphs that will be returned.</remarks>
-sealed class ParsingContext(HtmlConverter converter, MainDocumentPart mainPart)
+sealed class ParsingContext(HtmlConverter converter, OpenXmlPartContainer hostingPart, IO.IImageLoader imageLoader)
 {
     /// <summary>Shorthand for <see cref="Converter"/>.HtmlStyles</summary>
     public WordDocumentStyle DocumentStyle { get => Converter.HtmlStyles; }
 
     public HtmlConverter Converter { get; } = converter;
 
-    public MainDocumentPart MainPart { get; } = mainPart;
+    public MainDocumentPart MainPart { get; } = converter.MainPart;
+
+    public OpenXmlPartContainer HostingPart { get; } = hostingPart;
+
+    public IO.IImageLoader ImageLoader { get; } = imageLoader;
+
 
     private HtmlElementExpression? parentExpression;
     private ParsingContext? parentContext;
@@ -49,7 +54,7 @@ sealed class ParsingContext(HtmlConverter converter, MainDocumentPart mainPart)
 
     public ParsingContext CreateChild(HtmlElementExpression expression)
     {
-        var childContext = new ParsingContext(Converter, MainPart) {
+        var childContext = new ParsingContext(Converter, HostingPart, ImageLoader) {
             propertyBag = propertyBag,
             parentExpression = expression,
             parentContext = this

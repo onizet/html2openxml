@@ -28,8 +28,8 @@ namespace HtmlToOpenXml;
 public partial class HtmlConverter
 {
     private readonly MainDocumentPart mainPart;
-    /// <summary>Cache all the ImagePart processed to avoid downloading the same image.</summary>
-    private ImagePrefetcher? imagePrefetcher;
+    // Cache all the ImagePart processed to avoid downloading the same image
+    private IImageLoader? headerImageLoader, bodyImageLoader, footerImageLoader;
     private readonly WordDocumentStyle htmlStyles;
     private readonly IWebRequest webRequester;
 
@@ -57,79 +57,135 @@ public partial class HtmlConverter
     }
 
     /// <summary>
-    /// Start the parse processing.
+    /// Parse some HTML content where the output is intented to be inserted in <see cref="MainDocumentPart"/>.
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <returns>Returns a list of parsed paragraph.</returns>
     public IList<OpenXmlCompositeElement> Parse(string html)
     {
-        return Parse(html, CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult().ToList();
+        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester);
+        return ParseCoreAsync(html, mainPart, bodyImageLoader,
+            new ParallelOptions() { CancellationToken = CancellationToken.None })
+            .ConfigureAwait(false).GetAwaiter().GetResult().ToList();
     }
 
     /// <summary>
-    /// Start the parse processing.
+    /// Start the asynchroneous parse processing where the output is intented to be inserted in <see cref="MainDocumentPart"/>.
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>Returns a list of parsed paragraph.</returns>
+    [Obsolete("Use ParseAsync instead to respect naming convention")]
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     public Task<IEnumerable<OpenXmlCompositeElement>> Parse(string html, CancellationToken cancellationToken = default)
     {
-        return Parse(html, new ParallelOptions() { CancellationToken = cancellationToken });
+        return ParseAsync(html, cancellationToken);
     }
 
     /// <summary>
-    /// Start the parse processing. Use this overload if you want to control the downloading of images.
+    /// Start the asynchroneous parse processing where the output is intented to be inserted in <see cref="MainDocumentPart"/>.
+    /// </summary>
+    /// <param name="html">The HTML content to parse</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>Returns a list of parsed paragraph.</returns>
+    public Task<IEnumerable<OpenXmlCompositeElement>> ParseAsync(string html, CancellationToken cancellationToken = default)
+    {
+        return ParseAsync(html, new ParallelOptions { CancellationToken = cancellationToken });
+    }
+
+    /// <summary>
+    /// Start the asynchroneous parse processing where the output is intented to be inserted in <see cref="MainDocumentPart"/>.
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <param name="parallelOptions">The configuration of parallelism while downloading the remote resources.</param>
     /// <returns>Returns a list of parsed paragraph.</returns>
-    public async Task<IEnumerable<OpenXmlCompositeElement>> Parse(string html, ParallelOptions parallelOptions)
+    public Task<IEnumerable<OpenXmlCompositeElement>> ParseAsync(string html, ParallelOptions parallelOptions)
     {
-        if (string.IsNullOrWhiteSpace(html))
-            return [];
+        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester);
 
-        // ensure a body exists to avoid any errors when trying to access it
-        if (mainPart.Document == null)
-            new Document(new Body()).Save(mainPart);
-        else if (mainPart.Document.Body == null)
-            mainPart.Document.Body = new Body();
-
-        var browsingContext = BrowsingContext.New();
-        var htmlDocument = await browsingContext.OpenAsync(req => req.Content(html), parallelOptions.CancellationToken);
-        if (htmlDocument == null)
-            return [];
-
-        await PreloadImages(htmlDocument, parallelOptions).ConfigureAwait(false);
-
-        var parsingContext = new ParsingContext(this, mainPart);
-        var body = new Expressions.BodyExpression (htmlDocument.Body!);
-        var paragraphs = body.Interpret (parsingContext);
-        return paragraphs.Cast<OpenXmlCompositeElement>();
+        return ParseCoreAsync(html, mainPart, bodyImageLoader, parallelOptions);
     }
 
     /// <summary>
-    /// Start the parse processing and append the converted paragraphs into the Body of the document.
+    /// Parse asynchroneously the Html and append the output into the Header of the document.
+    /// </summary>
+    /// <param name="html">The HTML content to parse</param>
+    /// <param name="headerType">Determines the page(s) on which the current header shall be displayed.
+    /// If omitted, the value <see cref="HeaderFooterValues.Default"/> is used.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <seealso cref="HeaderPart"/>
+    public async Task ParseHeader(string html, HeaderFooterValues? headerType = null,
+        CancellationToken cancellationToken = default)
+    {
+        headerType ??= HeaderFooterValues.Default;
+        var headerPart = ResolveHeaderFooterPart<HeaderReference, HeaderPart>(headerType);
+
+        headerPart.Header ??= new();
+        headerImageLoader ??= new ImagePrefetcher<HeaderPart>(headerPart, webRequester);
+
+        var paragraphs = await ParseCoreAsync(html, headerPart, headerImageLoader,
+            new ParallelOptions() { CancellationToken = cancellationToken },
+            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.HeaderStyle));
+
+        foreach (var p in paragraphs)
+            headerPart.Header.AddChild(p);
+    }
+
+    /// <summary>
+    /// Parse asynchroneously the Html and append the output into the Footer of the document.
+    /// </summary>
+    /// <param name="html">The HTML content to parse</param>
+    /// <param name="footerType">Determines the page(s) on which the current footer shall be displayed.
+    /// If omitted, the value <see cref="HeaderFooterValues.Default"/> is used.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <seealso cref="FooterPart"/>
+    public async Task ParseFooter(string html, HeaderFooterValues? footerType = null,
+        CancellationToken cancellationToken = default)
+    {
+        footerType ??= HeaderFooterValues.Default;
+        var footerPart = ResolveHeaderFooterPart<FooterReference, FooterPart>(footerType);
+
+        footerPart.Footer ??= new();
+        footerImageLoader ??= new ImagePrefetcher<FooterPart>(footerPart, webRequester);
+
+        var paragraphs = await ParseCoreAsync(html, footerPart, footerImageLoader,
+            new ParallelOptions() { CancellationToken = cancellationToken },
+            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.FooterStyle));
+
+        foreach (var p in paragraphs)
+            footerPart.Footer.AddChild(p);
+    }
+
+    /// <summary>
+    /// Parse asynchroneously the Html and append the output into the Body of the document.
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    public async Task ParseHtml(string html, CancellationToken cancellationToken = default)
+    /// <seealso cref="MainDocumentPart"/>
+    public async Task ParseBody(string html, CancellationToken cancellationToken = default)
     {
-        // This method exists because we may ensure the SectionProperties remains the last element of the body.
-        // It's mandatory when dealing with page orientation
+        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester);
+        var paragraphs = await ParseCoreAsync(html, mainPart, bodyImageLoader,
+            new ParallelOptions() { CancellationToken = cancellationToken });
 
-        var paragraphs = await Parse(html, cancellationToken);
+        if (!paragraphs.Any())
+            return;
 
-        Body body = mainPart.Document.Body!;
+        Body body = mainPart.Document!.Body!;
         SectionProperties? sectionProperties = body.GetLastChild<SectionProperties>();
         foreach (var para in paragraphs)
             body.Append(para);
 
-        // move the paragraph with BookmarkStart `_GoBack` as the last child
+        // we automatically create the _top bookmark if missing. To avoid having an empty paragrah,
+        // let's try to merge with its next paragraph.
         var p = body.GetFirstChild<Paragraph>();
-        if (p != null && p.GetFirstChild<BookmarkStart>()?.Id == "_GoBack")
+        if (p != null && p.GetFirstChild<BookmarkStart>()?.Name == "_top"
+            && !p.HasChild<Run>()
+            && p.NextSibling() is Paragraph nextPara)
         {
+            nextPara.PrependChild(p.GetFirstChild<BookmarkEnd>()?.CloneNode(false));
+            nextPara.PrependChild(p.GetFirstChild<BookmarkStart>()!.CloneNode(false));
             p.Remove();
-            body.Append(p);
         }
 
         // Push the sectionProperties as the last element of the Body
@@ -142,6 +198,33 @@ public partial class HtmlConverter
     }
 
     /// <summary>
+    /// Start the asynchroneous parse processing. Use this overload if you want to control the downloading of images.
+    /// </summary>
+    /// <param name="html">The HTML content to parse</param>
+    /// <param name="parallelOptions">The configuration of parallelism while downloading the remote resources.</param>
+    /// <returns>Returns a list of parsed paragraph.</returns>
+    [Obsolete("Use ParseAsync instead to respect naming convention")]
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    public Task<IEnumerable<OpenXmlCompositeElement>> Parse(string html, ParallelOptions parallelOptions)
+    {
+        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester);
+
+        return ParseCoreAsync(html, mainPart, bodyImageLoader, parallelOptions);
+    }
+
+    /// <summary>
+    /// Start the asynchroneous parse processing and append the output into the Body of the document.
+    /// </summary>
+    /// <param name="html">The HTML content to parse</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    [Obsolete("Use ParseBody instead for output clarification")]
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    public Task ParseHtml(string html, CancellationToken cancellationToken = default)
+    {
+        return ParseBody(html, cancellationToken);
+    }
+
+    /// <summary>
     /// Refresh the cache of styles presents in the document.
     /// </summary>
     public void RefreshStyles()
@@ -150,9 +233,52 @@ public partial class HtmlConverter
     }
 
     /// <summary>
+    /// Start the asynchroneous parse processing. Use this overload if you want to control the downloading of images.
+    /// </summary>
+    /// <param name="html">The HTML content to parse</param>
+    /// <param name="hostingPart">The OpenXml container where the content will be inserted into.</param>
+    /// <param name="imageLoader">The image resolver service linked to the <paramref name="hostingPart"/>.</param>
+    /// <param name="parallelOptions">The configuration of parallelism while downloading the remote resources.</param>
+    /// <param name="defaultParagraphStyleId">The default OpenXml style to apply on paragraphs.</param> 
+    /// <returns>Returns a list of parsed paragraph.</returns>
+    private async Task<IEnumerable<OpenXmlCompositeElement>> ParseCoreAsync(string html,
+        OpenXmlPartContainer hostingPart, IImageLoader imageLoader,
+        ParallelOptions parallelOptions,
+        ParagraphStyleId? defaultParagraphStyleId = null)
+    {
+        if (string.IsNullOrWhiteSpace(html))
+            return [];
+
+        var browsingContext = BrowsingContext.New();
+        var htmlDocument = await browsingContext.OpenAsync(req => req.Content(html), parallelOptions.CancellationToken).ConfigureAwait(false);
+        if (htmlDocument == null)
+            return [];
+
+        if (mainPart.Document == null)
+            new Document(new Body()).Save(mainPart);
+        else if (mainPart.Document.Body == null)
+            mainPart.Document.Body = new Body();
+
+        await PreloadImages(htmlDocument, imageLoader, parallelOptions).ConfigureAwait(false);
+
+        Expressions.HtmlDomExpression expression;
+        if (hostingPart is MainDocumentPart)
+            expression = new Expressions.BodyExpression(htmlDocument.Body!);
+        else if (defaultParagraphStyleId?.Val?.HasValue == true)
+            expression = new Expressions.BlockElementExpression(htmlDocument.Body!, defaultParagraphStyleId);
+        else
+            expression = new Expressions.BlockElementExpression(htmlDocument.Body!);
+
+        var parsingContext = new ParsingContext(this, hostingPart, imageLoader);
+        var paragraphs = expression.Interpret(parsingContext);
+        return paragraphs.Cast<OpenXmlCompositeElement>();
+    }
+
+    /// <summary>
     /// Walk through all the <c>img</c> tags and preload all the remote images.
     /// </summary>
-    private async Task PreloadImages(AngleSharp.Dom.IDocument htmlDocument, ParallelOptions parallelOptions)
+    private async Task PreloadImages(AngleSharp.Dom.IDocument htmlDocument,
+        IImageLoader imageLoader, ParallelOptions parallelOptions)
     {
         var imageUris = htmlDocument.QuerySelectorAll("img[src]")
             .Cast<AngleSharp.Html.Dom.IHtmlImageElement>()
@@ -162,8 +288,48 @@ public partial class HtmlConverter
             return;
 
         await imageUris.ForEachAsync(
-            async (img, cts) => await ImagePrefetcher.Download(img, cts),
+            async (img, cts) => await imageLoader.Download(img, cts),
             parallelOptions).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Create or resolve the header/footer related to the type.
+    /// </summary>
+    private TPart ResolveHeaderFooterPart<TRefType, TPart>(HeaderFooterValues? type)
+        where TPart: OpenXmlPart, IFixedContentTypePart
+        where TRefType: HeaderFooterReferenceType, new()
+    {
+        bool wasRefSet = false;
+        TPart? part = null;
+
+        var sectionProps = mainPart.Document.Body!.Elements<SectionProperties>();
+        if (!sectionProps.Any())
+        {
+            sectionProps = [new SectionProperties()];
+            mainPart.Document.Body!.AddChild(sectionProps.First());
+        }
+        else
+        {
+            var reference = sectionProps.SelectMany(sectPr => sectPr.Elements<TRefType>())
+                .Where(r => r.Id?.HasValue == true)
+                .FirstOrDefault(r => r.Type?.Value == type);
+
+            if (reference != null)
+                part = (TPart) mainPart.GetPartById(reference.Id!);
+            wasRefSet = part is not null;
+        }
+
+        part ??= mainPart.AddNewPart<TPart>();
+
+        if (!wasRefSet)
+        {
+            sectionProps.First().PrependChild(new TRefType() {
+                Id = mainPart.GetIdOfPart(part),
+                Type = type
+            });
+        }
+
+        return part;
     }
 
     //____________________________________________________________________
@@ -216,10 +382,10 @@ public partial class HtmlConverter
     public bool ContinueNumbering { get; set; } = true;
 
     /// <summary>
-    /// Resolve a remote or inline image resource.
+    /// Gets the mainDocumentPart of the destination OpenXml document.
     /// </summary>
-    internal ImagePrefetcher ImagePrefetcher
+    internal MainDocumentPart MainPart
     {
-        get => imagePrefetcher ??= new ImagePrefetcher(mainPart, webRequester);
+        get => mainPart;
     }
 }

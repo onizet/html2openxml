@@ -15,7 +15,7 @@ namespace Demo
         static async Task Main(string[] args)
         {
             const string filename = "test.docx";
-            string html = ResourceHelper.GetString("Resources.CompleteRunTest.html");
+            string html = ResourceHelper.GetString("Resources.AdvancedTable.html");
             if (File.Exists(filename)) File.Delete(filename);
 
             using (MemoryStream generatedDocument = new MemoryStream())
@@ -42,7 +42,7 @@ namespace Demo
                     converter.RenderPreAsTable = true;
                     Body body = mainPart.Document.Body;
 
-                    await converter.ParseHtml(html);
+                    await converter.ParseBody(html);
                     mainPart.Document.Save();
 
                     AssertThatOpenXmlDocumentIsValid(package);

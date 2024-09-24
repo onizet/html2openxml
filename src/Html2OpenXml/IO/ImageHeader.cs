@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Xml.XPath;
 
 namespace HtmlToOpenXml.IO;
 
@@ -29,7 +30,7 @@ public static class ImageHeader
     // https://en.wikipedia.org/wiki/List_of_file_signatures
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-    public enum FileType { Unrecognized, Bitmap, Gif, Png, Jpeg, Emf }
+    public enum FileType { Unrecognized, Bitmap, Gif, Png, Jpeg, Emf, Xml }
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
     private static readonly byte[] pngSignatureBytes = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
@@ -41,7 +42,8 @@ public static class ImageHeader
         { Encoding.UTF8.GetBytes("GIF89a"), FileType.Gif }, // animated gif
         { pngSignatureBytes, FileType.Png },
         { new byte[] { 0xff, 0xd8 }, FileType.Jpeg },
-        { new byte[] { 0x1, 0, 0, 0 }, FileType.Emf }
+        { new byte[] { 0x1, 0, 0, 0 }, FileType.Emf },
+        { Encoding.UTF8.GetBytes("<?xml "), FileType.Xml }, // Xml so potentially Svg
     };
 
     private static readonly int MaxMagicBytesLength = imageFormatDecoders
@@ -83,6 +85,7 @@ public static class ImageHeader
                 case FileType.Jpeg: return DecodeJfif(reader);
                 case FileType.Png: return DecodePng(reader);
                 case FileType.Emf: return DecodeEmf(reader);
+                case FileType.Xml: return DecodeXml(stream);
                 default: return Size.Empty;
             }
         }
@@ -279,5 +282,27 @@ public static class ImageHeader
 
         return new Size(widthInPixel, heightInPixel);
     }
-}
 
+    private static Size DecodeXml(Stream stream)
+    {
+        try
+        {
+            var nav = new XPathDocument(stream).CreateNavigator();
+            // use local-name() to ignore any xml namespace
+            nav = nav.SelectSingleNode("/*[local-name() = 'svg']");
+            if (nav is not null)
+            {
+                var width = Unit.Parse(nav.GetAttribute("width", string.Empty));
+                var height = Unit.Parse(nav.GetAttribute("height", string.Empty));
+                if (width.IsValid && height.IsValid)
+                    return new Size(width.ValueInPx, height.ValueInPx);
+            }
+        }
+        catch (SystemException)
+        {
+            return Size.Empty;
+        }
+
+        return Size.Empty;
+    }
+}

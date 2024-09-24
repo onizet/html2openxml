@@ -10,6 +10,7 @@
  * PARTICULAR PURPOSE.
  */
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
@@ -24,16 +25,39 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 sealed class BodyExpression(IHtmlElement node) : BlockElementExpression(node)
 {
+    private bool shouldRegisterTopBookmark;
+ 
     public override IEnumerable<OpenXmlElement> Interpret(ParsingContext context)
     {
         MarkAllBookmarks();
 
-        return base.Interpret(context);
+        var elements = base.Interpret(context);
+
+        if (shouldRegisterTopBookmark && elements.Any())
+        {
+            // Check whether it already exists
+            var body = context.MainPart.Document.Body!;
+            if (body.Descendants<BookmarkStart>().Where(b => b.Name?.Value == "_top").Any())
+            {
+                return elements;
+            }
+
+            var bookmarkId = IncrementBookmarkId(context).ToString(CultureInfo.InvariantCulture);
+            // this is expected to stand in the 1st paragraph
+            Paragraph? p = body.FirstChild as Paragraph;
+            p ??= body.PrependChild(new Paragraph());
+            p.InsertAfter(new BookmarkEnd() { Id = bookmarkId }, p.ParagraphProperties);
+            p.InsertAfter(new BookmarkStart() { Id = bookmarkId, Name = "_top" }, p.ParagraphProperties);
+        }
+
+        return elements;
     }
 
     protected override void ComposeStyles(ParsingContext context)
     {
         base.ComposeStyles(context);
+
+        var mainPart = context.MainPart;
 
         // Unsupported W3C attribute but claimed by users. Specified at <body> level, the page
         // orientation is applied on the whole document
@@ -42,10 +66,10 @@ sealed class BodyExpression(IHtmlElement node) : BlockElementExpression(node)
         {
             PageOrientationValues orientation = Converter.ToPageOrientation(attr);
 
-            var sectionProperties = context.MainPart.Document.Body!.GetFirstChild<SectionProperties>();
+            var sectionProperties = mainPart.Document.Body!.GetFirstChild<SectionProperties>();
             if (sectionProperties == null || sectionProperties.GetFirstChild<PageSize>() == null)
             {
-                context.MainPart.Document.Body.Append(ChangePageOrientation(orientation));
+                mainPart.Document.Body.Append(ChangePageOrientation(orientation));
             }
             else
             {
@@ -61,10 +85,10 @@ sealed class BodyExpression(IHtmlElement node) : BlockElementExpression(node)
 
         if (paraProperties.BiDi is not null)
         {
-            var sectionProperties = context.MainPart.Document.Body!.GetFirstChild<SectionProperties>();
+            var sectionProperties = mainPart.Document.Body!.GetFirstChild<SectionProperties>();
             if (sectionProperties == null || sectionProperties.GetFirstChild<PageSize>() == null)
             {
-                context.MainPart.Document.Body.Append(sectionProperties = new());
+               mainPart.Document.Body.Append(sectionProperties = new());
             }
 
             sectionProperties.AddChild(paraProperties.BiDi.CloneNode(true));
@@ -105,10 +129,17 @@ sealed class BodyExpression(IHtmlElement node) : BlockElementExpression(node)
         var links = node.QuerySelectorAll("a[href^='#']");
         if (links.Length == 0) return;
 
-        foreach (var link in links.Cast<IHtmlAnchorElement>())
+        foreach (var link in links.Cast<IHtmlAnchorElement>().Where(l => l.Hash.Length > 0))
         {
+            if (link.IsTopAnchor())
+            {
+                shouldRegisterTopBookmark = true;
+                return;
+            }
+
             var id = link.Hash.Substring(1);
             var target = node.Owner!.GetElementById(id);
+
             // `id` attribute is preferred but `name` is also valid
             target ??= node.Owner!.GetElementsByName(id).FirstOrDefault();
 
