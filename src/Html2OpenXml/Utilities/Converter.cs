@@ -81,7 +81,7 @@ static class Converter
                     return Unit.Empty;
 
                 // this is a rough conversion to support some percent size, considering 100% = 11 pt
-                if (unit.Type == UnitMetric.Percent) unit = new Unit(UnitMetric.Point, unit.Value * 0.11);
+                if (unit.Metric == UnitMetric.Percent) unit = new Unit(UnitMetric.Point, unit.Value * 0.11);
                 return unit;
         }
     }
@@ -157,24 +157,6 @@ static class Converter
             "outset" => BorderValues.Outset,
             "none" => BorderValues.None,
             _ => BorderValues.Nil,
-        };
-    }
-
-    public static UnitMetric ToUnitMetric(string? type)
-    {
-        if (type == null) return UnitMetric.Unitless;
-        return type.ToLowerInvariant() switch
-        {
-            "%" => UnitMetric.Percent,
-            "in" => UnitMetric.Inch,
-            "cm" => UnitMetric.Centimeter,
-            "mm" => UnitMetric.Millimeter,
-            "em" => UnitMetric.EM,
-            "ex" => UnitMetric.Ex,
-            "pt" => UnitMetric.Point,
-            "pc" => UnitMetric.Pica,
-            "px" => UnitMetric.Pixel,
-            _ => UnitMetric.Unknown,
         };
     }
 

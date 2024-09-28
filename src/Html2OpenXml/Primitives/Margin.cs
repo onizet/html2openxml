@@ -10,13 +10,17 @@
  * PARTICULAR PURPOSE.
  */
 
+using System;
+
 namespace HtmlToOpenXml;
 
 /// <summary>
-/// Represents a Html Unit (ie: 120px, 10em, ...).
+/// Represents a Html Margin.
 /// </summary>
 struct Margin
 {
+    /// <summary>Represents an empty margin (not defined).</summary>
+    public static readonly Margin Empty = new();
     private Unit[] sides;
 
 
@@ -50,40 +54,42 @@ struct Margin
     /// </remarks>
     public static Margin Parse(string? str)
     {
-        if (str == null) return new Margin();
+        if (string.IsNullOrWhiteSpace(str))
+            return Empty;
 
-        var parts = str.Split(HttpUtility.WhiteSpaces);
-        switch (parts.Length)
+        var span = str!.AsSpan();
+        Span<Range> tokens = stackalloc Range[5];
+        switch (span.Split(tokens, ' ', StringSplitOptions.RemoveEmptyEntries))
         {
             case 1:
-                {
-                    Unit all = Unit.Parse(parts[0], UnitMetric.Pixel);
-                    return new Margin(all, all, all, all);
-                }
+            {
+                Unit all = Unit.Parse(span.Slice(tokens[0]), UnitMetric.Pixel);
+                return new Margin(all, all, all, all);
+            }
             case 2:
                 {
-                    Unit u1 = Unit.Parse(parts[0], UnitMetric.Pixel);
-                    Unit u2 = Unit.Parse(parts[1], UnitMetric.Pixel);
+                    Unit u1 = Unit.Parse(span.Slice(tokens[0]), UnitMetric.Pixel);
+                    Unit u2 = Unit.Parse(span.Slice(tokens[1]), UnitMetric.Pixel);
                     return new Margin(u1, u2, u1, u2);
                 }
             case 3:
                 {
-                    Unit u1 = Unit.Parse(parts[0], UnitMetric.Pixel);
-                    Unit u2 = Unit.Parse(parts[1], UnitMetric.Pixel);
-                    Unit u3 = Unit.Parse(parts[2], UnitMetric.Pixel);
+                    Unit u1 = Unit.Parse(span.Slice(tokens[0]), UnitMetric.Pixel);
+                    Unit u2 = Unit.Parse(span.Slice(tokens[1]), UnitMetric.Pixel);
+                    Unit u3 = Unit.Parse(span.Slice(tokens[2]), UnitMetric.Pixel);
                     return new Margin(u1, u2, u3, u2);
                 }
             case 4:
                 {
-                    Unit u1 = Unit.Parse(parts[0], UnitMetric.Pixel);
-                    Unit u2 = Unit.Parse(parts[1], UnitMetric.Pixel);
-                    Unit u3 = Unit.Parse(parts[2], UnitMetric.Pixel);
-                    Unit u4 = Unit.Parse(parts[3], UnitMetric.Pixel);
+                    Unit u1 = Unit.Parse(span.Slice(tokens[0]), UnitMetric.Pixel);
+                    Unit u2 = Unit.Parse(span.Slice(tokens[1]), UnitMetric.Pixel);
+                    Unit u3 = Unit.Parse(span.Slice(tokens[2]), UnitMetric.Pixel);
+                    Unit u4 = Unit.Parse(span.Slice(tokens[3]), UnitMetric.Pixel);
                     return new Margin(u1, u2, u3, u4);
                 }
         }
 
-        return new Margin();
+        return Empty;
     }
 
     private void EnsureSides()

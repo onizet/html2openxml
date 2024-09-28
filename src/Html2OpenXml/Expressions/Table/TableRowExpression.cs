@@ -105,7 +105,7 @@ sealed class TableRowExpression : TableElementExpressionBase
         Unit unit = styleAttributes!.GetUnit("height", UnitMetric.Pixel);
         if (!unit.IsValid) unit = Unit.Parse(rowNode.GetAttribute("height"), UnitMetric.Pixel);
 
-        switch (unit.Type)
+        switch (unit.Metric)
         {
             case UnitMetric.Point:
                 rowProperties.AddChild(new TableRowHeight() { HeightType = HeightRuleValues.AtLeast, Val = (uint) (unit.Value * 20) });

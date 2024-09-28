@@ -10,7 +10,6 @@
  * PARTICULAR PURPOSE.
  */
 using System;
-using System.Globalization;
 
 namespace HtmlToOpenXml;
 
@@ -25,85 +24,106 @@ readonly struct Unit
     /// <summary>Represents an Auto unit.</summary>
     public static readonly Unit Auto = new Unit(UnitMetric.Auto, 0L);
 
-    private readonly UnitMetric type;
+    private readonly UnitMetric metric;
     private readonly double value;
     private readonly long valueInEmus;
 
 
-    public Unit(UnitMetric type, double value)
+    public Unit(UnitMetric metric, double value)
     {
-        this.type = type;
+        this.metric = metric;
         this.value = value;
-        this.valueInEmus = ComputeInEmus(type, value);
+        this.valueInEmus = ComputeInEmus(metric, value);
+    }
+
+    public static Unit Parse(ReadOnlySpan<char> span, UnitMetric defaultMetric = UnitMetric.Unitless)
+    {
+        span.Trim();
+        if (span.Length <= 1)
+        {
+            // either this is invalid or this is a single digit
+            if (span.Length == 0 || !char.IsDigit(span[0])) return Empty;
+            return new Unit(defaultMetric, span[0] - '0');
+        }
+
+        // guess the unit first than use the native Double parsing
+        UnitMetric metric;
+        int metricSize = 2;
+        if (span[span.Length - 1] == '%')
+        {
+            metric = UnitMetric.Percent;
+            metricSize = 1;
+        }
+        else
+        {
+            Span<char> loweredValue = span.Length <= 128 ? stackalloc char[span.Length] : new char[span.Length];
+            span.ToLowerInvariant(loweredValue);
+
+            var metricSpan = loweredValue.Slice(loweredValue.Length - 2, 2);
+            metric = metricSpan switch {
+                "in" => UnitMetric.Inch,
+                "cm" => UnitMetric.Centimeter,
+                "mm" => UnitMetric.Millimeter,
+                "em" => UnitMetric.EM,
+                "ex" => UnitMetric.Ex,
+                "pt" => UnitMetric.Point,
+                "pc" => UnitMetric.Pica,
+                "px" => UnitMetric.Pixel,
+                _ =>  UnitMetric.Unknown,
+            };
+
+            // not recognised but maybe this is unitless (only digits) 
+            if (metric == UnitMetric.Unknown && char.IsDigit(metricSpan[0]))
+            {
+                metric = UnitMetric.Unitless;
+                metricSize = 0;
+            }
+        }
+
+        double value;
+        try
+        {
+            value = span.Slice(0, span.Length - metricSize).AsDouble();
+
+            if (value < short.MinValue || value > short.MaxValue)
+                return Empty;
+        }
+        catch (Exception)
+        {
+            // No digits, we ignore this style
+            return span is "auto"? Auto : Empty;
+        }
+
+        return new Unit(metric, value);
     }
 
     public static Unit Parse(string? str, UnitMetric defaultMetric = UnitMetric.Unitless)
     {
-        if (str == null) return Unit.Empty;
+        if (string.IsNullOrWhiteSpace(str))
+            return Empty;
 
-        str = str.Trim().ToLowerInvariant();
-        int length = str.Length;
-        int digitLength = -1;
-        for (int i = 0; i < length; i++)
-        {
-            char ch = str[i];
-            if ((ch < '0' || ch > '9') && ch != '-' && ch != '.' && ch != ',')
-                break;
-
-            digitLength = i;
-        }
-        if (digitLength == -1)
-        {
-            // No digits in the width, we ignore this style
-            return str == "auto"? Unit.Auto : Unit.Empty;
-        }
-
-        UnitMetric type;
-        if (digitLength < length - 1)
-            type = Converter.ToUnitMetric(str.Substring(digitLength + 1).Trim());
-        else
-            type = defaultMetric;
-
-        string v = str.Substring(0, digitLength + 1);
-        double value;
-        try
-        {
-            value = Convert.ToDouble(v, CultureInfo.InvariantCulture);
-
-            if (value < short.MinValue || value > short.MaxValue)
-                return Unit.Empty;
-        }
-        catch (FormatException)
-        {
-            return Unit.Empty;
-        }
-        catch (ArithmeticException)
-        {
-            return Unit.Empty;
-        }
-
-        return new Unit(type, value);
+        return Parse(str.AsSpan(), defaultMetric);
     }
 
     /// <summary>
     /// Gets the value expressed in the English Metrics Units.
     /// </summary>
-    private static long ComputeInEmus(UnitMetric type, double value)
+    private static long ComputeInEmus(UnitMetric metric, double value)
     {
         /* Compute width and height in English Metrics Units.
-            * There are 360000 EMUs per centimeter, 914400 EMUs per inch, 12700 EMUs per point
-            * widthInEmus = widthInPixels / HorizontalResolutionInDPI * 914400
-            * heightInEmus = heightInPixels / VerticalResolutionInDPI * 914400
-            * 
-            * According to 1 px ~= 9525 EMU -> 914400 EMU per inch / 9525 EMU = 96 dpi
-            * So Word use 96 DPI printing which seems fair.
-            * http://hastobe.net/blogs/stevemorgan/archive/2008/09/15/howto-insert-an-image-into-a-word-document-and-display-it-using-openxml.aspx
-            * http://startbigthinksmall.wordpress.com/2010/01/04/points-inches-and-emus-measuring-units-in-office-open-xml/
-            *
-            * The list of units supported are explained here: http://www.w3schools.com/css/css_units.asp
-            */
+         * There are 360000 EMUs per centimeter, 914400 EMUs per inch, 12700 EMUs per point
+         * widthInEmus = widthInPixels / HorizontalResolutionInDPI * 914400
+         * heightInEmus = heightInPixels / VerticalResolutionInDPI * 914400
+         * 
+         * According to 1 px ~= 9525 EMU -> 914400 EMU per inch / 9525 EMU = 96 dpi
+         * So Word use 96 DPI printing which seems fair.
+         * http://hastobe.net/blogs/stevemorgan/archive/2008/09/15/howto-insert-an-image-into-a-word-document-and-display-it-using-openxml.aspx
+         * http://startbigthinksmall.wordpress.com/2010/01/04/points-inches-and-emus-measuring-units-in-office-open-xml/
+         *
+         * The list of units supported are explained here: http://www.w3schools.com/css/css_units.asp
+         */
 
-        switch (type)
+        switch (metric)
         {
             case UnitMetric.Auto:
             case UnitMetric.Unitless:
@@ -130,9 +150,9 @@ readonly struct Unit
     /// <summary>
     /// Gets the type of unit (pixel, percent, point, ...)
     /// </summary>
-    public UnitMetric Type
+    public UnitMetric Metric
     {
-        get { return type; }
+        get { return metric; }
     }
 
     /// <summary>
@@ -164,7 +184,7 @@ readonly struct Unit
     /// </summary>
     public int ValueInPx
     {
-        get { return (int) (type == UnitMetric.Pixel ? this.value : (float) valueInEmus / 914400L * 96); }
+        get { return (int) (metric == UnitMetric.Pixel ? this.value : (float) valueInEmus / 914400L * 96); }
     }
 
     /// <summary>
@@ -172,7 +192,7 @@ readonly struct Unit
     /// </summary>
     public double ValueInPoint
     {
-        get { return (double) (type == UnitMetric.Point ? this.value : (float) valueInEmus / 12700L); }
+        get { return (double) (metric == UnitMetric.Point ? this.value : (float) valueInEmus / 12700L); }
     }
 
     /// <summary>
@@ -190,7 +210,7 @@ readonly struct Unit
     /// </summary>
     public bool IsValid
     {
-        get { return this.Type != UnitMetric.Unknown; }
+        get { return this.Metric != UnitMetric.Unknown; }
     }
 
     /// <summary>
@@ -198,6 +218,6 @@ readonly struct Unit
     /// </summary>
     public bool IsFixed
     {
-        get { return IsValid && Type != UnitMetric.Percent && Type != UnitMetric.Auto; }
+        get { return IsValid && Metric != UnitMetric.Percent && Metric != UnitMetric.Auto; }
     }
 }

@@ -85,24 +85,37 @@ static class SpanExtensions
     /// <param name="span">The source span to parse.</param>
     /// <param name="destination">The destination span into which the resulting ranges are written.</param>
     /// <param name="separator">A character that delimits the regions in this instance.</param>
+    /// <param name="options">A bitwise combination of the enumeration values that specifies whether to trim whitespace and include empty ranges.</param>
     /// <returns>The number of ranges written into <paramref name="destination"/>.</returns>
-    public static int Split(this ReadOnlySpan<char> span, Span<Range> destination, char separator)
+    public static int Split(this ReadOnlySpan<char> span, Span<Range> destination,
+        char separator, StringSplitOptions options = StringSplitOptions.None)
     {
+        // If the destination is empty, there's nothing to do.
+        if (destination.IsEmpty)
+            return 0;
+
         int matches = 0;
         int index = 0;
         while (span.Length > 0)
         {
             int tokenEnd = span.IndexOf(separator);
             if (tokenEnd == -1) tokenEnd = span.Length;
+            if (options == StringSplitOptions.RemoveEmptyEntries && tokenEnd == 0)
+            {
+                span = span.Slice(1);
+                index++;
+                continue;
+            }
 
             destination[matches] = new Range(index, index + tokenEnd);
             matches++;
 
-            // move to next token
-            span = span.Slice(tokenEnd + 1);
-
-            if (matches > destination.Length)
+            if (matches > destination.Length || span.Length <= tokenEnd)
                break;
+
+            // move to next token
+            span = span.Slice(tokenEnd );
+            index += tokenEnd;
         }
 
         return matches;

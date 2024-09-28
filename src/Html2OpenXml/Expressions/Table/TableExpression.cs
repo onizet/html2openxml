@@ -172,7 +172,7 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
         if (!width.IsValid) width = Unit.Parse(tableNode.GetAttribute("width"), UnitMetric.Pixel);
         if (!width.IsValid) width = new Unit(UnitMetric.Percent, 100);
 
-        switch (width.Type)
+        switch (width.Metric)
         {
             case UnitMetric.Percent:
                 if (width.Value == 100)

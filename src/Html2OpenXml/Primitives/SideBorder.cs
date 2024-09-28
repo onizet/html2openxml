@@ -90,7 +90,7 @@ readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
         Unit bu = Unit.Parse(borderWidth, UnitMetric.Pixel);
         if (bu.IsValid)
         {
-            if (bu.Value > 0 && bu.Type == UnitMetric.Pixel)
+            if (bu.Value > 0 && bu.Metric == UnitMetric.Pixel)
                 return bu;
         }
         else

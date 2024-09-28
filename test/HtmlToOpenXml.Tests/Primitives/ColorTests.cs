@@ -11,7 +11,7 @@ namespace HtmlToOpenXml.Tests.Primitives
         [TestCase("#F00", 255, 0, 0, 1d)]
         [TestCase("#00FFFF", 0, 255, 255, 1d)]
         [TestCase("red", 255, 0, 0, 1d)]
-        [TestCase("rgb(106, 90, 205)", 106, 90, 205, 1d)]
+        [TestCase("rgb(106,  90, 205)", 106, 90, 205, 1d)]
         [TestCase("rgba(106, 90, 205, 0.6)", 106, 90, 205, 0.6d)]
         [TestCase("rgb(106 90 205)", 106, 90, 205, 1d)]
         [TestCase("rgb(106 90 205 / 0.25)", 106, 90, 205, 0.25d)]
@@ -33,11 +33,11 @@ namespace HtmlToOpenXml.Tests.Primitives
         }
 
         // Failure that leads to empty
-        [TestCase("", 0, 0, 0, 0d)]
-        [TestCase("rgba(1.06, 90, 205, 0.6)", 0, 0, 0, 0.0d)]
-        [TestCase("rgba(a, r, g, b)", 0, 0, 0, 0.0d)]
-        [TestCase("rgb", 0, 0, 0, 0.0d)]
-        public void ParseInvalidHtmlColor_ReturnsEmpty(string htmlColor, byte red, byte green, byte blue, double alpha)
+        [TestCase("")]
+        [TestCase("rgba(1.06, 90, 205, 0.6)")]
+        [TestCase("rgba(a, r, g, b)")]
+        [TestCase("rgb")]
+        public void ParseInvalidHtmlColor_ReturnsEmpty(string htmlColor)
         {
             var color = HtmlColor.Parse(htmlColor);
             Assert.That(color.IsEmpty, Is.True);

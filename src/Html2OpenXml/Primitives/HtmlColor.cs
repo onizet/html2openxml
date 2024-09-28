@@ -82,7 +82,7 @@ readonly partial struct HtmlColor : IEquatable<HtmlColor>
             span = span.Slice(startIndex + 1, endIndex - startIndex - 1);
             Span<Range> tokens = stackalloc Range[5];
             var sep = span.IndexOf(',') > -1? ',' : ' ';
-            return span.Split(tokens, sep) switch
+            return span.Split(tokens, sep, StringSplitOptions.RemoveEmptyEntries) switch
             {
                 3 => FromArgb(1.0,
                     span.Slice(tokens[0]).AsByte(NumberStyles.Integer),
@@ -111,7 +111,7 @@ readonly partial struct HtmlColor : IEquatable<HtmlColor>
             span = span.Slice(startIndex + 1, endIndex - startIndex - 1);
             Span<Range> tokens = stackalloc Range[5];
             var sep = span.IndexOf(',') > -1? ',' : ' ';
-            return span.Split(tokens, sep) switch
+            return span.Split(tokens, sep, StringSplitOptions.RemoveEmptyEntries) switch
             {
                 3 => FromHsl(1.0,
                     span.Slice(tokens[0]).AsDouble(),
