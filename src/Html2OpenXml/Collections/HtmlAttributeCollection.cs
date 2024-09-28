@@ -9,6 +9,7 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
+using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -20,32 +21,24 @@ namespace HtmlToOpenXml;
 /// </summary>
 sealed class HtmlAttributeCollection
 {
-    private static readonly Regex stripStyleAttributesRegex = new(@"(?<name>.+?):\s*(?<val>[^;]+);*\s*");
+    // Encoded ':' and ';' characters are valid for browser but not handled by the regex (bug #13812 reported by robin391)
+    // ex= <span style="text-decoration&#58;underline&#59;color:red">
+    private static readonly Regex stripStyleAttributesRegex = new(@"(?<name>.+?)(:|&\#58;)\s*(?<val>[^;&]+)(;|&\#59;)*\s*");
 
     private readonly Dictionary<string, string> attributes = [];
-
-
 
     private HtmlAttributeCollection()
     {
     }
 
-    public static HtmlAttributeCollection ParseStyle(string? htmlTag)
+    public static HtmlAttributeCollection ParseStyle(string? htmlStyles)
     {
         var collection = new HtmlAttributeCollection();
-        if (string.IsNullOrEmpty(htmlTag)) return collection;
+        if (string.IsNullOrWhiteSpace(htmlStyles)) return collection;
 
-        // Encoded ':' and ';' characters are valid for browser but not handled by the regex (bug #13812 reported by robin391)
-        // ex= <span style="text-decoration&#58;underline&#59;color:red">
-        MatchCollection matches = stripStyleAttributesRegex.Matches(
-#if NET5_0_OR_GREATER
-            System.Web.HttpUtility.HtmlDecode(htmlTag)
-#else 
-            HttpUtility.HtmlDecode(htmlTag)
-#endif
-        );
+        MatchCollection matches = stripStyleAttributesRegex.Matches(htmlStyles);
         foreach (Match m in matches)
-            collection.attributes[m.Groups["name"].Value] = m.Groups["val"].Value;
+            collection.attributes[m.Groups["name"].Value] = m.Groups["val"].Value.TrimEnd();
 
         return collection;
     }
