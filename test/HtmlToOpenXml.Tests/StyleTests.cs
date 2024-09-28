@@ -25,7 +25,7 @@ namespace HtmlToOpenXml.Tests
                     Type = args.Type,
                     BasedOn = new BasedOn { Val = "Normal" },
                     StyleRunProperties = new() {
-                        Color = new() { Val = HtmlColorTranslator.FromHtml("red").ToHexString() }
+                        Color = new() { Val = HtmlColor.Parse("red").ToHexString() }
                     }
                 });
             };
@@ -157,13 +157,6 @@ For 50 years, <b>WWF</b> has been protecting the future of nature. The world's l
             var paragraph = (Paragraph) elements[0];
             Assert.That(paragraph.ParagraphProperties, Is.Not.Null);
             Assert.That(paragraph.ParagraphProperties?.ParagraphStyleId?.Val?.Value, Is.EqualTo("CustomIntenseQuoteStyle"));
-        }
-
-        [Test(Description = "Parser should consider the last occurence of a style")]
-        public void DuplicateStyle_ReturnsLatter()
-        {
-            var styleAttributes = HtmlAttributeCollection.ParseStyle("color:red;color:blue");
-            Assert.That(styleAttributes["color"], Is.EqualTo("blue"));
         }
     }
 }

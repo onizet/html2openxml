@@ -17,7 +17,7 @@ namespace HtmlToOpenXml;
 /// <summary>
 /// Represents an ARGB color.
 /// </summary>
-readonly struct HtmlColor : IEquatable<HtmlColor>
+readonly partial struct HtmlColor : IEquatable<HtmlColor>
 {
     private static readonly char[] hexDigits = {
         '0', '1', '2', '3', '4', '5', '6', '7',
@@ -44,93 +44,110 @@ readonly struct HtmlColor : IEquatable<HtmlColor>
     /// <summary>
     /// Try to parse a value (RGB(A) or HSL(A), hexadecimal, or named color) to its RGB representation.
     /// </summary>
+    /// <param name="span">The color to parse.</param>
+    /// <returns>Returns <see cref="HtmlColor.Empty"/> if parsing failed.</returns>
+    public static HtmlColor Parse(ReadOnlySpan<char> span)
+    {
+        // Is it in hexa? Note: we no more accept hexa value without preceding the '#'
+        if (span[0] == '#')
+        {
+            if (span.Length == 7)
+            {
+                return FromArgb(
+                    span.Slice(1, 2).AsByte(NumberStyles.HexNumber),
+                    span.Slice(3, 2).AsByte(NumberStyles.HexNumber),
+                    span.Slice(5, 2).AsByte(NumberStyles.HexNumber));
+            }
+            if (span.Length == 4)
+            {
+                // #0FF --> #00FFFF
+                ReadOnlySpan<char> r = [span[1], span[1]];
+                ReadOnlySpan<char> g = [span[2], span[2]];
+                ReadOnlySpan<char> b = [span[3], span[3]];
+                return FromArgb(
+                        r.AsByte(NumberStyles.HexNumber),
+                        g.AsByte(NumberStyles.HexNumber),
+                        b.AsByte(NumberStyles.HexNumber));
+            }
+            return Empty;
+        }
+
+        // RGB or RGBA
+        if (span.StartsWith(['r','g','b'], StringComparison.OrdinalIgnoreCase))
+        {
+            int startIndex = span.IndexOf('('), endIndex = span.LastIndexOf(')');
+            if (startIndex < 3 || endIndex == -1)
+                return Empty;
+
+            span = span.Slice(startIndex + 1, endIndex - startIndex - 1);
+            Span<Range> tokens = stackalloc Range[5];
+            var sep = span.IndexOf(',') > -1? ',' : ' ';
+            return span.Split(tokens, sep) switch
+            {
+                3 => FromArgb(1.0,
+                    span.Slice(tokens[0]).AsByte(NumberStyles.Integer),
+                    span.Slice(tokens[1]).AsByte(NumberStyles.Integer),
+                    span.Slice(tokens[2]).AsByte(NumberStyles.Integer)),
+                4 => FromArgb(span.Slice(tokens[3]).AsDouble(),
+                    span.Slice(tokens[0]).AsByte(NumberStyles.Integer),
+                    span.Slice(tokens[1]).AsByte(NumberStyles.Integer),
+                    span.Slice(tokens[2]).AsByte(NumberStyles.Integer)),
+                // r g b / a
+                5 => FromArgb(span.Slice(tokens[4]).AsDouble(),
+                    span.Slice(tokens[0]).AsByte(NumberStyles.Integer),
+                    span.Slice(tokens[1]).AsByte(NumberStyles.Integer),
+                    span.Slice(tokens[2]).AsByte(NumberStyles.Integer)),
+                _ => Empty
+            };
+        }
+
+        // HSL or HSLA
+        if (span.StartsWith(['h','s','l'], StringComparison.OrdinalIgnoreCase))
+        {
+            int startIndex = span.IndexOf('('), endIndex = span.LastIndexOf(')');
+            if (startIndex < 3 || endIndex == -1)
+                return Empty;
+
+            span = span.Slice(startIndex + 1, endIndex - startIndex - 1);
+            Span<Range> tokens = stackalloc Range[5];
+            var sep = span.IndexOf(',') > -1? ',' : ' ';
+            return span.Split(tokens, sep) switch
+            {
+                3 => FromHsl(1.0,
+                    span.Slice(tokens[0]).AsDouble(),
+                    span.Slice(tokens[1]).AsPercent(),
+                    span.Slice(tokens[2]).AsPercent()),
+                4 => FromHsl(span.Slice(tokens[3]).AsDouble(),
+                    span.Slice(tokens[0]).AsDouble(),
+                    span.Slice(tokens[1]).AsPercent(),
+                    span.Slice(tokens[2]).AsPercent()),
+                _ => Empty
+            };
+        }
+
+        return GetNamedColor(span);
+    }
+
+    /// <summary>
+    /// Try to parse a value (RGB(A) or HSL(A), hexadecimal, or named color) to its RGB representation.
+    /// </summary>
     /// <param name="htmlColor">The color to parse.</param>
     /// <returns>Returns <see cref="HtmlColor.Empty"/> if parsing failed.</returns>
     public static HtmlColor Parse(string? htmlColor)
     {
         if (string.IsNullOrEmpty(htmlColor))
-            return HtmlColor.Empty;
+            return Empty;
 
-        // Bug fixed by jairoXXX to support rgb(r,g,b) format
-        // RGB or RGBA
         try
         {
-            if (htmlColor!.StartsWith("rgb", StringComparison.OrdinalIgnoreCase))
-            {
-                int startIndex = htmlColor.IndexOf('(', 3), endIndex = htmlColor.LastIndexOf(')');
-                if (startIndex >= 3 && endIndex > -1)
-                {
-                    var colorStringArray = htmlColor.Substring(startIndex + 1, endIndex - startIndex - 1).Split(',');
-                    if (colorStringArray.Length < 3) return HtmlColor.Empty;
-
-                    return FromArgb(
-                        colorStringArray.Length == 3 ? 1.0: double.Parse(colorStringArray[3], CultureInfo.InvariantCulture),
-                        Byte.Parse(colorStringArray[0], NumberStyles.Integer, CultureInfo.InvariantCulture),
-                        Byte.Parse(colorStringArray[1], NumberStyles.Integer, CultureInfo.InvariantCulture),
-                        Byte.Parse(colorStringArray[2], NumberStyles.Integer, CultureInfo.InvariantCulture)
-                    );
-                }
-            }
-
-            // HSL or HSLA
-            if (htmlColor.StartsWith("hsl", StringComparison.OrdinalIgnoreCase))
-            {
-                int startIndex = htmlColor.IndexOf('(', 3), endIndex = htmlColor.LastIndexOf(')');
-                if (startIndex >= 3 && endIndex > -1)
-                {
-                    var colorStringArray = htmlColor.Substring(startIndex + 1, endIndex - startIndex - 1).Split(',');
-                    if (colorStringArray.Length < 3) return HtmlColor.Empty;
-
-                    return FromHsl(
-                        colorStringArray.Length == 3 ? 1d: double.Parse(colorStringArray[3], CultureInfo.InvariantCulture),
-                        double.Parse(colorStringArray[0], CultureInfo.InvariantCulture),
-                        ParsePercent(colorStringArray[1]),
-                        ParsePercent(colorStringArray[2])
-                    );
-                }
-            }
-
-            // Is it in hexa? Note: we no more accept hexa value without preceding the '#'
-            if (htmlColor[0] == '#' && (htmlColor.Length == 7 || htmlColor.Length == 4))
-            {
-                if (htmlColor.Length == 7)
-                {
-                    return FromArgb(
-                        Convert.ToByte(htmlColor.Substring(1, 2), 16),
-                        Convert.ToByte(htmlColor.Substring(3, 2), 16),
-                        Convert.ToByte(htmlColor.Substring(5, 2), 16));
-                }
-
-                // #0FF --> #00FFFF
-                return FromArgb(
-                        Convert.ToByte(new string(htmlColor[1], 2), 16),
-                        Convert.ToByte(new string(htmlColor[2], 2), 16),
-                        Convert.ToByte(new string(htmlColor[3], 2), 16));
-            }
+            return Parse(htmlColor.AsSpan());
         }
         catch (Exception exc)
         {
             if (exc is FormatException || exc is OverflowException || exc is ArgumentOutOfRangeException)
-                return HtmlColor.Empty;
+                return Empty;
             throw;
         }
-
-        return HtmlColorTranslator.FromHtml(htmlColor);
-    }
-
-    /// <summary>
-    /// Convert a potential percentage value to its numeric representation.
-    /// Saturation and Lightness can contains both a percentage value or a value comprised between 0.0 and 1.0. 
-    /// </summary>
-    private static double ParsePercent (string value)
-    {
-        double parsedValue;
-        if (value.IndexOf('%') > -1)
-            parsedValue = double.Parse(value.Replace('%', ' '), CultureInfo.InvariantCulture) / 100d;
-        else
-            parsedValue = double.Parse(value, CultureInfo.InvariantCulture);
-
-        return Math.Min(1, Math.Max(0, parsedValue));
     }
 
     /// <summary>
