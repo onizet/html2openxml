@@ -73,7 +73,7 @@ readonly struct Unit
             };
 
             // not recognised but maybe this is unitless (only digits) 
-            if (metric == UnitMetric.Unknown && char.IsDigit(metricSpan[0]))
+            if (metric == UnitMetric.Unknown && (char.IsDigit(metricSpan[0]) || metricSpan[0] == '.'))
             {
                 metric = UnitMetric.Unitless;
                 metricSize = 0;

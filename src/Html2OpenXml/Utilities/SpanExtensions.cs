@@ -107,15 +107,15 @@ static class SpanExtensions
                 continue;
             }
 
-            destination[matches] = new Range(index, index + tokenEnd);
+            destination[matches] = new Range(index, tokenEnd);
             matches++;
 
-            if (matches > destination.Length || span.Length <= tokenEnd)
+            if (matches >= destination.Length || span.Length <= tokenEnd)
                break;
 
             // move to next token
-            span = span.Slice(tokenEnd );
-            index += tokenEnd;
+            span = span.Slice(tokenEnd + 1);
+            index += tokenEnd + 1;
         }
 
         return matches;
