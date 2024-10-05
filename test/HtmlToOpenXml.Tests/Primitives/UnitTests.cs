@@ -9,6 +9,7 @@ namespace HtmlToOpenXml.Tests.Primitives
     class UnitTests
     {
         [TestCase("auto", 0, UnitMetric.Auto)]
+        [TestCase("AUTO", 0, UnitMetric.Auto, Description = "Should be case insensitive")]
         [TestCase("5%", 5, UnitMetric.Percent)]
         [TestCase(" 12 px", 12, UnitMetric.Pixel)]
         [TestCase(" 12 ", 12, UnitMetric.Unitless)]

@@ -46,6 +46,9 @@ readonly struct Unit
             return new Unit(defaultMetric, span[0] - '0');
         }
 
+        Span<char> loweredValue = span.Length <= 128 ? stackalloc char[span.Length] : new char[span.Length];
+        span.ToLowerInvariant(loweredValue);
+
         // guess the unit first than use the native Double parsing
         UnitMetric metric;
         int metricSize = 2;
@@ -56,9 +59,6 @@ readonly struct Unit
         }
         else
         {
-            Span<char> loweredValue = span.Length <= 128 ? stackalloc char[span.Length] : new char[span.Length];
-            span.ToLowerInvariant(loweredValue);
-
             var metricSpan = loweredValue.Slice(loweredValue.Length - 2, 2);
             metric = metricSpan switch {
                 "in" => UnitMetric.Inch,
@@ -91,7 +91,7 @@ readonly struct Unit
         catch (Exception)
         {
             // No digits, we ignore this style
-            return span is "auto"? Auto : Empty;
+            return loweredValue is "auto"? Auto : Empty;
         }
 
         return new Unit(metric, value);
