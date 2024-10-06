@@ -27,12 +27,13 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test(Description = "Two consecutive lists should restart numbering to 1")]
-        public void ConsecutiveList_ReturnsList_RestartingOrder()
+        public async Task ConsecutiveList_ReturnsList_RestartingOrder()
         {
-            var elements = converter.Parse(@"
+            await converter.ParseBody(@"
                 <oL><li>Item 1.1</li></oL>
                 <p>placeholder</p>
                 <ol><li>Item 2.1</li></ol>");
+            var elements = mainPart.Document.Body!.ChildElements;
             Assert.Multiple(() => {
                 Assert.That(elements, Has.Count.EqualTo(3));
                 Assert.That(elements, Is.All.TypeOf<Paragraph>());
@@ -59,18 +60,20 @@ namespace HtmlToOpenXml.Tests
                     Is.Not.EqualTo(p2.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value),
                     "Expected two different list instances");
             });
+            AssertThatOpenXmlDocumentIsValid();
         }
 
         [Test]
-        public void NestedNumberList_ReturnsMultilevelList()
+        public async Task NestedNumberList_ReturnsMultilevelList()
         {
-            var elements = converter.Parse(
+            await converter.ParseBody(
                 @"<ol>
                     <li>Item 1
                         <ol><li>Item 1.1</li></ol>
                     </li>
                     <li>Item 2</li>
                 </ol>");
+            var elements = mainPart.Document.Body!.ChildElements;
             Assert.Multiple(() => {
                 Assert.That(elements, Has.Count.EqualTo(3));
                 Assert.That(elements, Is.All.TypeOf<Paragraph>());
@@ -113,6 +116,7 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(p1_1.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value, Is.EqualTo(1));
                 Assert.That(p2.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value, Is.EqualTo(0));
             });
+            AssertThatOpenXmlDocumentIsValid();
         }
 
         [Test(Description = "Empty list should not be registred")]
@@ -392,12 +396,13 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test]
-        public void RomanList_ReturnsListWithCustomStyle()
+        public async Task RomanList_ReturnsListWithCustomStyle()
         {
-            var elements = converter.Parse(@"<ul style='list-style-type:lower-roman'>
+            await converter.ParseBody(@"<ul style='list-style-type:lower-roman'>
                     <li>Item 1</li>
                 </ul>");
 
+            var elements = mainPart.Document.Body!.ChildElements;
             Assert.That(elements, Is.Not.Empty);
             Assert.That(elements, Is.All.TypeOf<Paragraph>());
             var numId = ((Paragraph) elements[0]).ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value;
@@ -418,12 +423,13 @@ namespace HtmlToOpenXml.Tests
                 .Elements<Style>()
                 .FirstOrDefault(s => s.StyleName?.Val == "Harvard");
             Assert.That(style, Is.Not.Null);
+            AssertThatOpenXmlDocumentIsValid();
         }
 
         [Test(Description = "Restart indenting in second nested numbering (issue #83)")]
-        public void NestedNumbering_ReturnsNestedList_RestartingOrder()
+        public async Task NestedNumbering_ReturnsNestedList_RestartingOrder()
         {
-            var elements = converter.Parse(@"
+            await converter.ParseBody(@"
                 <ol style='list-style-type: decimal;'>
                 <li>item 1a
                     <ol style='list-style-type: lower-alpha;'>
@@ -439,6 +445,7 @@ namespace HtmlToOpenXml.Tests
                 </li>
                 </ol>");
 
+            var elements = mainPart.Document.Body!.ChildElements;
             var absNum = mainPart.NumberingDefinitionsPart?.Numbering
                 .Elements<AbstractNum>();
             Assert.That(absNum, Is.Not.Null);
@@ -455,8 +462,9 @@ namespace HtmlToOpenXml.Tests
             });
             Assert.That(instances.Last().GetFirstChild<LevelOverride>()?.LevelIndex?.Value, Is.EqualTo(1));
             Assert.That(instances.Last().GetFirstChild<LevelOverride>()?.StartOverrideNumberingValue?.Val?.Value, Is.EqualTo(1));
+            AssertThatOpenXmlDocumentIsValid();
         }
-    
+
         [TestCase("rtl", true)]
         [TestCase("ltr", false)]
         [TestCase("", null)]

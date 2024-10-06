@@ -80,8 +80,8 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
 
             abstractNum.StyleLink = new StyleLink { Val = "Harvard" };
             context.DocumentStyle.AddStyle("Harvard", new Style (
-                new Name { Val = "Harvard" },
-                new ParagraphProperties(
+                new StyleName { Val = "Harvard" },
+                new StyleParagraphProperties(
                     new NumberingProperties() { NumberingId = new() { Val = abstractNum.AbstractNumberId } }
                 )) {
                 Type = StyleValues.Numbering,
