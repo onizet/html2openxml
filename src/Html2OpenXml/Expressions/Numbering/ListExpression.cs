@@ -83,7 +83,6 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 
             p.ParagraphProperties ??= new();
             p.ParagraphProperties.ParagraphStyleId = GetStyleIdForListItem(context.DocumentStyle, liNode);
-            p.ParagraphProperties.Indentation = level < 2? null : new() { Left = (level * Indentation).ToString() };
             p.ParagraphProperties.NumberingProperties = new NumberingProperties {
                 NumberingLevelReference = new() { Val = level - 1 },
                 NumberingId = new() { Val = listContext.InstanceId }

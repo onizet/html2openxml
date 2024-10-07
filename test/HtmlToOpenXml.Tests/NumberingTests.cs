@@ -10,6 +10,9 @@ namespace HtmlToOpenXml.Tests
     [TestFixture]
     public class NumberingTests : HtmlConverterTestBase
     {
+        const int maxLevel = 8;
+
+
         [Test(Description = "Skip any elements that is not a `li` tag")]
         public void NonLiElement_ShouldBeIgnored()
         {
@@ -181,7 +184,6 @@ namespace HtmlToOpenXml.Tests
         [Test(Description = "Word doesn't display more than 8 deep levels.")]
         public void MaxNumberingLevel_ShouldBeIgnored()
         {
-            const int maxLevel = 8;
             var sb = new System.Text.StringBuilder();
             for (int i = 0; i <= maxLevel; i++)
                 sb.AppendFormat("<ol><li>Item {0}", i+1);
@@ -333,9 +335,9 @@ namespace HtmlToOpenXml.Tests
         /// Tiered numbering such as: 1, 1.1, 1.1.1
         /// </summary>
         [Test(Description = "Nested numbering (issue #81)")]
-        public void DecimalTieredStyle_ReturnsListWithTieredNumbering()
+        public async Task DecimalTieredStyle_ReturnsListWithTieredNumbering()
         {
-            var elements = converter.Parse(
+            await converter.ParseBody(
                 @"<ol style='list-style-type:decimal-tiered'>
                     <li>Item 1
                         <ol><li>Item 1.1</li></ol>
@@ -343,6 +345,7 @@ namespace HtmlToOpenXml.Tests
                     <li>Item 2</li>
                 </ol>");
 
+            var elements = mainPart.Document.Body!.ChildElements;
             var absNum = mainPart.NumberingDefinitionsPart?.Numbering
                 .Elements<AbstractNum>()
                 .SingleOrDefault();
@@ -351,10 +354,15 @@ namespace HtmlToOpenXml.Tests
             var instances = mainPart.NumberingDefinitionsPart?.Numbering
                 .Elements<NumberingInstance>().Where(i => i.AbstractNumId!.Val == absNum.AbstractNumberId);
             Assert.That(instances, Is.Not.Null);
+            var levels = absNum.Elements<Level>();
             Assert.Multiple(() =>
             {
                 Assert.That(instances.Count(), Is.EqualTo(1));
                 Assert.That(instances.Select(i => i.NumberID?.HasValue), Has.All.True);
+                Assert.That(levels.Count(), Is.EqualTo(maxLevel + 1));
+                Assert.That(levels.Select(l => l.NumberingFormat?.Val?.Value), Has.All.EqualTo(NumberFormatValues.Decimal));
+                Assert.That(levels.Select(l => l.PreviousParagraphProperties?.Indentation?.Left?.Value), Has.All.EqualTo("0"),
+                    "Decimal Tiered style must all be aligned on left with no indent");
             });
 
             Assert.That(elements, Is.Not.Empty);
@@ -363,6 +371,7 @@ namespace HtmlToOpenXml.Tests
                 e.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value),
                 Has.All.EqualTo(instances.First().NumberID!.Value),
                 "All paragraphs are linked to the same list instance");
+            AssertThatOpenXmlDocumentIsValid();
         }
 
         [Test(Description = "Allow to specify another start value for the first item of a `ol` list")]
@@ -502,6 +511,35 @@ namespace HtmlToOpenXml.Tests
             });
             var bidi = elements.Last().GetFirstChild<ParagraphProperties>()?.BiDi;
             return bidi?.Val?.Value;
+        }
+
+        [Test]
+        public void NestedNumberList_ReturnsIncrementalIdentation()
+        {
+            const int maxLevel = 8;
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < maxLevel; i++)
+                sb.AppendFormat("<ol><li>Item {0}", i+1);
+            for (int i = 0; i < maxLevel; i++)
+                sb.Append("</li></ol>");
+
+            converter.Parse(sb.ToString());
+
+            var absNum = mainPart.NumberingDefinitionsPart?.Numbering
+                .Elements<AbstractNum>()
+                .SingleOrDefault();
+            Assert.That(absNum, Is.Not.Null);
+
+            var levels = absNum.Elements<Level>();
+            Assert.That(levels.Count(), Is.EqualTo(maxLevel + 1));
+            for (int i = 0; i <= maxLevel; i++)
+            {
+                var level = levels.ElementAt(i);
+                var ident = level.PreviousParagraphProperties?.Indentation;
+                Assert.That(ident?.Hanging?.Value, Is.EqualTo("360"));
+                Assert.That(Convert.ToInt32(ident?.Left?.Value), Is.EqualTo((i + 1) * 2 * 360));
+                TestContext.Out.WriteLine($"{i}. {ident?.Left?.Value}");
+            }
         }
     }
 }

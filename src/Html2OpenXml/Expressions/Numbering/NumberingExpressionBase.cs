@@ -252,7 +252,10 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
                     LevelText = new() { Val = string.Format(text, lvlIndex+1) },
                     LevelJustification = new() { Val = LevelJustificationValues.Left },
                     PreviousParagraphProperties = new() {
-                        Indentation = new() { Left = Indentation.ToString(), Hanging = Indentation.ToString() }
+                        Indentation = new() {
+                            Left = ((lvlIndex + 1) * Indentation * 2).ToString(),
+                            Hanging = Indentation.ToString()
+                        }
                     },
                     NumberingSymbolRunProperties = useSymbol? new () {
                         RunFonts = new() { Ascii = "Symbol", Hint = FontTypeHintValues.Default }
@@ -280,7 +283,10 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
                     StartNumberingValue = new() { Val = 1 },
                     NumberingFormat = new() { Val = NumberFormatValues.Decimal },
                     LevelIndex = lvlIndex,
-                    LevelText = new() { Val = lvlText.ToString() }
+                    LevelText = new() { Val = lvlText.ToString() },
+                    PreviousParagraphProperties = new() {
+                        Indentation = new() { Left = "0", Hanging = Indentation.ToString() }
+                    }
                 });
             }
             knownAbstractNums.Add(listName, abstractNum);
