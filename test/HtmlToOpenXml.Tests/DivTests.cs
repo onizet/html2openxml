@@ -144,5 +144,32 @@ namespace HtmlToOpenXml.Tests
             });
             Assert.That(((Text)lastRun.LastChild).Text, Is.Empty);
         }
+
+        [Test(Description = "Border defined on container should render its content with one bordered frame #168")] 
+        public async Task WithBorders_ReturnsAsOneFramedBlock()
+        {
+            await converter.ParseBody(@"<div style=""margin-top: 20px; border: 1px dashed rgba(0, 0, 0, 0.4); display: flex; gap: 5px; padding: 6px 8px; font-size: 14px;"">
+              <div>
+                <p>Header placeholder:</p>
+                <ol>
+                    <li>Item 1</li>
+                    <li>Item 2</li>
+                </ol>
+                <p style=""text-indent: 4.5em"">Footer Placeholder</p>
+              </div>
+            </div>");
+            AssertThatOpenXmlDocumentIsValid();
+
+            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
+            Assert.That(paragraphs, Is.Not.Empty);
+            Assert.That(paragraphs.Select(p => p.ParagraphProperties?.ParagraphBorders), Has.All.Not.Empty);
+            Assert.That(paragraphs.Take(paragraphs.Count() - 1)
+                .Select(p => p.ParagraphProperties?.Indentation?.Right?.Value), Has.All.EqualTo("0"),
+                "Assert that all paragraphs right indentation is reset");
+            Assert.That(paragraphs.Last().ParagraphProperties?.Indentation?.FirstLine?.Value, Is.EqualTo("1080"),
+                "Assert that paragraph with text-indent is preserved");
+            Assert.That(paragraphs.Last().ParagraphProperties?.Indentation?.Right, Is.Null,
+                "Assert that paragraph with right indentation is preserved");
+        }
     }
 }

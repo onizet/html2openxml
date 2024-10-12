@@ -27,6 +27,10 @@ class BlockElementExpression: PhrasingElementExpression
 {
     private readonly OpenXmlLeafElement[]? defaultStyleProperties;
     protected readonly ParagraphProperties paraProperties = new();
+    // some style attributes, such as borders, must be applied on multiple paragraphs
+    // in order to render as one single block of content.
+    protected bool renderAsOneBlock;
+
 
     public BlockElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProperty) : base(node)
     {
@@ -42,19 +46,32 @@ class BlockElementExpression: PhrasingElementExpression
     /// <inheritdoc/>
     public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
     {
-        var elements = base.Interpret(context);
+        var childElements = base.Interpret(context);
 
         var bookmarkTarget = node.GetAttribute(InternalNamespaceUri, "bookmark");
         if (bookmarkTarget is not null)
         {
             var bookmarkId = IncrementBookmarkId(context).ToString(CultureInfo.InvariantCulture);
-            var p = elements.First();
+            var p = childElements.First();
             // need to be inserted after pPr to avoid schema warning
             p.InsertAfter(new BookmarkStart() { Id = bookmarkId, Name = bookmarkTarget }, p.GetFirstChild<ParagraphProperties>());
             p.AppendChild(new BookmarkEnd() { Id = bookmarkId });
         }
 
-        return elements;
+        if (!renderAsOneBlock)
+            return childElements;
+
+        // to group together those paragraphs, we must force some indentation requirement
+        foreach (var p in childElements.OfType<Paragraph>())
+        {
+            p.ParagraphProperties ??= new();
+            // do not override indentation if `text-indent` was previously set
+            if ((p.ParagraphProperties.Indentation?.FirstLine?.HasValue) != true)
+            {
+                p.ParagraphProperties.Indentation = new() { Right = "0" };
+            }
+        }
+        return childElements;
     }
 
     protected override IEnumerable<OpenXmlElement> Interpret (
@@ -157,6 +174,7 @@ class BlockElementExpression: PhrasingElementExpression
             };
 
             paraProperties.ParagraphBorders = borders;
+            renderAsOneBlock = true;
         }
 
         foreach (string className in node.ClassList)
