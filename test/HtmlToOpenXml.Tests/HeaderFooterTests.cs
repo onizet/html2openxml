@@ -109,5 +109,48 @@ namespace HtmlToOpenXml.Tests
             });
             AssertThatOpenXmlDocumentIsValid();
         }
+
+        [Test]
+        public async Task Header_ReturnsStyleParagraphs()
+        {
+            await converter.ParseHeader(@"
+                <header>
+                <p>Placeholder
+                    <nav>
+                        <ul><li>Home</li><li>Contact</li></ul>
+                    </nav>
+                </p>
+                </header>
+            ");
+
+            var header = mainPart.HeaderParts.FirstOrDefault()?.Header;
+            Assert.That(header, Is.Not.Null);
+            var paragraphs = header.Elements<Paragraph>();
+            Assert.That(paragraphs.Count(), Is.EqualTo(3));
+            Assert.That(paragraphs.First().ParagraphProperties?.ParagraphStyleId?.Val?.Value,
+                Is.EqualTo(converter.HtmlStyles.DefaultStyles.HeaderStyle));
+            Assert.That(paragraphs.Skip(1).Select(p => p.ParagraphProperties?.ParagraphStyleId?.Val?.Value),
+                Has.All.EqualTo(converter.HtmlStyles.DefaultStyles.ListParagraphStyle));
+        }
+
+        [Test]
+        public async Task Footer_ReturnsStyleParagraphs()
+        {
+            await converter.ParseFooter(@"
+                <footer>
+                <p>
+                    <a rel=""license"" href=""https://creativecommons.org/licenses/by/4.0/"">Copyrighted but you can use what's here as long as you credit me</a>
+                    <small>&copy; Copyright 2058, Company Inc.</small>
+                </p>
+                </footer>
+            ");
+
+            var footer = mainPart.FooterParts.FirstOrDefault()?.Footer;
+            Assert.That(footer, Is.Not.Null);
+            var paragraphs = footer.Elements<Paragraph>();
+            Assert.That(paragraphs.Count(), Is.EqualTo(2));
+            Assert.That(paragraphs.Select(p => p.ParagraphProperties?.ParagraphStyleId?.Val?.Value),
+                Has.All.EqualTo(converter.HtmlStyles.DefaultStyles.FooterStyle));
+        }
     }
 }

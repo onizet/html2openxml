@@ -23,10 +23,20 @@ namespace HtmlToOpenXml.Expressions;
 /// Process the parsing of block contents (like <c>p</c>, <c>span</c>, <c>heading</c>).
 /// A block-level element always starts on a new line, and the browsers automatically add some space (a margin) before and after the element.
 /// </summary>
-class BlockElementExpression(IHtmlElement node, params OpenXmlLeafElement[]? styleProperty) : PhrasingElementExpression(node)
+class BlockElementExpression: PhrasingElementExpression
 {
-    private readonly OpenXmlLeafElement[]? defaultStyleProperties = styleProperty;
+    private readonly OpenXmlLeafElement[]? defaultStyleProperties;
     protected readonly ParagraphProperties paraProperties = new();
+
+    public BlockElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProperty) : base(node)
+    {
+        if (styleProperty is not null)
+            defaultStyleProperties = [styleProperty];
+    }
+    public BlockElementExpression(IHtmlElement node, params OpenXmlLeafElement[]? styleProperty) : base(node)
+    {
+        defaultStyleProperties = styleProperty;
+    }
 
 
     /// <inheritdoc/>
