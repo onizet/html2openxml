@@ -58,7 +58,7 @@ class BlockElementExpression: PhrasingElementExpression
             p.AppendChild(new BookmarkEnd() { Id = bookmarkId });
         }
 
-        if (!renderAsOneBlock)
+        if (!renderAsOneBlock || childElements.Count() < 2)
             return childElements;
 
         // to group together those paragraphs, we must force some indentation requirement
