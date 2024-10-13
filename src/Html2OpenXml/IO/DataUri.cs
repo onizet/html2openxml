@@ -84,7 +84,11 @@ public sealed class DataUri
         if (match.Groups["base64"].Length > 0)
         {
             // be careful that the raw data is encoded for url (standard %xx hex encoding)
+#if NET5_0_OR_GREATER
+            string base64 = System.Web.HttpUtility.HtmlDecode(match.Groups["data"].Value);
+#else 
             string base64 = HttpUtility.HtmlDecode(match.Groups["data"].Value);
+#endif
 
             try
             {
