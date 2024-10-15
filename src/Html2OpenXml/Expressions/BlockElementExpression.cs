@@ -27,9 +27,9 @@ class BlockElementExpression: PhrasingElementExpression
 {
     private readonly OpenXmlLeafElement[]? defaultStyleProperties;
     protected readonly ParagraphProperties paraProperties = new();
-    // some style attributes, such as borders, must be applied on multiple paragraphs
-    // in order to render as one single block of content.
-    protected bool renderAsOneBlock;
+    // some style attributes, such as borders or bgcolor, will convert this node to a framed container
+    protected bool renderAsFramed;
+    private HtmlBorder styleBorder;
 
 
     public BlockElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProperty) : base(node)
@@ -58,20 +58,69 @@ class BlockElementExpression: PhrasingElementExpression
             p.AppendChild(new BookmarkEnd() { Id = bookmarkId });
         }
 
-        if (!renderAsOneBlock || childElements.Count() < 2)
+        if (!renderAsFramed)
             return childElements;
 
-        // to group together those paragraphs, we must force some indentation requirement
-        foreach (var p in childElements.OfType<Paragraph>())
+        var paragraphs = childElements.OfType<Paragraph>();
+        if (!paragraphs.Any()) return childElements;
+
+        // if we have only 1 paragraph, just inline the styles
+        if (paragraphs.Count() == 1)
         {
-            p.ParagraphProperties ??= new();
-            // do not override indentation if `text-indent` was previously set
-            if ((p.ParagraphProperties.Indentation?.FirstLine?.HasValue) != true)
+            var p = paragraphs.First();
+
+            if (!styleBorder.IsEmpty && p.ParagraphProperties?.ParagraphBorders is null)
             {
-                p.ParagraphProperties.Indentation = new() { Right = "0" };
+                p.ParagraphProperties ??= new();
+                p.ParagraphProperties!.ParagraphBorders = new ParagraphBorders {
+                    LeftBorder = Converter.ToBorder<LeftBorder>(styleBorder.Left),
+                    RightBorder = Converter.ToBorder<RightBorder>(styleBorder.Right),
+                    TopBorder = Converter.ToBorder<TopBorder>(styleBorder.Top),
+                    BottomBorder = Converter.ToBorder<BottomBorder>(styleBorder.Bottom)
+                };
             }
+
+            return childElements;
         }
-        return childElements;
+
+        // if we have 2+ paragraphs, we will embed them inside a stylised table
+        return [CreateFrame(childElements)];
+    }
+
+    /// <summary>
+    /// Group all the paragraph inside a framed table.
+    /// </summary>
+    private Table CreateFrame(IEnumerable<OpenXmlElement> childElements)
+    {
+        TableCell cell;
+        TableProperties tableProperties;
+        Table framedTable = new(
+            tableProperties = new TableProperties {
+                TableWidth = new() { Type = TableWidthUnitValues.Auto, Width = "0" } // 100%
+            },
+            new TableGrid(
+                new GridColumn() { Width = "5610" }),
+            new TableRow(
+                cell = new TableCell(childElements)
+                )
+            );
+
+        if (!styleBorder.IsEmpty)
+        {
+            tableProperties.TableBorders = new TableBorders {
+                LeftBorder = Converter.ToBorder<LeftBorder>(styleBorder.Left),
+                RightBorder = Converter.ToBorder<RightBorder>(styleBorder.Right),
+                TopBorder = Converter.ToBorder<TopBorder>(styleBorder.Top),
+                BottomBorder = Converter.ToBorder<BottomBorder>(styleBorder.Bottom)
+            };
+        }
+
+        if (runProperties.Shading != null)
+        {
+            cell.TableCellProperties = new() { Shading = (Shading?) runProperties.Shading.Clone() };
+        }
+
+        return framedTable;
     }
 
     protected override IEnumerable<OpenXmlElement> Interpret (
@@ -163,18 +212,10 @@ class BlockElementExpression: PhrasingElementExpression
         }
 
 
-        var styleBorder = styleAttributes.GetBorders();
+        styleBorder = styleAttributes.GetBorders();
         if (!styleBorder.IsEmpty)
         {
-            var borders = new ParagraphBorders {
-                LeftBorder = Converter.ToBorder<LeftBorder>(styleBorder.Left),
-                RightBorder = Converter.ToBorder<RightBorder>(styleBorder.Right),
-                TopBorder = Converter.ToBorder<TopBorder>(styleBorder.Top),
-                BottomBorder = Converter.ToBorder<BottomBorder>(styleBorder.Bottom)
-            };
-
-            paraProperties.ParagraphBorders = borders;
-            renderAsOneBlock = true;
+            renderAsFramed = true;
         }
 
         foreach (string className in node.ClassList)
@@ -187,8 +228,8 @@ class BlockElementExpression: PhrasingElementExpression
             }
         }
 
-        Margin margin = styleAttributes.GetMargin("margin");
-        Indentation? indentation = null;
+        var margin = styleAttributes.GetMargin("margin");
+         Indentation? indentation = null;
         if (!margin.IsEmpty)
         {
             if (margin.Top.IsFixed || margin.Bottom.IsFixed)
@@ -264,6 +305,9 @@ class BlockElementExpression: PhrasingElementExpression
                 };
             }
         }
+
+        if (runProperties.Shading != null)
+            renderAsFramed = true;
     }
 
     /// <summary>

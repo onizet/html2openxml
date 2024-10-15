@@ -149,9 +149,9 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test(Description = "Border defined on container should render its content with one bordered frame #168")] 
-        public async Task WithBorders_ReturnsAsOneFramedBlock()
+        public async Task WithBorders_MultipleParagraphs_ReturnsAsOneFramedBlock()
         {
-            await converter.ParseBody(@"<div style='margin-top: 20px; border: 1px dashed rgba(0, 0, 0, 0.4); display: flex; gap: 5px; padding: 6px 8px; font-size: 14px;'>
+            await converter.ParseBody(@"<div style='margin-top: 20px; border: 1px dashed rgba(0, 0, 0, 0.4); padding: 6px 8px; font-size: 14px;'>
               <div>
                 <p>Header placeholder:</p>
                 <ol>
@@ -164,19 +164,46 @@ namespace HtmlToOpenXml.Tests
             AssertThatOpenXmlDocumentIsValid();
 
             var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
-            Assert.That(paragraphs, Is.Not.Empty);
-            Assert.That(paragraphs.Select(p => p.ParagraphProperties?.ParagraphBorders), Has.All.Not.Empty);
-            Assert.That(paragraphs.SelectMany(p => p.ParagraphProperties?.ParagraphBorders!.Elements<BorderType>()!)
+            Assert.That(paragraphs, Is.Empty, "Assert that all the paragraphs stand inside the framed table");
+
+            var framedTable = mainPart.Document.Body!.Elements<Table>().FirstOrDefault();
+            Assert.That(framedTable, Is.Not.Null);
+
+            var borders = framedTable.GetFirstChild<TableProperties>()?.TableBorders;
+            Assert.That(borders, Is.Not.Null, "Assert that border is applied on table scope");
+            Assert.That(borders.Elements<BorderType>()!
                 .Select(b => b.Val?.Value),
                 Has.All.EqualTo(BorderValues.Dashed));
 
-            Assert.That(paragraphs.Take(paragraphs.Count() - 1)
-                .Select(p => p.ParagraphProperties?.Indentation?.Right?.Value), Has.All.EqualTo("0"),
-                "Assert that all paragraphs right indentation is reset");
+            var cell = framedTable.GetFirstChild<TableRow>()?.GetFirstChild<TableCell>();
+            Assert.That(cell, Is.Not.Null);
+            paragraphs = cell.Elements<Paragraph>();
+            Assert.That(paragraphs, Is.Not.Empty);
+
             Assert.That(paragraphs.Last().ParagraphProperties?.Indentation?.FirstLine?.Value, Is.EqualTo("1080"),
                 "Assert that paragraph with text-indent is preserved");
             Assert.That(paragraphs.Last().ParagraphProperties?.Indentation?.Right, Is.Null,
                 "Assert that paragraph with right indentation is preserved");
+        }
+
+        [Test(Description = "Background color defined on container should render its content with one bordered frame")] 
+        public async Task WithBgcolor_MultipleParagraphs_ReturnsAsOneFramedBlock()
+        {
+            await converter.ParseBody(@"<article style='background: orange'>
+                <header>Header placeholder</header>
+                <p>Body Placeholder</p>
+            </article>");
+            AssertThatOpenXmlDocumentIsValid();
+
+            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
+            Assert.That(paragraphs, Is.Empty, "Assert that all the paragraphs stand inside the framed table");
+
+            var framedTable = mainPart.Document.Body!.Elements<Table>().FirstOrDefault();
+            Assert.That(framedTable, Is.Not.Null);
+
+            var shading = framedTable.GetFirstChild<TableRow>()?.GetFirstChild<TableCell>()?.TableCellProperties?.Shading;
+            Assert.That(shading, Is.Not.Null, "Assert that background-color is applied on table scope");
+            Assert.That(shading.Fill?.Value, Is.EqualTo("FFA500"));
         }
     }
 }
