@@ -87,42 +87,6 @@ class BlockElementExpression: PhrasingElementExpression
         return [CreateFrame(childElements)];
     }
 
-    /// <summary>
-    /// Group all the paragraph inside a framed table.
-    /// </summary>
-    private Table CreateFrame(IEnumerable<OpenXmlElement> childElements)
-    {
-        TableCell cell;
-        TableProperties tableProperties;
-        Table framedTable = new(
-            tableProperties = new TableProperties {
-                TableWidth = new() { Type = TableWidthUnitValues.Auto, Width = "0" } // 100%
-            },
-            new TableGrid(
-                new GridColumn() { Width = "5610" }),
-            new TableRow(
-                cell = new TableCell(childElements)
-                )
-            );
-
-        if (!styleBorder.IsEmpty)
-        {
-            tableProperties.TableBorders = new TableBorders {
-                LeftBorder = Converter.ToBorder<LeftBorder>(styleBorder.Left),
-                RightBorder = Converter.ToBorder<RightBorder>(styleBorder.Right),
-                TopBorder = Converter.ToBorder<TopBorder>(styleBorder.Top),
-                BottomBorder = Converter.ToBorder<BottomBorder>(styleBorder.Bottom)
-            };
-        }
-
-        if (runProperties.Shading != null)
-        {
-            cell.TableCellProperties = new() { Shading = (Shading?) runProperties.Shading.Clone() };
-        }
-
-        return framedTable;
-    }
-
     protected override IEnumerable<OpenXmlElement> Interpret (
         ParsingContext context, IEnumerable<AngleSharp.Dom.INode> childNodes)
     {
@@ -216,6 +180,7 @@ class BlockElementExpression: PhrasingElementExpression
         if (!styleBorder.IsEmpty)
         {
             renderAsFramed = true;
+            runProperties.Border = null;
         }
 
         foreach (string className in node.ClassList)
@@ -392,6 +357,43 @@ class BlockElementExpression: PhrasingElementExpression
         }
 
         return p;
+    }
+
+
+    /// <summary>
+    /// Group all the paragraph inside a framed table.
+    /// </summary>
+    private Table CreateFrame(IEnumerable<OpenXmlElement> childElements)
+    {
+        TableCell cell;
+        TableProperties tableProperties;
+        Table framedTable = new(
+            tableProperties = new TableProperties {
+                TableWidth = new() { Type = TableWidthUnitValues.Pct, Width = "5000" } // 100%
+            },
+            new TableGrid(
+                new GridColumn() { Width = "9442" }),
+            new TableRow(
+                cell = new TableCell(childElements)
+                )
+            );
+
+        if (!styleBorder.IsEmpty)
+        {
+            tableProperties.TableBorders = new TableBorders {
+                LeftBorder = Converter.ToBorder<LeftBorder>(styleBorder.Left),
+                RightBorder = Converter.ToBorder<RightBorder>(styleBorder.Right),
+                TopBorder = Converter.ToBorder<TopBorder>(styleBorder.Top),
+                BottomBorder = Converter.ToBorder<BottomBorder>(styleBorder.Bottom)
+            };
+        }
+
+        if (runProperties.Shading != null)
+        {
+            cell.TableCellProperties = new() { Shading = (Shading?) runProperties.Shading.Clone() };
+        }
+
+        return framedTable;
     }
 
     /// <summary>
