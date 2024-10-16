@@ -80,6 +80,22 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements, Is.Empty);
         }
 
+        [Test(Description = "Reading image from a local base image url.")]
+        public async Task FileSystem_LocalImage_WithBaseUri_ShouldSucceed()
+        {
+            string baseUri = TestContext.CurrentContext.WorkDirectory;
+
+            using var resourceStream = ResourceHelper.GetStream("Resources.html2openxml.jpg");
+            using (var fileStream = File.OpenWrite(Path.Combine(baseUri, "html2openxml.jpg")))
+                await resourceStream.CopyToAsync(fileStream);
+
+            converter = new(mainPart, new IO.DefaultWebRequest { BaseImageUrl = new Uri(baseUri) });
+
+            var elements = await converter.ParseAsync("<img src='html2openxml.jpg'>");
+            Assert.That(elements.Count(), Is.EqualTo(1));
+            AssertIsImg(mainPart, elements.First());
+        }
+
         [Test(Description = "Reading local file containing a space in the name")]
         public async Task FileSystem_LocalImage_WithSpaceInName_ShouldSucceed()
         {

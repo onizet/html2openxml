@@ -101,4 +101,10 @@ public class DefaultStyles
     /// </summary>
     /// <value>Footer</value>
     public string FooterStyle { get; set; } = PredefinedStyles.Footer;
+
+    /// <summary>
+    /// Default style for body paragraph.
+    /// </summary>
+    /// <value>Normal</value>
+    public string Paragraph { get; set; } = PredefinedStyles.Paragraph;
 }

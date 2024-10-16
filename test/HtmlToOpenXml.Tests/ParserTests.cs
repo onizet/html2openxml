@@ -140,5 +140,13 @@ namespace HtmlToOpenXml.Tests
             var elements = new HtmlConverter(mainPart).Parse("Placeholder");
             Assert.That(elements, Is.Not.Empty);
         }
+
+        [Test(Description = "Provided BaseImageUrl must be an absolute uri")]
+        public void ProvidedBaseImageUrl_WithRelativeUrl_ShouldFail()
+        {
+            Assert.Throws<ArgumentException>(() => new HtmlConverter(mainPart, new IO.DefaultWebRequest {
+                BaseImageUrl = new Uri("/path", UriKind.Relative)
+            }));
+        }
     }
 }

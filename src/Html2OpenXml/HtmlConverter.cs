@@ -127,8 +127,7 @@ public partial class HtmlConverter
             new ParallelOptions() { CancellationToken = cancellationToken },
             htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.HeaderStyle));
 
-        foreach (var p in paragraphs)
-            headerPart.Header.AddChild(p);
+        headerPart.Header.Append(paragraphs);
     }
 
     /// <summary>
@@ -152,8 +151,7 @@ public partial class HtmlConverter
             new ParallelOptions() { CancellationToken = cancellationToken },
             htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.FooterStyle));
 
-        foreach (var p in paragraphs)
-            footerPart.Footer.AddChild(p);
+        footerPart.Footer.Append(paragraphs);
     }
 
     /// <summary>
@@ -166,7 +164,8 @@ public partial class HtmlConverter
     {
         bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester);
         var paragraphs = await ParseCoreAsync(html, mainPart, bodyImageLoader,
-            new ParallelOptions() { CancellationToken = cancellationToken });
+            new ParallelOptions() { CancellationToken = cancellationToken },
+            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.Paragraph));
 
         if (!paragraphs.Any())
             return;
@@ -263,11 +262,9 @@ public partial class HtmlConverter
 
         Expressions.HtmlDomExpression expression;
         if (hostingPart is MainDocumentPart)
-            expression = new Expressions.BodyExpression(htmlDocument.Body!);
-        else if (defaultParagraphStyleId?.Val?.HasValue == true)
-            expression = new Expressions.BlockElementExpression(htmlDocument.Body!, defaultParagraphStyleId);
+            expression = new Expressions.BodyExpression(htmlDocument.Body!, defaultParagraphStyleId);
         else
-            expression = new Expressions.BlockElementExpression(htmlDocument.Body!);
+            expression = new Expressions.BlockElementExpression(htmlDocument.Body!, defaultParagraphStyleId);
 
         var parsingContext = new ParsingContext(this, hostingPart, imageLoader);
         var paragraphs = expression.Interpret(parsingContext);

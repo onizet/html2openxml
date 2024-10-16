@@ -49,6 +49,8 @@ namespace HtmlToOpenXml.Tests
             foreach (ValidationErrorInfo error in errors)
             {
                 TestContext.Error.Write("{0}\n\t{1}\n", error.Path?.XPath, error.Description);
+                if (error.Node is not null)
+                    TestContext.Error.WriteLine("\n\t{0}", error.Node.OuterXml);
             }
 
             Assert.Fail("The document isn't conformant with Office 2021");
