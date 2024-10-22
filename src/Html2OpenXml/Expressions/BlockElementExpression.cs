@@ -168,8 +168,8 @@ class BlockElementExpression: PhrasingElementExpression
             };
         }
 
-        var attrValue = styleAttributes!["text-align"];
-        JustificationValues? align = Converter.ToParagraphAlign(attrValue);
+        JustificationValues? align = Converter.ToParagraphAlign(styleAttributes!["text-align"]);
+        if (!align.HasValue) align = Converter.ToParagraphAlign(node.GetAttribute("align"));
         if (align.HasValue)
         {
             paraProperties.Justification = new() { Val = align };
