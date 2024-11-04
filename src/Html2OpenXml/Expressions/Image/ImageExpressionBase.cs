@@ -12,7 +12,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using DocumentFormat.OpenXml;
-using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 
 using a = DocumentFormat.OpenXml.Drawing;
@@ -26,6 +25,12 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 abstract class ImageExpressionBase(AngleSharp.Dom.IElement node)  : HtmlDomExpression
 {
+    private readonly RunProperties runProperties = new();
+    private readonly ParagraphProperties paraProperties = new();
+    // some style attributes, such as borders, will convert this node to a framed container
+    private bool renderAsFramed;
+
+
     /// <inheritdoc/>
     public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
     {
@@ -35,16 +40,17 @@ abstract class ImageExpressionBase(AngleSharp.Dom.IElement node)  : HtmlDomExpre
             return [];
 
         Run run = new(drawing);
-        Border border = ComposeStyles();
-        if (border.Val?.Equals(BorderValues.None) == false)
-        {
-            run.RunProperties ??= new();
-            run.RunProperties.Border = border;
-        }
+        ComposeStyles();
+
+        if (runProperties.HasChildren)
+            run.RunProperties = runProperties;
+
+        if (renderAsFramed)
+            return [new Paragraph(paraProperties, run)];
         return [run];
     }
 
-    private Border ComposeStyles ()
+    private void ComposeStyles ()
     {
         var styleAttributes = node.GetStyles();
         var border = new Border() { Val = BorderValues.None };
@@ -66,7 +72,22 @@ abstract class ImageExpressionBase(AngleSharp.Dom.IElement node)  : HtmlDomExpre
                 border.Size = (uint) borderWidth.ValueInPx * 4;
             }
         }
-        return border;
+
+        if (border.Val?.Equals(BorderValues.None) == false)
+        {
+            runProperties.Border = border;
+        }
+
+        // if the layout is not inline and both left and right are auto, image appears centered
+        // https://developer.mozilla.org/en-US/docs/Web/CSS/margin-left
+        var margin = styleAttributes.GetMargin("margin");
+        if (margin.Left.Type == UnitMetric.Auto 
+            && margin.Right.Type == UnitMetric.Auto
+            && !AngleSharpExtensions.IsInlineLayout(styleAttributes["display"]))
+        {
+            paraProperties.Justification = new() { Val = JustificationValues.Center };
+            renderAsFramed = true;
+        }
     }
 
     /// <summary>

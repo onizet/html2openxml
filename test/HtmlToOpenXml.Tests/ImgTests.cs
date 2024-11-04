@@ -219,6 +219,21 @@ namespace HtmlToOpenXml.Tests
             AssertThatOpenXmlDocumentIsValid();
         }
 
+        [TestCase("block", ExpectedResult = true)]
+        [TestCase("flex", ExpectedResult = true)]
+        [TestCase("inline", ExpectedResult = false)]
+        public bool CenterImg_ReturnsFramedImg(string displayMode)
+        {
+            var elements = converter.Parse($@"<img style=""display: {displayMode}; margin-left: auto; margin-right: auto;""
+                src=""data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=="" width=""32"" height=""32"">");
+
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements[0], Is.TypeOf<Paragraph>());
+            AssertIsImg(mainPart, elements[0]);
+            return elements[0].GetFirstChild<ParagraphProperties>()?.
+                Justification?.Val?.Value == JustificationValues.Center;
+        }
+
         private static (Drawing, ImagePart) AssertIsImg (OpenXmlPartContainer container, OpenXmlElement paragraph)
         {
             var run = paragraph.GetFirstChild<Run>();
