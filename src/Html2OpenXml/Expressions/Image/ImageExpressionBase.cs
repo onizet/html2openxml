@@ -83,7 +83,7 @@ abstract class ImageExpressionBase(AngleSharp.Dom.IElement node)  : HtmlDomExpre
         var margin = styleAttributes.GetMargin("margin");
         if (margin.Left.Type == UnitMetric.Auto 
             && margin.Right.Type == UnitMetric.Auto
-            && !AngleSharpExtensions.IsInlineLayout(styleAttributes["display"]))
+            && !AngleSharpExtensions.IsInlineLayout(styleAttributes["display"], "inline-block"))
         {
             paraProperties.Justification = new() { Val = JustificationValues.Center };
             renderAsFramed = true;

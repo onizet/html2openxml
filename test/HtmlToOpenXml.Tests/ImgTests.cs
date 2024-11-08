@@ -219,12 +219,13 @@ namespace HtmlToOpenXml.Tests
             AssertThatOpenXmlDocumentIsValid();
         }
 
-        [TestCase("block", ExpectedResult = true)]
-        [TestCase("flex", ExpectedResult = true)]
-        [TestCase("inline", ExpectedResult = false)]
+        [TestCase("display:block", ExpectedResult = true)]
+        [TestCase("display:flex", ExpectedResult = true)]
+        [TestCase("display:inline", ExpectedResult = false)]
+        [TestCase("", ExpectedResult = false)]
         public bool CenterImg_ReturnsFramedImg(string displayMode)
         {
-            var elements = converter.Parse($@"<img style=""display: {displayMode}; margin-left: auto; margin-right: auto;""
+            var elements = converter.Parse($@"<img style=""{displayMode}; margin-left: auto; margin-right: auto;""
                 src=""data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=="" width=""32"" height=""32"">");
 
             Assert.That(elements, Has.Count.EqualTo(1));
