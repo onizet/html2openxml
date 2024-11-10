@@ -165,5 +165,21 @@ For 50 years, <b>WWF</b> has been protecting the future of nature. The world's l
             var styleAttributes = HtmlAttributeCollection.ParseStyle("color:red;color:blue");
             Assert.That(styleAttributes["color"], Is.EqualTo("blue"));
         }
+
+        [Test(Description = "Encoded ':' and ';' characters are valid")]
+        public void EncodedStyle_ShouldSucceed()
+        {
+            var styleAttributes = HtmlAttributeCollection.ParseStyle("text-decoration&#58;underline&#59;color:red");
+            Assert.That(styleAttributes["text-decoration"], Is.EqualTo("underline"));
+            Assert.That(styleAttributes["color"], Is.EqualTo("red"));
+        }
+
+        [Test(Description = "Key style with no value should be ignored")]
+        public void EmptyStyle_ShouldBeIgnoredd()
+        {
+            var styleAttributes = HtmlAttributeCollection.ParseStyle("text-decoration;color:red");
+            Assert.That(styleAttributes["text-decoration"], Is.Null);
+            Assert.That(styleAttributes["color"], Is.EqualTo("red"));
+        }
     }
 }
