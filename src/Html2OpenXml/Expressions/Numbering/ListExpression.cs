@@ -50,8 +50,19 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 
     public override IEnumerable<OpenXmlElement> Interpret(ParsingContext context)
     {
-        var liNodes = node.Children.Where(n => n.LocalName == "li");
+        var liNodes = node.Children.Where(n => n.LocalName.Equals("li", StringComparison.OrdinalIgnoreCase));
         if (!liNodes.Any()) yield break;
+
+        // W3C requires that nested list stands below a `li` element but some editors
+        // don't care to respect the standard. Let's reparent those lists
+        var nestedList = node.Children.Where(n => 
+            n.LocalName.Equals("ol", StringComparison.OrdinalIgnoreCase) || 
+            n.LocalName.Equals("ul", StringComparison.OrdinalIgnoreCase));
+        if (nestedList.Any())
+        {
+            foreach (var list in nestedList)
+                list.PreviousElementSibling?.AppendChild(list);
+        }
 
         var listContext = context.Properties<ListContext>("listContext");
         var parentContext = listContext;

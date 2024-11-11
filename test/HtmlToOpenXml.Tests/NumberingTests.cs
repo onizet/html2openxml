@@ -514,7 +514,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test]
-        public void NestedNumberList_ReturnsIncrementalIdentation()
+        public void NestedNumberList_ReturnsIncrementalIndentation()
         {
             const int maxLevel = 8;
             var sb = new System.Text.StringBuilder();
@@ -540,6 +540,46 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(Convert.ToInt32(ident?.Left?.Value), Is.EqualTo((i + 1) * 2 * 360));
                 TestContext.Out.WriteLine($"{i}. {ident?.Left?.Value}");
             }
+        }
+
+        [Test(Description = "Nested list must be a children of a `li` tag but some editor are not respecting the W3C standard (issue #173)")]
+        public async Task NestedNumberList_NonCompliant_ReturnsIncrementalIndentation()
+        {
+            await converter.ParseBody(@"<ol>
+                <li>Item1</li>
+                <li>Item2</li>
+                    <ol><li>Item 2.1</li></ol>
+                </ol>");
+
+            var absNum = mainPart.NumberingDefinitionsPart?.Numbering
+                .Elements<AbstractNum>()
+                .SingleOrDefault();
+            Assert.That(absNum, Is.Not.Null);
+
+            var inst = mainPart.NumberingDefinitionsPart?.Numbering
+                .Elements<NumberingInstance>().Where(i => i.AbstractNumId?.Val == absNum.AbstractNumberId)
+                .SingleOrDefault();
+            Assert.That(inst, Is.Not.Null);
+            Assert.That(inst.NumberID?.Value, Is.Not.Null);
+
+            var elements = mainPart.Document.Body!.ChildElements;
+            Assert.Multiple(() => {
+                Assert.That(elements, Has.Count.EqualTo(3));
+                Assert.That(elements, Is.All.TypeOf<Paragraph>());
+                Assert.That(mainPart.NumberingDefinitionsPart?.Numbering, Is.Not.Null);
+            });
+
+            // assert paragraphs linked to numbering instance
+            Assert.Multiple(() =>
+            {
+                Assert.That(elements.Cast<Paragraph>().Select(e => 
+                    e.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value),
+                    Has.All.EqualTo(inst.NumberID.Value),
+                    "All paragraphs are linked to the same list instance");
+                Assert.That(elements.Take(2).Select(p => p.GetFirstChild<ParagraphProperties>()?.NumberingProperties?.NumberingLevelReference?.Val?.Value), Has.All.EqualTo(0));
+                Assert.That(elements.Last().GetFirstChild<ParagraphProperties>()?.NumberingProperties?.NumberingLevelReference?.Val?.Value, Is.EqualTo(1));
+            });
+            AssertThatOpenXmlDocumentIsValid();
         }
     }
 }
