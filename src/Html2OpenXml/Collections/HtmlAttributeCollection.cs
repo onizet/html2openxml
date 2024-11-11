@@ -23,7 +23,7 @@ sealed class HtmlAttributeCollection
 {
     // Encoded ':' and ';' characters are valid for browser but not handled by the regex (bug #13812 reported by robin391)
     // ex= <span style="text-decoration&#58;underline&#59;color:red">
-    private static readonly Regex stripStyleAttributesRegex = new(@"(?<name>.+?)(:|&\#58;)\s*(?<val>[^;&]+)(;|&\#59;)*\s*");
+    private static readonly Regex stripStyleAttributesRegex = new(@"(?<name>[^;\s]+)\s?(&\#58;|:)\s?(?<val>[^;&]+)\s?(;|&\#59;)*", RegexOptions.Compiled);
 
     private readonly Dictionary<string, string> attributes = [];
 

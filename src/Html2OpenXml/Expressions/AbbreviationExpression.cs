@@ -25,6 +25,8 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 sealed class AbbreviationExpression(IHtmlElement node) : PhrasingElementExpression(node)
 {
+    private static readonly Regex linkRegex = new(@"^((https?|ftps?|mailto|file)://|[\\]{2})(?:[\w][\w.-]?)", RegexOptions.Compiled);
+
 
     /// <inheritdoc/>
     public override IEnumerable<OpenXmlElement> Interpret(ParsingContext context)
@@ -132,7 +134,6 @@ sealed class AbbreviationExpression(IHtmlElement node) : PhrasingElementExpressi
 
 
         // Description in footnote reference can be plain text or a web protocols/file share (like \\server01)
-        Regex linkRegex = new(@"^((https?|ftps?|mailto|file)://|[\\]{2})(?:[\w][\w.-]?)");
         if (linkRegex.IsMatch(description) && Uri.TryCreate(description, UriKind.Absolute, out var uriReference))
         {
             // when URI references a network server (ex: \\server01), System.IO.Packaging is not resolving the correct URI and this leads
