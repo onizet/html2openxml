@@ -581,5 +581,35 @@ namespace HtmlToOpenXml.Tests
             });
             AssertThatOpenXmlDocumentIsValid();
         }
+
+        [Test]
+        public void NestedParagraph_ReturnsIndentedItems()
+        {
+            var elements = converter.Parse(@"<ul>
+                <li>
+                    <p>Paragraph text</p>
+                    <p>Paragraph text</p>
+                </li>
+                </ul>");
+
+            Assert.That(elements, Is.Not.Empty);
+
+            var inst = mainPart.NumberingDefinitionsPart?.Numbering
+                .Elements<NumberingInstance>()
+                .SingleOrDefault();
+            Assert.That(inst, Is.Not.Null);
+            Assert.Multiple(() => {
+                Assert.That(elements.Last().GetFirstChild<ParagraphProperties>()?.NumberingProperties?.NumberingId,
+                    Is.Null,
+                    "Last paragraph is standalone and not linked to a list instance");
+                Assert.That(elements.Cast<Paragraph>().Select(e => 
+                    e.ParagraphProperties?.ParagraphStyleId?.Val?.Value),
+                    Has.All.EqualTo("ListParagraph"),
+                    "All paragraphs use the same paragraph style");
+                Assert.That(elements.Last().GetFirstChild<ParagraphProperties>()?.Indentation?.Left?.Value,
+                    Is.EqualTo("720"),
+                    "Last standalone paragraph is aligned with the level 1");
+            });
+        }
     }
 }
