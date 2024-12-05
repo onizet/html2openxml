@@ -110,6 +110,20 @@ sealed class HtmlAttributeCollection
         sb = GetSideBorder("border-left");
         if (sb.IsValid) border.Left = sb;
 
+        sb = GetSideBorder("border-inline");
+        if (sb.IsValid)
+        {
+            border.Left = sb;
+            border.Right = sb;
+        }
+
+        sb = GetSideBorder("border-block");
+        if (sb.IsValid)
+        {
+            border.Top = sb;
+            border.Bottom = sb;
+        }
+
         return border;
     }
 
