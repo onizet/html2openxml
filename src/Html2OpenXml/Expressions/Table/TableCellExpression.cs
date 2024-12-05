@@ -1,4 +1,4 @@
-/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -10,6 +10,7 @@
  * PARTICULAR PURPOSE.
  */
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
@@ -58,6 +59,28 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : TableElementExpre
     protected override void ComposeStyles(ParsingContext context)
     {
         base.ComposeStyles(context);
+
+        Unit width = styleAttributes!.GetUnit("width");
+
+        if (!width.IsValid)
+        {
+            var widthValue = this.node.GetAttribute("width");
+            if (!string.IsNullOrEmpty(widthValue))
+            {
+                width = Unit.Parse(widthValue);
+            }
+        }
+
+        if (width.IsValid)
+        {
+            cellProperties.TableCellWidth = new TableCellWidth
+            {
+                Type = width.Type == UnitMetric.Percent ? TableWidthUnitValues.Pct : TableWidthUnitValues.Dxa,
+                Width = width.Type == UnitMetric.Percent
+                    ? ((int) (width.Value * 50)).ToString(CultureInfo.InvariantCulture)
+                    : width.ValueInDxa.ToString(CultureInfo.InvariantCulture)
+            };
+        }
 
         // Manage vertical text (only for table cell)
         string? direction = styleAttributes!["writing-mode"];

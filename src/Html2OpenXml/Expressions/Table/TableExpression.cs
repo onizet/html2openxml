@@ -1,4 +1,4 @@
-/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -175,17 +175,11 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
         switch (width.Type)
         {
             case UnitMetric.Percent:
-                if (width.Value == 100)
+                tableProperties.TableWidth = new TableWidth
                 {
-                    // Use Auto=0 instead of Pct=auto
-                    // bug reported by scarhand (https://html2openxml.codeplex.com/workitem/12494)
-                    tableProperties.TableWidth = new() { Type = TableWidthUnitValues.Auto, Width = "0" };
-                }
-                else
-                {
-                    tableProperties.TableWidth = new() { Type = TableWidthUnitValues.Pct, 
-                        Width = (width.Value * 50).ToString(CultureInfo.InvariantCulture) };
-                }
+                    Type = TableWidthUnitValues.Pct,
+                    Width = (width.Value * 50).ToString(CultureInfo.InvariantCulture)
+                };
                 break;
             case UnitMetric.Point:
             case UnitMetric.Pixel:
