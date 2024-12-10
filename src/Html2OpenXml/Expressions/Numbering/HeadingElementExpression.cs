@@ -9,6 +9,7 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -23,7 +24,7 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 sealed class HeadingElementExpression(IHtmlElement node) : NumberingExpressionBase(node)
 {
-    private static readonly Regex numberingRegex = new(@"^\s*(\d+\.?)*\s*", RegexOptions.Compiled);
+    private static readonly Regex numberingRegex = new(@"^\s*(\d+\.?)*\s*", RegexOptions.Compiled, TimeSpan.FromMilliseconds(100));
 
     /// <inheritdoc/>
     public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
