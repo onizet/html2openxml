@@ -61,10 +61,9 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : TableElementExpre
         base.ComposeStyles(context);
 
         Unit width = styleAttributes!.GetUnit("width");
-
         if (!width.IsValid)
         {
-            var widthValue = this.node.GetAttribute("width");
+            var widthValue = cellNode.GetAttribute("width");
             if (!string.IsNullOrEmpty(widthValue))
             {
                 width = Unit.Parse(widthValue);
