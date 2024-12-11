@@ -40,9 +40,9 @@ sealed class HeadingElementExpression(IHtmlElement node) : NumberingExpressionBa
         paragraph.ParagraphProperties ??= new();
         paragraph.ParagraphProperties.ParagraphStyleId = 
             context.DocumentStyle.GetParagraphStyle(context.DocumentStyle.DefaultStyles.HeadingStyle + level);
-
+ 
         var runElement = childElements.FirstOrDefault();
-        if (runElement != null && IsNumbering(runElement))
+        if (runElement != null && context.Converter.SupportsHeadingNumbering && IsNumbering(runElement))
         {
             var abstractNumId = GetOrCreateListTemplate(context, HeadingNumberingName);
             var instanceId = GetListInstance(abstractNumId);

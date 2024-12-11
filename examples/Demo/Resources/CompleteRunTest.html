@@ -4,6 +4,25 @@
     <title></title>
 </head>
 <body>
+
+    <table style="width: 100%; border-collapse: collapse; margin: 20px auto; border: 1px solid #ccc;">
+        <tr style="background-color: #f4f4f4; text-align: left;">
+            <th style="width: 10%; border: 1px solid #ccc; padding: 8px;">Column 1</th>
+            <th style="width: 60%; border: 1px solid #ccc; padding: 8px;">Column 2</th>
+            <th style="width: 30%; border: 1px solid #ccc; padding: 8px;">Column 3</th>
+        </tr>
+        <tr>
+            <td style="width: 10%; border: 1px solid #ccc; padding: 8px;">Row 1, Cell 1</td>
+            <td style="width: 60%; border: 1px solid #ccc; padding: 8px;">Row 1, Cell 2</td>
+            <td style="width: 30%; border: 1px solid #ccc; padding: 8px;">Row 1, Cell 3</td>
+        </tr>
+        <tr>
+            <td style="width: 10%; border: 1px solid #ccc; padding: 8px;">Row 2, Cell 1</td>
+            <td style="width: 60%; border: 1px solid #ccc; padding: 8px;">Row 2, Cell 2</td>
+            <td style="width: 30%; border: 1px solid #ccc; padding: 8px;">Row 2, Cell 3</td>
+        </tr>
+    </table>
+
     <h1></h1>
     <h1>Heading 1</h1>
     <h2>Heading 2</h2>
@@ -15,8 +34,11 @@
     <span style="font-variant: small-caps"> Small caps</span><br />
     <strike>Strike</strike> <span style="text-decoration: line-through"> Line Through</span> <span style="text-decoration: overline"> Overline</span> <span style="text-decoration: underline"> Underline</span><br />
     <b> Bold</b><br />
-    <span>This is a <b>bold
-    </b>text</span>
+    <span>
+        This is a <b>
+            bold
+        </b>text
+    </span>
     <span style="font-weight: bold">Bold</span><br />
     <span style="font-weight: bolder">Bolder</span><br />
     <span style="font-weight: lighter">Lighter</span><br />
@@ -47,7 +69,8 @@
     <a href="www.github.com"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==" alt="Red dot" /></a>
 
     <!-- multiline images -->
-    <p><img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAoHBwgHBgoICAgLCgoLDhgQDg0NDh0VFhEYIx8l
+    <p>
+        <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAoHBwgHBgoICAgLCgoLDhgQDg0NDh0VFhEYIx8l
         JCIfIiEmKzcvJik0KSEiMEExNDk7Pj4+JS5ESUM8SDc9Pjv/wAALCABVAEABAREA/8QAHwAA
         AQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQR
         BRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RF
@@ -88,7 +111,8 @@
         OfDEXhz/AIRbxtAkV1pYNrJHNC0qSbPlDKQDg8e3tVD4Q6BKPGmp67Y2lxbaJ5ckVo04IMgZ
         1KjnqAByfXFezMiv95Q2PUZoCKOigY9BSkA9QDjmgqGBDAEHsaia0tnQxtbxMjdVKAg0W9pb
         Wilba3ihB6iNAufyoltLaZw8tvFIw6FkBNSgADA4FLRRRRRRRX//2Q==
-        "></p>
+        ">
+    </p>
 
     <img src="https://www.w3schools.com/tags/smiley.gif" alt="Smiley face" width="42" height="42">
 
@@ -102,79 +126,81 @@
     <br />
 
 
-     <blockquote cite="http://www.worldwildlife.org/who/index.html">
-For 50 years, <b>WWF</b> has been protecting the future of nature. The world's leading conservation organization, WWF works in 100 countries and is supported by 1.2 million members in the United States and close to 5 million globally.
-</blockquote> 
+    <blockquote cite="http://www.worldwildlife.org/who/index.html">
+        For 50 years, <b>WWF</b> has been protecting the future of nature. The world's leading conservation organization, WWF works in 100 countries and is supported by 1.2 million members in the United States and close to 5 million globally.
+    </blockquote>
 
-<br class="ibp-rteFontSize-5"/><span style="font-size: 16.9px">My Text </span>
+    <br class="ibp-rteFontSize-5" /><span style="font-size: 16.9px">My Text </span>
 
-<p>An ordered list:</p>
+    <p>An ordered list:</p>
     <ol>
-      <li>Coffee</li>
-      <li>Tea</li>
-      <li>Milk
-        <ul>
-          <li>Coffee</li>
-          <li>Tea
-            <ol>
-                <li>Earl Grey</li>
-                <li>Green</li>
-                <li>Rosboh</li>
-            </ol>
-          </li>
-          <li>Milk</li>
-        </ul>
-      </li>
-      <li>Wine</li>
+        <li>Coffee</li>
+        <li>Tea</li>
+        <li>
+            Milk
+            <ul>
+                <li>Coffee</li>
+                <li>
+                    Tea
+                    <ol>
+                        <li>Earl Grey</li>
+                        <li>Green</li>
+                        <li>Rosboh</li>
+                    </ol>
+                </li>
+                <li>Milk</li>
+            </ul>
+        </li>
+        <li>Wine</li>
     </ol>
 
-     <table border=1><tr><td>Inside table</td></tr></table>
-     <hr />
-     <p>delta parameter (<span style='font-family:Symbol'>d</span>)</p>
-     Looks how cool is <font size="x-large" color="maroon"><b>Open Xml</b></font>.
-     <hr />
-     Now with <font color="red"><u>HtmlToOpenXml</u></font>, it never been so easy to convert html.
-     <p>
-      If you like it, add me a rating on <a href="https://github.com/onizet/html2openxml">github</a>
-     </p>
+    <table border=1><tr><td>Inside table</td></tr></table>
+    <hr />
+    <p>delta parameter (<span style='font-family:Symbol'>d</span>)</p>
+    Looks how cool is <font size="x-large" color="maroon"><b>Open Xml</b></font>.
+    <hr />
+    Now with <font color="red"><u>HtmlToOpenXml</u></font>, it never been so easy to convert html.
+    <p>
+        If you like it, add me a rating on <a href="https://github.com/onizet/html2openxml">github</a>
+    </p>
 
-        simple text
-     <div style="page-orientation: landscape; page-break-before: always">
-      Hello !
-      je suis du texte
-      <span style="font-style: oblique">écrit en oblique.</span>
+    simple text
+    <div style="page-orientation: landscape; page-break-before: always">
+        Hello !
+        je suis du texte
+        <span style="font-style: oblique">écrit en oblique.</span>
 
-      <pre lang="fr-FR" class="c#">  public void SetContentType(System.Web.HttpRequest request, System.Web.HttpResponse response, String reportName)
+        <pre lang="fr-FR" class="c#">  public void SetContentType(System.Web.HttpRequest request, System.Web.HttpResponse response, String reportName)
 {
 	if (request.Browser.Browser.Contains(&quot;IE&quot;))
 	{
-		<span style="color:Green">// Replace the %20 to obtain a clean name when saving the file from Word.</span>
+        <span style="color:Green">// Replace the %20 to obtain a clean name when saving the file from Word.</span>
 		encodedFilename =
 		  Uri.EscapeDataString(Path.GetFileNameWithoutExtension(encodedFilename)).Replace(&quot;%20&quot;, &quot; &quot;)
 			+ Path.GetExtension(encodedFilename);
 	}
 }
 </pre>
-         <hr/>
-         <pre>
+        <hr />
+        <pre>
 Some &lt;Pre&gt; starting one 
 line below! </pre>
 
     </div>
 
     <div style='margin-top: 20px; border: 1px dashed rgba(0, 0, 0, 0.4); background: olive; color: white; display: flex; gap: 5px; padding: 6px 8px; font-size: 14px;'>
-      <div>
-        <p>Header placeholder:</p>
-        <ol>
-            <li>Item 1</li>
-            <li>Item 2</li>
-        </ol>
-        <p style='text-indent: 4.5em'>Footer Placeholder</p>
-      </div>
+        <div>
+            <p>Header placeholder:</p>
+            <ol>
+                <li>Item 1</li>
+                <li>Item 2</li>
+            </ol>
+            <p style='text-indent: 4.5em'>Footer Placeholder</p>
+        </div>
     </div>
 
     <div style="border: 1px dashed salmon; margin: 1em">Lorem Ipsum</div>
-        <!--<div style="page-break-before: always">
+    <!--<div style="page-break-before: always">
     New page
     </div>-->
 </body>

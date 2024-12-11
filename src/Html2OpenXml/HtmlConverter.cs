@@ -339,7 +339,8 @@ public partial class HtmlConverter
     public AcronymPosition AcronymPosition { get; set; }
 
     /// <summary>
-    /// Gets or sets whether anchor links are included or not in the convertion.
+    /// Gets or sets whether anchor links are included or not in the conversion
+    /// (defaults <see langword="true" />).
     /// </summary>
     /// <remarks>An anchor is a term used to define a hyperlink destination inside a document.
     /// <see href="http://www.w3schools.com/HTML/html_links.asp"/>.
@@ -351,7 +352,23 @@ public partial class HtmlConverter
     /// <see cref="DocumentFormat.OpenXml.Wordprocessing.BookmarkEnd"/> elements
     /// and set the value of href to <i><c>#name of your bookmark</c></i>.
     /// </remarks>
-    public bool ExcludeLinkAnchor { get; set; }
+    public bool SupportsAnchorLinks { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets whether anchor links are included or not in the conversion.
+    /// </summary>
+    /// <remarks>An anchor is a term used to define a hyperlink destination inside a document.
+    /// <see href="http://www.w3schools.com/HTML/html_links.asp"/>.
+    /// <br/>
+    /// It exists some predefined anchors used by Word such as _top to refer to the top of the document.
+    /// The anchor <i>#_top</i> is always accepted regardless this property value.
+    /// For others anchors like refering to your own bookmark or a title, add a 
+    /// <see cref="DocumentFormat.OpenXml.Wordprocessing.BookmarkStart"/> and 
+    /// <see cref="DocumentFormat.OpenXml.Wordprocessing.BookmarkEnd"/> elements
+    /// and set the value of href to <i><c>#name of your bookmark</c></i>.
+    /// </remarks>
+    [Obsolete("Use SupportsAnchorLink instead, if ExcludeLinkAnchor = true -> SupportsAnchorLink = false")]
+    public bool ExcludeLinkAnchor { get => !SupportsAnchorLinks; set => SupportsAnchorLinks = !value; }
 
     /// <summary>
     /// Gets the Html styles manager mapping to OpenXml style properties.
@@ -367,7 +384,7 @@ public partial class HtmlConverter
     public CaptionPositionValues TableCaptionPosition { get; set; }
 
     /// <summary>
-    /// Gets or sets whether the <c>pre</c> tag should be rendered as a table (default <see langword="false"/>).
+    /// Gets or sets whether the <c>pre</c> tag should be rendered as a table (defaults <see langword="false"/>).
     /// </summary>
     /// <remarks>The table will contains only one cell.</remarks>
     public bool RenderPreAsTable { get; set; }
@@ -377,6 +394,16 @@ public partial class HtmlConverter
     /// or restarts to 1 (defaults continues numbering).
     /// </summary>
     public bool ContinueNumbering { get; set; } = true;
+
+    /// <summary>
+    /// Defines whether any headings (<c>h1-h6</c>) could be considered as multi-level numbering, such as
+    /// top-level headings (Heading 1) are numbered 1, 2, 3, for example, and second-level headings (Heading 2) are numbered 1.1, 1.2, 1.3.
+    /// This feature is enabled by default.
+    /// </summary>
+    /// <remarks>The converter is detecting headings starting with a number (ie: <c>1.</c> or <c>1 </c>)
+    /// are considered as numbering.
+    /// </remarks>
+    public bool SupportsHeadingNumbering { get; set; } = true;
 
     /// <summary>
     /// Gets the mainDocumentPart of the destination OpenXml document.

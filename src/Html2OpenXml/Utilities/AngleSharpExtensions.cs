@@ -153,4 +153,14 @@ static class AngleSharpExtensions
 
         return new string(chars, 0, length);
     }
+
+    /// <summary>
+    /// Determines whether the layout mode is inline vs block or flex.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool IsInlineLayout(string? displayMode, string defaultLayout)
+    {
+        return (displayMode ?? defaultLayout)
+            .StartsWith("inline", StringComparison.OrdinalIgnoreCase) == true;
+    }
 }

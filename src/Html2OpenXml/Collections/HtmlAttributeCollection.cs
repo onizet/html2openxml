@@ -20,8 +20,7 @@ namespace HtmlToOpenXml;
 /// </summary>
 sealed class HtmlAttributeCollection
 {
-    private static readonly Regex stripStyleAttributesRegex = new(@"(?<name>.+?):\s*(?<val>[^;]+);*\s*");
-
+    private static readonly Regex stripStyleAttributesRegex = new(@"(?<name>[^;\s]+)\s?(&\#58;|:)\s?(?<val>[^;&]+)\s?(;|&\#59;)*");
     private readonly Dictionary<string, string> attributes = [];
 
 
@@ -37,13 +36,7 @@ sealed class HtmlAttributeCollection
 
         // Encoded ':' and ';' characters are valid for browser but not handled by the regex (bug #13812 reported by robin391)
         // ex= <span style="text-decoration&#58;underline&#59;color:red">
-        MatchCollection matches = stripStyleAttributesRegex.Matches(
-#if NET5_0_OR_GREATER
-            System.Web.HttpUtility.HtmlDecode(htmlTag)
-#else 
-            HttpUtility.HtmlDecode(htmlTag)
-#endif
-        );
+        MatchCollection matches = stripStyleAttributesRegex.Matches(htmlTag);
         foreach (Match m in matches)
             collection.attributes[m.Groups["name"].Value] = m.Groups["val"].Value;
 
