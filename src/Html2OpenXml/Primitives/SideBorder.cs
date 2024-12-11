@@ -11,13 +11,13 @@
  */
 using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
+using System.Linq;
 using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml;
 
 /// <summary>
-/// Represents a Html Unit (ie: 120px, 10em, ...).
+/// Represents a Html border (ie: 1.2px solid blue...).
 /// </summary>
 readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
 {
@@ -30,17 +30,24 @@ readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
 
     public static SideBorder Parse(string? str)
     {
-        if (str == null) return SideBorder.Empty;
+        if (str == null) return Empty;
+        return Parse(str.AsSpan());
+    }
 
+    public static SideBorder Parse(ReadOnlySpan<char> span)
+    {
         // The properties of a border that can be set, are (in order): border-width, border-style, and border-color.
         // It does not matter if one of the values above are missing, e.g. border:solid #ff0000; is allowed.
         // The main problem for parsing this attribute is that the browsers allow any permutation of the values... meaning more coding :(
         // http://www.w3schools.com/cssref/pr_border.asp
 
-        // Remove the spaces that could appear in the color parameter: rgb(233, 233, 233) -> rgb(233,233,233)
-        str = Regex.Replace(str, @",\s+?", ",");
-        var borderParts = new List<string>(str.Split(HttpUtility.WhiteSpaces, StringSplitOptions.RemoveEmptyEntries));
-        if (borderParts.Count == 0) return SideBorder.Empty;
+        if (span.Length < 2)
+            return Empty;
+
+        Span<Range> tokens = stackalloc Range[6];
+        var tokenCount = span.SplitHtmlCompositeAttribute(tokens);
+        if (tokenCount == 0)
+            return Empty;
 
         // Initialize default values
         Unit borderWidth = Unit.Empty;
@@ -48,34 +55,35 @@ readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
         BorderValues borderStyle = BorderValues.Nil;
 
         // Now try to guess the values with their permutation
+        var tokenIndexes = new List<int>(Enumerable.Range(0, tokenCount));
 
         // handle border style
-        for (int i = 0; i < borderParts.Count; i++)
+        for (int i = 0; i < tokenIndexes.Count; i++)
         {
-            borderStyle = Converter.ToBorderStyle(borderParts[i]);
+            borderStyle = Converter.ToBorderStyle(span.Slice(tokens[tokenIndexes[i]]));
             if (borderStyle != BorderValues.Nil)
             {
-                borderParts.RemoveAt(i); // no need to process this part anymore
+                tokenIndexes.RemoveAt(i); // no need to process this part anymore
                 break;
             }
         }
 
-        for (int i = 0; i < borderParts.Count; i++)
+        for (int i = 0; i < tokenIndexes.Count; i++)
         {
-            borderWidth = ParseWidth(borderParts[i]);
+            borderWidth = ParseWidth(span.Slice(tokens[tokenIndexes[i]]));
             if (borderWidth.IsValid)
             {
-                borderParts.RemoveAt(i); // no need to process this part anymore
+                tokenIndexes.RemoveAt(i); // no need to process this part anymore
                 break;
             }
         }
 
         // find width
-        if(borderParts.Count > 0)
-            borderColor = HtmlColor.Parse(borderParts[0]);
+        if(tokenIndexes.Count > 0)
+            borderColor = HtmlColor.Parse(span.Slice(tokens[tokenIndexes[0]]));
 
         if (borderColor.IsEmpty && !borderWidth.IsValid && borderStyle == BorderValues.Nil)
-            return SideBorder.Empty;
+            return Empty;
 
         // returns the instance with default value if needed.
         // These value are the ones used by the browser, i.e: solid 3px black
@@ -85,25 +93,27 @@ readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
             borderWidth.IsFixed? borderWidth : new Unit(UnitMetric.Pixel, 4));
     }
 
-    internal static Unit ParseWidth(string? borderWidth)
+    internal static Unit ParseWidth(ReadOnlySpan<char> borderWidth)
     {
         Unit bu = Unit.Parse(borderWidth, UnitMetric.Pixel);
         if (bu.IsValid)
         {
             if (bu.Value > 0 && bu.Metric == UnitMetric.Pixel)
                 return bu;
+            return Unit.Empty;
         }
         else
         {
-            switch (borderWidth)
-            {
-                case "thin": return new Unit(UnitMetric.Pixel, 1);
-                case "medium": return new Unit(UnitMetric.Pixel, 3);
-                case "thick": return new Unit(UnitMetric.Pixel, 5);
-            }
-        }
+            Span<char> loweredValue = borderWidth.Length <= 128 ? stackalloc char[borderWidth.Length] : new char[borderWidth.Length];
+            borderWidth.ToLowerInvariant(loweredValue);
 
-        return Unit.Empty;
+            return loweredValue switch {
+               "thin" => new Unit(UnitMetric.Pixel, 1),
+                "medium" => new Unit(UnitMetric.Pixel, 3),
+                "thick" => new Unit(UnitMetric.Pixel, 5),
+                _ => Unit.Empty,
+            };
+        }
     }
 
     //____________________________________________________________________

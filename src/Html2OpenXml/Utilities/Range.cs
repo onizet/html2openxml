@@ -9,9 +9,11 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
+#if !NET5_0_OR_GREATER
 namespace System;
 
-#if !NET5_0_OR_GREATER
+using System.Runtime.CompilerServices;
+
 readonly struct Range(int start, int end)
 {
     /// <summary>Represent the inclusive start index of the Range.</summary>
@@ -19,5 +21,17 @@ readonly struct Range(int start, int end)
 
     /// <summary>Represent the exclusive end index of the Range.</summary>
     public int End { get; } = end;
+
+    /// <summary>Calculate the start offset and length of range object using a collection length.</summary>
+    /// <remarks>
+    /// For performance reason, we don't validate the input length parameter against negative values.
+    /// It is expected Range will be used with collections which always have non negative length/count.
+    /// We validate the range is inside the length scope though.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public (int Offset, int Length) GetOffsetAndLength(int _)
+    {
+        return (Start, End - Start);
+    }
 }
 #endif

@@ -16,7 +16,7 @@ namespace HtmlToOpenXml;
 /// <summary>
 /// Represents a Html Unit (ie: 120px, 10em, ...).
 /// </summary>
-[System.Diagnostics.DebuggerDisplay("Unit: {Value} {Type}")]
+[System.Diagnostics.DebuggerDisplay("Unit: {Value} {Metric}")]
 readonly struct Unit
 {
     /// <summary>Represents an empty unit (not defined).</summary>
@@ -158,7 +158,7 @@ readonly struct Unit
     /// <summary>
     /// Gets the value of this unit.
     /// </summary>
-    public Double Value
+    public double Value
     {
         get { return value; }
     }
@@ -166,7 +166,7 @@ readonly struct Unit
     /// <summary>
     /// Gets the value expressed in English Metrics Unit.
     /// </summary>
-    public Int64 ValueInEmus
+    public long ValueInEmus
     {
         get { return valueInEmus; }
     }
@@ -174,9 +174,9 @@ readonly struct Unit
     /// <summary>
     /// Gets the value expressed in Dxa unit.
     /// </summary>
-    public Int64 ValueInDxa
+    public long ValueInDxa
     {
-        get { return (long) (((double) valueInEmus / 914400L) * 20 * 72); }
+        get { return (long) ((double) valueInEmus / 914400L * 20 * 72); }
     }
 
     /// <summary>

@@ -72,7 +72,8 @@ static class SpanExtensions
 #if NET5_0_OR_GREATER
         return span[range];
 #else
-        return span.Slice(range.Start, range.End);
+        var (start, length) = range.GetOffsetAndLength(span.Length);
+        return span.Slice(start, length);
 #endif
     }
 
@@ -95,30 +96,80 @@ static class SpanExtensions
             return 0;
 
         int matches = 0;
-        int index = 0;
+        int startIndex = 0;
         while (span.Length > 0)
         {
-            int tokenEnd = span.IndexOf(separator);
-            if (tokenEnd == -1) tokenEnd = span.Length;
-            if (options == StringSplitOptions.RemoveEmptyEntries && tokenEnd == 0)
+            int index = span.IndexOf(separator);
+            if (index == -1) index = span.Length;
+            if (options == StringSplitOptions.RemoveEmptyEntries && index == 0)
             {
                 span = span.Slice(1);
-                index++;
+                startIndex++;
                 continue;
             }
 
-            destination[matches] = new Range(index, tokenEnd);
+            destination[matches] = new Range(startIndex, startIndex + index);
             matches++;
 
-            if (matches >= destination.Length || span.Length <= tokenEnd)
+            if (matches >= destination.Length || span.Length <= index)
                break;
 
             // move to next token
-            span = span.Slice(tokenEnd + 1);
-            index += tokenEnd + 1;
+            span = span.Slice(index + 1);
+            startIndex += index + 1;
         }
 
         return matches;
     }
 #endif
+
+    /// <summary>
+    /// Parses the source <see cref="ReadOnlySpan{T}"/> for the specified style attribute separators, 
+    /// populating the <paramref name="destination"/> span with <see cref="Range"/> instances
+    /// representing the regions between the separators.
+    /// </summary>
+    /// <param name="span">The source span to parse.</param>
+    /// <param name="destination">The destination span into which the resulting ranges are written.</param>
+    /// <returns>The number of ranges written into <paramref name="destination"/>.</returns>
+    public static int SplitHtmlCompositeAttribute(this ReadOnlySpan<char> span, Span<Range> destination)
+    {
+        // If the destination is empty, there's nothing to do.
+        if (destination.IsEmpty)
+            return 0;
+
+        int matches = 0;
+        int startIndex = 0;
+        bool escapeSpace = false;
+        while (span.Length > 0)
+        {
+            // Remove the spaces that could appear in the color parameter: rgb(233, 233, 233) -> rgb(233,233,233)
+            int index = escapeSpace? span.IndexOf(')') : span.IndexOfAny(' ', '(');
+            if (index == -1) index = span.Length;
+            else if (span[index] == '(')
+            {
+                escapeSpace = true;
+                continue;
+            }
+            else if (span[index] == ')')
+            {
+                escapeSpace = false;
+                index++; // include that closing parenthesis in the range
+            }
+
+            if (!escapeSpace && index > 0)
+            {
+                destination[matches] = new Range(startIndex, startIndex + index);
+                matches++;
+            }
+            startIndex += index + 1;
+
+            if (matches >= destination.Length || span.Length <= index)
+               break;
+
+            // move to next token
+            span = span.Slice(index + 1);
+        }
+
+        return matches;
+    }
 }

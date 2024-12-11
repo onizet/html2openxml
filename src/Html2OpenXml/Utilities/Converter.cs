@@ -144,10 +144,15 @@ static class Converter
         return null;
     }
 
-    public static BorderValues ToBorderStyle(string? borderStyle)
+    public static BorderValues ToBorderStyle(ReadOnlySpan<char> borderStyle)
     {
-        if (borderStyle == null) return BorderValues.Nil;
-        return borderStyle.ToLowerInvariant() switch
+        if (borderStyle.IsEmpty)
+            return BorderValues.Nil;
+
+        Span<char> loweredValue = borderStyle.Length <= 128 ? stackalloc char[borderStyle.Length] : new char[borderStyle.Length];
+        borderStyle.ToLowerInvariant(loweredValue);
+
+        return loweredValue switch
         {
             "dotted" => BorderValues.Dotted,
             "dashed" => BorderValues.Dashed,
@@ -168,17 +173,23 @@ static class Converter
         return PageOrientationValues.Portrait;
     }
 
-    public static IEnumerable<TextDecoration> ToTextDecoration(string? html)
+    public static ICollection<TextDecoration> ToTextDecoration(ReadOnlySpan<char> values)
     {
         // this style could take multiple values separated by a space
         // ex: text-decoration: blink underline;
 
         var decorations = new List<TextDecoration>();
+        if (values.IsEmpty) return decorations;
 
-        if (html == null) return decorations;
-        foreach (string part in html.ToLowerInvariant().Split(' '))
+        Span<char> loweredValue = values.Length <= 128 ? stackalloc char[values.Length] : new char[values.Length];
+        values.ToLowerInvariant(loweredValue);
+
+        Span<Range> tokens = stackalloc Range[5];
+        ReadOnlySpan<char> span = loweredValue;
+        var tokenCount = span.Split(tokens, ' ', StringSplitOptions.RemoveEmptyEntries);
+        for (int i = 0; i < tokenCount; i++)
         {
-            switch (part)
+            switch (span.Slice(tokens[i]))
             {
                 case "underline": decorations.Add(TextDecoration.Underline); break;
                 case "line-through": decorations.Add(TextDecoration.LineThrough); break;

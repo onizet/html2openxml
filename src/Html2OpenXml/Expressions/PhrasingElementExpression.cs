@@ -131,7 +131,7 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
             runProperties.Shading = new Shading { Val = ShadingPatternValues.Clear, Fill = bgcolor.ToHexString() };
         }
 
-        foreach (var decoration in Converter.ToTextDecoration(styleAttributes["text-decoration"]))
+        foreach (var decoration in styleAttributes.GetTextDecorations("text-decoration"))
         {
             switch (decoration)
             {
