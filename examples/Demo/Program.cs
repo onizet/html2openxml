@@ -24,7 +24,7 @@ namespace Demo
                 // instead of creating it from scratch.
                 using (var buffer = ResourceHelper.GetStream("Resources.template.docx"))
                 {
-                    buffer.CopyTo(generatedDocument);
+                    await buffer.CopyToAsync(generatedDocument);
                 }
 
                 generatedDocument.Position = 0L;
@@ -48,7 +48,7 @@ namespace Demo
                     AssertThatOpenXmlDocumentIsValid(package);
                 }
 
-                File.WriteAllBytes(filename, generatedDocument.ToArray());
+                await File.WriteAllBytesAsync(filename, generatedDocument.ToArray());
             }
 
             Process.Start(new ProcessStartInfo(filename) { UseShellExecute = true });

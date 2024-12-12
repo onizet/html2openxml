@@ -125,7 +125,7 @@ sealed class ImagePrefetcher<T> : IImageLoader
             Size originalSize;
             using (var outputStream = ipart.GetStream(FileMode.Create))
             {
-                response.Content.CopyTo(outputStream);
+                await response.Content.CopyToAsync(outputStream);
 
                 outputStream.Seek(0L, SeekOrigin.Begin);
                 originalSize = GetImageSize(outputStream);
