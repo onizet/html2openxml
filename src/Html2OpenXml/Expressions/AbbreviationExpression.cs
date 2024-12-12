@@ -134,7 +134,16 @@ sealed class AbbreviationExpression(IHtmlElement node) : PhrasingElementExpressi
 
 
         // Description in footnote reference can be plain text or a web protocols/file share (like \\server01)
-        if (linkRegex.IsMatch(description) && Uri.TryCreate(description, UriKind.Absolute, out var uriReference))
+        bool isValidLink;
+        try
+        {
+            isValidLink = linkRegex.IsMatch(description);
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            isValidLink = false;
+        }
+        if (isValidLink && Uri.TryCreate(description, UriKind.Absolute, out var uriReference))
         {
             // when URI references a network server (ex: \\server01), System.IO.Packaging is not resolving the correct URI and this leads
             // to a bad-formed XML not recognized by Word. To enforce the "original URI", a fresh new instance must be created

@@ -23,7 +23,8 @@ public sealed class DataUri
 {
     private readonly static Regex dataUriRegex = new Regex(
             @"data\:(?<mime>\w+/\w+)?(?:;charset=(?<charset>[a-zA-Z_0-9-]+))?(?<base64>;base64)?,(?<data>.*)",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            RegexOptions.IgnoreCase | RegexOptions.Singleline,
+            TimeSpan.FromMilliseconds(200));
 
     private DataUri(string mime, byte[] data)
     {
@@ -50,12 +51,17 @@ public sealed class DataUri
         // while Internet Explorer requires that the charset's specification must precede the base64 token.
         // http://en.wikipedia.org/wiki/Data_URI_scheme
 
-        // We will stick for IE compliance for the moment...
-
-        Match match = dataUriRegex.Match(uri);
+        Match match;
         result = null;
-
-        if (!match.Success) return false;
+        try
+        {
+            match = dataUriRegex.Match(uri);
+            if (!match.Success) return false;
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            return false;
+        }
 
         byte[] rawData;
         string mime;
