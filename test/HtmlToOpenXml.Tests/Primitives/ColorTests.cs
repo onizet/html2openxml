@@ -47,6 +47,7 @@ namespace HtmlToOpenXml.Tests.Primitives
         public string ArgColor_ToHex_ShouldSucceed(byte red, byte green, byte blue, double alpha)
         {
             var color = HtmlColor.FromArgb(alpha, red, green, blue);
+            Assert.That(color.IsEmpty, Is.False);
             return color.ToHexString();
         }
 
@@ -54,6 +55,7 @@ namespace HtmlToOpenXml.Tests.Primitives
         public string HslColor_ToHex_ShouldSucceed(double alpha, double hue, double saturation, double luminosity)
         {
             var color = HtmlColor.FromHsl(alpha, hue, saturation, luminosity);
+            Assert.That(color.IsEmpty, Is.False);
             return color.ToHexString();
         }
     }
