@@ -143,12 +143,7 @@ static class SpanExtensions
         int matches = 0, startIndex = 0, offsetIndex = 0;
         bool escapeSpace = false;
         char endEscapingChar = '\0';
-
-#if NET8_0_OR_GREATER
-        var searchValues = System.Buffers.SearchValues.Create([separator, '(', '\'', '"']);
-#else
         ReadOnlySpan<char> searchValues = [separator, '(', '\'', '"'];
-#endif
 
         while (span.Length > 0)
         {
