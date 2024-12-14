@@ -237,21 +237,15 @@ readonly partial struct HtmlColor : IEquatable<HtmlColor>
         byte iMid = Convert.ToByte(fMid * 255);
         byte iMin = Convert.ToByte(fMin * 255);
 
-        switch (iSextant)
+        return iSextant switch
         {
-            case 1:
-                return FromArgb(alpha, iMid, iMax, iMin);
-            case 2:
-                return FromArgb(alpha, iMin, iMax, iMid);
-            case 3:
-                return FromArgb(alpha, iMin, iMid, iMax);
-            case 4:
-                return FromArgb(alpha, iMid, iMin, iMax);
-            case 5:
-                return FromArgb(alpha, iMax, iMin, iMid);
-            default:
-                return FromArgb(alpha, iMax, iMid, iMin);
-        }
+            1 => FromArgb(alpha, iMid, iMax, iMin),
+            2 => FromArgb(alpha, iMin, iMax, iMid),
+            3 => FromArgb(alpha, iMin, iMid, iMax),
+            4 => FromArgb(alpha, iMid, iMin, iMax),
+            5 => FromArgb(alpha, iMax, iMin, iMid),
+            _ => FromArgb(alpha, iMax, iMid, iMin),
+        };
     }
 
     /// <summary>

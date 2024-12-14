@@ -38,7 +38,7 @@ namespace HtmlToOpenXml.Tests.Primitives
         }
 
         [Test]
-        public void WithMultipleTextDecoration_Should()
+        public void WithMultipleTextDecoration_ReturnsAllValues()
         {
             var styles = HtmlAttributeCollection.ParseStyle("text-decoration:underline dotted wavy");
             var decorations = styles.GetTextDecorations("text-decoration");

@@ -130,38 +130,83 @@ static class SpanExtensions
     /// </summary>
     /// <param name="span">The source span to parse.</param>
     /// <param name="destination">The destination span into which the resulting ranges are written.</param>
+    /// <param name="separator">A character that delimits the regions in this instance.</param>
+    /// <param name="skipSeparatorIfPrecededBy">If <paramref name="separator"/> is preceded by this character, the separator will be treated as a normal character.</param>
     /// <returns>The number of ranges written into <paramref name="destination"/>.</returns>
-    public static int SplitHtmlCompositeAttribute(this ReadOnlySpan<char> span, Span<Range> destination)
+    public static int SplitCompositeAttribute(this ReadOnlySpan<char> span, Span<Range> destination,
+        char separator = ' ', char? skipSeparatorIfPrecededBy = null)
     {
         // If the destination is empty, there's nothing to do.
         if (destination.IsEmpty)
             return 0;
 
-        int matches = 0;
-        int startIndex = 0;
+        int matches = 0, startIndex = 0, offsetIndex = 0;
         bool escapeSpace = false;
+        char endEscapingChar = '\0';
+
+#if NET8_0_OR_GREATER
+        var searchValues = System.Buffers.SearchValues.Create([separator, '(', '\'', '"']);
+#else
+        ReadOnlySpan<char> searchValues = [separator, '(', '\'', '"'];
+#endif
+
         while (span.Length > 0)
         {
-            // Remove the spaces that could appear in the color parameter: rgb(233, 233, 233) -> rgb(233,233,233)
-            int index = escapeSpace? span.IndexOf(')') : span.IndexOfAny(' ', '(');
+            bool isPositiveMatch = true;
+
+            // Remove the spaces that could appear inside a token.
+            // Eg: rgb(233, 233, 233) -> rgb(233,233,233)
+            int index = escapeSpace?
+                span.IndexOf(endEscapingChar) :
+                span.IndexOfAny(searchValues);
+
+            // end of span, we take the whole match
             if (index == -1) index = span.Length;
-            else if (span[index] == '(')
+
+            // we find the beginning of an escaping sequence
+            else if (span[index] != separator && !escapeSpace)
             {
+                if (span[index] == '(')
+                {
+                    endEscapingChar = ')';
+                    offsetIndex += index + 1;
+                }
+                else
+                {
+                    endEscapingChar = span[index]; // ' or "
+                    if (index == 0) startIndex++; // exclude the quote from the captured range
+                }
                 escapeSpace = true;
-                continue;
+                isPositiveMatch = false;
             }
-            else if (span[index] == ')')
+            // end of escaping sequence
+            else if (span[index] == endEscapingChar)
             {
+                if (span[index] == ')') index++; // include that closing parenthesis in the range
                 escapeSpace = false;
-                index++; // include that closing parenthesis in the range
+            }
+            // this is a separator but maybe we will need to skip it
+            // eg: "Arial, Verdana bold 1em" -> the space after the comma must be skipped
+            else if (span[index] == separator && index > 1 &&
+                skipSeparatorIfPrecededBy.HasValue && index > 1 && span[index -1] == skipSeparatorIfPrecededBy)
+            {
+                offsetIndex += index + 1;
+                isPositiveMatch = false;
+            }
+            else if (index == 0) // empty token
+            {
+                startIndex++;
+                isPositiveMatch = false;
             }
 
-            if (!escapeSpace && index > 0)
+            // index > 0 to exclude empty entries
+            if (!escapeSpace && index > 0 && isPositiveMatch)
             {
-                destination[matches] = new Range(startIndex, startIndex + index);
+                destination[matches] = new Range(startIndex, startIndex + offsetIndex + index);
                 matches++;
+                startIndex += index + offsetIndex + 1;
+                offsetIndex = 0;
             }
-            startIndex += index + 1;
 
             if (matches >= destination.Length || span.Length <= index)
                break;

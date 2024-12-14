@@ -20,9 +20,10 @@ namespace HtmlToOpenXml;
 /// </summary>
 sealed partial class HtmlAttributeCollection
 {
-    private readonly string rawValue;
     // Style key associated with a pointer to rawValue.
     private readonly Dictionary<string, Range> attributes = [];
+    private readonly string rawValue;
+
 
     private HtmlAttributeCollection(string htmlStyles)
     {
@@ -59,6 +60,7 @@ sealed partial class HtmlAttributeCollection
             int separatorSize = 0;
             if (!foundKey)
             {
+                // html-encoded semicolon
                 if (span.Slice(index).StartsWith(['&','#','5','8',';']))
                 {
                     separatorSize = 5;
@@ -83,6 +85,7 @@ sealed partial class HtmlAttributeCollection
             {
                 if (index < span.Length)
                 {
+                    // html-encoded colon
                     if (span.Slice(index).StartsWith(['&','#','5','9',';']))
                     {
                         separatorSize = 5;
@@ -234,38 +237,44 @@ sealed partial class HtmlAttributeCollection
     /// </summary>
     public HtmlFont GetFont(string name)
     {
-        HtmlFont font = HtmlFont.Parse(this[name]);
+        HtmlFont font = HtmlFont.Empty;
+        if (attributes.TryGetValue(name, out Range range))
+            font = HtmlFont.Parse(rawValue.AsSpan().Slice(range));
+
         FontStyle? fontStyle = font.Style;
         FontVariant? variant = font.Variant;
         FontWeight? weight = font.Weight;
         Unit fontSize = font.Size;
         string? family = font.Family;
 
-        var attrValue = this[name + "-style"];
-        if (attrValue != null)
+        if (attributes.TryGetValue(name + "-style", out range))
         {
-            fontStyle = Converter.ToFontStyle(attrValue) ?? font.Style;
+            var s = Converter.ToFontStyle(rawValue.AsSpan().Slice(range));
+            if (s.HasValue) fontStyle = s;
         }
-        attrValue = this[name + "-variant"];
-        if (attrValue != null)
+
+        if (attributes.TryGetValue(name + "-variant", out range))
         {
-            variant = Converter.ToFontVariant(attrValue) ?? font.Variant;
+            var v = Converter.ToFontVariant(rawValue.AsSpan().Slice(range));
+            if (v.HasValue) variant = v;
         }
-        attrValue = this[name + "-weight"];
-        if (attrValue != null)
+
+        if (attributes.TryGetValue(name + "-weight", out range))
         {
-            weight = Converter.ToFontWeight(attrValue) ?? font.Weight;
+            var w = Converter.ToFontWeight(rawValue.AsSpan().Slice(range));
+            if (w.HasValue) weight = w;
         }
-        attrValue = this[name + "-family"];
-        if (attrValue != null)
+
+        if (attributes.TryGetValue(name + "-family", out range))
         {
-            family = Converter.ToFontFamily(attrValue) ?? font.Family;
+            var f = Converter.ToFontFamily(rawValue.AsSpan().Slice(range));
+            if (f != null) family = f;
         }
 
         Unit unit = this.GetUnit(name + "-size");
         if (unit.IsValid) fontSize = unit;
 
-        return new HtmlFont(fontStyle, variant, weight, fontSize, family);
+        return new HtmlFont(fontSize, family, fontStyle, variant, weight);
     }
 
     /// <summary>

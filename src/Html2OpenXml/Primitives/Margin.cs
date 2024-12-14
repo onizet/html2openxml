@@ -48,6 +48,14 @@ struct Margin
         this.sides = [top, right, bottom, left];
     }
 
+    /// <inheritdoc cref="Parse(ReadOnlySpan{char})"/>
+    public static Margin Parse(string? str)
+    {
+        if (str == null)
+            return Empty;
+        return Parse(str.AsSpan());
+    }
+
     /// <summary>
     /// Parse the margin style attribute.
     /// </summary>
@@ -71,20 +79,13 @@ struct Margin
     /// <b>margin:25px;</b>
     /// all four margins are 25px
     /// </remarks>
-    public static Margin Parse(string? str)
-    {
-        if (str == null)
-            return Empty;
-        return Parse(str.AsSpan());
-    }
-
     public static Margin Parse(ReadOnlySpan<char> span)
     {
-        if (span.Length == 0 || span.IsWhiteSpace())
+        if (span.IsEmpty || span.IsWhiteSpace())
             return Empty;
 
         Span<Range> tokens = stackalloc Range[5];
-        return span.SplitHtmlCompositeAttribute(tokens) switch
+        return span.SplitCompositeAttribute(tokens) switch
         {
             1 => new Margin(Unit.Parse(span.Slice(tokens[0]), UnitMetric.Pixel)),
             2 => new Margin(

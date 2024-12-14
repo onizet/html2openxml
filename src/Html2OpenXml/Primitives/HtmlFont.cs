@@ -10,13 +10,15 @@
  * PARTICULAR PURPOSE.
  */
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace HtmlToOpenXml;
 
 /// <summary>
 /// Represents a Html font (15px arial,sans-serif).
 /// </summary>
-readonly struct HtmlFont(FontStyle? style, FontVariant? variant, FontWeight? weight, Unit? size, string? family)
+readonly struct HtmlFont(Unit size, string? family, FontStyle? style, FontVariant? variant, FontWeight? weight)
 {
     /// <summary>Represents an empty font (not defined).</summary>
     public static readonly HtmlFont Empty = new ();
@@ -25,61 +27,107 @@ readonly struct HtmlFont(FontStyle? style, FontVariant? variant, FontWeight? wei
     private readonly FontVariant? variant = variant;
     private readonly string? family = family;
     private readonly FontWeight? weight = weight;
-    private readonly Unit size = size ?? Unit.Empty;
+    private readonly Unit size = size;
 
+    /// <inheritdoc cref="Parse(ReadOnlySpan{char})"/>
     public static HtmlFont Parse(string? str)
     {
-        if (str == null) return HtmlFont.Empty;
+        if (str == null)
+            return Empty;
+        return Parse(str.AsSpan());
+    }
 
-        // The font shorthand property sets all the font properties in one declaration.
-        // The properties that can be set, are (in order):
-        // "font-style font-variant font-weight font-size/line-height font-family"
-        // The font-size and font-family values are required.
-        // If one of the other values are missing, the default values will be inserted, if any.
+    /// <summary>
+    /// Parse the font style attribute.
+    /// </summary>
+    /// <remarks>
+    /// The font shorthand property sets all the font properties in one declaration.
+    /// The properties that can be set, are (in order):
+    /// "font-style font-variant font-weight font-size/line-height font-family"
+    /// The font-size and font-family values are required.
+    /// If one of the other values are missing, the default values will be inserted, if any.
+    /// /// </remarks>
+    public static HtmlFont Parse(ReadOnlySpan<char> span)
+    {
         // http://www.w3schools.com/cssref/pr_font_font.asp
 
-        // in order to split by white spaces, we remove any white spaces between 2 family names (ex: Verdana, Arial -> Verdana,Arial)
-        str = System.Text.RegularExpressions.Regex.Replace(str, @",\s+?", ",");
+        if (span.IsEmpty || span.Length < 2) return Empty;
 
-        var fontParts = str.Split(HttpUtility.WhiteSpaces, StringSplitOptions.RemoveEmptyEntries);
-        if (fontParts.Length < 2) return HtmlFont.Empty;
-        
+        // in order to split by white spaces, we remove any white spaces between 2 family names (ex: Verdana, Arial -> Verdana,Arial)
+        //str = System.Text.RegularExpressions.Regex.Replace(str, @",\s+?", ",");
+
+        Span<Range> tokens = stackalloc Range[6];
+        var tokenCount = span.SplitCompositeAttribute(tokens, ' ', skipSeparatorIfPrecededBy: ',');
+        if (tokenCount == 0)
+            return Empty;
+
+        // Initialize default values
         FontStyle? style = null;
         FontVariant? variant = null;
         FontWeight? weight = null;
         // % and ratio font-size/line-height are not supported
-        Unit fontSize;
-        string? family;
+        Unit fontSize = Unit.Empty;
+        string? family = null;
 
-        if (fontParts.Length == 2) // 2=the minimal set of required parameters
+        if (tokenCount == 2) // 2=the minimal set of required parameters
         {
             // should be the size and the family (in that order). Others are set to their default values
-            fontSize = Converter.ToFontSize(fontParts[0]);
+            fontSize = Converter.ToFontSize(span.Slice(tokens[0]));
             if (!fontSize.IsValid) fontSize = Unit.Empty;
-            family = Converter.ToFontFamily(fontParts[1]);
-            return new HtmlFont(style, variant, weight, fontSize, family);
+            family = Converter.ToFontFamily(span.Slice(tokens[1]));
+            return new HtmlFont(fontSize, family, style, variant, weight);
         }
 
-        int index = 0;
+        // Now try to guess the values with their permutation
+        var tokenIndexes = new List<int>(Enumerable.Range(0, tokenCount));
 
-        style = Converter.ToFontStyle(fontParts[index]);
-        if (style.HasValue) { index++; }
+        // handle border style
+        for (int i = 0; i < tokenIndexes.Count; i++)
+        {
+            style = Converter.ToFontStyle(span.Slice(tokens[tokenIndexes[i]]));
+            if (style != null)
+            {
+                tokenIndexes.RemoveAt(i); // no need to process this part anymore
+                break;
+            }
+        }
 
-        if (index + 2 > fontParts.Length) return HtmlFont.Empty;
-        variant = Converter.ToFontVariant(fontParts[index]);
-        if (variant.HasValue) { index++; }
+        for (int i = 0; i < tokenIndexes.Count; i++)
+        {
+            variant = Converter.ToFontVariant(span.Slice(tokens[tokenIndexes[i]]));
+            if (variant != null)
+            {
+                tokenIndexes.RemoveAt(i); // no need to process this part anymore
+                break;
+            }
+        }
 
-        if (index + 2 > fontParts.Length) return HtmlFont.Empty;
-        weight = Converter.ToFontWeight(fontParts[index]);
-        if (weight.HasValue) { index++; }
+        for (int i = 0; i < tokenIndexes.Count; i++)
+        {
+            weight = Converter.ToFontWeight(span.Slice(tokens[tokenIndexes[i]]));
+            if (weight != null)
+            {
+                tokenIndexes.RemoveAt(i); // no need to process this part anymore
+                break;
+            }
+        }
 
-        if (fontParts.Length - index < 2) return HtmlFont.Empty;
-        fontSize = Converter.ToFontSize(fontParts[fontParts.Length - 2]);
-        if (!fontSize.IsValid) return HtmlFont.Empty;
+        for (int i = 0; i < tokenIndexes.Count; i++)
+        {
+            fontSize = Unit.Parse(span.Slice(tokens[tokenIndexes[i]]));
+            if (fontSize.IsValid)
+            {
+                tokenIndexes.RemoveAt(i); // no need to process this part anymore
+                break;
+            }
+        }
+        if (!fontSize.IsValid) fontSize = Unit.Empty;
 
-        family = Converter.ToFontFamily(fontParts[fontParts.Length - 1]);
+        // keep font family as the latest because it is the most permissive
+        if(tokenIndexes.Count > 0)
+            family = Converter.ToFontFamily(span.Slice(tokens[tokenIndexes[0]]));
 
-        return new HtmlFont(style, variant, weight, fontSize, family);
+        return new HtmlFont(fontSize, family, style, variant, weight);
     }
 
     //____________________________________________________________________
