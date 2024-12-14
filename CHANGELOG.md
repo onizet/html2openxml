@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.3.0
+
+- Rewriting of parsing to use System.Span instead of Regex
+- Set Timeout on remaining Regex to prevent any DoS attack
+
 ## 3.2.0
 
 - Add new public API to allow parsing into Header and Footer #162. Some API methods as been flagged as obsolete with a clear message of what to use instead.
