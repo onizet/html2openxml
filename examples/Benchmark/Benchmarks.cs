@@ -1,16 +1,13 @@
-using DocumentFormat.OpenXml;
-using DocumentFormat.OpenXml.Packaging;
-using DocumentFormat.OpenXml.Validation;
-using DocumentFormat.OpenXml.Wordprocessing;
-using HtmlToOpenXml;
-using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
+using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
+using HtmlToOpenXml;
 
 [MemoryDiagnoser]
-//[SimpleJob(runtimeMoniker: RuntimeMoniker.Net462)]
-//[SimpleJob(runtimeMoniker: RuntimeMoniker.Net50)]
-[SimpleJob(runtimeMoniker: RuntimeMoniker.Net80)]
+[SimpleJob(runtimeMoniker: RuntimeMoniker.Net48)]
+[SimpleJob(runtimeMoniker: RuntimeMoniker.Net80, baseline: true)]
 public class Benchmarks
 {
     [Benchmark]
