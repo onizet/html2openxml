@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Demo", "examples\Demo\Demo.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HtmlToOpenXml.Tests", "test\HtmlToOpenXml.Tests\HtmlToOpenXml.Tests.csproj", "{CA0A68E0-45A0-4A01-A061-F951D93D6906}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benchmark", "examples\Benchmark\Benchmark.csproj", "{143A3684-FAEB-43D0-A895-09BE5FDF85F6}"
+EndProject
 Global
     GlobalSection(SolutionConfigurationPlatforms) = preSolution
         Debug|Any CPU = Debug|Any CPU
@@ -31,6 +33,10 @@ Global
         {CA0A68E0-45A0-4A01-A061-F951D93D6906}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {CA0A68E0-45A0-4A01-A061-F951D93D6906}.Release|Any CPU.ActiveCfg = Release|Any CPU
         {CA0A68E0-45A0-4A01-A061-F951D93D6906}.Release|Any CPU.Build.0 = Release|Any CPU
+        {143A3684-FAEB-43D0-A895-09BE5FDF85F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {143A3684-FAEB-43D0-A895-09BE5FDF85F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {143A3684-FAEB-43D0-A895-09BE5FDF85F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {143A3684-FAEB-43D0-A895-09BE5FDF85F6}.Release|Any CPU.Build.0 = Release|Any CPU
     EndGlobalSection
     GlobalSection(SolutionProperties) = preSolution
         HideSolutionNode = FALSE
@@ -39,8 +45,10 @@ Global
         {EF700F30-C9BB-49A6-912C-E3B77857B514} = {58520A98-BA53-4BA4-AAE3-786AA21331D6}
         {A1ECC760-B9F7-4A00-AF5F-568B5FD6F09F} = {84EA02ED-2E97-47D2-992E-32CC104A3A7A}
         {CA0A68E0-45A0-4A01-A061-F951D93D6906} = {84EA02ED-2E97-47D2-992E-32CC104A3A7A}
+        {143A3684-FAEB-43D0-A895-09BE5FDF85F6} = {84EA02ED-2E97-47D2-992E-32CC104A3A7A}
     EndGlobalSection
     GlobalSection(ExtensibilityGlobals) = postSolution
         SolutionGuid = {14EE1026-6507-4295-9FEE-67A55C3849CE}
+        SolutionGuid = {194D4CBE-A20A-4E32-967B-E1BBD3922C29}
     EndGlobalSection
 EndGlobal
