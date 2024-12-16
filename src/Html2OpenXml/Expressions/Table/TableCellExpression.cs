@@ -74,8 +74,8 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : TableElementExpre
         {
             cellProperties.TableCellWidth = new TableCellWidth
             {
-                Type = width.Type == UnitMetric.Percent ? TableWidthUnitValues.Pct : TableWidthUnitValues.Dxa,
-                Width = width.Type == UnitMetric.Percent
+                Type = width.Metric == UnitMetric.Percent ? TableWidthUnitValues.Pct : TableWidthUnitValues.Dxa,
+                Width = width.Metric == UnitMetric.Percent
                     ? ((int) (width.Value * 50)).ToString(CultureInfo.InvariantCulture)
                     : width.ValueInDxa.ToString(CultureInfo.InvariantCulture)
             };
