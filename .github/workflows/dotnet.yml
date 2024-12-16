@@ -10,7 +10,6 @@ on:
       - 'docs/**'
       - '**/*.md'
   pull_request:
-    branches: [ "dev" ]
 
 jobs:
   net8:

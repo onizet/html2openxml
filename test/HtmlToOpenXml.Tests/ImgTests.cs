@@ -80,6 +80,22 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements, Is.Empty);
         }
 
+        [Test(Description = "Reading image from a local base image url.")]
+        public async Task FileSystem_LocalImage_WithBaseUri_ShouldSucceed()
+        {
+            string baseUri = TestContext.CurrentContext.WorkDirectory;
+
+            using var resourceStream = ResourceHelper.GetStream("Resources.html2openxml.jpg");
+            using (var fileStream = File.OpenWrite(Path.Combine(baseUri, "html2openxml.jpg")))
+                await resourceStream.CopyToAsync(fileStream);
+
+            converter = new(mainPart, new IO.DefaultWebRequest { BaseImageUrl = new Uri(baseUri) });
+
+            var elements = await converter.ParseAsync("<img src='html2openxml.jpg'>");
+            Assert.That(elements.Count(), Is.EqualTo(1));
+            AssertIsImg(mainPart, elements.First());
+        }
+
         [Test(Description = "Reading local file containing a space in the name")]
         public async Task FileSystem_LocalImage_WithSpaceInName_ShouldSucceed()
         {
@@ -201,6 +217,22 @@ namespace HtmlToOpenXml.Tests
             Assert.That(p, Is.Not.Null);
             AssertIsImg(container, p);
             AssertThatOpenXmlDocumentIsValid();
+        }
+
+        [TestCase("display:block", ExpectedResult = true)]
+        [TestCase("display:flex", ExpectedResult = true)]
+        [TestCase("display:inline", ExpectedResult = false)]
+        [TestCase("", ExpectedResult = false)]
+        public bool CenterImg_ReturnsFramedImg(string displayMode)
+        {
+            var elements = converter.Parse($@"<img style=""{displayMode}; margin-left: auto; margin-right: auto;""
+                src=""data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=="" width=""32"" height=""32"">");
+
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements[0], Is.TypeOf<Paragraph>());
+            AssertIsImg(mainPart, elements[0]);
+            return elements[0].GetFirstChild<ParagraphProperties>()?.
+                Justification?.Val?.Value == JustificationValues.Center;
         }
 
         private static (Drawing, ImagePart) AssertIsImg (OpenXmlPartContainer container, OpenXmlElement paragraph)
