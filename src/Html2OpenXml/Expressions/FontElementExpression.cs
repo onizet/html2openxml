@@ -27,7 +27,7 @@ sealed class FontElementExpression(IHtmlElement node) : PhrasingElementExpressio
         string? attrValue = node.GetAttribute("size");
         if (!string.IsNullOrEmpty(attrValue))
         {
-            Unit fontSize = Converter.ToFontSize(attrValue);
+            Unit fontSize = Converter.ToFontSize(attrValue.AsSpan());
             if (fontSize.IsFixed)
                 runProperties.FontSize = new() { 
                     Val = Math.Round(fontSize.ValueInPoint * 2).ToString(CultureInfo.InvariantCulture) };

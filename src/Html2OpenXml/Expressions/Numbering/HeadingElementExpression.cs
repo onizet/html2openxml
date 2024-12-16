@@ -9,6 +9,7 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -23,7 +24,7 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 sealed class HeadingElementExpression(IHtmlElement node) : NumberingExpressionBase(node)
 {
-    private static readonly Regex numberingRegex = new(@"^\s*(\d+\.?)*\s*");
+    private static readonly Regex numberingRegex = new(@"^\s*(\d+\.?)*\s*", RegexOptions.Compiled, TimeSpan.FromMilliseconds(100));
 
     /// <inheritdoc/>
     public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
@@ -67,7 +68,15 @@ sealed class HeadingElementExpression(IHtmlElement node) : NumberingExpressionBa
     {
         // Check if the line starts with a number format (1., 1.1., 1.1.1.)
         // If it does, make sure we make the heading a numbered item
-        Match regexMatch = numberingRegex.Match(runElement.InnerText ?? string.Empty);
+        Match regexMatch;
+        try
+        {
+            regexMatch = numberingRegex.Match(runElement.InnerText ?? string.Empty);
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            return false;
+        }
 
         // Make sure we only grab the heading if it starts with a number
         if (regexMatch.Groups.Count > 1 && regexMatch.Groups[1].Captures.Count > 0)

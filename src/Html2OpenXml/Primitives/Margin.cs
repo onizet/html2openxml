@@ -10,19 +10,50 @@
  * PARTICULAR PURPOSE.
  */
 
+using System;
+
 namespace HtmlToOpenXml;
 
 /// <summary>
-/// Represents a Html Unit (ie: 120px, 10em, ...).
+/// Represents a Html Margin.
 /// </summary>
 struct Margin
 {
+    /// <summary>Represents an empty margin (not defined).</summary>
+    public static readonly Margin Empty = new() { sides = new Unit[4] };
     private Unit[] sides;
 
 
+    /// <summary>Apply to all four sides.</summary>
+    public Margin(Unit all)
+    {
+        this.sides = [all, all, all, all];
+    }
+
+    /// <summary>Top and bottom | left and right.</summary>
+    public Margin(Unit topAndBottom, Unit leftAndRight)
+    {
+        this.sides = [topAndBottom, leftAndRight, topAndBottom, leftAndRight];
+    }
+
+    /// <summary>Top | left and right | bottom.</summary>
+    public Margin(Unit top, Unit leftAndRight, Unit bottom)
+    {
+        this.sides = [top, leftAndRight, bottom, leftAndRight];
+    }
+
+    /// <summary>Top | right | bottom | left.</summary>
     public Margin(Unit top, Unit right, Unit bottom, Unit left)
     {
         this.sides = [top, right, bottom, left];
+    }
+
+    /// <inheritdoc cref="Parse(ReadOnlySpan{char})"/>
+    public static Margin Parse(string? str)
+    {
+        if (str == null)
+            return Empty;
+        return Parse(str.AsSpan());
     }
 
     /// <summary>
@@ -48,47 +79,29 @@ struct Margin
     /// <b>margin:25px;</b>
     /// all four margins are 25px
     /// </remarks>
-    public static Margin Parse(string? str)
+    public static Margin Parse(ReadOnlySpan<char> span)
     {
-        if (str == null) return new Margin();
+        if (span.IsEmpty || span.IsWhiteSpace())
+            return Empty;
 
-        var parts = str.Split(HttpUtility.WhiteSpaces);
-        switch (parts.Length)
+        Span<Range> tokens = stackalloc Range[5];
+        return span.SplitCompositeAttribute(tokens) switch
         {
-            case 1:
-                {
-                    Unit all = Unit.Parse(parts[0], UnitMetric.Pixel);
-                    return new Margin(all, all, all, all);
-                }
-            case 2:
-                {
-                    Unit u1 = Unit.Parse(parts[0], UnitMetric.Pixel);
-                    Unit u2 = Unit.Parse(parts[1], UnitMetric.Pixel);
-                    return new Margin(u1, u2, u1, u2);
-                }
-            case 3:
-                {
-                    Unit u1 = Unit.Parse(parts[0], UnitMetric.Pixel);
-                    Unit u2 = Unit.Parse(parts[1], UnitMetric.Pixel);
-                    Unit u3 = Unit.Parse(parts[2], UnitMetric.Pixel);
-                    return new Margin(u1, u2, u3, u2);
-                }
-            case 4:
-                {
-                    Unit u1 = Unit.Parse(parts[0], UnitMetric.Pixel);
-                    Unit u2 = Unit.Parse(parts[1], UnitMetric.Pixel);
-                    Unit u3 = Unit.Parse(parts[2], UnitMetric.Pixel);
-                    Unit u4 = Unit.Parse(parts[3], UnitMetric.Pixel);
-                    return new Margin(u1, u2, u3, u4);
-                }
-        }
-
-        return new Margin();
-    }
-
-    private void EnsureSides()
-    {
-        if (this.sides == null) sides = new Unit[4];
+            1 => new Margin(Unit.Parse(span.Slice(tokens[0]), UnitMetric.Pixel)),
+            2 => new Margin(
+                Unit.Parse(span.Slice(tokens[0]), UnitMetric.Pixel),
+                Unit.Parse(span.Slice(tokens[1]), UnitMetric.Pixel)),
+            3 => new Margin(
+                Unit.Parse(span.Slice(tokens[0]), UnitMetric.Pixel),
+                Unit.Parse(span.Slice(tokens[1]), UnitMetric.Pixel),
+                Unit.Parse(span.Slice(tokens[2]), UnitMetric.Pixel)),
+            4 => new Margin(
+                Unit.Parse(span.Slice(tokens[0]), UnitMetric.Pixel),
+                Unit.Parse(span.Slice(tokens[1]), UnitMetric.Pixel),
+                Unit.Parse(span.Slice(tokens[2]), UnitMetric.Pixel),
+                Unit.Parse(span.Slice(tokens[3]), UnitMetric.Pixel)),
+            _ => Empty
+        };
     }
 
     //____________________________________________________________________
@@ -99,8 +112,8 @@ struct Margin
     /// </summary>
     public Unit Bottom
     {
-        readonly get { return sides == null ? Unit.Empty : sides[2]; }
-        set { EnsureSides(); sides[2] = value; }
+        readonly get => sides[2];
+        set { sides[2] = value; }
     }
 
     /// <summary>
@@ -108,8 +121,8 @@ struct Margin
     /// </summary>
     public Unit Left
     {
-        readonly get { return sides == null ? Unit.Empty : sides[3]; }
-        set { EnsureSides(); sides[3] = value; }
+        readonly get => sides[3];
+        set { sides[3] = value; }
     }
 
     /// <summary>
@@ -117,8 +130,8 @@ struct Margin
     /// </summary>
     public Unit Top
     {
-        readonly get { return sides == null ? Unit.Empty : sides[0]; }
-        set { EnsureSides(); sides[0] = value; }
+        readonly get => sides[0];
+        set { sides[0] = value; }
     }
 
     /// <summary>
@@ -126,13 +139,13 @@ struct Margin
     /// </summary>
     public Unit Right
     {
-        readonly get { return sides == null ? Unit.Empty : sides[1]; }
-        set { EnsureSides(); sides[1] = value; }
+        readonly get => sides[1];
+        set { sides[1] = value; }
     }
 
     public readonly bool IsValid
     {
-        get => sides != null && Left.IsValid && Right.IsValid && Bottom.IsValid && Top.IsValid;
+        get => Left.IsValid && Right.IsValid && Bottom.IsValid && Top.IsValid;
     }
 
     /// <summary>
@@ -140,6 +153,6 @@ struct Margin
     /// </summary>
     public readonly bool IsEmpty
     {
-        get => sides == null || !(Left.IsValid || Right.IsValid || Bottom.IsValid || Top.IsValid);
+        get => !(Left.IsValid || Right.IsValid || Bottom.IsValid || Top.IsValid);
     }
 }

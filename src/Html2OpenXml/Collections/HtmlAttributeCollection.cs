@@ -9,8 +9,8 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
+using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml;
@@ -18,27 +18,102 @@ namespace HtmlToOpenXml;
 /// <summary>
 /// Represents the collection of attributes present in the current html tag.
 /// </summary>
-sealed class HtmlAttributeCollection
+sealed partial class HtmlAttributeCollection
 {
-    private static readonly Regex stripStyleAttributesRegex = new(@"(?<name>[^;\s]+)\s?(&\#58;|:)\s?(?<val>[^;&]+)\s?(;|&\#59;)*");
-    private readonly Dictionary<string, string> attributes = [];
+    // Style key associated with a pointer to rawValue.
+    private readonly Dictionary<string, Range> attributes = [];
+    private readonly string rawValue;
 
 
-
-    private HtmlAttributeCollection()
+    private HtmlAttributeCollection(string htmlStyles)
     {
+        rawValue = htmlStyles;
     }
 
-    public static HtmlAttributeCollection ParseStyle(string? htmlTag)
-    {
-        var collection = new HtmlAttributeCollection();
-        if (string.IsNullOrEmpty(htmlTag)) return collection;
+    /// <summary>
+    /// Gets a value that indicates whether this collection is empty.
+    /// </summary>
+    public bool IsEmpty => attributes.Count == 0;
 
-        // Encoded ':' and ';' characters are valid for browser but not handled by the regex (bug #13812 reported by robin391)
-        // ex= <span style="text-decoration&#58;underline&#59;color:red">
-        MatchCollection matches = stripStyleAttributesRegex.Matches(htmlTag);
-        foreach (Match m in matches)
-            collection.attributes[m.Groups["name"].Value] = m.Groups["val"].Value;
+    public static HtmlAttributeCollection ParseStyle(string? htmlStyles)
+    {
+        var collection = new HtmlAttributeCollection(htmlStyles!);
+        if (string.IsNullOrWhiteSpace(htmlStyles)) return collection;
+
+        var span = htmlStyles.AsSpan();
+
+        // Encoded ':' and ';' characters are valid for browser
+        // <span style="text-decoration&#58;underline&#59;color:red">
+
+        int startIndex = 0;
+        bool foundKey = false;
+        string? key = null;
+        while (span.Length > 0)
+        {
+            int index = span.IndexOfAny(';', '&', ':');
+            if (index == -1)
+            {
+                if (!foundKey) break;
+                index = span.Length;
+            }
+
+            int separatorSize = 0;
+            if (!foundKey)
+            {
+                // html-encoded semicolon
+                if (span.Slice(index).StartsWith(['&','#','5','8',';']))
+                {
+                    separatorSize = 5;
+                }
+                else if (span[index] == ':')
+                {
+                    separatorSize = 1;
+                }
+                else
+                {
+                    // unexpected semicolon (ie, key with no value) -> ignore this style
+                    separatorSize = -1;
+                }
+
+                if (separatorSize > 0 && index > 0)
+                {
+                    key = span.Slice(0, index).ToString().Trim();
+                    foundKey = true;
+                }
+            }
+            else
+            {
+                if (index < span.Length)
+                {
+                    // html-encoded colon
+                    if (span.Slice(index).StartsWith(['&','#','5','9',';']))
+                    {
+                        separatorSize = 5;
+                    }
+                    else if (span[index] == ';')
+                    {
+                        separatorSize = 1;
+                    }
+                    else if (span[index] == ':')
+                    {
+                        // unexpected colon (ie, key:value:value) -> ignore this style
+                        separatorSize = -1;
+                        foundKey = false;
+                    }
+                }
+
+                if (foundKey)
+                {
+                    if (index > 0)
+                        collection.attributes[key!] = new Range(startIndex, startIndex + index);
+                    foundKey = false;
+                }
+            }
+
+            separatorSize = Math.Abs(separatorSize);
+            startIndex += index + separatorSize;
+            span = span.Slice(index + separatorSize);
+        }
 
         return collection;
     }
@@ -48,7 +123,12 @@ sealed class HtmlAttributeCollection
     /// </summary>
     public string? this[string name]
     {
-        get => attributes.TryGetValue(name, out var value)? value : null;
+        get 
+        {
+            if (attributes.TryGetValue(name, out var range))
+                return rawValue.AsSpan().Slice(range).ToString().Trim();
+            return null;
+        }
     }
 
     /// <summary>
@@ -57,7 +137,9 @@ sealed class HtmlAttributeCollection
     /// </summary>
     public HtmlColor GetColor(string name)
     {
-        return HtmlColor.Parse(this[name]);
+        if (attributes.TryGetValue(name, out var range))
+            return HtmlColor.Parse(rawValue.AsSpan().Slice(range));
+        return HtmlColor.Empty;
     }
 
     /// <summary>
@@ -66,7 +148,9 @@ sealed class HtmlAttributeCollection
     /// <returns>If the attribute is misformed, the <see cref="Unit.IsValid"/> property is set to false.</returns>
     public Unit GetUnit(string name, UnitMetric defaultMetric = UnitMetric.Unitless)
     {
-        return Unit.Parse(this[name], defaultMetric);
+        if (attributes.TryGetValue(name, out var range))
+            return Unit.Parse(rawValue.AsSpan().Slice(range), defaultMetric);
+        return Unit.Empty;
     }
 
     /// <summary>
@@ -76,7 +160,10 @@ sealed class HtmlAttributeCollection
     /// <returns>If the attribute is misformed, the <see cref="Margin.IsValid"/> property is set to false.</returns>
     public Margin GetMargin(string name)
     {
-        Margin margin = Margin.Parse(this[name]);
+        Margin margin = Margin.Empty;
+        if (attributes.TryGetValue(name, out var range))
+            margin = Margin.Parse(rawValue.AsSpan().Slice(range));
+
         Unit u;
 
         u = GetUnit(name + "-top", UnitMetric.Pixel);
@@ -120,58 +207,83 @@ sealed class HtmlAttributeCollection
     /// <returns>If the attribute is misformed, the <see cref="HtmlBorder.IsEmpty"/> property is set to false.</returns>
     public SideBorder GetSideBorder(string name)
     {
-        var attrValue = this[name];
-        SideBorder border = SideBorder.Parse(attrValue);
+        SideBorder border = SideBorder.Empty;
+        if (attributes.TryGetValue(name, out Range range))
+            border = SideBorder.Parse(rawValue.AsSpan().Slice(range));
 
         // handle attributes specified individually.
-        Unit width = SideBorder.ParseWidth(this[name + "-width"]);
-        if (!width.IsValid) width = border.Width;
+        Unit width = border.Width;
+        if (attributes.TryGetValue(name + "-width", out range))
+        {
+            var w = SideBorder.ParseWidth(rawValue.AsSpan().Slice(range));
+            if (width.IsValid) width = w;
+        }
 
         var color = GetColor(name + "-color");
         if (color.IsEmpty) color = border.Color;
 
-        var style = Converter.ToBorderStyle(this[name + "-style"]);
-        if (style == BorderValues.Nil) style = border.Style;
+        BorderValues style = border.Style;
+        if (attributes.TryGetValue(name + "-style", out range))
+        {
+            var s = Converter.ToBorderStyle(rawValue.AsSpan().Slice(range));
+            if (s != BorderValues.Nil) style = s;
+        }
 
         return new SideBorder(style, color, width);
     }
 
     /// <summary>
-    /// Gets the font attribute and combine with the style, size and family.
+    /// Gets the `font` attribute and combine with the style, size and family.
     /// </summary>
     public HtmlFont GetFont(string name)
     {
-        HtmlFont font = HtmlFont.Parse(this[name]);
+        HtmlFont font = HtmlFont.Empty;
+        if (attributes.TryGetValue(name, out Range range))
+            font = HtmlFont.Parse(rawValue.AsSpan().Slice(range));
+
         FontStyle? fontStyle = font.Style;
         FontVariant? variant = font.Variant;
         FontWeight? weight = font.Weight;
         Unit fontSize = font.Size;
         string? family = font.Family;
 
-        var attrValue = this[name + "-style"];
-        if (attrValue != null)
+        if (attributes.TryGetValue(name + "-style", out range))
         {
-            fontStyle = Converter.ToFontStyle(attrValue) ?? font.Style;
+            var s = Converter.ToFontStyle(rawValue.AsSpan().Slice(range));
+            if (s.HasValue) fontStyle = s;
         }
-        attrValue = this[name + "-variant"];
-        if (attrValue != null)
+
+        if (attributes.TryGetValue(name + "-variant", out range))
         {
-            variant = Converter.ToFontVariant(attrValue) ?? font.Variant;
+            var v = Converter.ToFontVariant(rawValue.AsSpan().Slice(range));
+            if (v.HasValue) variant = v;
         }
-        attrValue = this[name + "-weight"];
-        if (attrValue != null)
+
+        if (attributes.TryGetValue(name + "-weight", out range))
         {
-            weight = Converter.ToFontWeight(attrValue) ?? font.Weight;
+            var w = Converter.ToFontWeight(rawValue.AsSpan().Slice(range));
+            if (w.HasValue) weight = w;
         }
-        attrValue = this[name + "-family"];
-        if (attrValue != null)
+
+        if (attributes.TryGetValue(name + "-family", out range))
         {
-            family = Converter.ToFontFamily(attrValue) ?? font.Family;
+            var f = Converter.ToFontFamily(rawValue.AsSpan().Slice(range));
+            if (f != null) family = f;
         }
 
         Unit unit = this.GetUnit(name + "-size");
         if (unit.IsValid) fontSize = unit;
 
-        return new HtmlFont(fontStyle, variant, weight, fontSize, family);
+        return new HtmlFont(fontSize, family, fontStyle, variant, weight);
+    }
+
+    /// <summary>
+    /// Gets the composite `text-decoration` style.
+    /// </summary>
+    public IEnumerable<TextDecoration> GetTextDecorations(string name)
+    {
+        if (attributes.TryGetValue(name, out Range range))
+            return Converter.ToTextDecoration(rawValue.AsSpan().Slice(range));
+        return [];
     }
 }
