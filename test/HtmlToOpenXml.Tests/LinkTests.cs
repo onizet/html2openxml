@@ -82,7 +82,7 @@ namespace HtmlToOpenXml.Tests
         [Test]
         public void SetExcludeAnchoring_ReturnsSimpleRun ()
         {
-            converter.ExcludeLinkAnchor = true;
+            converter.SupportsAnchorLinks = false;
 
             // _top is always present and bypass the previous rule
             var elements = converter.Parse(@"<a href=""#_top"">Anchor2</a>");

@@ -23,28 +23,68 @@ namespace HtmlToOpenXml.Expressions;
 /// Process the parsing of block contents (like <c>p</c>, <c>span</c>, <c>heading</c>).
 /// A block-level element always starts on a new line, and the browsers automatically add some space (a margin) before and after the element.
 /// </summary>
-class BlockElementExpression(IHtmlElement node, params OpenXmlLeafElement[]? styleProperty) : PhrasingElementExpression(node)
+class BlockElementExpression: PhrasingElementExpression
 {
-    private readonly OpenXmlLeafElement[]? defaultStyleProperties = styleProperty;
+    private readonly OpenXmlLeafElement[]? defaultStyleProperties;
     protected readonly ParagraphProperties paraProperties = new();
+    // some style attributes, such as borders or bgcolor, will convert this node to a framed container
+    protected bool renderAsFramed;
+    private HtmlBorder styleBorder;
+
+
+    public BlockElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProperty) : base(node)
+    {
+        if (styleProperty is not null)
+            defaultStyleProperties = [styleProperty];
+    }
+    public BlockElementExpression(IHtmlElement node, params OpenXmlLeafElement[]? styleProperty) : base(node)
+    {
+        defaultStyleProperties = styleProperty;
+    }
 
 
     /// <inheritdoc/>
     public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
     {
-        var elements = base.Interpret(context);
+        var childElements = base.Interpret(context);
 
         var bookmarkTarget = node.GetAttribute(InternalNamespaceUri, "bookmark");
         if (bookmarkTarget is not null)
         {
             var bookmarkId = IncrementBookmarkId(context).ToString(CultureInfo.InvariantCulture);
-            var p = elements.First();
+            var p = childElements.First();
             // need to be inserted after pPr to avoid schema warning
             p.InsertAfter(new BookmarkStart() { Id = bookmarkId, Name = bookmarkTarget }, p.GetFirstChild<ParagraphProperties>());
             p.AppendChild(new BookmarkEnd() { Id = bookmarkId });
         }
 
-        return elements;
+        if (!renderAsFramed)
+            return childElements;
+
+        var paragraphs = childElements.OfType<Paragraph>();
+        if (!paragraphs.Any()) return childElements;
+
+        // if we have only 1 paragraph, just inline the styles
+        if (paragraphs.Count() == 1)
+        {
+            var p = paragraphs.First();
+
+            if (!styleBorder.IsEmpty && p.ParagraphProperties?.ParagraphBorders is null)
+            {
+                p.ParagraphProperties ??= new();
+                p.ParagraphProperties!.ParagraphBorders = new ParagraphBorders {
+                    LeftBorder = Converter.ToBorder<LeftBorder>(styleBorder.Left),
+                    RightBorder = Converter.ToBorder<RightBorder>(styleBorder.Right),
+                    TopBorder = Converter.ToBorder<TopBorder>(styleBorder.Top),
+                    BottomBorder = Converter.ToBorder<BottomBorder>(styleBorder.Bottom)
+                };
+            }
+
+            return childElements;
+        }
+
+        // if we have 2+ paragraphs, we will embed them inside a stylised table
+        return [CreateFrame(childElements)];
     }
 
     protected override IEnumerable<OpenXmlElement> Interpret (
@@ -128,25 +168,19 @@ class BlockElementExpression(IHtmlElement node, params OpenXmlLeafElement[]? sty
             };
         }
 
-        var attrValue = styleAttributes!["text-align"];
-        JustificationValues? align = Converter.ToParagraphAlign(attrValue);
+        JustificationValues? align = Converter.ToParagraphAlign(styleAttributes!["text-align"]);
+        if (!align.HasValue) align = Converter.ToParagraphAlign(node.GetAttribute("align"));
         if (align.HasValue)
         {
             paraProperties.Justification = new() { Val = align };
         }
 
 
-        var styleBorder = styleAttributes.GetBorders();
+        styleBorder = styleAttributes.GetBorders();
         if (!styleBorder.IsEmpty)
         {
-            var borders = new ParagraphBorders {
-                LeftBorder = Converter.ToBorder<LeftBorder>(styleBorder.Left),
-                RightBorder = Converter.ToBorder<RightBorder>(styleBorder.Right),
-                TopBorder = Converter.ToBorder<TopBorder>(styleBorder.Top),
-                BottomBorder = Converter.ToBorder<BottomBorder>(styleBorder.Bottom)
-            };
-
-            paraProperties.ParagraphBorders = borders;
+            renderAsFramed = true;
+            runProperties.Border = null;
         }
 
         foreach (string className in node.ClassList)
@@ -159,8 +193,8 @@ class BlockElementExpression(IHtmlElement node, params OpenXmlLeafElement[]? sty
             }
         }
 
-        Margin margin = styleAttributes.GetMargin("margin");
-        Indentation? indentation = null;
+        var margin = styleAttributes.GetMargin("margin");
+         Indentation? indentation = null;
         if (!margin.IsEmpty)
         {
             if (margin.Top.IsFixed || margin.Bottom.IsFixed)
@@ -236,6 +270,9 @@ class BlockElementExpression(IHtmlElement node, params OpenXmlLeafElement[]? sty
                 };
             }
         }
+
+        if (runProperties.Shading != null)
+            renderAsFramed = true;
     }
 
     /// <summary>
@@ -320,6 +357,43 @@ class BlockElementExpression(IHtmlElement node, params OpenXmlLeafElement[]? sty
         }
 
         return p;
+    }
+
+
+    /// <summary>
+    /// Group all the paragraph inside a framed table.
+    /// </summary>
+    private Table CreateFrame(IEnumerable<OpenXmlElement> childElements)
+    {
+        TableCell cell;
+        TableProperties tableProperties;
+        Table framedTable = new(
+            tableProperties = new TableProperties {
+                TableWidth = new() { Type = TableWidthUnitValues.Pct, Width = "5000" } // 100%
+            },
+            new TableGrid(
+                new GridColumn() { Width = "9442" }),
+            new TableRow(
+                cell = new TableCell(childElements)
+                )
+            );
+
+        if (!styleBorder.IsEmpty)
+        {
+            tableProperties.TableBorders = new TableBorders {
+                LeftBorder = Converter.ToBorder<LeftBorder>(styleBorder.Left),
+                RightBorder = Converter.ToBorder<RightBorder>(styleBorder.Right),
+                TopBorder = Converter.ToBorder<TopBorder>(styleBorder.Top),
+                BottomBorder = Converter.ToBorder<BottomBorder>(styleBorder.Bottom)
+            };
+        }
+
+        if (runProperties.Shading != null)
+        {
+            cell.TableCellProperties = new() { Shading = (Shading?) runProperties.Shading.Clone() };
+        }
+
+        return framedTable;
     }
 
     /// <summary>

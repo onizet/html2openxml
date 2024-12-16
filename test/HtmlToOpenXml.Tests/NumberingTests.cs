@@ -10,6 +10,9 @@ namespace HtmlToOpenXml.Tests
     [TestFixture]
     public class NumberingTests : HtmlConverterTestBase
     {
+        const int maxLevel = 8;
+
+
         [Test(Description = "Skip any elements that is not a `li` tag")]
         public void NonLiElement_ShouldBeIgnored()
         {
@@ -27,12 +30,13 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test(Description = "Two consecutive lists should restart numbering to 1")]
-        public void ConsecutiveList_ReturnsList_RestartingOrder()
+        public async Task ConsecutiveList_ReturnsList_RestartingOrder()
         {
-            var elements = converter.Parse(@"
+            await converter.ParseBody(@"
                 <oL><li>Item 1.1</li></oL>
                 <p>placeholder</p>
                 <ol><li>Item 2.1</li></ol>");
+            var elements = mainPart.Document.Body!.ChildElements;
             Assert.Multiple(() => {
                 Assert.That(elements, Has.Count.EqualTo(3));
                 Assert.That(elements, Is.All.TypeOf<Paragraph>());
@@ -59,18 +63,20 @@ namespace HtmlToOpenXml.Tests
                     Is.Not.EqualTo(p2.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value),
                     "Expected two different list instances");
             });
+            AssertThatOpenXmlDocumentIsValid();
         }
 
         [Test]
-        public void NestedNumberList_ReturnsMultilevelList()
+        public async Task NestedNumberList_ReturnsMultilevelList()
         {
-            var elements = converter.Parse(
+            await converter.ParseBody(
                 @"<ol>
                     <li>Item 1
                         <ol><li>Item 1.1</li></ol>
                     </li>
                     <li>Item 2</li>
                 </ol>");
+            var elements = mainPart.Document.Body!.ChildElements;
             Assert.Multiple(() => {
                 Assert.That(elements, Has.Count.EqualTo(3));
                 Assert.That(elements, Is.All.TypeOf<Paragraph>());
@@ -113,6 +119,7 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(p1_1.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value, Is.EqualTo(1));
                 Assert.That(p2.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value, Is.EqualTo(0));
             });
+            AssertThatOpenXmlDocumentIsValid();
         }
 
         [Test(Description = "Empty list should not be registred")]
@@ -177,7 +184,6 @@ namespace HtmlToOpenXml.Tests
         [Test(Description = "Word doesn't display more than 8 deep levels.")]
         public void MaxNumberingLevel_ShouldBeIgnored()
         {
-            const int maxLevel = 8;
             var sb = new System.Text.StringBuilder();
             for (int i = 0; i <= maxLevel; i++)
                 sb.AppendFormat("<ol><li>Item {0}", i+1);
@@ -329,9 +335,9 @@ namespace HtmlToOpenXml.Tests
         /// Tiered numbering such as: 1, 1.1, 1.1.1
         /// </summary>
         [Test(Description = "Nested numbering (issue #81)")]
-        public void DecimalTieredStyle_ReturnsListWithTieredNumbering()
+        public async Task DecimalTieredStyle_ReturnsListWithTieredNumbering()
         {
-            var elements = converter.Parse(
+            await converter.ParseBody(
                 @"<ol style='list-style-type:decimal-tiered'>
                     <li>Item 1
                         <ol><li>Item 1.1</li></ol>
@@ -339,6 +345,7 @@ namespace HtmlToOpenXml.Tests
                     <li>Item 2</li>
                 </ol>");
 
+            var elements = mainPart.Document.Body!.ChildElements;
             var absNum = mainPart.NumberingDefinitionsPart?.Numbering
                 .Elements<AbstractNum>()
                 .SingleOrDefault();
@@ -347,10 +354,15 @@ namespace HtmlToOpenXml.Tests
             var instances = mainPart.NumberingDefinitionsPart?.Numbering
                 .Elements<NumberingInstance>().Where(i => i.AbstractNumId!.Val == absNum.AbstractNumberId);
             Assert.That(instances, Is.Not.Null);
+            var levels = absNum.Elements<Level>();
             Assert.Multiple(() =>
             {
                 Assert.That(instances.Count(), Is.EqualTo(1));
                 Assert.That(instances.Select(i => i.NumberID?.HasValue), Has.All.True);
+                Assert.That(levels.Count(), Is.EqualTo(maxLevel + 1));
+                Assert.That(levels.Select(l => l.NumberingFormat?.Val?.Value), Has.All.EqualTo(NumberFormatValues.Decimal));
+                Assert.That(levels.Select(l => l.PreviousParagraphProperties?.Indentation?.Left?.Value), Has.All.EqualTo("0"),
+                    "Decimal Tiered style must all be aligned on left with no indent");
             });
 
             Assert.That(elements, Is.Not.Empty);
@@ -359,6 +371,7 @@ namespace HtmlToOpenXml.Tests
                 e.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value),
                 Has.All.EqualTo(instances.First().NumberID!.Value),
                 "All paragraphs are linked to the same list instance");
+            AssertThatOpenXmlDocumentIsValid();
         }
 
         [Test(Description = "Allow to specify another start value for the first item of a `ol` list")]
@@ -392,12 +405,13 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test]
-        public void RomanList_ReturnsListWithCustomStyle()
+        public async Task RomanList_ReturnsListWithCustomStyle()
         {
-            var elements = converter.Parse(@"<ul style='list-style-type:lower-roman'>
+            await converter.ParseBody(@"<ul style='list-style-type:lower-roman'>
                     <li>Item 1</li>
                 </ul>");
 
+            var elements = mainPart.Document.Body!.ChildElements;
             Assert.That(elements, Is.Not.Empty);
             Assert.That(elements, Is.All.TypeOf<Paragraph>());
             var numId = ((Paragraph) elements[0]).ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value;
@@ -418,12 +432,13 @@ namespace HtmlToOpenXml.Tests
                 .Elements<Style>()
                 .FirstOrDefault(s => s.StyleName?.Val == "Harvard");
             Assert.That(style, Is.Not.Null);
+            AssertThatOpenXmlDocumentIsValid();
         }
 
         [Test(Description = "Restart indenting in second nested numbering (issue #83)")]
-        public void NestedNumbering_ReturnsNestedList_RestartingOrder()
+        public async Task NestedNumbering_ReturnsNestedList_RestartingOrder()
         {
-            var elements = converter.Parse(@"
+            await converter.ParseBody(@"
                 <ol style='list-style-type: decimal;'>
                 <li>item 1a
                     <ol style='list-style-type: lower-alpha;'>
@@ -439,6 +454,7 @@ namespace HtmlToOpenXml.Tests
                 </li>
                 </ol>");
 
+            var elements = mainPart.Document.Body!.ChildElements;
             var absNum = mainPart.NumberingDefinitionsPart?.Numbering
                 .Elements<AbstractNum>();
             Assert.That(absNum, Is.Not.Null);
@@ -455,8 +471,9 @@ namespace HtmlToOpenXml.Tests
             });
             Assert.That(instances.Last().GetFirstChild<LevelOverride>()?.LevelIndex?.Value, Is.EqualTo(1));
             Assert.That(instances.Last().GetFirstChild<LevelOverride>()?.StartOverrideNumberingValue?.Val?.Value, Is.EqualTo(1));
+            AssertThatOpenXmlDocumentIsValid();
         }
-    
+
         [TestCase("rtl", true)]
         [TestCase("ltr", false)]
         [TestCase("", null)]
@@ -494,6 +511,105 @@ namespace HtmlToOpenXml.Tests
             });
             var bidi = elements.Last().GetFirstChild<ParagraphProperties>()?.BiDi;
             return bidi?.Val?.Value;
+        }
+
+        [Test]
+        public void NestedNumberList_ReturnsIncrementalIndentation()
+        {
+            const int maxLevel = 8;
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < maxLevel; i++)
+                sb.AppendFormat("<ol><li>Item {0}", i+1);
+            for (int i = 0; i < maxLevel; i++)
+                sb.Append("</li></ol>");
+
+            converter.Parse(sb.ToString());
+
+            var absNum = mainPart.NumberingDefinitionsPart?.Numbering
+                .Elements<AbstractNum>()
+                .SingleOrDefault();
+            Assert.That(absNum, Is.Not.Null);
+
+            var levels = absNum.Elements<Level>();
+            Assert.That(levels.Count(), Is.EqualTo(maxLevel + 1));
+            for (int i = 0; i <= maxLevel; i++)
+            {
+                var level = levels.ElementAt(i);
+                var ident = level.PreviousParagraphProperties?.Indentation;
+                Assert.That(ident?.Hanging?.Value, Is.EqualTo("360"));
+                Assert.That(Convert.ToInt32(ident?.Left?.Value), Is.EqualTo((i + 1) * 2 * 360));
+                TestContext.Out.WriteLine($"{i}. {ident?.Left?.Value}");
+            }
+        }
+
+        [Test(Description = "Nested list must be a children of a `li` tag but some editor are not respecting the W3C standard (issue #173)")]
+        public async Task NestedNumberList_NonCompliant_ReturnsIncrementalIndentation()
+        {
+            await converter.ParseBody(@"<ol>
+                <li>Item1</li>
+                <li>Item2</li>
+                    <ol><li>Item 2.1</li></ol>
+                </ol>");
+
+            var absNum = mainPart.NumberingDefinitionsPart?.Numbering
+                .Elements<AbstractNum>()
+                .SingleOrDefault();
+            Assert.That(absNum, Is.Not.Null);
+
+            var inst = mainPart.NumberingDefinitionsPart?.Numbering
+                .Elements<NumberingInstance>().Where(i => i.AbstractNumId?.Val == absNum.AbstractNumberId)
+                .SingleOrDefault();
+            Assert.That(inst, Is.Not.Null);
+            Assert.That(inst.NumberID?.Value, Is.Not.Null);
+
+            var elements = mainPart.Document.Body!.ChildElements;
+            Assert.Multiple(() => {
+                Assert.That(elements, Has.Count.EqualTo(3));
+                Assert.That(elements, Is.All.TypeOf<Paragraph>());
+                Assert.That(mainPart.NumberingDefinitionsPart?.Numbering, Is.Not.Null);
+            });
+
+            // assert paragraphs linked to numbering instance
+            Assert.Multiple(() =>
+            {
+                Assert.That(elements.Cast<Paragraph>().Select(e => 
+                    e.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value),
+                    Has.All.EqualTo(inst.NumberID.Value),
+                    "All paragraphs are linked to the same list instance");
+                Assert.That(elements.Take(2).Select(p => p.GetFirstChild<ParagraphProperties>()?.NumberingProperties?.NumberingLevelReference?.Val?.Value), Has.All.EqualTo(0));
+                Assert.That(elements.Last().GetFirstChild<ParagraphProperties>()?.NumberingProperties?.NumberingLevelReference?.Val?.Value, Is.EqualTo(1));
+            });
+            AssertThatOpenXmlDocumentIsValid();
+        }
+
+        [Test]
+        public void NestedParagraph_ReturnsIndentedItems()
+        {
+            var elements = converter.Parse(@"<ul>
+                <li>
+                    <p>Paragraph text</p>
+                    <p>Paragraph text</p>
+                </li>
+                </ul>");
+
+            Assert.That(elements, Is.Not.Empty);
+
+            var inst = mainPart.NumberingDefinitionsPart?.Numbering
+                .Elements<NumberingInstance>()
+                .SingleOrDefault();
+            Assert.That(inst, Is.Not.Null);
+            Assert.Multiple(() => {
+                Assert.That(elements.Last().GetFirstChild<ParagraphProperties>()?.NumberingProperties?.NumberingId,
+                    Is.Null,
+                    "Last paragraph is standalone and not linked to a list instance");
+                Assert.That(elements.Cast<Paragraph>().Select(e => 
+                    e.ParagraphProperties?.ParagraphStyleId?.Val?.Value),
+                    Has.All.EqualTo("ListParagraph"),
+                    "All paragraphs use the same paragraph style");
+                Assert.That(elements.Last().GetFirstChild<ParagraphProperties>()?.Indentation?.Left?.Value,
+                    Is.EqualTo("720"),
+                    "Last standalone paragraph is aligned with the level 1");
+            });
         }
     }
 }

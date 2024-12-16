@@ -12,15 +12,18 @@ namespace HtmlToOpenXml.Tests
         [Test]
         public void StyleAttribute_WithMultipleValues_ShouldBeAllApplied()
         {
-            var elements = converter.Parse(@"<div style='text-indent:1em;border:1px dotted red;text-align:center'>Lorem</div>");
+            var elements = converter.Parse(@"<div style='text-indent:1em;border:1px dotted red;text-align:center;line-height:2.5;margin-right:1em'>Lorem</div>");
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements, Has.All.TypeOf<Paragraph>());
             var p = (Paragraph) elements[0];
+            Assert.That(p.ParagraphProperties, Is.Not.Null);
             Assert.Multiple(() =>
             {
-                Assert.That(p.ParagraphProperties?.Indentation?.FirstLine?.HasValue, Is.True);
-                Assert.That(p.ParagraphProperties?.ParagraphBorders, Is.Not.Null);
-                Assert.That(p.ParagraphProperties?.Justification?.Val?.Value, Is.EqualTo(JustificationValues.Center));
+                Assert.That(p.ParagraphProperties.Indentation?.FirstLine?.HasValue, Is.True);
+                Assert.That(p.ParagraphProperties.ParagraphBorders, Is.Not.Null);
+                Assert.That(p.ParagraphProperties.Justification?.Val?.Value, Is.EqualTo(JustificationValues.Center));
+                Assert.That(p.ParagraphProperties.SpacingBetweenLines?.Line?.Value, Is.EqualTo("600"));
+                Assert.That(p.ParagraphProperties.Indentation?.Right?.Value, Is.EqualTo("239"));
             });
 
             var borders = p.ParagraphProperties?.ParagraphBorders?.Elements<BorderType>();
@@ -143,6 +146,64 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(lastRun.LastChild, Is.TypeOf<Text>());
             });
             Assert.That(((Text)lastRun.LastChild).Text, Is.Empty);
+        }
+
+        [Test(Description = "Border defined on container should render its content with one bordered frame #168")] 
+        public async Task WithBorders_MultipleParagraphs_ReturnsAsOneFramedBlock()
+        {
+            await converter.ParseBody(@"<div style='margin-top: 20px; border: 1px dashed rgba(0, 0, 0, 0.4); padding: 6px 8px; font-size: 14px;'>
+              <div>
+                <p>Header placeholder:</p>
+                <ol>
+                    <li>Item 1</li>
+                    <li>Item 2</li>
+                </ol>
+                <p style='text-indent: 4.5em'>Footer Placeholder</p>
+              </div>
+            </div>");
+            AssertThatOpenXmlDocumentIsValid();
+
+            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
+            Assert.That(paragraphs, Is.Empty, "Assert that all the paragraphs stand inside the framed table");
+
+            var framedTable = mainPart.Document.Body!.Elements<Table>().FirstOrDefault();
+            Assert.That(framedTable, Is.Not.Null);
+
+            var borders = framedTable.GetFirstChild<TableProperties>()?.TableBorders;
+            Assert.That(borders, Is.Not.Null, "Assert that border is applied on table scope");
+            Assert.That(borders.Elements<BorderType>()!
+                .Select(b => b.Val?.Value),
+                Has.All.EqualTo(BorderValues.Dashed));
+
+            var cell = framedTable.GetFirstChild<TableRow>()?.GetFirstChild<TableCell>();
+            Assert.That(cell, Is.Not.Null);
+            paragraphs = cell.Elements<Paragraph>();
+            Assert.That(paragraphs, Is.Not.Empty);
+
+            Assert.That(paragraphs.Last().ParagraphProperties?.Indentation?.FirstLine?.Value, Is.EqualTo("1080"),
+                "Assert that paragraph with text-indent is preserved");
+            Assert.That(paragraphs.Last().ParagraphProperties?.Indentation?.Right, Is.Null,
+                "Assert that paragraph with right indentation is preserved");
+        }
+
+        [Test(Description = "Background color defined on container should render its content with one bordered frame")] 
+        public async Task WithBgcolor_MultipleParagraphs_ReturnsAsOneFramedBlock()
+        {
+            await converter.ParseBody(@"<article style='background: orange'>
+                <header>Header placeholder</header>
+                <p>Body Placeholder</p>
+            </article>");
+            AssertThatOpenXmlDocumentIsValid();
+
+            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
+            Assert.That(paragraphs, Is.Empty, "Assert that all the paragraphs stand inside the framed table");
+
+            var framedTable = mainPart.Document.Body!.Elements<Table>().FirstOrDefault();
+            Assert.That(framedTable, Is.Not.Null);
+
+            var shading = framedTable.GetFirstChild<TableRow>()?.GetFirstChild<TableCell>()?.TableCellProperties?.Shading;
+            Assert.That(shading, Is.Not.Null, "Assert that background-color is applied on table scope");
+            Assert.That(shading.Fill?.Value, Is.EqualTo("FFA500"));
         }
     }
 }

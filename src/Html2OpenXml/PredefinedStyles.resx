@@ -359,12 +359,20 @@
   <data name="ListParagraph" xml:space="preserve">
     <value><![CDATA[<w:style w:type="paragraph" w:styleId="ListParagraph" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
   <w:name w:val="List Paragraph" />
-  <w:basedOn w:val="Normal" />
-  <w:qFormat />
+  <w:next w:val="List Paragraph"/>
   <w:pPr>
-    <w:ind w:left="720" />
+    <w:keepNext w:val="0"/>
+    <w:keepLines w:val="0"/>
+    <w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/>
+    <w:ind w:left="720" w:right="0" w:firstLine="0"/>
     <w:contextualSpacing />
   </w:pPr>
+</w:style>]]></value>
+  </data>
+  <data name="Normal" xml:space="preserve">
+   <value><![CDATA[<w:style w:type="paragraph" w:styleId="Normal" w:default="1" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+<w:name w:val="Normal"/>
+<w:qFormat/>
 </w:style>]]></value>
   </data>
   <data name="Quote" xml:space="preserve">

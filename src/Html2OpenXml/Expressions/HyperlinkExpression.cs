@@ -113,7 +113,7 @@ sealed class HyperlinkExpression(IHtmlAnchorElement node) : PhrasingElementExpre
             h = new Hyperlink() { History = true, Anchor = "_top" };
         }
         // is it an anchor?
-        else if (!context.Converter.ExcludeLinkAnchor && linkNode.Hash.Length > 1 && linkNode.Hash[0] == '#')
+        else if (context.Converter.SupportsAnchorLinks && linkNode.Hash.Length > 1 && linkNode.Hash[0] == '#')
         {
             h = new Hyperlink(
                 ) { History = true, Anchor = linkNode.Hash.Substring(1) };

@@ -4,6 +4,25 @@
 
 - Rewriting of parsing to use System.Span instead of Regex
 - Set Timeout on remaining Regex to prevent any DoS attack
+=======
+## 3.2.2
+
+- Supports a feature to disable heading numbering #175
+- Support center image with margin auto #171
+- Support deprecrated align attribute for block #171
+- Fix parsing of style attribute with a key with no value
+- Improve parsing of style attribute to avoid an extra call to HtmlDecode
+- Extend support of nested list for non-W3C compliant html #173
+- Change way to apply table 100% width
+- Allow to apply percentage widths cells
+
+## 3.2.1
+
+- Fix indentation of numbering list #166
+- Bordered container must render its content with one bordered frame #168
+- Fix serialisation of the "Harvard" style for lower-roman list
+- Fix ParseHeader/Footer where input with multiple paragraphs output only the latest
+- Ensure to apply default style for paragraphs, to avoid a paragraph between 2 list is mis-guessed
 
 ## 3.2.0
 

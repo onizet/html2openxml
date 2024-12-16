@@ -50,8 +50,19 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 
     public override IEnumerable<OpenXmlElement> Interpret(ParsingContext context)
     {
-        var liNodes = node.Children.Where(n => n.LocalName == "li");
+        var liNodes = node.Children.Where(n => n.LocalName.Equals("li", StringComparison.OrdinalIgnoreCase));
         if (!liNodes.Any()) yield break;
+
+        // W3C requires that nested list stands below a `li` element but some editors
+        // don't care to respect the standard. Let's reparent those lists
+        var nestedList = node.Children.Where(n => 
+            n.LocalName.Equals("ol", StringComparison.OrdinalIgnoreCase) || 
+            n.LocalName.Equals("ul", StringComparison.OrdinalIgnoreCase));
+        if (nestedList.Any())
+        {
+            foreach (var list in nestedList)
+                list.PreviousElementSibling?.AppendChild(list);
+        }
 
         var listContext = context.Properties<ListContext>("listContext");
         var parentContext = listContext;
@@ -79,18 +90,38 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
             var expression = new BlockElementExpression(liNode);
             var childElements = expression.Interpret(context);
             if (!childElements.Any()) continue;
-            Paragraph p = (Paragraph) childElements.First();
 
-            p.ParagraphProperties ??= new();
-            p.ParagraphProperties.ParagraphStyleId = GetStyleIdForListItem(context.DocumentStyle, liNode);
-            p.ParagraphProperties.Indentation = level < 2? null : new() { Left = (level * Indentation).ToString() };
-            p.ParagraphProperties.NumberingProperties = new NumberingProperties {
-                NumberingLevelReference = new() { Val = level - 1 },
-                NumberingId = new() { Val = listContext.InstanceId }
-            };
-            if (listContext.Dir.HasValue) {
-                p.ParagraphProperties.BiDi = new() {
-                    Val = OnOffValue.FromBoolean(listContext.Dir == DirectionMode.Rtl)
+            // ensure to filter out any non-paragraph like any nested table
+            var paragraphs = childElements.OfType<Paragraph>();
+            var listItemStyleId = GetStyleIdForListItem(context.DocumentStyle, liNode);
+
+            if (paragraphs.Any())
+            {
+                var p = paragraphs.First();
+                p.ParagraphProperties ??= new();
+                p.ParagraphProperties.ParagraphStyleId = listItemStyleId;
+                p.ParagraphProperties!.NumberingProperties ??= new NumberingProperties {
+                    NumberingLevelReference = new() { Val = level - 1 },
+                    NumberingId = new() { Val = listContext.InstanceId }
+                };
+                if (listContext.Dir.HasValue) {
+                    p.ParagraphProperties.BiDi = new() {
+                        Val = OnOffValue.FromBoolean(listContext.Dir == DirectionMode.Rtl)
+                    };
+                }
+            }
+
+            // any standalone paragraphs must be aligned (indented) along its current level
+            foreach (var p in paragraphs.Skip(1))
+            {
+                // if this is a list item paragraph, skip it
+                if (p.ParagraphProperties?.NumberingProperties is not null)
+                    continue;
+
+                p.ParagraphProperties ??= new();
+                p.ParagraphProperties.ParagraphStyleId ??= (ParagraphStyleId?) listItemStyleId!.CloneNode(true);
+                p.ParagraphProperties.Indentation = new() {
+                    Left = (level * Indentation * 2).ToString()
                 };
             }
 
