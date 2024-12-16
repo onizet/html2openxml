@@ -27,7 +27,6 @@ public class Benchmarks
 
             HtmlConverter converter = new HtmlConverter(mainPart);
             converter.RenderPreAsTable = true;
-            Body body = mainPart.Document.Body!;
 
             await converter.ParseBody(html);
             mainPart.Document.Save();
