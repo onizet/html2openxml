@@ -18,7 +18,7 @@ public class Benchmarks
         using (MemoryStream generatedDocument = new MemoryStream())
         using (WordprocessingDocument package = WordprocessingDocument.Create(generatedDocument, WordprocessingDocumentType.Document))
         {
-            MainDocumentPart mainPart = package.MainDocumentPart;
+            MainDocumentPart? mainPart = package.MainDocumentPart;
             if (mainPart == null)
             {
                 mainPart = package.AddMainDocumentPart();

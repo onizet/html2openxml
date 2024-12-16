@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 
 namespace HtmlToOpenXml;
@@ -8,7 +9,7 @@ namespace HtmlToOpenXml;
 /// </summary>
 partial struct HtmlColor
 {
-    private static readonly Dictionary<string, HtmlColor> namedColors = InitKnownColors();
+    private static readonly IReadOnlyDictionary<string, HtmlColor> namedColors = InitKnownColors();
 
     private static HtmlColor GetNamedColor (ReadOnlySpan<char> name)
     {
@@ -21,7 +22,7 @@ partial struct HtmlColor
         return color;
     }
 
-    private static Dictionary<string, HtmlColor> InitKnownColors()
+    private static IReadOnlyDictionary<string, HtmlColor> InitKnownColors()
     {
         var colors = new Dictionary<string, HtmlColor>()
         {
@@ -168,6 +169,6 @@ partial struct HtmlColor
             { "transparent", FromArgb(0, 0, 0, 0) }
         };
 
-        return colors;
+        return colors.ToFrozenDictionary();
     }
 }
