@@ -192,7 +192,7 @@ readonly struct Unit
     /// </summary>
     public double ValueInPoint
     {
-        get { return (double) (metric == UnitMetric.Point ? this.value : (float) valueInEmus / 12700L); }
+        get { return metric == UnitMetric.Point ? this.value : (float) valueInEmus / 12700L; }
     }
 
     /// <summary>
