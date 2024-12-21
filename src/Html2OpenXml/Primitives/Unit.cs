@@ -38,7 +38,7 @@ readonly struct Unit
 
     public static Unit Parse(ReadOnlySpan<char> span, UnitMetric defaultMetric = UnitMetric.Unitless)
     {
-        span.Trim();
+        span = span.Trim();
         if (span.Length <= 1)
         {
             // either this is invalid or this is a single digit

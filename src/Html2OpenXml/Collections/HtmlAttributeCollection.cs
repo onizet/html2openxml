@@ -41,78 +41,66 @@ sealed partial class HtmlAttributeCollection
         if (string.IsNullOrWhiteSpace(htmlStyles)) return collection;
 
         var span = htmlStyles.AsSpan();
-
-        // Encoded ':' and ';' characters are valid for browser
-        // <span style="text-decoration&#58;underline&#59;color:red">
-
         int startIndex = 0;
         bool foundKey = false;
         string? key = null;
+
         while (span.Length > 0)
         {
+            // Encoded ':' and ';' characters are valid for browser
+            // <span style="text-decoration&#58;underline&#59;color:red">
             int index = span.IndexOfAny(';', '&', ':');
             if (index == -1)
             {
-                if (!foundKey) break;
-                index = span.Length;
+                if (foundKey)
+                {
+                    // process the last value
+                    collection.attributes[key!] = new Range(startIndex, startIndex + span.Length);
+                }
+                break;
             }
 
-            int separatorSize = 0;
-            if (!foundKey)
+            var separator = span[index];
+            if (separator == ';' && foundKey)
             {
-                // html-encoded semicolon
-                if (span.Slice(index).StartsWith(['&','#','5','8',';']))
-                {
-                    separatorSize = 5;
-                }
-                else if (span[index] == ':')
-                {
-                    separatorSize = 1;
-                }
-                else
-                {
-                    // unexpected semicolon (ie, key with no value) -> ignore this style
-                    separatorSize = -1;
-                }
-
-                if (separatorSize > 0 && index > 0)
-                {
-                    key = span.Slice(0, index).ToString().Trim();
-                    foundKey = true;
-                }
+                if (index > 0)
+                    collection.attributes[key!] = new Range(startIndex, startIndex + index);
+                foundKey = false;
+                index++;
+            }
+            else if (separator == ';' && !foundKey)
+            {
+                // unexpected semicolon (ie, key with no value) -> ignore this style
+                index++;
+            }
+            else if (separator == ':' && !foundKey)
+            {
+                key = span.Slice(0, index).Trim().ToString();
+                foundKey = true;
+                index++;
+            }
+            // html-encoded semicolon
+            else if (foundKey && span.Slice(index).StartsWith(['&','#','5','9',';']))
+            {
+                if (index > 0)
+                    collection.attributes[key!] = new Range(startIndex, startIndex + index);
+                foundKey = false;
+                index += 5; // length of "&#58;"
+            }
+            else if (!foundKey && span.Slice(index).StartsWith(['&','#','5','8',';']))
+            {
+                key = span.Slice(0, index).Trim().ToString();
+                foundKey = true;
+                index += 5; // length of "&#58;"
             }
             else
             {
-                if (index < span.Length)
-                {
-                    // html-encoded colon
-                    if (span.Slice(index).StartsWith(['&','#','5','9',';']))
-                    {
-                        separatorSize = 5;
-                    }
-                    else if (span[index] == ';')
-                    {
-                        separatorSize = 1;
-                    }
-                    else if (span[index] == ':')
-                    {
-                        // unexpected colon (ie, key:value:value) -> ignore this style
-                        separatorSize = -1;
-                        foundKey = false;
-                    }
-                }
-
-                if (foundKey)
-                {
-                    if (index > 0)
-                        collection.attributes[key!] = new Range(startIndex, startIndex + index);
-                    foundKey = false;
-                }
+                span = span.Slice(index + 1);
+                continue;
             }
 
-            separatorSize = Math.Abs(separatorSize);
-            startIndex += index + separatorSize;
-            span = span.Slice(index + separatorSize);
+            span = span.Slice(index);
+            startIndex += index;
         }
 
         return collection;
@@ -274,7 +262,7 @@ sealed partial class HtmlAttributeCollection
         Unit unit = this.GetUnit(name + "-size");
         if (unit.IsValid) fontSize = unit;
 
-        return new HtmlFont(fontSize, family, fontStyle, variant, weight);
+        return new HtmlFont(fontSize, family, fontStyle, variant, weight, Unit.Empty);
     }
 
     /// <summary>

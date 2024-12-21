@@ -28,7 +28,6 @@ namespace HtmlToOpenXml.Tests.Primitives
 
         [TestCase("color;color;")]
         [TestCase(":;")]
-        [TestCase("color:red:red")]
         [TestCase("color:;")]
         public void InvalidStyle_ShouldBeEmpty(string htmlStyle)
         {

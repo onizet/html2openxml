@@ -175,7 +175,7 @@ For 50 years, <b>WWF</b> has been protecting the future of nature. The world's l
         }
 
         [Test(Description = "Key style with no value should be ignored")]
-        public void EmptyStyle_ShouldBeIgnoredd()
+        public void EmptyStyle_ShouldBeIgnored()
         {
             var styleAttributes = HtmlAttributeCollection.ParseStyle("text-decoration;color:red");
             Assert.That(styleAttributes["text-decoration"], Is.Null);

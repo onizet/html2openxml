@@ -10,15 +10,14 @@
  * PARTICULAR PURPOSE.
  */
 using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace HtmlToOpenXml;
 
 /// <summary>
 /// Represents a Html font (15px arial,sans-serif).
 /// </summary>
-readonly struct HtmlFont(Unit size, string? family, FontStyle? style, FontVariant? variant, FontWeight? weight)
+readonly struct HtmlFont(Unit size, string? family, FontStyle? style,
+    FontVariant? variant, FontWeight? weight, Unit lineHeight)
 {
     /// <summary>Represents an empty font (not defined).</summary>
     public static readonly HtmlFont Empty = new ();
@@ -28,6 +27,8 @@ readonly struct HtmlFont(Unit size, string? family, FontStyle? style, FontVarian
     private readonly string? family = family;
     private readonly FontWeight? weight = weight;
     private readonly Unit size = size;
+    private readonly Unit lineHeight = lineHeight;
+
 
     /// <inheritdoc cref="Parse(ReadOnlySpan{char})"/>
     public static HtmlFont Parse(string? str)
@@ -53,9 +54,6 @@ readonly struct HtmlFont(Unit size, string? family, FontStyle? style, FontVarian
 
         if (span.IsEmpty || span.Length < 2) return Empty;
 
-        // in order to split by white spaces, we remove any white spaces between 2 family names (ex: Verdana, Arial -> Verdana,Arial)
-        //str = System.Text.RegularExpressions.Regex.Replace(str, @",\s+?", ",");
-
         Span<Range> tokens = stackalloc Range[6];
         var tokenCount = span.SplitCompositeAttribute(tokens, ' ', skipSeparatorIfPrecededBy: ',');
         if (tokenCount == 0)
@@ -66,75 +64,85 @@ readonly struct HtmlFont(Unit size, string? family, FontStyle? style, FontVarian
         FontVariant? variant = null;
         FontWeight? weight = null;
         // % and ratio font-size/line-height are not supported
-        Unit fontSize = Unit.Empty;
-        string? family = null;
+        Unit fontSize = Unit.Empty, lineHeight = Unit.Empty;
+        string? fontFamily = null;
 
         if (tokenCount == 2) // 2=the minimal set of required parameters
         {
             // should be the size and the family (in that order). Others are set to their default values
             fontSize = Converter.ToFontSize(span.Slice(tokens[0]));
-            if (!fontSize.IsValid) fontSize = Unit.Empty;
-            family = Converter.ToFontFamily(span.Slice(tokens[1]));
-            return new HtmlFont(fontSize, family, style, variant, weight);
+            if (!fontSize.IsValid) return Empty;
+            fontFamily = Converter.ToFontFamily(span.Slice(tokens[1]));
+            return new HtmlFont(fontSize, fontFamily, style, variant, weight, lineHeight);
+        }
+        else if (tokenCount > 10)
+        {
+            // safety check to avoid overflow with stackalloc in a loop
+            return Empty;
         }
 
-        // Now try to guess the values with their permutation
-        var tokenIndexes = new List<int>(Enumerable.Range(0, tokenCount));
 
-        // handle border style
-        for (int i = 0; i < tokenIndexes.Count; i++)
+        for (int i = 0; i < tokenCount; i++)
         {
-            style = Converter.ToFontStyle(span.Slice(tokens[tokenIndexes[i]]));
-            if (style != null)
+            var token = span.Slice(tokens[i]).Trim();
+            Span<char> loweredValue = token.Length <= 128 ? stackalloc char[token.Length] : new char[token.Length];
+            token.ToLowerInvariant(loweredValue);
+
+            switch (loweredValue)
             {
-                tokenIndexes.RemoveAt(i); // no need to process this part anymore
-                break;
+                case "italic" or "oblique": style = FontStyle.Italic; break;
+                case "normal":
+                    style ??= FontStyle.Normal;
+                    variant ??= FontVariant.Normal; 
+                    weight ??= FontWeight.Normal;
+                    break;
+                case "small-caps": variant = FontVariant.SmallCaps; break;
+                case "700" or "bold": weight = FontWeight.Bold; break;
+                case "bolder": weight = FontWeight.Bolder; break;
+                case "400": weight = FontWeight.Normal; break;
+                case "xx-small": fontSize = new Unit(UnitMetric.Point, 10); break;
+                case "x-small": fontSize = new Unit(UnitMetric.Point, 15); break;
+                case "small": fontSize = new Unit(UnitMetric.Point, 20); break;
+                case "medium": fontSize = new Unit(UnitMetric.Point, 27); break;
+                case "large": fontSize = new Unit(UnitMetric.Point, 36); break;
+                case "x-large": fontSize = new Unit(UnitMetric.Point, 48); break;
+                case "xx-large": fontSize = new Unit(UnitMetric.Point, 72); break;
+                default:
+                {
+                    if (fontSize.IsValid || !TryParseFontSize (token, out fontSize, out lineHeight))
+                    {
+                        fontFamily ??= Converter.ToFontFamily(token);
+                    }
+
+                    break;
+                }
             }
         }
 
-        for (int i = 0; i < tokenIndexes.Count; i++)
+        return new HtmlFont(fontSize, fontFamily, style, variant, weight, lineHeight);
+    }
+
+    private static bool TryParseFontSize(ReadOnlySpan<char> token, out Unit fontSize, out Unit lineHeight)
+    {
+        // Handle font-size/line-height
+        var slash = token.IndexOf('/');
+        if (slash > 0)
         {
-            variant = Converter.ToFontVariant(span.Slice(tokens[tokenIndexes[i]]));
-            if (variant != null)
-            {
-                tokenIndexes.RemoveAt(i); // no need to process this part anymore
-                break;
-            }
+            fontSize = Unit.Parse(token.Slice(0, slash));
+            lineHeight = Unit.Parse(token.Slice(slash + 1));
+            return fontSize.IsValid;
         }
 
-        for (int i = 0; i < tokenIndexes.Count; i++)
-        {
-            weight = Converter.ToFontWeight(span.Slice(tokens[tokenIndexes[i]]));
-            if (weight != null)
-            {
-                tokenIndexes.RemoveAt(i); // no need to process this part anymore
-                break;
-            }
-        }
-
-        for (int i = 0; i < tokenIndexes.Count; i++)
-        {
-            fontSize = Unit.Parse(span.Slice(tokens[tokenIndexes[i]]));
-            if (fontSize.IsValid)
-            {
-                tokenIndexes.RemoveAt(i); // no need to process this part anymore
-                break;
-            }
-        }
-        if (!fontSize.IsValid) fontSize = Unit.Empty;
-
-        // keep font family as the latest because it is the most permissive
-        if(tokenIndexes.Count > 0)
-            family = Converter.ToFontFamily(span.Slice(tokens[tokenIndexes[0]]));
-
-        return new HtmlFont(fontSize, family, style, variant, weight);
+        fontSize = Unit.Parse(token);
+        lineHeight = Unit.Empty;
+        return fontSize.IsValid;
     }
 
     //____________________________________________________________________
     //
 
     /// <summary>
-    /// Gets or sets the name of this font.
+    /// Gets the name of this font.
     /// </summary>
     public string? Family
     {
@@ -142,7 +150,7 @@ readonly struct HtmlFont(Unit size, string? family, FontStyle? style, FontVarian
     }
 
     /// <summary>
-    /// Gest or sets the style for the text.
+    /// Gest the style for the text.
     /// </summary>
     public FontStyle? Style
     {
@@ -150,7 +158,7 @@ readonly struct HtmlFont(Unit size, string? family, FontStyle? style, FontVarian
     }
 
     /// <summary>
-    /// Gets or sets the variation of the characters.
+    /// Gets the variation of the characters.
     /// </summary>
     public FontVariant? Variant
     {
@@ -158,7 +166,7 @@ readonly struct HtmlFont(Unit size, string? family, FontStyle? style, FontVarian
     }
 
     /// <summary>
-    /// Gets or sets the size of the font, expressed in half points.
+    /// Gets the size of the font, expressed in half points.
     /// </summary>
     public Unit Size
     {
@@ -166,10 +174,18 @@ readonly struct HtmlFont(Unit size, string? family, FontStyle? style, FontVarian
     }
 
     /// <summary>
-    /// Gets or sets the weight of the characters (thin or thick).
+    /// Gets the weight of the characters (thin or thick).
     /// </summary>
     public FontWeight? Weight
     {
         get { return weight; }
+    }
+
+    /// <summary>
+    /// Gets the height of a line.
+    /// </summary>
+    public Unit LineHeight
+    {
+        get { return lineHeight; }
     }
 }

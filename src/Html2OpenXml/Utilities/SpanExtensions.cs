@@ -141,7 +141,7 @@ static class SpanExtensions
             return 0;
 
         int matches = 0, startIndex = 0, offsetIndex = 0;
-        bool escapeSpace = false;
+        bool isEscaping = false;
         char endEscapingChar = '\0';
         ReadOnlySpan<char> searchValues = [separator, '(', '\'', '"'];
 
@@ -151,40 +151,47 @@ static class SpanExtensions
 
             // Remove the spaces that could appear inside a token.
             // Eg: rgb(233, 233, 233) -> rgb(233,233,233)
-            int index = escapeSpace?
+            int index = isEscaping?
                 span.IndexOf(endEscapingChar) :
                 span.IndexOfAny(searchValues);
 
-            // end of span, we take the whole match
-            if (index == -1) index = span.Length;
+            if (index == -1)
+            {
+                    // process the last match
+                destination[matches] = new Range(startIndex, startIndex + offsetIndex + span.Length);
+                matches++;
+                break;
+            }
 
             // we find the beginning of an escaping sequence
-            else if (span[index] != separator && !escapeSpace)
+            var ch = span[index];
+            if (ch != separator && !isEscaping)
             {
-                if (span[index] == '(')
+                if (ch == '(')
                 {
                     endEscapingChar = ')';
                     offsetIndex += index + 1;
                 }
                 else
                 {
-                    endEscapingChar = span[index]; // ' or "
+                    endEscapingChar = ch; // ' or "
                     if (index == 0) startIndex++; // exclude the quote from the captured range
                 }
-                escapeSpace = true;
+                isEscaping = true;
                 isPositiveMatch = false;
             }
             // end of escaping sequence
-            else if (span[index] == endEscapingChar)
+            else if (ch == endEscapingChar)
             {
-                if (span[index] == ')') index++; // include that closing parenthesis in the range
-                escapeSpace = false;
+                if (ch == ')') index++; // include that closing parenthesis in the range
+                isEscaping = false;
             }
             // this is a separator but maybe we will need to skip it
             // eg: "Arial, Verdana bold 1em" -> the space after the comma must be skipped
-            else if (span[index] == separator && index > 1 &&
-                skipSeparatorIfPrecededBy.HasValue && index > 1 && span[index -1] == skipSeparatorIfPrecededBy)
+            else if (ch == separator && index > 0 &&
+                skipSeparatorIfPrecededBy.HasValue && span[index -1] == skipSeparatorIfPrecededBy)
             {
+                index++;
                 offsetIndex += index + 1;
                 isPositiveMatch = false;
             }
@@ -195,7 +202,7 @@ static class SpanExtensions
             }
 
             // index > 0 to exclude empty entries
-            if (!escapeSpace && index > 0 && isPositiveMatch)
+            if (!isEscaping && index > 0 && isPositiveMatch)
             {
                 destination[matches] = new Range(startIndex, startIndex + offsetIndex + index);
                 matches++;
