@@ -81,14 +81,13 @@ readonly struct HtmlFont(Unit size, string? family, FontStyle? style,
             return Empty;
         }
 
-
+        Span<char> loweredValue = stackalloc char[128];
         for (int i = 0; i < tokenCount; i++)
         {
             var token = span.Slice(tokens[i]).Trim();
-            Span<char> loweredValue = token.Length <= 128 ? stackalloc char[token.Length] : new char[token.Length];
             token.ToLowerInvariant(loweredValue);
 
-            switch (loweredValue)
+            switch (loweredValue.Slice(0, token.Length))
             {
                 case "italic" or "oblique": style = FontStyle.Italic; break;
                 case "normal":
