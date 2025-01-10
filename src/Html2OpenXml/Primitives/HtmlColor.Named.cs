@@ -1,5 +1,7 @@
 ﻿using System;
+#if NET5_0_OR_GREATER
 using System.Collections.Frozen;
+#endif
 using System.Collections.Generic;
 
 namespace HtmlToOpenXml;
@@ -169,6 +171,10 @@ partial struct HtmlColor
             { "transparent", FromArgb(0, 0, 0, 0) }
         };
 
+#if NET5_0_OR_GREATER
         return colors.ToFrozenDictionary();
+#else
+        return colors;
+#endif
     }
 }

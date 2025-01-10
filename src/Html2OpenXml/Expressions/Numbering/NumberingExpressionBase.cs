@@ -9,7 +9,9 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
+#if NET5_0_OR_GREATER
 using System.Collections.Frozen;
+#endif
 using System.Collections.Generic;
 using System.Linq;
 using AngleSharp.Html.Dom;
@@ -293,6 +295,10 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
             knownAbstractNums.Add(listName, abstractNum);
         }
 
+#if NET5_0_OR_GREATER
         return knownAbstractNums.ToFrozenDictionary();
+#else
+        return knownAbstractNums;
+#endif
     }
 }

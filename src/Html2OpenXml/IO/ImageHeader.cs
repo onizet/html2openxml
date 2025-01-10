@@ -14,7 +14,6 @@
  * EMF Specifications: https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/ae7e7437-cfe5-485e-84ea-c74b51b000be
  */
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -36,22 +35,17 @@ public static class ImageHeader
 
     private static readonly byte[] pngSignatureBytes = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
 
-    private static readonly IReadOnlyDictionary<byte[], FileType> imageFormatDecoders = InitKnownFormatDecoders();
-
-    private static IReadOnlyDictionary<byte[], FileType> InitKnownFormatDecoders()
+    private static readonly Dictionary<byte[], FileType> imageFormatDecoders = new()
     {
-        var decoders = new Dictionary<byte[], FileType>() {
-            { new byte[] { 0x42, 0x4D }, FileType.Bitmap },
-            { Encoding.UTF8.GetBytes("GIF87a"), FileType.Gif },
-            { Encoding.UTF8.GetBytes("GIF89a"), FileType.Gif }, // animated gif
-            { pngSignatureBytes, FileType.Png },
-            { new byte[] { 0xff, 0xd8 }, FileType.Jpeg },
-            { new byte[] { 0x1, 0, 0, 0 }, FileType.Emf },
-            { Encoding.UTF8.GetBytes("<?xml "), FileType.Xml }, // Xml so potentially Svg
-        };
+        { new byte[] { 0x42, 0x4D }, FileType.Bitmap },
+        { Encoding.UTF8.GetBytes("GIF87a"), FileType.Gif },
+        { Encoding.UTF8.GetBytes("GIF89a"), FileType.Gif }, // animated gif
+        { pngSignatureBytes, FileType.Png },
+        { new byte[] { 0xff, 0xd8 }, FileType.Jpeg },
+        { new byte[] { 0x1, 0, 0, 0 }, FileType.Emf },
+        { Encoding.UTF8.GetBytes("<?xml "), FileType.Xml }, // Xml so potentially Svg
+    };
 
-        return decoders.ToFrozenDictionary();
-    }
 
     private static readonly int MaxMagicBytesLength = imageFormatDecoders
         .Keys.OrderByDescending(x => x.Length).First().Length;
