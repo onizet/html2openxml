@@ -48,6 +48,8 @@ readonly partial struct HtmlColor : IEquatable<HtmlColor>
     /// <returns>Returns <see cref="HtmlColor.Empty"/> if parsing failed.</returns>
     public static HtmlColor Parse(ReadOnlySpan<char> span)
     {
+        span = span.Trim();
+ 
         // Is it in hexa? Note: we no more accept hexa value without preceding the '#'
         if (span[0] == '#')
         {
