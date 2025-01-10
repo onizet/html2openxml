@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.3.0
+
+- Rewriting of parsing to use System.Span instead of Regex
+- Set Timeout on remaining Regex to prevent any DoS attack
+=======
 ## 3.2.2
 
 - Supports a feature to disable heading numbering #175

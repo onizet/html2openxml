@@ -46,6 +46,7 @@ public static class ImageHeader
         { Encoding.UTF8.GetBytes("<?xml "), FileType.Xml }, // Xml so potentially Svg
     };
 
+
     private static readonly int MaxMagicBytesLength = imageFormatDecoders
         .Keys.OrderByDescending(x => x.Length).First().Length;
 

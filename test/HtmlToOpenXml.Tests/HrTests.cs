@@ -14,6 +14,7 @@ namespace HtmlToOpenXml.Tests
         public void Standalone_ReturnsWithNoSpacing ()
         {
             var elements = converter.Parse("<hr>");
+            TestContext.Out.WriteLine(elements[0]!.OuterXml);
             AssertIsHr(elements[0], false);
         }
 

@@ -8,17 +8,17 @@ namespace HtmlToOpenXml.Tests
 {
     public abstract class HtmlConverterTestBase
     {
-        private System.IO.MemoryStream generatedDocument;
-        private WordprocessingDocument package;
+        private MemoryStream generatedDocument = default!;
+        private WordprocessingDocument package = default!;
 
-        protected HtmlConverter converter;
-        protected MainDocumentPart mainPart;
+        protected HtmlConverter converter = default!;
+        protected MainDocumentPart mainPart = default!;
 
 
         [SetUp]
         public void Init ()
         {
-            generatedDocument = new System.IO.MemoryStream();
+            generatedDocument = new MemoryStream();
             package = WordprocessingDocument.Create(generatedDocument, WordprocessingDocumentType.Document);
 
             mainPart = package.MainDocumentPart!;
