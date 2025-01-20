@@ -97,5 +97,13 @@ namespace HtmlToOpenXml.Tests
             });
             Assert.That(((Text)runs.ElementAt(2).FirstChild).Text, Is.EqualTo("World"));
         }
+
+        [Test]
+        public void NoTextPhrasing_ShouldBeIgnored()
+        {
+           var elements = converter.Parse("<span>  <div>   <br />   <div>    <span>Texte</span>   </div>  </div> </span>");
+           Assert.That(elements, Has.Count.EqualTo(2));
+           Assert.That(elements.Select(e => e.Elements<Run>().Count()), Has.All.EqualTo(1));
+        }
     }
 }
