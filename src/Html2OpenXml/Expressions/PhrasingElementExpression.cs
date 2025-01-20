@@ -1,4 +1,4 @@
-/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -208,7 +208,7 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
             // run can be also a hyperlink
             textElement ??= run.GetFirstChild<Run>()?.GetFirstChild<Text>();
 
-            if (textElement != null) // could be null when <br/>
+            if (textElement != null && !string.IsNullOrEmpty(textElement.Text)) // could be null when <br/>
             {
                 var text = textElement.Text;
                 // we know that the text cannot be empty because we skip them in TextExpression
