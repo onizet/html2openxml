@@ -101,5 +101,27 @@ namespace HtmlToOpenXml.Tests
                     Is.Null, $"Only {maxLevel+1} levels of heading supported");
             });
         }
+
+        [Test(Description = "Heading with number but no text should be ignored (issue #189)")]
+        public void NumberingWithNoTextPattern_ReturnsSimpleHeading()
+        {
+            var elements = converter.Parse("<h1>00</h1>");
+
+            var absNum = mainPart.NumberingDefinitionsPart?.Numbering
+                .Elements<AbstractNum>()
+                .Where(abs => abs.AbstractNumDefinitionName?.Val == NumberingExpressionBase.HeadingNumberingName)
+                .SingleOrDefault();
+            Assert.That(absNum, Is.Null);
+
+            var paragraphs = elements.Cast<Paragraph>();
+            Assert.Multiple(() =>
+            {
+                Assert.That(paragraphs.Count(), Is.EqualTo(1));
+                Assert.That(paragraphs.First().InnerText, Is.EqualTo("00"));
+                Assert.That(paragraphs.First().ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val,
+                    Is.Null,
+                    "First paragraph is not a numbering");
+            });
+        }
     }
 }
