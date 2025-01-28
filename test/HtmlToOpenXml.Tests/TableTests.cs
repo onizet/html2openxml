@@ -330,9 +330,9 @@ namespace HtmlToOpenXml.Tests
             });
         }
 
-        [TestCase("right", "right")]
-        [TestCase("", "center")]
-        public void TableCaptionAlign_ReturnsPositionedParagraph_AlignedWithTable(string alignment, string expectedAlign)
+        [TestCase("right", ExpectedResult = "right")]
+        [TestCase("", ExpectedResult = "center")]
+        public string? TableCaptionAlign_ReturnsPositionedParagraph_AlignedWithTable(string alignment)
         {
             var elements = converter.Parse(@$"<table align=""center"">
                     <caption align=""{alignment}"">Some table caption</caption>
@@ -341,7 +341,33 @@ namespace HtmlToOpenXml.Tests
 
             Assert.That(elements, Has.Count.EqualTo(2));
             var caption = (Paragraph) elements[1];
-            Assert.That(caption.ParagraphProperties?.Justification?.Val?.ToString(), Is.EqualTo(expectedAlign));
+            return caption.ParagraphProperties?.Justification?.Val?.ToString();
+        }
+
+        [TestCase("align='right'", ExpectedResult = "right")]
+        [TestCase("style='justify-self:center'", ExpectedResult = "center")]
+        public string? TableAlign_ReturnsTableJustification(string style)
+        {
+            var elements = converter.Parse(@$"<table {style}>
+                    <tr><td>Cell 1.1</td></tr>
+                </table>");
+
+            Assert.That(elements, Has.Count.EqualTo(1));
+            return elements[0].GetFirstChild<TableProperties>()?.TableJustification?.Val?.ToString();
+        }
+
+        [TestCase("", ExpectedResult = "right")]
+        [TestCase("justify-self:center", ExpectedResult = "center")]
+        public string? NestedTableAlign_ReturnsTableOrParentJustification(string tableStyle)
+        {
+            var elements = converter.Parse(@$"<div style='justify-content: right'>
+                <table style='{tableStyle}'>
+                    <tr><td>Cell 1.1</td></tr>
+                </table>
+                </div>");
+
+            Assert.That(elements, Has.Count.EqualTo(1));
+            return elements[0].GetFirstChild<TableProperties>()?.TableJustification?.Val?.ToString();
         }
 
         [Test]

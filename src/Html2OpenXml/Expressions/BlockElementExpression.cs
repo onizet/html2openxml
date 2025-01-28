@@ -27,6 +27,7 @@ class BlockElementExpression: PhrasingElementExpression
 {
     private readonly OpenXmlLeafElement[]? defaultStyleProperties;
     protected readonly ParagraphProperties paraProperties = new();
+    protected TableProperties? tableProperties;
     // some style attributes, such as borders or bgcolor, will convert this node to a framed container
     protected bool renderAsFramed;
     private HtmlBorder styleBorder;
@@ -115,22 +116,44 @@ class BlockElementExpression: PhrasingElementExpression
     public override void CascadeStyles(OpenXmlElement element)
     {
         base.CascadeStyles(element);
-        if (!paraProperties.HasChildren || element is not Paragraph paragraph)
+        if (!paraProperties.HasChildren)
             return;
 
-        paragraph.ParagraphProperties ??= new ParagraphProperties();
-
-        var knownTags = new HashSet<string>();
-        foreach (var prop in paragraph.ParagraphProperties)
+        if (element is Paragraph paragraph)
         {
-            if (!knownTags.Contains(prop.LocalName))
-                knownTags.Add(prop.LocalName);
+            paragraph.ParagraphProperties ??= new ParagraphProperties();
+
+            var knownTags = new HashSet<string>();
+            foreach (var prop in paragraph.ParagraphProperties)
+            {
+                if (!knownTags.Contains(prop.LocalName))
+                    knownTags.Add(prop.LocalName);
+            }
+
+            foreach (var prop in paraProperties)
+            {
+                if (!knownTags.Contains(prop.LocalName))
+                    paragraph.ParagraphProperties.AddChild(prop.CloneNode(true));
+            }
         }
-
-        foreach (var prop in paraProperties)
+        else if (tableProperties != null && element is Table table)
         {
-            if (!knownTags.Contains(prop.LocalName))
-                paragraph.ParagraphProperties.AddChild(prop.CloneNode(true));
+            var props = table.GetFirstChild<TableProperties>();
+            if (props is null)
+                return;
+
+            var knownTags = new HashSet<string>();
+            foreach (var prop in props)
+            {
+                if (!knownTags.Contains(prop.LocalName))
+                    knownTags.Add(prop.LocalName);
+            }
+
+            foreach (var prop in tableProperties)
+            {
+                if (!knownTags.Contains(prop.LocalName))
+                    props.AddChild(prop.CloneNode(true));
+            }
         }
     }
 
@@ -170,9 +193,12 @@ class BlockElementExpression: PhrasingElementExpression
 
         JustificationValues? align = Converter.ToParagraphAlign(styleAttributes!["text-align"]);
         if (!align.HasValue) align = Converter.ToParagraphAlign(node.GetAttribute("align"));
+        if (!align.HasValue) align = Converter.ToParagraphAlign(styleAttributes["justify-content"]);
         if (align.HasValue)
         {
             paraProperties.Justification = new() { Val = align };
+            tableProperties ??= new();
+            tableProperties.TableJustification = new() { Val = align.Value.ToTableRowAlignment() };
         }
 
 
@@ -194,7 +220,7 @@ class BlockElementExpression: PhrasingElementExpression
         }
 
         var margin = styleAttributes.GetMargin("margin");
-         Indentation? indentation = null;
+        Indentation? indentation = null;
         if (!margin.IsEmpty)
         {
             if (margin.Top.IsFixed || margin.Bottom.IsFixed)
