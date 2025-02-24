@@ -15,6 +15,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AngleSharp;
+using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -277,18 +278,18 @@ public partial class HtmlConverter
     /// <summary>
     /// Walk through all the <c>img</c> tags and preload all the remote images.
     /// </summary>
-    private async Task PreloadImages(AngleSharp.Dom.IDocument htmlDocument,
+    private static async Task PreloadImages(AngleSharp.Dom.IDocument htmlDocument,
         IImageLoader imageLoader, ParallelOptions parallelOptions)
     {
         var imageUris = htmlDocument.QuerySelectorAll("img[src]")
-            .Cast<AngleSharp.Html.Dom.IHtmlImageElement>()
+            .Cast<IHtmlImageElement>()
             .Where(e => AngleSharpExtensions.TryParseUrl(e.GetAttribute("src"), UriKind.RelativeOrAbsolute, out var _))
             .Select(e => e.GetAttribute("src")!);
         if (!imageUris.Any())
             return;
 
         await imageUris.ForEachAsync(
-            async (img, cts) => await imageLoader.Download(img, cts).ConfigureAwait(false),
+            async (img, cts) => await imageLoader.Download(img, cts),
             parallelOptions).ConfigureAwait(false);
     }
 

@@ -16,12 +16,16 @@ namespace HtmlToOpenXml.Tests
     public class ImgTests : HtmlConverterTestBase
     {
         [TestCase("https://www.w3schools.com/tags/smiley.gif", "image/gif")]
-        [TestCase("https://dev.w3.org/SVG/tools/svgweb/samples/svg-files/helloworld.svg", "image/svg+xml")]
-        public void AbsoluteUri_ReturnsDrawing_WithDownloadedData(string imageUri, string contentType)
+        [TestCase("https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Introduction/dino.svg", "image/svg+xml")]
+        public async Task AbsoluteUri_ReturnsDrawing_WithDownloadedData(string imageUri, string contentType)
         {
-            var elements = converter.Parse(@$"<img src='{imageUri}' alt='Smiley face' width='42' height='42'>");
-            Assert.That(elements, Has.Count.EqualTo(1));
-            var (_, imagePart) = AssertIsImg(mainPart, elements[0]);
+            await converter.ParseBody(
+                @$"<img src='{imageUri}' alt='Smiley face' width='42' height='42'>",
+                TestContext.CurrentContext.CancellationToken);
+
+            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
+            Assert.That(paragraphs.Count(), Is.EqualTo(1));
+            var (_, imagePart) = AssertIsImg(mainPart, paragraphs.First());
             Assert.That(imagePart.ContentType, Is.EqualTo(contentType));
         }
 
@@ -128,7 +132,8 @@ namespace HtmlToOpenXml.Tests
             converter = new HtmlConverter(mainPart, new IO.DefaultWebRequest() { 
                 BaseImageUrl = new Uri("http://github.com/onizet/html2openxml")
             });
-            var elements = await converter.ParseAsync($"<img src='/blob/dev/icon.png'>");
+            var elements = await converter.ParseAsync($"<img src='/blob/dev/icon.png'>",
+                TestContext.CurrentContext.CancellationToken);
             Assert.That(elements, Is.Not.Empty);
             AssertIsImg(mainPart, elements.First());
         }

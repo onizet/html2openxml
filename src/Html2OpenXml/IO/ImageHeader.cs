@@ -58,12 +58,10 @@ public static class ImageHeader
     /// <returns>Returns true if the detection was successful.</returns>
     public static bool TryDetectFileType(Stream stream, out FileType type)
     {
-        using (SequentialBinaryReader reader = new SequentialBinaryReader(stream, leaveOpen: true))
-        {
-            type = DetectFileType(reader);
-            stream.Seek(0L, SeekOrigin.Begin);
-            return type != FileType.Unrecognized;
-        }
+        using var reader = new SequentialBinaryReader(stream, leaveOpen: true);
+        type = DetectFileType(reader);
+        stream.Seek(0L, SeekOrigin.Begin);
+        return type != FileType.Unrecognized;
     }
 
     /// <summary>
@@ -74,21 +72,19 @@ public static class ImageHeader
     /// <exception cref="ArgumentException">The image was of an unrecognised format.</exception>
     public static Size GetDimensions(Stream stream)
     {
-        using (SequentialBinaryReader reader = new SequentialBinaryReader(stream, leaveOpen: true))
+        using var reader = new SequentialBinaryReader(stream, leaveOpen: true);
+        FileType type = DetectFileType(reader);
+        stream.Seek(0L, SeekOrigin.Begin);
+        return type switch
         {
-            FileType type = DetectFileType (reader);
-            stream.Seek(0L, SeekOrigin.Begin);
-            switch (type)
-            {
-                case FileType.Bitmap: return DecodeBitmap(reader);
-                case FileType.Gif: return DecodeGif(reader);
-                case FileType.Jpeg: return DecodeJfif(reader);
-                case FileType.Png: return DecodePng(reader);
-                case FileType.Emf: return DecodeEmf(reader);
-                case FileType.Xml: return DecodeXml(stream);
-                default: return Size.Empty;
-            }
-        }
+            FileType.Bitmap => DecodeBitmap(reader),
+            FileType.Gif => DecodeGif(reader),
+            FileType.Jpeg => DecodeJfif(reader),
+            FileType.Png => DecodePng(reader),
+            FileType.Emf => DecodeEmf(reader),
+            FileType.Xml => DecodeXml(stream),
+            _ => Size.Empty,
+        };
     }
 
     /// <summary>
@@ -123,36 +119,19 @@ public static class ImageHeader
     private static FileType DetectFileType (SequentialBinaryReader reader)
     {
         byte[] magicBytes = new byte[MaxMagicBytesLength];
-        for (int i = 0; i < MaxMagicBytesLength; i += 1)
+        reader.Read(magicBytes, 0, MaxMagicBytesLength);
+
+        var headerSpan = magicBytes.AsSpan();
+        foreach (var kvPair in imageFormatDecoders)
         {
-            magicBytes[i] = reader.ReadByte();
-            foreach (var kvPair in imageFormatDecoders)
+            // Determines whether the beginning of this array matches s known header.
+            if (headerSpan.StartsWith(kvPair.Key))
             {
-                if (StartsWith(magicBytes, kvPair.Key))
-                {
-                    return kvPair.Value;
-                }
+                return kvPair.Value;
             }
         }
 
         return FileType.Unrecognized;
-    }
-
-    /// <summary>
-    /// Determines whether the beginning of this byte array instance matches the specified byte array.
-    /// </summary>
-    /// <returns>Returns true if the first array starts with the bytes of the second array.</returns>
-    private static bool StartsWith(byte[] thisBytes, byte[] thatBytes)
-    {
-        for (int i = 0; i < thatBytes.Length; i += 1)
-        {
-            if (thisBytes[i] != thatBytes[i])
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     private static Size DecodeBitmap(SequentialBinaryReader reader)
@@ -220,7 +199,7 @@ public static class ImageHeader
                 return Size.Empty;
 
             // next 2-bytes are <segment-size>: [high-byte] [low-byte]
-            var segmentLength = (int)reader.ReadUInt16();
+            int segmentLength = reader.ReadUInt16();
 
             // segment length includes size bytes, so subtract two
             segmentLength -= 2;
@@ -228,8 +207,8 @@ public static class ImageHeader
             if (segmentType == 0xC0 || segmentType == 0xC2)
             {
                 reader.ReadByte(); // bits/sample, usually 8
-                int height = (int) reader.ReadUInt16();
-                int width = (int) reader.ReadUInt16();
+                int height = reader.ReadUInt16();
+                int width = reader.ReadUInt16();
                 return new Size(width, height);
             }
             else
