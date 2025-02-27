@@ -45,7 +45,7 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : TableElementExpre
 
         // Word requires at least one paragraph in a cell
         // OpenXmlValidator does not catch this error
-        if (!childElements.OfType<Paragraph>().Any())
+        if (!childElements.Any(c => c is Paragraph))
         {
             childElements = childElements.Append(new Paragraph());
         }
