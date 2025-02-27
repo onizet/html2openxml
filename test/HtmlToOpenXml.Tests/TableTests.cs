@@ -493,6 +493,7 @@ namespace HtmlToOpenXml.Tests
             var cell = elements[0].GetFirstChild<TableRow>()?.GetFirstChild<TableCell>();
             Assert.That(cell, Is.Not.Null);
             Assert.That(cell.HasChild<Table>(), Is.True);
+            Assert.That(cell.HasChild<Paragraph>(), Is.True, "Word requires at least a paragraph");
         }
 
         [Test]
