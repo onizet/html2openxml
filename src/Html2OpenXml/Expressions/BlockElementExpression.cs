@@ -371,7 +371,7 @@ class BlockElementExpression: PhrasingElementExpression
 
         context.CascadeStyles(p);
 
-        p.Append(CombineRuns(runs));
+        p.Append(runs);
 
         // in Html, if a paragraph is ending with a line break, it is ignored
         if (p.LastChild is Run run && run.LastChild is Break lineBreak)

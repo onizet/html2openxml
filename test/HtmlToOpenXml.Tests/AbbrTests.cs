@@ -175,8 +175,9 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.Multiple(() => {
                 Assert.That(elements[0], Is.TypeOf(typeof(Paragraph)));
-                Assert.That(elements[0].Elements<Run>().Count(), Is.EqualTo(6), "3 textual runs + 3 breaks");
+                Assert.That(elements[0].Elements<Run>().Count(), Is.EqualTo(4), "4 runs: Pre abbr, abbr, quote number, post abbr");
                 Assert.That(elements[0].Elements<Run>().Any(r => r.HasChild<FootnoteReference>()), Is.True);
+                Assert.That(elements[0].InnerText, Is.EqualTo("The NASA is an independent agency of the U.S. federal government responsible for the civil space program, aeronautics research, and space research."));
             });
         }
 

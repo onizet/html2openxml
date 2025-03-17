@@ -143,16 +143,15 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements[0], Is.TypeOf(typeof(Paragraph)));
             Assert.Multiple(() => {
                 Assert.That(elements[0].ElementAt(0), Is.TypeOf<Run>());
-                Assert.That(elements[0].ElementAt(1), Is.TypeOf<Run>());
-                Assert.That(elements[0].ElementAt(2), Is.TypeOf<Hyperlink>());
-                Assert.That(elements[0].ElementAt(3), Is.TypeOf<Run>());
+                Assert.That(elements[0].ElementAt(1), Is.TypeOf<Hyperlink>());
+                Assert.That(elements[0].ElementAt(2), Is.TypeOf<Run>());
             });
         }
 
         [Test(Description = "Many runs inside the link should respect whitespaces")]
         public void WithMultipleRun_ReturnsHyperlinkWithMultipleRuns()
         {
-            var elements = converter.Parse(@"<a href=""https://github.com/onizet/html2openxml""><b>Html</b> to <b>OpenXml</b>!</a>");
+            var elements = converter.Parse(@"<a href=""https://github.com/onizet/html2openxml""><b>Html</b> to <b>OpenXml</b> !</a>");
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements[0], Is.TypeOf(typeof(Paragraph)));
             var h = elements[0].GetFirstChild<Hyperlink>();

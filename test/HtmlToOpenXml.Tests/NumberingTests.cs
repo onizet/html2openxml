@@ -549,7 +549,7 @@ namespace HtmlToOpenXml.Tests
                 <li>Item1</li>
                 <li>Item2</li>
                     <ol><li>Item 2.1</li></ol>
-                </ol>");
+                </ol>",TestContext.CurrentContext.CancellationToken);
 
             var absNum = mainPart.NumberingDefinitionsPart?.Numbering
                 .Elements<AbstractNum>()
