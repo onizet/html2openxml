@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.2.3
+
+- Improve support of table alignment #187
+- Fix a crash if a span is empty
+- Heading with only digits should not be considered as a numbering #189
+- Fix whitespaces inserted between spans #179 and #185
+
 ## 3.2.2
 
 - Supports a feature to disable heading numbering #175
