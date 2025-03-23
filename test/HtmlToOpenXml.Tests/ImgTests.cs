@@ -16,11 +16,11 @@ namespace HtmlToOpenXml.Tests
     public class ImgTests : HtmlConverterTestBase
     {
         [TestCase("https://www.w3schools.com/tags/smiley.gif", "image/gif")]
-        [TestCase("https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Introduction/dino.svg", "image/svg+xml")]
+        [TestCase("https://upload.wikimedia.org/wikipedia/commons/b/b0/Mozilla_dinosaur_head_logo.svg", "image/svg+xml")]
         public async Task AbsoluteUri_ReturnsDrawing_WithDownloadedData(string imageUri, string contentType)
         {
             await converter.ParseBody(
-                @$"<img src='{imageUri}' alt='Smiley face' width='42' height='42'>",
+                @$"<img src='{imageUri}' width='42' height='42'>",
                 TestContext.CurrentContext.CancellationToken);
 
             var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
@@ -40,12 +40,22 @@ namespace HtmlToOpenXml.Tests
         [Test]
         public void WithBorder_ReturnsRunWithBorder()
         {
-            var elements = converter.Parse(@"<img src='https://www.w3schools.com/tags/smiley.gif' border='1'>");
+            var elements = converter.Parse(@"<img border='1' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=='>");
             AssertIsImg(mainPart, elements[0]);
             var run = elements[0].GetFirstChild<Run>();
             var runProperties = run?.GetFirstChild<RunProperties>();
             Assert.That(runProperties, Is.Not.Null);
             Assert.That(runProperties.Border, Is.Not.Null);
+        }
+
+        [Test]
+        public void PercentageSize_ReturnsDrawing_WithSizeRelativeToPage()
+        {
+            var elements = converter.Parse(@"<img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==' style='max-width:100%'>");
+            AssertIsImg(mainPart, elements[0]);
+            var drawing = elements[0].GetFirstChild<Run>()!.GetFirstChild<Drawing>()!;
+            Assert.That(drawing.Inline?.Extent?.Cx?.Value, Is.EqualTo(6115050));
+            Assert.That(drawing.Inline?.Extent?.Cy?.Value, Is.EqualTo(6115050));
         }
 
         [Test]
