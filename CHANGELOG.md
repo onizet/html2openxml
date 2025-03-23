@@ -6,6 +6,7 @@
 - Fix a crash if a span is empty
 - Heading with only digits should not be considered as a numbering #189
 - Fix whitespaces inserted between spans #179 and #185
+- Support percentage size (typically width:100%) for img node #188
 
 ## 3.2.2
 
