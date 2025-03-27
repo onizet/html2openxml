@@ -81,7 +81,8 @@ sealed class TextExpression(INode node) : HtmlDomExpression
             // doesn't ends/starts with a whitespace
             if (text.Length == 0 && prevIsPhrasing && nextIsPhrasing
                 && (endsWithSpace || startsWithSpace)
-                && !(node.PreviousSibling!.TextContent[node.PreviousSibling!.TextContent.Length - 1].IsWhiteSpaceCharacter()
+                && !(node.PreviousSibling!.TextContent.Length == 0
+                    || node.PreviousSibling!.TextContent[node.PreviousSibling!.TextContent.Length - 1].IsWhiteSpaceCharacter()
                     || node.NextSibling!.TextContent[0].IsWhiteSpaceCharacter()
                 ))
             {

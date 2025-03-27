@@ -39,12 +39,13 @@ namespace HtmlToOpenXml.Tests
         [TestCase("<span>   Hello \r\n World!   </span>")]
         [TestCase("<span>   Hello\r\n\r\nWorld!   </span>")]
         [TestCase("<div><u>Hello World! </u></div>")]
+        [TestCase("<hr>\n <span>Hello World!</span>")]
         public void Multiline_ReturnsCollapsedText (string html)
         {
             var elements = converter.Parse(html);
-            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.Count.GreaterThanOrEqualTo(1));
             Assert.That(elements, Has.All.TypeOf<Paragraph>());
-            Assert.That(elements[0].InnerText, Is.EqualTo("Hello World!"));
+            Assert.That(elements.Last().InnerText, Is.EqualTo("Hello World!"));
         }
 
         [TestCase("h1")]
