@@ -91,6 +91,17 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
             var childElements = expression.Interpret(context);
             if (!childElements.Any()) continue;
 
+            // table must be aligned to the list item
+            var tables = childElements.OfType<Table>();
+            foreach (var table in tables)
+            {
+                var tableProperties = table.GetFirstChild<TableProperties>();
+                if (tableProperties == null)
+                    table.PrependChild(tableProperties = new());
+
+                tableProperties.TableIndentation ??= new() { Width = level * Indentation * 2 };
+            }
+
             // ensure to filter out any non-paragraph like any nested table
             var paragraphs = childElements.OfType<Paragraph>();
             var listItemStyleId = GetStyleIdForListItem(context.DocumentStyle, liNode);
