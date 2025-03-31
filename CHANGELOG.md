@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.2.4
+
+- Fix a crash with the new whitespace handling introduced in 3.2.3 #191
+- Table inside list must be aligned with the list item #192
+
 ## 3.2.3
 
 - Improve support of table alignment #187
