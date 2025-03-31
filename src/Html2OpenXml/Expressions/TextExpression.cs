@@ -101,6 +101,7 @@ sealed class TextExpression(INode node) : HtmlDomExpression
                 text = " " + text;
             }
             else if (startsWithSpace && prevIsPhrasing
+                && node.PreviousSibling!.TextContent.Length > 0
                 && !node.PreviousSibling!.TextContent[node.PreviousSibling.TextContent.Length - 1].IsWhiteSpaceCharacter())
             {
                 text = " " + text;
