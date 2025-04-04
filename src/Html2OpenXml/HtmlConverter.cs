@@ -284,7 +284,8 @@ public partial class HtmlConverter
         var imageUris = htmlDocument.QuerySelectorAll("img[src]")
             .Cast<IHtmlImageElement>()
             .Where(e => AngleSharpExtensions.TryParseUrl(e.GetAttribute("src"), UriKind.RelativeOrAbsolute, out var _))
-            .Select(e => e.GetAttribute("src")!);
+            .Select(e => e.GetAttribute("src")!)
+            .Distinct();
         if (!imageUris.Any())
             return;
 
