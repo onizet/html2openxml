@@ -40,6 +40,7 @@ namespace HtmlToOpenXml.Tests
         [TestCase("<span>   Hello\r\n\r\nWorld!   </span>")]
         [TestCase("<div><u>Hello World! </u></div>")]
         [TestCase("<hr>\n <span>Hello World!</span>")]
+        [TestCase("<p><span></span> Hello World!</p>")]
         public void Multiline_ReturnsCollapsedText (string html)
         {
             var elements = converter.Parse(html);

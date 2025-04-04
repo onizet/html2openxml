@@ -611,5 +611,32 @@ namespace HtmlToOpenXml.Tests
                     "Last standalone paragraph is aligned with the level 1");
             });
         }
+
+        [Test]
+        public void NestedTable_ReturnsAlignedTable()
+        {
+            var elements = converter.Parse(@"<ol>
+                <li>Item 1
+                    <table><tr><td>Cell1</td></tr></table>
+                    <ol>
+                        <li>Item 1.1
+                            <table><tr><td>Cell1.1</td></tr></table>
+                        </li>
+                    </ol>
+                </li>
+                </ol>");
+
+            Assert.That(elements, Is.Not.Empty);
+            var odds = elements.Where((item, index) => index % 2 != 0);
+            Assert.That(odds, Has.All.TypeOf<Table>());
+            for (int i = 0; i < 2; i++)
+            {
+                var table = (Table) odds.ElementAt(i);
+                var tableProperties = table.GetFirstChild<TableProperties>();
+                Assert.That(tableProperties, Is.Not.Null);
+                Assert.That(tableProperties.TableIndentation, Is.Not.Null);
+                Assert.That(tableProperties.TableIndentation.Width?.Value, Is.EqualTo(720 * (i+1)));
+            }
+        }
     }
 }
