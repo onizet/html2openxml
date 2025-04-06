@@ -86,7 +86,7 @@ sealed class ImagePrefetcher<T> : IImageLoader
         }
         else
         {
-            iinfo = await DownloadRemoteImage(imageUri, cancellationToken);
+            iinfo = await DownloadRemoteImage(imageUri, cancellationToken).ConfigureAwait(false);
         }
 
         if (iinfo != null)
