@@ -179,6 +179,8 @@ sealed class ImagePrefetcher<T> : IImageLoader
         { "image/x-png", ImagePartType.Png },
         { "image/png", ImagePartType.Png },
         { "image/tiff", ImagePartType.Tiff },
+        { "image/emf", ImagePartType.Emf },
+        { "image/x-emf", ImagePartType.Emf },
         { "image/vnd.microsoft.icon", ImagePartType.Icon },
         // these icons mime type are wrong but we should nevertheless take care (http://en.wikipedia.org/wiki/ICO_%28file_format%29#MIME_type)
         { "image/x-icon", ImagePartType.Icon },
