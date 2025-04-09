@@ -119,6 +119,12 @@ public static class ImageHeader
     private static FileType DetectFileType (SequentialBinaryReader reader)
     {
         byte[] magicBytes = new byte[MaxMagicBytesLength];
+        var availableBytes = reader.BaseStream.Length - reader.BaseStream.Position;
+        // reasonably, we can assume that if we are at the end of the stream and we read the header,
+        // the image content must be invalid or truncated.
+        if (availableBytes < MaxMagicBytesLength)
+            return FileType.Unrecognized;
+
         reader.Read(magicBytes, 0, MaxMagicBytesLength);
 
         var headerSpan = magicBytes.AsSpan();
