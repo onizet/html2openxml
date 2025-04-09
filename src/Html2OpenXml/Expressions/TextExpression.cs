@@ -86,7 +86,7 @@ sealed class TextExpression(INode node) : HtmlDomExpression
                     || node.NextSibling!.TextContent[0].IsWhiteSpaceCharacter()
                 ))
             {
-                return [new Run(new Text(" "))];
+                return [new Run(new Text(" ") { Space = SpaceProcessingModeValues.Preserve })];
             }
             // we strip out all whitespaces and we stand inside a div. Just skip this text content
             if (text.Length == 0 && !preserveBorderSpaces)
@@ -124,7 +124,7 @@ sealed class TextExpression(INode node) : HtmlDomExpression
             return [];
 
         if (!context.PreserveLinebreaks)
-            return [new Run(new Text(text))];
+            return [new Run(new Text(text) { Space = SpaceProcessingModeValues.Preserve })];
 
         Run run = EscapeNewlines(text);
         return [run];
