@@ -3,6 +3,8 @@ using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Moq;
+using System.Net.Http;
+using System.Net.Http.Headers;
 
 namespace HtmlToOpenXml.Tests
 {
@@ -19,6 +21,16 @@ namespace HtmlToOpenXml.Tests
         [TestCase("https://upload.wikimedia.org/wikipedia/commons/b/b0/Mozilla_dinosaur_head_logo.svg", "image/svg+xml")]
         public async Task AbsoluteUri_ReturnsDrawing_WithDownloadedData(string imageUri, string contentType)
         {
+            var mockHttp = new MockHttpMessageHandler(uri => Task.FromResult(new HttpResponseMessage {
+                StatusCode = System.Net.HttpStatusCode.OK,
+                Content = new StreamContent(ResourceHelper.GetStream("Resources." + Path.GetFileName(imageUri))) { 
+                    Headers = { { "Content-Type", contentType } }
+                }
+            }));
+
+            var webRequest = new IO.DefaultWebRequest(new HttpClient(mockHttp));
+            converter = new HtmlConverter(mainPart, webRequest);
+
             await converter.ParseBody(
                 @$"<img src='{imageUri}' width='42' height='42'>",
                 TestContext.CurrentContext.CancellationToken);
