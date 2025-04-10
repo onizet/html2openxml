@@ -245,7 +245,8 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
             tableProperties.TableBorders = tableBorders;
         }
         // is the border=0? If so, we remove the border regardless the style in use
-        else if (tableNode.Border == 0)
+        // but only remove border if the html style border was set, otherwise leave the border style as-is.
+        else if (!styleBorder.IsEmpty && tableNode.Border == 0)
         {
             tableProperties.TableBorders = new TableBorders() {
                 TopBorder = new TopBorder { Val = BorderValues.None },
