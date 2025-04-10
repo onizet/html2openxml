@@ -199,6 +199,8 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
         }
 
         var align = Converter.ToParagraphAlign(tableNode.GetAttribute("align"));
+        if (!align.HasValue)
+            align = Converter.ToParagraphAlign(styleAttributes["justify-self"]);
         if (align.HasValue)
             tableProperties.TableJustification = new() { Val = align.Value.ToTableRowAlignment() };
 
