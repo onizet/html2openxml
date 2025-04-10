@@ -60,25 +60,19 @@ sealed class FigureCaptionExpression(IHtmlElement node) : BlockElementExpression
         //Add the figure number references to the start of the first paragraph.
         if(childElements.FirstOrDefault() is Paragraph p)
         {
-            figNumRef.Add(new Run(
-                new Text(" ") { Space = SpaceProcessingModeValues.Preserve }
-            ));
-
-            figNumRef.Reverse();
-            foreach (var element in figNumRef)
-            {
-                p.InsertAt(element, 0);
-            }
+           var properties = p.GetFirstChild<ParagraphProperties>();
+           p.InsertAfter(new Run(
+              new Text(" ") { Space = SpaceProcessingModeValues.Preserve }
+           ), properties);
+           p.InsertAfter(figNumRef[1], properties);
+           p.InsertAfter(figNumRef[0], properties);
         }
         else
         {
             //The first child of the figure caption is a table or something. Just prepend a new paragraph with the figure number reference.
             childElements = 
                 [
-                    new Paragraph(figNumRef)
-                    {
-                        ParagraphProperties = new ParagraphProperties{ }
-                    },
+                    new Paragraph(figNumRef),
                     ..childElements
                 ];
         }
