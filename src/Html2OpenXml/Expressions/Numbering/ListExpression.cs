@@ -93,13 +93,20 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 
             // table must be aligned to the list item
             var tables = childElements.OfType<Table>();
+            var tableIndentation = level * Indentation * 2;
             foreach (var table in tables)
             {
                 var tableProperties = table.GetFirstChild<TableProperties>();
                 if (tableProperties == null)
                     table.PrependChild(tableProperties = new());
 
-                tableProperties.TableIndentation ??= new() { Width = level * Indentation * 2 };
+                tableProperties.TableIndentation ??= new() { Width = tableIndentation };
+                // ensure to restrain the table width to the list item
+                if (tableProperties.TableWidth?.Type?.Value == TableWidthUnitValues.Pct
+                    && tableProperties.TableWidth?.Width?.Value == "5000")
+                {
+                    tableProperties.TableWidth.Width = (5000 - tableIndentation).ToString();
+                }
             }
 
             // ensure to filter out any non-paragraph like any nested table

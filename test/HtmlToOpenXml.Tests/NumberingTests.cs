@@ -636,6 +636,10 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(tableProperties, Is.Not.Null);
                 Assert.That(tableProperties.TableIndentation, Is.Not.Null);
                 Assert.That(tableProperties.TableIndentation.Width?.Value, Is.EqualTo(720 * (i+1)));
+                Assert.That(tableProperties.TableWidth, Is.Not.Null);
+                Assert.That(tableProperties.TableWidth.Type?.Value, Is.EqualTo(TableWidthUnitValues.Pct));
+                Assert.That(tableProperties.TableWidth.Width?.HasValue, Is.True);
+                Assert.That(Convert.ToInt32(tableProperties.TableWidth.Width.Value), Is.GreaterThan(0).And.LessThan(5000));
             }
         }
     }
