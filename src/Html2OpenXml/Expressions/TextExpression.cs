@@ -82,6 +82,7 @@ sealed class TextExpression(INode node) : HtmlDomExpression
             if (text.Length == 0 && prevIsPhrasing && nextIsPhrasing
                 && (endsWithSpace || startsWithSpace)
                 && !(node.PreviousSibling!.TextContent.Length == 0
+                    || node.NextSibling!.TextContent.Length == 0
                     || node.PreviousSibling!.TextContent[node.PreviousSibling!.TextContent.Length - 1].IsWhiteSpaceCharacter()
                     || node.NextSibling!.TextContent[0].IsWhiteSpaceCharacter()
                 ))
