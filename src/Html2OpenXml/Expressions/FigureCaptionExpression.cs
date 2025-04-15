@@ -12,7 +12,6 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -31,30 +30,25 @@ sealed class FigureCaptionExpression(IHtmlElement node) : BlockElementExpression
         ComposeStyles(context);
         var childElements = Interpret(context.CreateChild(this), node.ChildNodes);
 
-        var figNumRef = new List<OpenXmlElement>()
-        {
+        var figNumRef = new List<OpenXmlElement>() {
             new Run(
                 new Text("Figure ") { Space = SpaceProcessingModeValues.Preserve }
             ),
             new SimpleField(
                 new Run(
                     new Text(AddFigureCaption(context).ToString(CultureInfo.InvariantCulture)))
-            )
-            { Instruction = " SEQ Figure \\* ARABIC " }
+            ) { Instruction = " SEQ Figure \\* ARABIC " }
         };
 
 
         if (!childElements.Any())
         {
-            return
-                [new Paragraph(figNumRef)
-                {
-                    ParagraphProperties = new ParagraphProperties
-                    {
-                        ParagraphStyleId = context.DocumentStyle.GetParagraphStyle(context.DocumentStyle.DefaultStyles.CaptionStyle),
-                        KeepNext = DetermineKeepNext(node),
-                    }
-                }];
+            return [new Paragraph(figNumRef) {
+                ParagraphProperties = new ParagraphProperties {
+                    ParagraphStyleId = context.DocumentStyle.GetParagraphStyle(context.DocumentStyle.DefaultStyles.CaptionStyle),
+                    KeepNext = DetermineKeepNext(node),
+                }
+            }];
         }
 
         //Add the figure number references to the start of the first paragraph.
@@ -69,12 +63,12 @@ sealed class FigureCaptionExpression(IHtmlElement node) : BlockElementExpression
         }
         else
         {
-            //The first child of the figure caption is a table or something. Just prepend a new paragraph with the figure number reference.
-            childElements = 
-                [
-                    new Paragraph(figNumRef),
-                    ..childElements
-                ];
+            // The first child of the figure caption is a table or something.
+            // Just prepend a new paragraph with the figure number reference.
+            childElements =  [
+                new Paragraph(figNumRef),
+                ..childElements
+            ];
         }
 
         foreach (var paragraph in childElements.OfType<Paragraph>())
@@ -118,8 +112,7 @@ sealed class FigureCaptionExpression(IHtmlElement node) : BlockElementExpression
     /// <summary>
     /// Determines whether the KeepNext property should apply this this caption.
     /// </summary>
-    /// <param name="node"></param>
-    /// <returns>A new <see cref="KeepNext"/> or null./></returns>
+    /// <returns>A new <see cref="KeepNext"/> or null.</returns>
     private static KeepNext? DetermineKeepNext(IHtmlElement node)
     {
         // A caption at the end of a figure will have no next sibling.

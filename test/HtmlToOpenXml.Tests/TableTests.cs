@@ -247,7 +247,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [TestCaseSource(nameof(BorderWidthCases))]
-        public void HtmlBorders_ShouldSucceed(string borderAtrribute, IEnumerable<string> expectedBorderValue, IEnumerable<uint?> expectedBorderWidth)
+        public void HtmlBorders_ShouldSucceed(string borderAtrribute, IEnumerable<string>? expectedBorderValue, IEnumerable<uint?>? expectedBorderWidth)
         {
             // we specify a style which doesn't handle borders
             converter.HtmlStyles.AddStyle(new Style {
@@ -260,6 +260,12 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements, Has.All.TypeOf<Table>());
             var borders = elements[0].GetFirstChild<TableProperties>()?.TableBorders;
+            if (expectedBorderValue is null)
+            {
+                Assert.That(borders, Is.Null);
+                return;
+            }
+
             Assert.That(borders, Is.Not.Null);
             Assert.That(borders.HasChild<BorderType>(), Is.True);
             Assert.That(new string?[] { borders.TopBorder?.Val?.InnerText,
@@ -289,8 +295,8 @@ namespace HtmlToOpenXml.Tests
         static readonly object[] BorderWidthCases =
         [
             // Negative border should be considered as zero
-            new object[] { "border='-1'", Enumerable.Repeat("none", 6), null! },
-            new object[] { "border='0'", Enumerable.Repeat("none", 6), null! },
+            new object[] { "border='-1'", null!, null! },
+            new object[] { "border='0'", null!, null! },
             new object[] { "border='1'",
                 new string[] { "none", "none", "none", "none", "single", "single" }, 
                 new uint?[] { null, null, null, null, 14, 14 } },

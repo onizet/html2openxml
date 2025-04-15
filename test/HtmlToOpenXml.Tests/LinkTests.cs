@@ -61,7 +61,7 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements[0].FirstChild, Is.TypeOf(typeof(Hyperlink)));
 
             var hyperlink = (Hyperlink) elements[0].FirstChild;
-            Assert.That(hyperlink.ChildElements, Has.Count.EqualTo(4));
+            Assert.That(hyperlink.ChildElements, Has.Count.EqualTo(6));
             Assert.That(hyperlink.ChildElements, Has.All.TypeOf(typeof(Run)), "Hyperlinks don't accept inner paragraphs");
             Assert.That(hyperlink.Descendants<Drawing>(), Is.Not.Null);
         }
