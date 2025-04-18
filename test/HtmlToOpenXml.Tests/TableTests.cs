@@ -660,5 +660,26 @@ namespace HtmlToOpenXml.Tests
             Assert.That(runs.Count(), Is.EqualTo(1));
             Assert.That(runs.First().RunProperties?.Border, Is.Null);
         }
+
+        [TestCase("100%", "pct", "5000")]
+        [TestCase("auto", "auto", "0")]
+        [TestCase("120px", "dxa", "1800")]
+        [TestCase("", "pct", "5000", Description = "Defaults to 100%")]
+        public void Width_ReturnsRefineTableWidth(string width, string expectedUnit, string expectedValue)
+        {
+            var elements = converter.Parse(@$"<table style='width: {width}'>
+                <tr><td>Placeholder</td></tr>
+            </table>");
+
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Table>());
+            var tableWidth = elements[0].GetFirstChild<TableProperties>()?.TableWidth;
+            Assert.That(tableWidth, Is.Not.Null);
+            Assert.Multiple(() =>
+            {
+                Assert.That(tableWidth?.Type?.Value, Is.EqualTo(new TableWidthUnitValues(expectedUnit)));
+                Assert.That(tableWidth?.Width?.Value, Is.EqualTo(expectedValue));
+            });
+        }
     }
 }

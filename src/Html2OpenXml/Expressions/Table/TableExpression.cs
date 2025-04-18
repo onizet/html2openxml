@@ -156,7 +156,7 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
                 }
             }
 
-            if (rows.Any())
+            if (rows.Length > 0)
                 columnCount = Math.Max(rows.Max(), columnCount);
         }
 
@@ -185,6 +185,9 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
             case UnitMetric.Pixel:
                 tableProperties.TableWidth = new() { Type = TableWidthUnitValues.Dxa, 
                     Width = width.ValueInDxa.ToString(CultureInfo.InvariantCulture) };
+                break;
+            case UnitMetric.Auto:
+                tableProperties.TableWidth = new() { Width = "0", Type = TableWidthUnitValues.Auto };
                 break;
         }
 
