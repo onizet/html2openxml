@@ -148,9 +148,17 @@ namespace HtmlToOpenXml.Tests
             var footer = mainPart.FooterParts.FirstOrDefault()?.Footer;
             Assert.That(footer, Is.Not.Null);
             var paragraphs = footer.Elements<Paragraph>();
-            Assert.That(paragraphs.Count(), Is.EqualTo(2));
-            Assert.That(paragraphs.Select(p => p.ParagraphProperties?.ParagraphStyleId?.Val?.Value),
-                Has.All.EqualTo(converter.HtmlStyles.DefaultStyles.FooterStyle));
+            Assert.That(paragraphs.Count(), Is.EqualTo(1));
+            var paragraph = paragraphs.First();
+            Assert.Multiple(() =>
+            {
+                Assert.That(paragraph.Elements<Run>().Count, Is.EqualTo(2), "One whitespace and one for <small>");
+                Assert.That(paragraph.Elements<Hyperlink>().Count, Is.EqualTo(1));
+                Assert.That(paragraph.GetFirstChild<Hyperlink>()?.InnerText, Is.EqualTo("Copyrighted but you can use what's here as long as you credit me"));
+                Assert.That(paragraph.GetLastChild<Run>()?.InnerText, Is.EqualTo("© Copyright 2058, Company Inc."));
+                Assert.That(paragraphs.Select(p => p.ParagraphProperties?.ParagraphStyleId?.Val?.Value),
+                    Has.All.EqualTo(converter.HtmlStyles.DefaultStyles.FooterStyle));
+            });
         }
     }
 }

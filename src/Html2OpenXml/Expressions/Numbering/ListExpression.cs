@@ -1,4 +1,4 @@
-/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -91,6 +91,24 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
             var childElements = expression.Interpret(context);
             if (!childElements.Any()) continue;
 
+            // table must be aligned to the list item
+            var tables = childElements.OfType<Table>();
+            var tableIndentation = level * Indentation * 2;
+            foreach (var table in tables)
+            {
+                var tableProperties = table.GetFirstChild<TableProperties>();
+                if (tableProperties == null)
+                    table.PrependChild(tableProperties = new());
+
+                tableProperties.TableIndentation ??= new() { Width = tableIndentation };
+                // ensure to restrain the table width to the list item
+                if (tableProperties.TableWidth?.Type?.Value == TableWidthUnitValues.Pct
+                    && tableProperties.TableWidth?.Width?.Value == "5000")
+                {
+                    tableProperties.TableWidth.Width = (5000 - tableIndentation).ToString();
+                }
+            }
+
             // ensure to filter out any non-paragraph like any nested table
             var paragraphs = childElements.OfType<Paragraph>();
             var listItemStyleId = GetStyleIdForListItem(context.DocumentStyle, liNode);
@@ -143,7 +161,15 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         int overrideLevelIndex = 0;
         var isOrderedTag = node.NodeName.Equals("ol", StringComparison.OrdinalIgnoreCase);
         var dir = node.GetTextDirection();
-        if (!instanceId.HasValue || context.Converter.ContinueNumbering == false)
+
+        // be sure to restart to 1 any nested ordered list
+        if (currentLevel > 0 && isOrderedTag)
+        {
+            instanceId = IncrementInstanceId(context, abstractNumId, isReusable: false);
+            overrideLevelIndex = currentLevel;
+            listContext = new ListContext(listStyle, abstractNumId, instanceId.Value, currentLevel + 1, dir);
+        }
+        else if (!instanceId.HasValue || context.Converter.ContinueNumbering == false)
         {
             // create a new instance of that list template
             instanceId = IncrementInstanceId(context, abstractNumId, isReusable: context.Converter.ContinueNumbering);
@@ -157,13 +183,6 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         {
             instanceId = IncrementInstanceId(context, abstractNumId, isReusable: false);
             listContext =  new ListContext(listStyle, abstractNumId, instanceId.Value, 1, dir);
-        }
-        // be sure to restart to 1 any nested ordered list
-        else if (currentLevel > 0 && isOrderedTag)
-        {
-            instanceId = IncrementInstanceId(context, abstractNumId, isReusable: false);
-            overrideLevelIndex = currentLevel;
-            listContext = new ListContext(listStyle, abstractNumId, instanceId.Value, currentLevel + 1, dir);
         }
         else
         {
@@ -197,19 +216,38 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
     private static string GetListName(IElement listNode, string? parentName = null)
     {
         var styleAttributes = listNode.GetStyles();
+        bool orderedList = listNode.NodeName.Equals("ol", StringComparison.OrdinalIgnoreCase);
         string? type = styleAttributes["list-style-type"];
+
+        if(orderedList && string.IsNullOrEmpty(type))
+        {
+            type = ListTypeToListStyleType(listNode.GetAttribute("type"));
+        }
 
         if (string.IsNullOrEmpty(type) || !supportedListTypes.Contains(type!))
         {
             if (parentName != null && IsCascadingStyle(parentName))
                 return parentName!;
 
-            bool orderedList = listNode.NodeName.Equals("ol", StringComparison.OrdinalIgnoreCase);
             type = orderedList? "decimal" : "disc";
         }
 
         return type!;
     }
+
+    /// <summary>
+    /// Map ordered list style attribute values to css list-style-type.
+    /// Valid types are "1|a|A|i|I": https://w3schools.com/tags/att_ol_type.asp
+    /// </summary>
+    private static string? ListTypeToListStyleType(string? type) => type switch
+    {
+        "1" => "decimal",
+        "a" => "lower-alpha",
+        "A" => "upper-alpha",
+        "i" => "lower-roman",
+        "I" => "upper-roman",
+        _ => null
+    };
 
     /// <summary>
     /// Resolve the <see cref="ParagraphStyleId"/> of a list element node, 

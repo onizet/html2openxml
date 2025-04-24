@@ -15,6 +15,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AngleSharp;
+using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -125,7 +126,8 @@ public partial class HtmlConverter
 
         var paragraphs = await ParseCoreAsync(html, headerPart, headerImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
-            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.HeaderStyle));
+            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.HeaderStyle))
+            .ConfigureAwait(false);
 
         headerPart.Header.Append(paragraphs);
     }
@@ -149,7 +151,8 @@ public partial class HtmlConverter
 
         var paragraphs = await ParseCoreAsync(html, footerPart, footerImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
-            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.FooterStyle));
+            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.FooterStyle))
+            .ConfigureAwait(false);
 
         footerPart.Footer.Append(paragraphs);
     }
@@ -165,7 +168,8 @@ public partial class HtmlConverter
         bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester);
         var paragraphs = await ParseCoreAsync(html, mainPart, bodyImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
-            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.Paragraph));
+            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.Paragraph))
+            .ConfigureAwait(false);
 
         if (!paragraphs.Any())
             return;
@@ -274,13 +278,14 @@ public partial class HtmlConverter
     /// <summary>
     /// Walk through all the <c>img</c> tags and preload all the remote images.
     /// </summary>
-    private async Task PreloadImages(AngleSharp.Dom.IDocument htmlDocument,
+    private static async Task PreloadImages(AngleSharp.Dom.IDocument htmlDocument,
         IImageLoader imageLoader, ParallelOptions parallelOptions)
     {
         var imageUris = htmlDocument.QuerySelectorAll("img[src]")
-            .Cast<AngleSharp.Html.Dom.IHtmlImageElement>()
+            .Cast<IHtmlImageElement>()
             .Where(e => AngleSharpExtensions.TryParseUrl(e.GetAttribute("src"), UriKind.RelativeOrAbsolute, out var _))
-            .Select(e => e.GetAttribute("src")!);
+            .Select(e => e.GetAttribute("src")!)
+            .Distinct();
         if (!imageUris.Any())
             return;
 

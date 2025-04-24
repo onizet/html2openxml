@@ -38,7 +38,7 @@ static class CollectionExtensions
         var throttler = new SemaphoreSlim(initialCount: Math.Max(1, parallelOptions.MaxDegreeOfParallelism));
         var tasks = System.Linq.Enumerable.Select(source, async item =>
         {
-            await throttler.WaitAsync(parallelOptions.CancellationToken);
+            await throttler.WaitAsync(parallelOptions.CancellationToken).ConfigureAwait(false);
             if (parallelOptions.CancellationToken.IsCancellationRequested) return;
 
             try

@@ -56,8 +56,13 @@ class ImageExpression(IHtmlImageElement node) : ImageExpressionBase(node)
         }
         if (imgNode.DisplayHeight > 0)
         {
-            // Image perspective skewed. Bug fixed by ddeforge on github.com/onizet/html2openxml/discussions/350500
             preferredSize.Height = imgNode.DisplayHeight;
+        }
+        if (preferredSize.IsEmpty)
+        {
+            var styles = imgNode.GetStyles();
+            preferredSize.Width = GetDimension(styles, "width", "max-width", 642);
+            preferredSize.Height = GetDimension(styles, "height", "max-height", 428);
         }
 
         HtmlImageInfo? iinfo = context.ImageLoader.Download(src, CancellationToken.None)
@@ -85,6 +90,7 @@ class ImageExpression(IHtmlImageElement node) : ImageExpressionBase(node)
         else if (preferredSize.Width <= 0 || preferredSize.Height <= 0)
         {
             Size actualSize = iinfo.Size;
+            // Image perspective skewed. Bug fixed by ddeforge on github.com/onizet/html2openxml/discussions/350500
             preferredSize = ImageHeader.KeepAspectRatio(actualSize, preferredSize);
         }
 
@@ -129,5 +135,23 @@ class ImageExpression(IHtmlImageElement node) : ImageExpressionBase(node)
         );
 
         return img;
+    }
+
+    private static int GetDimension(HtmlAttributeCollection styles, string primaryStyle, string fallbackStyle, int percentageBase)
+    {
+        var unit = styles.GetUnit(primaryStyle);
+        if (!unit.IsValid)
+        {
+            unit = styles.GetUnit(fallbackStyle);
+        }
+
+        if (unit.IsValid)
+        {
+            return unit.Type == UnitMetric.Percent?
+                (int)(unit.Value * percentageBase / 100) :
+                unit.ValueInPx;
+        }
+
+        return 0;
     }
 }

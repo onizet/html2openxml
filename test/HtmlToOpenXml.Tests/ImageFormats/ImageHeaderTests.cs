@@ -63,5 +63,15 @@ namespace HtmlToOpenXml.Tests.ImageFormats
             Assert.That(success, Is.EqualTo(true));
             return guessType;
         }
+
+        [Test(ExpectedResult = ImageHeader.FileType.Unrecognized)]
+        public ImageHeader.FileType GuessFormat_WithEmpty_ReturnsFileType()
+        {
+            using var memoryStream = new MemoryStream();
+            bool success = ImageHeader.TryDetectFileType(memoryStream, out var guessType);
+
+            Assert.That(success, Is.EqualTo(false));
+            return guessType;
+        }
     }
 }

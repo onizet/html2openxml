@@ -14,7 +14,7 @@ namespace HtmlToOpenXml.Tests
         public void ConsecutivePhrasing_ReturnsOneParagraphWithMulitpleRuns ()
         {
             // the new line should generate a space between "bold" and "text"
-            var elements = converter.Parse("<span>This is a <b>bold\n</b>text</span>");
+            var elements = converter.Parse("<span>This is a <u>bold\n</u>text</span>");
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements, Has.All.TypeOf<Paragraph>());
             Assert.That(elements[0].ChildElements, Is.All.TypeOf<Run>());
@@ -32,15 +32,21 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements[1].InnerText, Is.EqualTo("World"));
         }
 
+        [TestCase("<h1>   Hello \n        <span> World!</span>   </h1>")]
+        [TestCase(" <h1>      Hello      World!     </h1>")]
+        [TestCase("<u>Hello  </u>  <span>World!</span>")]
         [TestCase("<h1>   Hello\r\n<span> World!</span>   </h1>")]
         [TestCase("<span>   Hello \r\n World!   </span>")]
         [TestCase("<span>   Hello\r\n\r\nWorld!   </span>")]
+        [TestCase("<div><u>Hello World! </u></div>")]
+        [TestCase("<hr>\n <span>Hello World!</span>")]
+        [TestCase("<p><span></span> Hello World!</p>")]
         public void Multiline_ReturnsCollapsedText (string html)
         {
             var elements = converter.Parse(html);
-            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.Count.GreaterThanOrEqualTo(1));
             Assert.That(elements, Has.All.TypeOf<Paragraph>());
-            Assert.That(elements[0].InnerText, Is.EqualTo("Hello World!"));
+            Assert.That(elements.Last().InnerText, Is.EqualTo("Hello World!"));
         }
 
         [TestCase("h1")]
@@ -96,6 +102,37 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(runs.ElementAt(2).FirstChild, Is.TypeOf<Text>());
             });
             Assert.That(((Text)runs.ElementAt(2).FirstChild).Text, Is.EqualTo("World"));
+        }
+
+        [Test]
+        public void NoTextPhrasing_ShouldBeIgnored()
+        {
+            var elements = converter.Parse("<span>  <div>   <br />   <div id='div2'>    <span>Texte</span>   </div>  </div> </span>");
+            Assert.That(elements, Has.Count.GreaterThanOrEqualTo(2));
+            Assert.Multiple(() =>
+            {
+                Assert.That(elements[0].GetFirstChild<Run>()?.HasChild<Break>(), Is.False, "Standalone line break is replaced with an empty paragraph");
+                Assert.That(elements.Last().InnerText, Is.EqualTo("Texte"));
+                Assert.That(elements.Select(e => e.Elements<Run>().Count()), Has.All.EqualTo(1));
+            });
+        }
+
+        [Test]
+        public void ConsecutiveSpans_WithNoSpace_ReturnsOneParagraphWithNoSpace ()
+        {
+            var elements = converter.Parse("<span>Hello</span><span>World</span>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Is.All.TypeOf<Paragraph>());
+            Assert.That(elements[0].InnerText, Is.EqualTo("HelloWorld"));
+        }
+
+        [Test]
+        public void ConsecutiveSpans_WithSpaces_ReturnsOneParagraphWithNoSpace ()
+        {
+            var elements = converter.Parse("<span>Hello</span>  <span>World</span>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Is.All.TypeOf<Paragraph>());
+            Assert.That(elements[0].InnerText, Is.EqualTo("Hello World"));
         }
     }
 }

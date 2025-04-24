@@ -22,7 +22,7 @@ namespace HtmlToOpenXml.IO;
 public sealed class DataUri
 {
     private readonly static Regex dataUriRegex = new Regex(
-            @"data\:(?<mime>\w+/\w+)?(?:;charset=(?<charset>[a-zA-Z_0-9-]+))?(?<base64>;base64)?,(?<data>.*)",
+            @"data\:(?<mime>\w+/[\w\-\+\.]+)?(?:;charset=(?<charset>[a-zA-Z_0-9-]+))?(?<base64>;base64)?,(?<data>.*)",
             RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
     private DataUri(string mime, byte[] data)

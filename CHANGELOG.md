@@ -1,5 +1,34 @@
 # Changelog
 
+## 3.2.5
+
+- Fix a crash with the new whitespace handling introduced in 3.2.3 #191
+- Fix crash when the html contains 2 images with identical source path #193
+- Support margin auto for table alignment #194
+- Fix handling whitespace between runs #195
+- Whitelist more mime-types as specified by the IANA standard #196
+- Support EMF file #196
+- Correct handling of `figcaption` (allow nested phrasings) #197
+- Numbering list now supports type attribute `<ol type="1|a|A|i|I">` #198
+- Always restart nested numbering list #198
+- Fix table borders being removed even when the specified word table style has borders #199
+- Defensive code when download image stream is truncated #201
+- Table inside list is constrained to not exceed page margin #202
+- Table now supports width:auto for auto-fit content #202
+
+## 3.2.4
+
+- Fix a crash with the new whitespace handling introduced in 3.2.3 #191
+- Table inside list must be aligned with the list item #192
+
+## 3.2.3
+
+- Improve support of table alignment #187
+- Fix a crash if a span is empty
+- Heading with only digits should not be considered as a numbering #189
+- Fix whitespaces inserted between spans #179 and #185
+- Support percentage size (typically width:100%) for img node #188
+
 ## 3.2.2
 
 - Supports a feature to disable heading numbering #175
