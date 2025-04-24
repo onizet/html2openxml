@@ -352,6 +352,8 @@ namespace HtmlToOpenXml.Tests
 
         [TestCase("align='right'", ExpectedResult = "right")]
         [TestCase("style='justify-self:center'", ExpectedResult = "center")]
+        [TestCase("style='margin-left:auto'", ExpectedResult = "right")]
+        [TestCase("style='margin-left:auto;margin-right:auto'", ExpectedResult = "center")]
         public string? TableAlign_ReturnsTableJustification(string style)
         {
             var elements = converter.Parse(@$"<table {style}>

@@ -201,12 +201,6 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
             }
         }
 
-        var align = Converter.ToParagraphAlign(tableNode.GetAttribute("align"));
-        if (!align.HasValue)
-            align = Converter.ToParagraphAlign(styleAttributes["justify-self"]);
-        if (align.HasValue)
-            tableProperties.TableJustification = new() { Val = align.Value.ToTableRowAlignment() };
-
         var dir = tableNode.GetTextDirection();
         if (dir.HasValue)
             tableProperties.BiDiVisual = new() { 
@@ -286,5 +280,22 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
                 };
             }
         }
+
+        var align = Converter.ToParagraphAlign(tableNode.GetAttribute("align"))
+            ?? Converter.ToParagraphAlign(styleAttributes["justify-self"]);
+        if (!align.HasValue)
+        {
+            var margin = styleAttributes.GetMargin("margin");
+            if (margin.Left.Type == UnitMetric.Auto)
+            {
+                if (margin.Right.Type == UnitMetric.Auto)
+                    align = JustificationValues.Center;
+                else
+                    align = JustificationValues.Right;
+            }
+        }
+
+        if (align.HasValue)
+            tableProperties.TableJustification = new() { Val = align.Value.ToTableRowAlignment() };
     }
 }
