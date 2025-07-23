@@ -16,10 +16,11 @@ namespace HtmlToOpenXml.Tests
         [TestCase("://www.site.com")]
         [TestCase("www.site.com")]
         [TestCase("http://www.site.com")]
-        public void ExternalLink_ShouldSucceed (string link)
+        [TestCase("http://www.site.com/#anchor1", "http://www.site.com/#anchor1")]
+        public void ExternalLink_ShouldSucceed(string link, string expectedUri = "http://www.site.com/")
         {
             var elements = converter.Parse($@"<a href=""{link}"" title=""Test Tooltip"">Test Caption</a>");
-            AssertHyperlink(mainPart, elements);
+            AssertHyperlink(mainPart, elements, expectedUri);
         }
 
         [TestCase(@"<a href=""javascript:alert()"">Js</a>")]
@@ -193,7 +194,7 @@ namespace HtmlToOpenXml.Tests
                 throw new NotSupportedException($"Test case not supported for {openXmlPartType.FullName}");
             }
 
-            AssertHyperlink(container, host.ChildElements);
+            AssertHyperlink(container, host.ChildElements, "http://www.site.com/");
             AssertThatOpenXmlDocumentIsValid();
         }
 
@@ -249,7 +250,8 @@ namespace HtmlToOpenXml.Tests
             Assert.That(rel.Uri.ToString(), Is.EqualTo("#_top"));
         }
 
-        private static void AssertHyperlink(OpenXmlPartContainer container, IEnumerable<OpenXmlElement> elements)
+        private static void AssertHyperlink(OpenXmlPartContainer container, IEnumerable<OpenXmlElement> elements,
+            string expectedUri)
         {
             Assert.That(elements.Count(), Is.EqualTo(1));
             Assert.Multiple(() => {
@@ -272,7 +274,7 @@ namespace HtmlToOpenXml.Tests
             var extLink = container.HyperlinkRelationships.FirstOrDefault(r => r.Id == hyperlink.Id);
             Assert.That(extLink, Is.Not.Null);
             Assert.That(extLink.IsExternal, Is.EqualTo(true));
-            Assert.That(extLink.Uri.AbsoluteUri, Is.EqualTo("http://www.site.com/"));
+            Assert.That(extLink.Uri.AbsoluteUri, Is.EqualTo(expectedUri));
         }
     }
 }

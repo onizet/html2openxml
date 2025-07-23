@@ -16,7 +16,7 @@ namespace HtmlToOpenXml.Tests
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            return await _getResponseFunc(request.RequestUri);
+            return await _getResponseFunc(request.RequestUri!);
         }
     }
 }
