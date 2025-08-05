@@ -55,6 +55,13 @@ public class DefaultStyles
     public string HeadingStyle { get; set; } = PredefinedStyles.Heading;
 
     /// <summary>
+    /// Default style for numbered headings
+    /// Appends the level at the end of the style name
+    /// </summary>
+    /// <value>Heading</value>
+    public string NumberedHeadingStyle { get; set; } = PredefinedStyles.Heading;
+
+    /// <summary>
     /// Default style for hyperlinks
     /// </summary>
     /// <value>Hyperlink</value>
