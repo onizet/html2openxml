@@ -40,26 +40,43 @@ sealed class HeadingElementExpression(IHtmlElement node) : NumberingExpressionBa
 
         paragraph ??= new(childElements);
         paragraph.ParagraphProperties ??= new();
-        paragraph.ParagraphProperties.ParagraphStyleId = 
-            context.DocumentStyle.GetParagraphStyle(context.DocumentStyle.DefaultStyles.HeadingStyle + level);
- 
+
         var runElement = childElements.FirstOrDefault();
         if (runElement != null && context.Converter.SupportsHeadingNumbering && IsNumbering(runElement))
         {
-            var abstractNumId = GetOrCreateListTemplate(context, HeadingNumberingName);
-            var instanceId = GetListInstance(abstractNumId);
-            if (!instanceId.HasValue)
+            if (string.Equals(context.DocumentStyle.DefaultStyles.HeadingStyle, context.DocumentStyle.DefaultStyles.NumberedHeadingStyle))
             {
-                instanceId = IncrementInstanceId(context, abstractNumId);
+                // Only apply the numbering if a custom numbered heading style has not been defined.
+                // If the user defined a custom numbered heading style (with numbering), Word has
+                // the numbering automatically done.
+                // Defining a numbering here messes that up, so we only add the numbering if
+                // a specific numbering heading style has not been provided
+                var abstractNumId = GetOrCreateListTemplate(context, HeadingNumberingName);
+                var instanceId = GetListInstance(abstractNumId);
+
+                if (!instanceId.HasValue)
+                {
+                    instanceId = IncrementInstanceId(context, abstractNumId);
+                }
+
+                var numbering = context.MainPart.NumberingDefinitionsPart!.Numbering!;
+                numbering.Append(
+                    new NumberingInstance(
+                        new AbstractNumId() { Val = abstractNumId }
+                    )
+                    { NumberID = instanceId });
+                SetNumbering(paragraph, level - '0', instanceId.Value);
             }
 
-            var numbering = context.MainPart.NumberingDefinitionsPart!.Numbering!;
-            numbering.Append(
-                new NumberingInstance(
-                    new AbstractNumId() { Val = abstractNumId }
-                )
-                { NumberID = instanceId });
-            SetNumbering(paragraph, level - '0', instanceId.Value);
+            // Apply numbered heading style
+            paragraph.ParagraphProperties.ParagraphStyleId =
+                context.DocumentStyle.GetParagraphStyle(context.DocumentStyle.DefaultStyles.NumberedHeadingStyle + level);
+        }
+        else
+        {
+            // Apply normal heading style
+            paragraph.ParagraphProperties.ParagraphStyleId =
+                context.DocumentStyle.GetParagraphStyle(context.DocumentStyle.DefaultStyles.HeadingStyle + level);
         }
 
         return [paragraph];
