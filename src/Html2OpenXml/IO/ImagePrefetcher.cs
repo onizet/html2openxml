@@ -52,6 +52,7 @@ sealed class ImagePrefetcher<T> : IImageLoader
     private readonly T hostingPart;
     private readonly IWebRequest resourceLoader;
     private readonly HtmlImageInfoCollection prefetchedImages;
+    private readonly object lockObject = new object();
 
 
     /// <summary>
@@ -76,8 +77,12 @@ sealed class ImagePrefetcher<T> : IImageLoader
     /// </summary>
     public async Task<HtmlImageInfo?> Download(string imageUri, CancellationToken cancellationToken)
     {
-        if (prefetchedImages.Contains(imageUri))
-            return prefetchedImages[imageUri];
+        // Check if image is already cached using thread-safe operation
+        lock (lockObject)
+        {
+            if (prefetchedImages.Contains(imageUri))
+                return prefetchedImages[imageUri];
+        }
 
         HtmlImageInfo? iinfo;
         if (DataUri.IsWellFormed(imageUri)) // data inline, encoded in base64
@@ -89,8 +94,18 @@ sealed class ImagePrefetcher<T> : IImageLoader
             iinfo = await DownloadRemoteImage(imageUri, cancellationToken).ConfigureAwait(false);
         }
 
+        // Add to cache using thread-safe operation
         if (iinfo != null)
-            prefetchedImages.Add(iinfo);
+        {
+            lock (lockObject)
+            {
+                // Double-check pattern to prevent duplicate adds during concurrent access
+                if (!prefetchedImages.Contains(imageUri))
+                {
+                    prefetchedImages.Add(iinfo);
+                }
+            }
+        }
 
         return iinfo;
     }
@@ -121,7 +136,16 @@ sealed class ImagePrefetcher<T> : IImageLoader
                 return null;
             }
 
-            var ipart = hostingPart.AddImagePart(type);
+            // Generate a unique GUID-based relationship ID for the image part
+            string relationshipId = "img_" + Guid.NewGuid().ToString("N");
+            
+            // Synchronize access to AddImagePart to prevent concurrent modifications to the OpenXml document
+            ImagePart ipart;
+            lock (lockObject)
+            {
+                ipart = hostingPart.AddImagePart(type, relationshipId);
+            }
+            
             Size originalSize;
             using (var outputStream = ipart.GetStream(FileMode.Create))
             {
@@ -131,7 +155,13 @@ sealed class ImagePrefetcher<T> : IImageLoader
                 originalSize = GetImageSize(outputStream);
             }
 
-            return new HtmlImageInfo(src, hostingPart.GetIdOfPart(ipart)) {
+            string partId;
+            lock (lockObject)
+            {
+                partId = hostingPart.GetIdOfPart(ipart);
+            }
+
+            return new HtmlImageInfo(src, partId) {
                 TypeInfo = type,
                 Size = originalSize
             };
@@ -147,7 +177,16 @@ sealed class ImagePrefetcher<T> : IImageLoader
         {
             Size originalSize;
             knownContentType.TryGetValue(dataUri!.Mime, out PartTypeInfo type);
-            var ipart = hostingPart.AddImagePart(type);
+            // Generate a unique GUID-based relationship ID for the image part
+            string relationshipId = "img_" + Guid.NewGuid().ToString("N");
+            
+            // Synchronize access to AddImagePart to prevent concurrent modifications to the OpenXml document
+            ImagePart ipart;
+            lock (lockObject)
+            {
+                ipart = hostingPart.AddImagePart(type, relationshipId);
+            }
+            
             using (var outputStream = ipart.GetStream(FileMode.Create))
             {
                 outputStream.Write(dataUri.Data, 0, dataUri.Data.Length);
@@ -156,7 +195,13 @@ sealed class ImagePrefetcher<T> : IImageLoader
                 originalSize = GetImageSize(outputStream);
             }
 
-            return new HtmlImageInfo(src, hostingPart.GetIdOfPart(ipart)) {
+            string partId;
+            lock (lockObject)
+            {
+                partId = hostingPart.GetIdOfPart(ipart);
+            }
+
+            return new HtmlImageInfo(src, partId) {
                 TypeInfo = type,
                 Size = originalSize
             };
