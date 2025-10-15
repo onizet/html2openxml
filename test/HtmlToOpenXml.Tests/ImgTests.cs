@@ -290,7 +290,168 @@ namespace HtmlToOpenXml.Tests
             Assert.That(runs.Select(r => r.GetFirstChild<Drawing>()), Has.All.Not.Null);
         }
 
-        private static (Drawing, ImagePart) AssertIsImg (OpenXmlPartContainer container, OpenXmlElement paragraph)
+        [Test]
+        public async Task ExternalLinkMode_RemoteImage_ShouldCreateExternalRelationship()
+        {
+            // Arrange
+            var mockHttp = new MockHttpMessageHandler(uri => Task.FromResult(new HttpResponseMessage
+            {
+                StatusCode = System.Net.HttpStatusCode.OK,
+                Content = new StreamContent(ResourceHelper.GetStream("Resources.smiley.gif"))
+                {
+                    Headers = { { "Content-Type", "image/gif" } }
+                }
+            }));
+
+            var webRequest = new IO.DefaultWebRequest(new HttpClient(mockHttp));
+            converter = new HtmlConverter(mainPart, webRequest)
+            {
+                ImageProcessing = ImageProcessingMode.LinkExternal
+            };
+
+            // Act
+            await converter.ParseBody(
+                @"<img src='https://www.example.com/image.gif' width='42' height='42'>",
+                TestContext.CurrentContext.CancellationToken);
+
+            // Assert
+            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
+            Assert.That(paragraphs.Count(), Is.EqualTo(1));
+
+            var run = paragraphs.First().GetFirstChild<Run>();
+            Assert.That(run, Is.Not.Null);
+            var drawing = run.GetFirstChild<Drawing>();
+            Assert.That(drawing, Is.Not.Null);
+
+            var pic = drawing.Inline?.Graphic?.GraphicData?.GetFirstChild<pic.Picture>();
+            Assert.That(pic?.BlipFill?.Blip, Is.Not.Null);
+
+            // Verify it's using Link instead of Embed
+            Assert.That(pic.BlipFill.Blip.Link, Is.Not.Null);
+            Assert.That(pic.BlipFill.Blip.Embed, Is.Null);
+
+            // Verify external relationship was created
+            var externalRels = mainPart.ExternalRelationships
+                .Where(r => r.RelationshipType == "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image");
+            Assert.That(externalRels.Count(), Is.EqualTo(1));
+            Assert.That(externalRels.First().Uri.ToString(), Is.EqualTo("https://www.example.com/image.gif"));
+
+            // Verify no image parts were created
+            Assert.That(mainPart.ImageParts.Count(), Is.EqualTo(0));
+        }
+
+        [Test]
+        public async Task ExternalLinkMode_DataUri_ShouldStillEmbed()
+        {
+            // Arrange
+            converter = new HtmlConverter(mainPart)
+            {
+                ImageProcessing = ImageProcessingMode.LinkExternal
+            };
+
+            // Act
+            await converter.ParseBody(
+                @"<img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==' width='42' height='42'>",
+                TestContext.CurrentContext.CancellationToken);
+
+            // Assert
+            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
+            Assert.That(paragraphs.Count(), Is.EqualTo(1));
+
+            var run = paragraphs.First().GetFirstChild<Run>();
+            var drawing = run?.GetFirstChild<Drawing>();
+            var pic = drawing?.Inline?.Graphic?.GraphicData?.GetFirstChild<pic.Picture>();
+
+            // Data URIs should still be embedded
+            Assert.That(pic?.BlipFill?.Blip?.Embed, Is.Not.Null);
+            Assert.That(pic?.BlipFill?.Blip?.Link, Is.Null);
+            Assert.That(mainPart.ImageParts.Count(), Is.EqualTo(1));
+        }
+
+        [Test]
+        public async Task EmbedDataUriOnlyMode_RemoteImage_ShouldBeSkipped()
+        {
+            // Arrange
+            var mockHttp = new MockHttpMessageHandler(uri => Task.FromResult(new HttpResponseMessage
+            {
+                StatusCode = System.Net.HttpStatusCode.OK,
+                Content = new StreamContent(ResourceHelper.GetStream("Resources.smiley.gif"))
+                {
+                    Headers = { { "Content-Type", "image/gif" } }
+                }
+            }));
+
+            var webRequest = new IO.DefaultWebRequest(new HttpClient(mockHttp));
+            converter = new HtmlConverter(mainPart, webRequest)
+            {
+                ImageProcessing = ImageProcessingMode.EmbedDataUriOnly
+            };
+
+            // Act
+            await converter.ParseBody(
+                @"<img src='https://www.example.com/image.gif' width='42' height='42'>",
+                TestContext.CurrentContext.CancellationToken);
+
+            // Assert
+            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
+            // Image should be skipped, so paragraph should be empty or not contain drawing
+            Assert.That(paragraphs.Count(), Is.EqualTo(0));
+            Assert.That(mainPart.ImageParts.Count(), Is.EqualTo(0));
+        }
+
+        [Test]
+        public async Task EmbedDataUriOnlyMode_DataUri_ShouldEmbed()
+        {
+            // Arrange
+            converter = new HtmlConverter(mainPart)
+            {
+                ImageProcessing = ImageProcessingMode.EmbedDataUriOnly
+            };
+
+            // Act
+            await converter.ParseBody(
+                @"<img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==' width='42' height='42'>",
+                TestContext.CurrentContext.CancellationToken);
+
+            // Assert
+            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
+            Assert.That(paragraphs.Count(), Is.EqualTo(1));
+            AssertIsImg(mainPart, paragraphs.First());
+            Assert.That(mainPart.ImageParts.Count(), Is.EqualTo(1));
+        }
+
+        [Test]
+        public async Task EmbedMode_RemoteImage_ShouldDownloadAndEmbed()
+        {
+            // Arrange
+            var mockHttp = new MockHttpMessageHandler(uri => Task.FromResult(new HttpResponseMessage
+            {
+                StatusCode = System.Net.HttpStatusCode.OK,
+                Content = new StreamContent(ResourceHelper.GetStream("Resources.smiley.gif"))
+                {
+                    Headers = { { "Content-Type", "image/gif" } }
+                }
+            }));
+
+            var webRequest = new IO.DefaultWebRequest(new HttpClient(mockHttp));
+            converter = new HtmlConverter(mainPart, webRequest)
+            {
+                ImageProcessing = ImageProcessingMode.Embed // Default behavior
+            };
+
+            // Act
+            await converter.ParseBody(
+                @"<img src='https://www.example.com/image.gif' width='42' height='42'>",
+                TestContext.CurrentContext.CancellationToken);
+
+            // Assert
+            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
+            Assert.That(paragraphs.Count(), Is.EqualTo(1));
+            AssertIsImg(mainPart, paragraphs.First());
+            Assert.That(mainPart.ImageParts.Count(), Is.EqualTo(1));
+        }
+
+        private static (Drawing, ImagePart) AssertIsImg(OpenXmlPartContainer container, OpenXmlElement paragraph)
         {
             var run = paragraph.GetFirstChild<Run>();
             Assert.That(run, Is.Not.Null);

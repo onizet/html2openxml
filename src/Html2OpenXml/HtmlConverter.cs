@@ -58,20 +58,20 @@ public partial class HtmlConverter
     }
 
     /// <summary>
-    /// Parse some HTML content where the output is intented to be inserted in <see cref="MainDocumentPart"/>.
+    /// Parse some HTML content where the output is intended to be inserted in <see cref="MainDocumentPart"/>.
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <returns>Returns a list of parsed paragraph.</returns>
     public IList<OpenXmlCompositeElement> Parse(string html)
     {
-        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester);
+        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester, ImageProcessing);
         return ParseCoreAsync(html, mainPart, bodyImageLoader,
             new ParallelOptions() { CancellationToken = CancellationToken.None })
             .ConfigureAwait(false).GetAwaiter().GetResult().ToList();
     }
 
     /// <summary>
-    /// Start the asynchroneous parse processing where the output is intented to be inserted in <see cref="MainDocumentPart"/>.
+    /// Start the asynchronous parse processing where the output is intended to be inserted in <see cref="MainDocumentPart"/>.
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <param name="cancellationToken">The cancellation token.</param>
@@ -84,7 +84,7 @@ public partial class HtmlConverter
     }
 
     /// <summary>
-    /// Start the asynchroneous parse processing where the output is intented to be inserted in <see cref="MainDocumentPart"/>.
+    /// Start the asynchronous parse processing where the output is intended to be inserted in <see cref="MainDocumentPart"/>.
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <param name="cancellationToken">The cancellation token.</param>
@@ -95,20 +95,20 @@ public partial class HtmlConverter
     }
 
     /// <summary>
-    /// Start the asynchroneous parse processing where the output is intented to be inserted in <see cref="MainDocumentPart"/>.
+    /// Start the asynchronous parse processing where the output is intended to be inserted in <see cref="MainDocumentPart"/>.
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <param name="parallelOptions">The configuration of parallelism while downloading the remote resources.</param>
     /// <returns>Returns a list of parsed paragraph.</returns>
     public Task<IEnumerable<OpenXmlCompositeElement>> ParseAsync(string html, ParallelOptions parallelOptions)
     {
-        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester);
+        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester, ImageProcessing);
 
         return ParseCoreAsync(html, mainPart, bodyImageLoader, parallelOptions);
     }
 
     /// <summary>
-    /// Parse asynchroneously the Html and append the output into the Header of the document.
+    /// Parse asynchronously the Html and append the output into the Header of the document.
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <param name="headerType">Determines the page(s) on which the current header shall be displayed.
@@ -122,7 +122,7 @@ public partial class HtmlConverter
         var headerPart = ResolveHeaderFooterPart<HeaderReference, HeaderPart>(headerType);
 
         headerPart.Header ??= new();
-        headerImageLoader ??= new ImagePrefetcher<HeaderPart>(headerPart, webRequester);
+        headerImageLoader ??= new ImagePrefetcher<HeaderPart>(headerPart, webRequester, ImageProcessing);
 
         var paragraphs = await ParseCoreAsync(html, headerPart, headerImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
@@ -133,7 +133,7 @@ public partial class HtmlConverter
     }
 
     /// <summary>
-    /// Parse asynchroneously the Html and append the output into the Footer of the document.
+    /// Parse asynchronously the Html and append the output into the Footer of the document.
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <param name="footerType">Determines the page(s) on which the current footer shall be displayed.
@@ -147,7 +147,7 @@ public partial class HtmlConverter
         var footerPart = ResolveHeaderFooterPart<FooterReference, FooterPart>(footerType);
 
         footerPart.Footer ??= new();
-        footerImageLoader ??= new ImagePrefetcher<FooterPart>(footerPart, webRequester);
+        footerImageLoader ??= new ImagePrefetcher<FooterPart>(footerPart, webRequester, ImageProcessing);
 
         var paragraphs = await ParseCoreAsync(html, footerPart, footerImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
@@ -158,14 +158,14 @@ public partial class HtmlConverter
     }
 
     /// <summary>
-    /// Parse asynchroneously the Html and append the output into the Body of the document.
+    /// Parse asynchronously the Html and append the output into the Body of the document.
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <seealso cref="MainDocumentPart"/>
     public async Task ParseBody(string html, CancellationToken cancellationToken = default)
     {
-        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester);
+        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester, ImageProcessing);
         var paragraphs = await ParseCoreAsync(html, mainPart, bodyImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
             htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.Paragraph))
@@ -201,7 +201,7 @@ public partial class HtmlConverter
     }
 
     /// <summary>
-    /// Start the asynchroneous parse processing. Use this overload if you want to control the downloading of images.
+    /// Start the asynchronous parse processing. Use this overload if you want to control the downloading of images.
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <param name="parallelOptions">The configuration of parallelism while downloading the remote resources.</param>
@@ -210,13 +210,13 @@ public partial class HtmlConverter
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     public Task<IEnumerable<OpenXmlCompositeElement>> Parse(string html, ParallelOptions parallelOptions)
     {
-        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester);
+        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester, ImageProcessing);
 
         return ParseCoreAsync(html, mainPart, bodyImageLoader, parallelOptions);
     }
 
     /// <summary>
-    /// Start the asynchroneous parse processing and append the output into the Body of the document.
+    /// Start the asynchronous parse processing and append the output into the Body of the document.
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <param name="cancellationToken">The cancellation token.</param>
@@ -236,7 +236,7 @@ public partial class HtmlConverter
     }
 
     /// <summary>
-    /// Start the asynchroneous parse processing. Use this overload if you want to control the downloading of images.
+    /// Start the asynchronous parse processing. Use this overload if you want to control the downloading of images.
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <param name="hostingPart">The OpenXml container where the content will be inserted into.</param>
@@ -393,6 +393,26 @@ public partial class HtmlConverter
     /// </summary>
     /// <remarks>The table will contains only one cell.</remarks>
     public bool RenderPreAsTable { get; set; }
+
+    /// <summary>
+    /// Gets or sets how images should be processed during conversion.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Use <see cref="ImageProcessingMode.Embed"/> (default) to download and embed all images,
+    /// creating self-contained documents but potentially large file sizes.
+    /// </para>
+    /// <para>
+    /// Use <see cref="ImageProcessingMode.LinkExternal"/> to link to external images via relationships,
+    /// keeping document size small but requiring internet access to view images.
+    /// Data URI images (base64 encoded) are still embedded.
+    /// </para>
+    /// <para>
+    /// Use <see cref="ImageProcessingMode.EmbedDataUriOnly"/> to only embed data URI images
+    /// and skip external images entirely.
+    /// </para>
+    /// </remarks>
+    public ImageProcessingMode ImageProcessing { get; set; } = ImageProcessingMode.Embed;
 
     /// <summary>
     /// Defines whether ordered lists (<c>ol</c>) continue incrementing existing numbering
