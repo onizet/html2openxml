@@ -53,6 +53,7 @@ sealed class ImagePrefetcher<T> : IImageLoader
     private readonly IWebRequest resourceLoader;
     private readonly HtmlImageInfoCollection prefetchedImages;
     private readonly object lockObject = new object();
+    private readonly ImageProcessingMode processingMode;
 
 
     /// <summary>
@@ -61,10 +62,12 @@ sealed class ImagePrefetcher<T> : IImageLoader
     /// <param name="hostingPart">The image will be linked to that hosting part.
     /// Images are not shared between header, footer and body.</param>
     /// <param name="resourceLoader">Service to resolve an image.</param>
-    public ImagePrefetcher(T hostingPart, IWebRequest resourceLoader)
+    /// <param name="processingMode">Specifies how images should be processed (embed, link, or data URI only).</param>
+    public ImagePrefetcher(T hostingPart, IWebRequest resourceLoader, ImageProcessingMode processingMode = ImageProcessingMode.Embed)
     {
         this.hostingPart = hostingPart;
         this.resourceLoader = resourceLoader;
+        this.processingMode = processingMode;
         this.prefetchedImages = new HtmlImageInfoCollection();
     }
 
@@ -91,7 +94,22 @@ sealed class ImagePrefetcher<T> : IImageLoader
         }
         else
         {
-            iinfo = await DownloadRemoteImage(imageUri, cancellationToken).ConfigureAwait(false);
+            // Handle external images based on processing mode
+            if (processingMode == ImageProcessingMode.EmbedDataUriOnly)
+            {
+                // Skip external images entirely
+                return null;
+            }
+            else if (processingMode == ImageProcessingMode.LinkExternal)
+            {
+                // Create external link without downloading
+                iinfo = CreateExternalImageLink(imageUri);
+            }
+            else
+            {
+                // Default: Download and embed
+                iinfo = await DownloadRemoteImage(imageUri, cancellationToken).ConfigureAwait(false);
+            }
         }
 
         // Add to cache using thread-safe operation
@@ -166,6 +184,48 @@ sealed class ImagePrefetcher<T> : IImageLoader
                 Size = originalSize
             };
         }
+    }
+
+    /// <summary>
+    /// Create an external relationship to an image without downloading it.
+    /// </summary>
+    private HtmlImageInfo? CreateExternalImageLink(string src)
+    {
+        Uri imageUri = new Uri(src, UriKind.RelativeOrAbsolute);
+
+        // Resolve relative URIs if possible (only for DefaultWebRequest which has BaseImageUrl)
+        if (!imageUri.IsAbsoluteUri && resourceLoader is DefaultWebRequest defaultWebRequest
+            && defaultWebRequest.BaseImageUrl != null)
+        {
+            string url1 = defaultWebRequest.BaseImageUrl.AbsoluteUri.TrimEnd('/', '\\');
+            string path = src.TrimStart('/', '\\');
+            imageUri = new Uri(string.Format("{0}/{1}", url1, path), UriKind.Absolute);
+        }
+
+        // Only create external links for absolute URIs with supported protocols
+        if (!imageUri.IsAbsoluteUri || !resourceLoader.SupportsProtocol(imageUri.Scheme))
+            return null;
+
+        // Generate a unique GUID-based relationship ID for the external relationship
+        string relationshipId = "imgext_" + Guid.NewGuid().ToString("N");
+
+        // Create external relationship
+        lock (lockObject)
+        {
+            hostingPart.AddExternalRelationship(
+                "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image",
+                imageUri,
+                relationshipId);
+        }
+
+        // Return image info with external flag set
+        // Note: Size will be empty as we don't download the image
+        return new HtmlImageInfo(src, relationshipId)
+        {
+            IsExternal = true,
+            Size = Size.Empty,
+            TypeInfo = ImagePartType.Png // Default type, actual type doesn't matter for external links
+        };
     }
 
     /// <summary>

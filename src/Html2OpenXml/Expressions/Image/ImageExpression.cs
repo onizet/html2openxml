@@ -94,6 +94,14 @@ class ImageExpression(IHtmlImageElement node) : ImageExpressionBase(node)
             preferredSize = ImageHeader.KeepAspectRatio(actualSize, preferredSize);
         }
 
+        // If size is still empty (e.g., for external linked images), use default dimensions
+        if (preferredSize.IsEmpty || preferredSize.Width <= 0 || preferredSize.Height <= 0)
+        {
+            // Use default size for external images or when size cannot be determined
+            // Default to a reasonable size (similar to how browsers handle images with unknown dimensions)
+            preferredSize = new Size(300, 200);
+        }
+
         long widthInEmus = new Unit(UnitMetric.Pixel, preferredSize.Width).ValueInEmus;
         long heightInEmus = new Unit(UnitMetric.Pixel, preferredSize.Height).ValueInEmus;
 
@@ -103,22 +111,26 @@ class ImageExpression(IHtmlImageElement node) : ImageExpressionBase(node)
                 new wp.Extent() { Cx = widthInEmus, Cy = heightInEmus },
                 new wp.EffectExtent() { LeftEdge = 19050L, TopEdge = 0L, RightEdge = 0L, BottomEdge = 0L },
                 new wp.DocProperties() { Id = drawingObjId, Name = "Picture " + imageObjId, Description = string.Empty },
-                new wp.NonVisualGraphicFrameDrawingProperties {
+                new wp.NonVisualGraphicFrameDrawingProperties
+                {
                     GraphicFrameLocks = new a.GraphicFrameLocks() { NoChangeAspect = true }
                 },
                 new a.Graphic(
                     new a.GraphicData(
                         new pic.Picture(
-                            new pic.NonVisualPictureProperties {
-                                NonVisualDrawingProperties = new pic.NonVisualDrawingProperties() { 
+                            new pic.NonVisualPictureProperties
+                            {
+                                NonVisualDrawingProperties = new pic.NonVisualDrawingProperties()
+                                {
                                     Id = imageObjId,
                                     Name = DataUri.IsWellFormed(src) ? string.Empty : src,
-                                    Description = alt },
+                                    Description = alt
+                                },
                                 NonVisualPictureDrawingProperties = new pic.NonVisualPictureDrawingProperties(
                                     new a.PictureLocks() { NoChangeAspect = true, NoChangeArrowheads = true })
                             },
                             new pic.BlipFill(
-                                new a.Blip() { Embed = iinfo.ImagePartId },
+                                CreateBlip(iinfo, src),
                                 new a.SourceRectangle(),
                                 new a.Stretch(
                                     new a.FillRectangle())),
@@ -128,10 +140,14 @@ class ImageExpression(IHtmlImageElement node) : ImageExpressionBase(node)
                                     new a.Extents() { Cx = widthInEmus, Cy = heightInEmus }),
                                 new a.PresetGeometry(
                                     new a.AdjustValueList()
-                                ) { Preset = a.ShapeTypeValues.Rectangle }
-                            ) { BlackWhiteMode = a.BlackWhiteModeValues.Auto })
-                    ) { Uri = "http://schemas.openxmlformats.org/drawingml/2006/picture" })
-            ) { DistanceFromTop = (UInt32Value) 0U, DistanceFromBottom = (UInt32Value) 0U, DistanceFromLeft = (UInt32Value) 0U, DistanceFromRight = (UInt32Value) 0U }
+                                )
+                                { Preset = a.ShapeTypeValues.Rectangle }
+                            )
+                            { BlackWhiteMode = a.BlackWhiteModeValues.Auto })
+                    )
+                    { Uri = "http://schemas.openxmlformats.org/drawingml/2006/picture" })
+            )
+            { DistanceFromTop = (UInt32Value)0U, DistanceFromBottom = (UInt32Value)0U, DistanceFromLeft = (UInt32Value)0U, DistanceFromRight = (UInt32Value)0U }
         );
 
         return img;
@@ -147,11 +163,28 @@ class ImageExpression(IHtmlImageElement node) : ImageExpressionBase(node)
 
         if (unit.IsValid)
         {
-            return unit.Type == UnitMetric.Percent?
+            return unit.Type == UnitMetric.Percent ?
                 (int)(unit.Value * percentageBase / 100) :
                 unit.ValueInPx;
         }
 
         return 0;
+    }
+
+    /// <summary>
+    /// Creates a Blip element with either an embedded or external image reference.
+    /// </summary>
+    private static a.Blip CreateBlip(HtmlImageInfo iinfo, string? src)
+    {
+        if (iinfo.IsExternal)
+        {
+            // Use Link property for external images
+            return new a.Blip() { Link = iinfo.ImagePartId };
+        }
+        else
+        {
+            // Use Embed property for embedded images (default behaviour)
+            return new a.Blip() { Embed = iinfo.ImagePartId };
+        }
     }
 }
