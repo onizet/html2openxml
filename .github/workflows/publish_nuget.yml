@@ -31,6 +31,8 @@ jobs:
       - name: Pack
         run: dotnet pack src/Html2OpenXml/HtmlToOpenXml.csproj --configuration Release --output ./nupkg
       - name: Push nuget to NuGet.org
-        run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
+        run: dotnet nuget push ./nupkg/*.nupkg --api-key $NUGET_API_KEY -s https://api.nuget.org/v3/index.json
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
       - name: Create Release and Upload Artifact to Release
         run: gh release create ${{github.ref_name}} -t "Release ${{github.ref_name}}" *.nupkg --generate-notes --draft
