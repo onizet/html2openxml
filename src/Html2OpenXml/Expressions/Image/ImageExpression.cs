@@ -130,7 +130,7 @@ class ImageExpression(IHtmlImageElement node) : ImageExpressionBase(node)
                                     new a.PictureLocks() { NoChangeAspect = true, NoChangeArrowheads = true })
                             },
                             new pic.BlipFill(
-                                CreateBlip(iinfo, src),
+                                CreateBlip(iinfo),
                                 new a.SourceRectangle(),
                                 new a.Stretch(
                                     new a.FillRectangle())),
@@ -174,7 +174,7 @@ class ImageExpression(IHtmlImageElement node) : ImageExpressionBase(node)
     /// <summary>
     /// Creates a Blip element with either an embedded or external image reference.
     /// </summary>
-    private static a.Blip CreateBlip(HtmlImageInfo iinfo, string? src)
+    private static a.Blip CreateBlip(HtmlImageInfo iinfo)
     {
         if (iinfo.IsExternal)
         {

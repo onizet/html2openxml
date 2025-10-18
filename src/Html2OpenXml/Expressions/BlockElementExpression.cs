@@ -143,16 +143,14 @@ class BlockElementExpression: PhrasingElementExpression
                 return;
 
             var knownTags = new HashSet<string>();
-            foreach (var prop in props)
+            foreach (var prop in props.Where(p => !knownTags.Contains(p.LocalName)))
             {
-                if (!knownTags.Contains(prop.LocalName))
-                    knownTags.Add(prop.LocalName);
+                knownTags.Add(prop.LocalName);
             }
 
-            foreach (var prop in tableProperties)
+            foreach (var prop in tableProperties.Where(p => !knownTags.Contains(p.LocalName)))
             {
-                if (!knownTags.Contains(prop.LocalName))
-                    props.AddChild(prop.CloneNode(true));
+                props.AddChild(prop.CloneNode(true));
             }
         }
     }
