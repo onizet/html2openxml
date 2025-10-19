@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.2.8
+
+- Fix a fatal crash when trying to convert multiple images #215
+- New feature to allow to reference external image instead of embedding them #216
+- Fix a potential issue on image streams that are disposed too early.
+
 ## 3.2.7
 
 - Fix handling Uri with an anchor #209
