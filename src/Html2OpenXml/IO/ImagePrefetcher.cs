@@ -138,25 +138,20 @@ sealed class ImagePrefetcher<T> : IImageLoader
             return null;
 
         using var response = await resourceLoader.FetchAsync(imageUri, cancellationToken).ConfigureAwait(false);
-        if (response?.Content == null)
+        if (response?.Content == null || !response.Content.CanRead)
             return null;
-
-        // Copy the stream into a MemoryStream to avoid ObjectDisposedException
-        using var buffer = new MemoryStream();
-        response.Content.CopyTo(buffer);
-        buffer.Seek(0, SeekOrigin.Begin);
 
         // For requested url with no filename, we need to read the media mime type if provided
         response.Headers.TryGetValue("Content-Type", out var mime);
         if (!TryInspectMimeType(mime, out PartTypeInfo type)
             && !TryGuessTypeFromUri(imageUri, out type)
-            && !TryGuessTypeFromStream(buffer, out type)
+            && !TryGuessTypeFromStream(response.Content, out type)
             )
         {
             return null;
         }
 
-        return SaveImageAssert(src, type, buffer.CopyTo);
+        return SaveImageAssert(src, type, response.Content.CopyTo);
     }
 
     /// <summary>
