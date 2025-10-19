@@ -52,7 +52,7 @@ sealed class ImagePrefetcher<T> : IImageLoader
     private readonly T hostingPart;
     private readonly IWebRequest resourceLoader;
     private readonly HtmlImageInfoCollection prefetchedImages;
-    private readonly object lockObject = new object();
+    private readonly object lockObject = new();
     private readonly ImageProcessingMode processingMode;
 
 
@@ -68,7 +68,7 @@ sealed class ImagePrefetcher<T> : IImageLoader
         this.hostingPart = hostingPart;
         this.resourceLoader = resourceLoader;
         this.processingMode = processingMode;
-        this.prefetchedImages = new HtmlImageInfoCollection();
+        this.prefetchedImages = [];
     }
 
     //____________________________________________________________________
@@ -133,57 +133,30 @@ sealed class ImagePrefetcher<T> : IImageLoader
     /// </summary>
     private async Task<HtmlImageInfo?> DownloadRemoteImage(string src, CancellationToken cancellationToken)
     {
-        Uri imageUri = new Uri(src, UriKind.RelativeOrAbsolute);
+        Uri imageUri = new(src, UriKind.RelativeOrAbsolute);
         if (imageUri.IsAbsoluteUri && !resourceLoader.SupportsProtocol(imageUri.Scheme))
             return null;
 
-        Resource? response;
-
-        response = await resourceLoader.FetchAsync(imageUri, cancellationToken).ConfigureAwait(false);
+        using var response = await resourceLoader.FetchAsync(imageUri, cancellationToken).ConfigureAwait(false);
         if (response?.Content == null)
             return null;
 
-        using (response)
+        // Copy the stream into a MemoryStream to avoid ObjectDisposedException
+        using var buffer = new MemoryStream();
+        response.Content.CopyTo(buffer);
+        buffer.Seek(0, SeekOrigin.Begin);
+
+        // For requested url with no filename, we need to read the media mime type if provided
+        response.Headers.TryGetValue("Content-Type", out var mime);
+        if (!TryInspectMimeType(mime, out PartTypeInfo type)
+            && !TryGuessTypeFromUri(imageUri, out type)
+            && !TryGuessTypeFromStream(buffer, out type)
+            )
         {
-            // For requested url with no filename, we need to read the media mime type if provided
-            response.Headers.TryGetValue("Content-Type", out var mime);
-            if (!TryInspectMimeType(mime, out PartTypeInfo type)
-                && !TryGuessTypeFromUri(imageUri, out type)
-                && !TryGuessTypeFromStream(response.Content, out type))
-            {
-                return null;
-            }
-
-            // Generate a unique GUID-based relationship ID for the image part
-            string relationshipId = "img_" + Guid.NewGuid().ToString("N");
-            
-            // Synchronize access to AddImagePart to prevent concurrent modifications to the OpenXml document
-            ImagePart ipart;
-            lock (lockObject)
-            {
-                ipart = hostingPart.AddImagePart(type, relationshipId);
-            }
-            
-            Size originalSize;
-            using (var outputStream = ipart.GetStream(FileMode.Create))
-            {
-                response.Content.CopyTo(outputStream);
-
-                outputStream.Seek(0L, SeekOrigin.Begin);
-                originalSize = GetImageSize(outputStream);
-            }
-
-            string partId;
-            lock (lockObject)
-            {
-                partId = hostingPart.GetIdOfPart(ipart);
-            }
-
-            return new HtmlImageInfo(src, partId) {
-                TypeInfo = type,
-                Size = originalSize
-            };
+            return null;
         }
+
+        return SaveImageAssert(src, type, buffer.CopyTo);
     }
 
     /// <summary>
@@ -191,7 +164,7 @@ sealed class ImagePrefetcher<T> : IImageLoader
     /// </summary>
     private HtmlImageInfo? CreateExternalImageLink(string src)
     {
-        Uri imageUri = new Uri(src, UriKind.RelativeOrAbsolute);
+        Uri imageUri = new(src, UriKind.RelativeOrAbsolute);
 
         // Resolve relative URIs if possible (only for DefaultWebRequest which has BaseImageUrl)
         if (!imageUri.IsAbsoluteUri && resourceLoader is DefaultWebRequest defaultWebRequest
@@ -220,8 +193,7 @@ sealed class ImagePrefetcher<T> : IImageLoader
 
         // Return image info with external flag set
         // Note: Size will be empty as we don't download the image
-        return new HtmlImageInfo(src, relationshipId)
-        {
+        return new HtmlImageInfo(src, relationshipId) {
             IsExternal = true,
             Size = Size.Empty,
             TypeInfo = ImagePartType.Png // Default type, actual type doesn't matter for external links
@@ -235,39 +207,37 @@ sealed class ImagePrefetcher<T> : IImageLoader
     {
         if (DataUri.TryCreate(src, out var dataUri))
         {
-            Size originalSize;
             knownContentType.TryGetValue(dataUri!.Mime, out PartTypeInfo type);
-            // Generate a unique GUID-based relationship ID for the image part
-            string relationshipId = "img_" + Guid.NewGuid().ToString("N");
-            
-            // Synchronize access to AddImagePart to prevent concurrent modifications to the OpenXml document
-            ImagePart ipart;
-            lock (lockObject)
-            {
-                ipart = hostingPart.AddImagePart(type, relationshipId);
-            }
-            
-            using (var outputStream = ipart.GetStream(FileMode.Create))
-            {
-                outputStream.Write(dataUri.Data, 0, dataUri.Data.Length);
 
-                outputStream.Seek(0L, SeekOrigin.Begin);
-                originalSize = GetImageSize(outputStream);
-            }
-
-            string partId;
-            lock (lockObject)
-            {
-                partId = hostingPart.GetIdOfPart(ipart);
-            }
-
-            return new HtmlImageInfo(src, partId) {
-                TypeInfo = type,
-                Size = originalSize
-            };
+            return SaveImageAssert(src, type, stream => stream.Write(dataUri.Data, 0, dataUri.Data.Length));
         }
 
         return null;
+    }
+
+    private HtmlImageInfo SaveImageAssert(string src, PartTypeInfo type, Action<Stream> writeImage)
+    {
+        ImagePart ipart;
+        string relationshipId = "img_" + Guid.NewGuid().ToString("N");
+        lock (lockObject)
+        {
+            ipart = hostingPart.AddImagePart(type, relationshipId);
+        }
+
+        Size originalSize;
+        using (var outputStream = ipart.GetStream(FileMode.Create))
+        {
+            writeImage(outputStream);
+            outputStream.Seek(0L, SeekOrigin.Begin);
+            originalSize = GetImageSize(outputStream);
+        }
+
+        string partId = hostingPart.GetIdOfPart(ipart);
+        return new HtmlImageInfo(src, partId)
+        {
+            TypeInfo = type,
+            Size = originalSize
+        };
     }
 
     //____________________________________________________________________
