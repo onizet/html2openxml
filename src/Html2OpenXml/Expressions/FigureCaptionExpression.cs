@@ -52,7 +52,7 @@ sealed class FigureCaptionExpression(IHtmlElement node) : BlockElementExpression
         }
 
         //Add the figure number references to the start of the first paragraph.
-        if(childElements.FirstOrDefault() is Paragraph p)
+        if(childElements.First() is Paragraph p)
         {
            var properties = p.GetFirstChild<ParagraphProperties>();
            p.InsertAfter(new Run(

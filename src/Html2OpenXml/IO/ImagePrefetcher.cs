@@ -52,6 +52,8 @@ sealed class ImagePrefetcher<T> : IImageLoader
     private readonly T hostingPart;
     private readonly IWebRequest resourceLoader;
     private readonly HtmlImageInfoCollection prefetchedImages;
+    private readonly object lockObject = new();
+    private readonly ImageProcessingMode processingMode;
 
 
     /// <summary>
@@ -60,11 +62,13 @@ sealed class ImagePrefetcher<T> : IImageLoader
     /// <param name="hostingPart">The image will be linked to that hosting part.
     /// Images are not shared between header, footer and body.</param>
     /// <param name="resourceLoader">Service to resolve an image.</param>
-    public ImagePrefetcher(T hostingPart, IWebRequest resourceLoader)
+    /// <param name="processingMode">Specifies how images should be processed (embed, link, or data URI only).</param>
+    public ImagePrefetcher(T hostingPart, IWebRequest resourceLoader, ImageProcessingMode processingMode = ImageProcessingMode.Embed)
     {
         this.hostingPart = hostingPart;
         this.resourceLoader = resourceLoader;
-        this.prefetchedImages = new HtmlImageInfoCollection();
+        this.processingMode = processingMode;
+        this.prefetchedImages = [];
     }
 
     //____________________________________________________________________
@@ -76,8 +80,12 @@ sealed class ImagePrefetcher<T> : IImageLoader
     /// </summary>
     public async Task<HtmlImageInfo?> Download(string imageUri, CancellationToken cancellationToken)
     {
-        if (prefetchedImages.Contains(imageUri))
-            return prefetchedImages[imageUri];
+        // Check if image is already cached using thread-safe operation
+        lock (lockObject)
+        {
+            if (prefetchedImages.Contains(imageUri))
+                return prefetchedImages[imageUri];
+        }
 
         HtmlImageInfo? iinfo;
         if (DataUri.IsWellFormed(imageUri)) // data inline, encoded in base64
@@ -86,11 +94,36 @@ sealed class ImagePrefetcher<T> : IImageLoader
         }
         else
         {
-            iinfo = await DownloadRemoteImage(imageUri, cancellationToken).ConfigureAwait(false);
+            // Handle external images based on processing mode
+            if (processingMode == ImageProcessingMode.EmbedDataUriOnly)
+            {
+                // Skip external images entirely
+                return null;
+            }
+            else if (processingMode == ImageProcessingMode.LinkExternal)
+            {
+                // Create external link without downloading
+                iinfo = CreateExternalImageLink(imageUri);
+            }
+            else
+            {
+                // Default: Download and embed
+                iinfo = await DownloadRemoteImage(imageUri, cancellationToken).ConfigureAwait(false);
+            }
         }
 
+        // Add to cache using thread-safe operation
         if (iinfo != null)
-            prefetchedImages.Add(iinfo);
+        {
+            lock (lockObject)
+            {
+                // Double-check pattern to prevent duplicate adds during concurrent access
+                if (!prefetchedImages.Contains(imageUri))
+                {
+                    prefetchedImages.Add(iinfo);
+                }
+            }
+        }
 
         return iinfo;
     }
@@ -100,42 +133,66 @@ sealed class ImagePrefetcher<T> : IImageLoader
     /// </summary>
     private async Task<HtmlImageInfo?> DownloadRemoteImage(string src, CancellationToken cancellationToken)
     {
-        Uri imageUri = new Uri(src, UriKind.RelativeOrAbsolute);
+        Uri imageUri = new(src, UriKind.RelativeOrAbsolute);
         if (imageUri.IsAbsoluteUri && !resourceLoader.SupportsProtocol(imageUri.Scheme))
             return null;
 
-        Resource? response;
-
-        response = await resourceLoader.FetchAsync(imageUri, cancellationToken).ConfigureAwait(false);
-        if (response?.Content == null)
+        using var response = await resourceLoader.FetchAsync(imageUri, cancellationToken).ConfigureAwait(false);
+        if (response?.Content == null || !response.Content.CanRead)
             return null;
 
-        using (response)
+        // For requested url with no filename, we need to read the media mime type if provided
+        response.Headers.TryGetValue("Content-Type", out var mime);
+        if (!TryInspectMimeType(mime, out PartTypeInfo type)
+            && !TryGuessTypeFromUri(imageUri, out type)
+            && !TryGuessTypeFromStream(response.Content, out type)
+            )
         {
-            // For requested url with no filename, we need to read the media mime type if provided
-            response.Headers.TryGetValue("Content-Type", out var mime);
-            if (!TryInspectMimeType(mime, out PartTypeInfo type)
-                && !TryGuessTypeFromUri(imageUri, out type)
-                && !TryGuessTypeFromStream(response.Content, out type))
-            {
-                return null;
-            }
-
-            var ipart = hostingPart.AddImagePart(type);
-            Size originalSize;
-            using (var outputStream = ipart.GetStream(FileMode.Create))
-            {
-                response.Content.CopyTo(outputStream);
-
-                outputStream.Seek(0L, SeekOrigin.Begin);
-                originalSize = GetImageSize(outputStream);
-            }
-
-            return new HtmlImageInfo(src, hostingPart.GetIdOfPart(ipart)) {
-                TypeInfo = type,
-                Size = originalSize
-            };
+            return null;
         }
+
+        return SaveImageAssert(src, type, response.Content.CopyTo);
+    }
+
+    /// <summary>
+    /// Create an external relationship to an image without downloading it.
+    /// </summary>
+    private HtmlImageInfo? CreateExternalImageLink(string src)
+    {
+        Uri imageUri = new(src, UriKind.RelativeOrAbsolute);
+
+        // Resolve relative URIs if possible (only for DefaultWebRequest which has BaseImageUrl)
+        if (!imageUri.IsAbsoluteUri && resourceLoader is DefaultWebRequest defaultWebRequest
+            && defaultWebRequest.BaseImageUrl != null)
+        {
+            string url1 = defaultWebRequest.BaseImageUrl.AbsoluteUri.TrimEnd('/', '\\');
+            string path = src.TrimStart('/', '\\');
+            imageUri = new Uri(string.Format("{0}/{1}", url1, path), UriKind.Absolute);
+        }
+
+        // Only create external links for absolute URIs with supported protocols
+        if (!imageUri.IsAbsoluteUri || !resourceLoader.SupportsProtocol(imageUri.Scheme))
+            return null;
+
+        // Generate a unique GUID-based relationship ID for the external relationship
+        string relationshipId = "imgext_" + Guid.NewGuid().ToString("N");
+
+        // Create external relationship
+        lock (lockObject)
+        {
+            hostingPart.AddExternalRelationship(
+                "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image",
+                imageUri,
+                relationshipId);
+        }
+
+        // Return image info with external flag set
+        // Note: Size will be empty as we don't download the image
+        return new HtmlImageInfo(src, relationshipId) {
+            IsExternal = true,
+            Size = Size.Empty,
+            TypeInfo = ImagePartType.Png // Default type, actual type doesn't matter for external links
+        };
     }
 
     /// <summary>
@@ -145,24 +202,37 @@ sealed class ImagePrefetcher<T> : IImageLoader
     {
         if (DataUri.TryCreate(src, out var dataUri))
         {
-            Size originalSize;
             knownContentType.TryGetValue(dataUri!.Mime, out PartTypeInfo type);
-            var ipart = hostingPart.AddImagePart(type);
-            using (var outputStream = ipart.GetStream(FileMode.Create))
-            {
-                outputStream.Write(dataUri.Data, 0, dataUri.Data.Length);
 
-                outputStream.Seek(0L, SeekOrigin.Begin);
-                originalSize = GetImageSize(outputStream);
-            }
-
-            return new HtmlImageInfo(src, hostingPart.GetIdOfPart(ipart)) {
-                TypeInfo = type,
-                Size = originalSize
-            };
+            return SaveImageAssert(src, type, stream => stream.Write(dataUri.Data, 0, dataUri.Data.Length));
         }
 
         return null;
+    }
+
+    private HtmlImageInfo SaveImageAssert(string src, PartTypeInfo type, Action<Stream> writeImage)
+    {
+        ImagePart ipart;
+        string relationshipId = "img_" + Guid.NewGuid().ToString("N");
+        lock (lockObject)
+        {
+            ipart = hostingPart.AddImagePart(type, relationshipId);
+        }
+
+        Size originalSize;
+        using (var outputStream = ipart.GetStream(FileMode.Create))
+        {
+            writeImage(outputStream);
+            outputStream.Seek(0L, SeekOrigin.Begin);
+            originalSize = GetImageSize(outputStream);
+        }
+
+        string partId = hostingPart.GetIdOfPart(ipart);
+        return new HtmlImageInfo(src, partId)
+        {
+            TypeInfo = type,
+            Size = originalSize
+        };
     }
 
     //____________________________________________________________________
