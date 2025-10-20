@@ -684,6 +684,7 @@ namespace HtmlToOpenXml.Tests
             });
         }
 
+        [Test]
         public void ColWithPercentWidth_ReturnsRefineTableWidth()
         {
             var elements = converter.Parse(@"<table style='width: 75%'>
