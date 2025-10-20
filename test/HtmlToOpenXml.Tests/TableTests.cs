@@ -522,8 +522,8 @@ namespace HtmlToOpenXml.Tests
             Assert.Multiple(() =>
             {
                 Assert.That(columns.Count(), Is.EqualTo(2));
-                //Assert.That(columns.First().Width?.Value, Is.EqualTo("1500"));
-                //Assert.That(columns.Last().Width?.Value, Is.EqualTo("750"));
+                Assert.That(columns.First().Width?.Value, Is.EqualTo("1500"));
+                Assert.That(columns.Last().Width?.Value, Is.EqualTo("750"));
             });
 
             var cells = elements[0].GetFirstChild<TableRow>()?.Elements<TableCell>();
@@ -681,6 +681,48 @@ namespace HtmlToOpenXml.Tests
             {
                 Assert.That(tableWidth?.Type?.Value, Is.EqualTo(new TableWidthUnitValues(expectedUnit)));
                 Assert.That(tableWidth?.Width?.Value, Is.EqualTo(expectedValue));
+            });
+        }
+
+        public void ColWithPercentWidth_ReturnsRefineTableWidth()
+        {
+            var elements = converter.Parse(@"<table style='width: 75%'>
+                <colgroup><col style='width: 13.185%;'><col style='width: 86.9293%;'></colgroup>
+                <tbody>
+                    <tr>
+                        <td>Cell 1</td>
+                        <td>Cell 2</td>
+                    </tr>
+                </tbody>
+                </table>");
+
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Table>());
+            var tableWidth = elements[0].GetFirstChild<TableProperties>()?.TableWidth;
+            Assert.That(tableWidth, Is.Not.Null);
+            Assert.Multiple(() =>
+            {
+                Assert.That(tableWidth?.Type?.Value, Is.EqualTo(TableWidthUnitValues.Pct));
+                Assert.That(tableWidth?.Width?.Value, Is.EqualTo("3750"));
+            });
+
+            var columns = elements[0].GetFirstChild<TableGrid>()?.Elements<GridColumn>();
+            Assert.That(columns, Is.Not.Null);
+            Assert.Multiple(() =>
+            {
+                Assert.That(columns.Count(), Is.EqualTo(2));
+                Assert.That(columns.First().Width?.Value, Is.EqualTo("1269"));
+                Assert.That(columns.Last().Width?.Value, Is.EqualTo("8365"));
+            });
+
+            var cells = elements[0].GetFirstChild<TableRow>()?.Elements<TableCell>();
+            Assert.That(cells, Is.Not.Null);
+            Assert.Multiple(() =>
+            {
+                Assert.That(cells.Count(), Is.EqualTo(2));
+                // width on cell are on 5000 basis
+                Assert.That(cells.First().TableCellProperties?.TableCellWidth?.Width?.Value, Is.EqualTo("659"));
+                Assert.That(cells.Last().TableCellProperties?.TableCellWidth?.Width?.Value, Is.EqualTo("4346"));
             });
         }
     }
