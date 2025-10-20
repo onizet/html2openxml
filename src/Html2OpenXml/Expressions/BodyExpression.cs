@@ -26,18 +26,27 @@ namespace HtmlToOpenXml.Expressions;
 sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
     : BlockElementExpression(node, defaultStyle)
 {
+    private const uint PortraitPageWidth = 11906U;
+    private const uint PortraitPageHeight = 16838U;
     private bool shouldRegisterTopBookmark;
+    private ParsingContext? overridenContext;
  
     public override IEnumerable<OpenXmlElement> Interpret(ParsingContext context)
     {
         MarkAllBookmarks();
+
+        var body = context.MainPart.Document.Body!;
+        var sectionProperties = body.Descendants<SectionProperties>().LastOrDefault();
+        if (sectionProperties != null)
+        {
+            context.IsLandscape = sectionProperties.GetFirstChild<PageSize>()?.Width?.Value >= PortraitPageHeight;
+        }
 
         var elements = base.Interpret(context);
 
         if (shouldRegisterTopBookmark && elements.Any())
         {
             // Check whether it already exists
-            var body = context.MainPart.Document.Body!;
             if (body.Descendants<BookmarkStart>().Where(b => b.Name?.Value == "_top").Any())
             {
                 return elements;
@@ -70,6 +79,7 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
             var sectionProperties = mainPart.Document.Body!.GetFirstChild<SectionProperties>();
             if (sectionProperties == null || sectionProperties.GetFirstChild<PageSize>() == null)
             {
+                context.IsLandscape = orientation == PageOrientationValues.Landscape;
                 mainPart.Document.Body.Append(ChangePageOrientation(orientation));
             }
             else
@@ -80,6 +90,9 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
                     SectionProperties validSectionProp = ChangePageOrientation(orientation);
                     pageSize?.Remove();
                     sectionProperties.PrependChild(validSectionProp.GetFirstChild<PageSize>()!.CloneNode(true));
+
+                    overridenContext = context.CreateChild(this);
+                    overridenContext.IsLandscape = orientation == PageOrientationValues.Landscape;
                 }
             }
         }
@@ -101,14 +114,14 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
     /// </summary>
     private static SectionProperties ChangePageOrientation(PageOrientationValues orientation)
     {
-        PageSize pageSize = new() { Width = (UInt32Value) 16838U, Height = (UInt32Value) 11906U };
+        PageSize pageSize = new() { Width = PortraitPageWidth, Height = PortraitPageHeight };
         if (orientation == PageOrientationValues.Portrait)
         {
-            (pageSize.Height, pageSize.Width) = (pageSize.Width, pageSize.Height);
+            pageSize.Orient = orientation;
         }
         else
         {
-            pageSize.Orient = orientation;
+            (pageSize.Height, pageSize.Width) = (pageSize.Width, pageSize.Height);
         }
 
         return new SectionProperties (
