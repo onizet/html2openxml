@@ -9,6 +9,10 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
+using System;
+#if NET5_0_OR_GREATER
+using System.Collections.Frozen;
+#endif
 using System.Collections.Generic;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
@@ -23,55 +27,158 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 sealed class TextExpression(INode node) : HtmlDomExpression
 {
+    static readonly ISet<string> AllPhrasings = InitPhrasingSets();
     private readonly INode node = node;
+
+    private static ISet<string> InitPhrasingSets()
+    {
+        var sets = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase) {
+            TagNames.A, TagNames.Abbr, TagNames.B, TagNames.Big, TagNames.Cite, TagNames.Code,
+            TagNames.Del, TagNames.Dfn, TagNames.Em, TagNames.Font, TagNames.Hr, TagNames.I,
+            TagNames.Img, TagNames.Ins, TagNames.Kbd, TagNames.Mark, TagNames.NoBr, TagNames.Q,
+            TagNames.Rp, TagNames.Rt, TagNames.S, TagNames.Samp, TagNames.Small, TagNames.Span,
+            TagNames.Strike, TagNames.Strong, TagNames.Sub, TagNames.Sup, TagNames.Time,
+            TagNames.Tt, TagNames.U, TagNames.Var
+        };
+
+#if NET5_0_OR_GREATER
+        return sets.ToFrozenSet(StringComparer.InvariantCultureIgnoreCase);
+#else
+        return sets;
+#endif
+    }
 
     /// <inheritdoc/>
     public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
     {
         string text = node.TextContent.Normalize();
-        if (text.Trim().Length == 0) return [];
+
+        if (text.Length == 0)
+            return [];
 
         if (!context.PreserveLinebreaks)
-            text = text.CollapseLineBreaks();
-        if (context.CollapseWhitespaces && text[0].IsWhiteSpaceCharacter() &&
-            node.PreviousSibling is IHtmlImageElement)
         {
-            text = " " + text.CollapseAndStrip();
+            text = text.CollapseLineBreaks();
+            if (text.Length == 0)
+                return [];
         }
-        else if (context.CollapseWhitespaces)
+
+        // https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model/Whitespace
+        // If there is a space between two phrasing elements, the user agent should collapse it to a single space character.
+        if (context.CollapseWhitespaces)
+        {
+            bool startsWithSpace = text[0].IsWhiteSpaceCharacter(),
+                endsWithSpace = text[text.Length - 1].IsWhiteSpaceCharacter(),
+                preserveBorderSpaces = AllPhrasings.Contains(node.Parent!.NodeName),
+                prevIsPhrasing = node.PreviousSibling is not null &&
+                    (AllPhrasings.Contains(node.PreviousSibling.NodeName) || node.PreviousSibling!.NodeType == NodeType.Text),
+                nextIsPhrasing = node.NextSibling is not null &&
+                    (AllPhrasings.Contains(node.NextSibling.NodeName) || node.NextSibling!.NodeType == NodeType.Text);
+
             text = text.CollapseAndStrip();
 
-        if (!context.PreserveLinebreaks)
-            return [new Run(new Text(text))];
-
-        var run = new Run();
-        char[] chars = text.ToCharArray();
-        int shift = 0, c = 0;
-        bool wasCR = false; // avoid adding 2 breaks for \r\n
-        for ( ; c < chars.Length ; c++)
-        {
-            if (!chars[c].IsLineBreak())
+            // keep a collapsed single space if it stands between 2 phrasings that respect.
+            // doesn't ends/starts with a whitespace
+            if (text.Length == 0 && prevIsPhrasing && nextIsPhrasing
+                && (endsWithSpace || startsWithSpace)
+                && !(node.PreviousSibling!.TextContent.Length == 0
+                    || node.NextSibling!.TextContent.Length == 0
+                    || node.PreviousSibling!.TextContent[node.PreviousSibling!.TextContent.Length - 1].IsWhiteSpaceCharacter()
+                    || node.NextSibling!.TextContent[0].IsWhiteSpaceCharacter()
+                ))
             {
-                wasCR = false;
-                continue;
+                return [new Run(new Text(" ") { Space = SpaceProcessingModeValues.Preserve })];
+            }
+            // we strip out all whitespaces and we stand inside a div. Just skip this text content
+            if (text.Length == 0 && !preserveBorderSpaces)
+            {
+                return [];
             }
 
-            if (wasCR) continue;
-            wasCR = chars[c] == Symbols.CarriageReturn;
-
-            if (c > 1)
+            // if previous element is an image, append a space separator
+            if ((startsWithSpace && node.PreviousSibling is IHtmlImageElement)
+                // if this is a non-empty phrasing element, append a space separator
+                || (startsWithSpace && prevIsPhrasing
+                && node.PreviousSibling!.TextContent.Length > 0
+                && !node.PreviousSibling!.TextContent[node.PreviousSibling.TextContent.Length - 1].IsWhiteSpaceCharacter()))
             {
-                run.Append(new Text(new string(chars, shift, c - shift)) 
+                text = " " + text;
+            }
+
+            if (endsWithSpace && (
+                // next run is not starting with a linebreak
+                (nextIsPhrasing && node.NextSibling!.TextContent.Length > 0 &&
+                    !node.NextSibling!.TextContent[0].IsLineBreak()) ||
+                // if there is no more text element or is empty, eat the trailing space
+                (preserveBorderSpaces && (node.NextSibling is not null
+                    || node.Parent.NextSibling is not null))))
+            {
+                text += " ";
+            }
+        }
+
+
+        if (text.Length == 0)
+            return [];
+
+        if (!context.PreserveLinebreaks)
+            return [new Run(new Text(text) { Space = SpaceProcessingModeValues.Preserve })];
+
+        Run run = EscapeNewlines(text);
+        return [run];
+    }
+
+    /// <summary>
+    /// Convert new lines to <see cref="Break"/>.
+    /// </summary>
+    private static Run EscapeNewlines(string text)
+    {
+        var run = new Run();
+        bool wasCR = false; // avoid adding 2 breaks for \r\n
+
+        int startIndex = 0;
+        for (int i = 0; i < text.Length; i++)
+        {
+            if (!IsLineBreak(text[i], ref wasCR))
+                continue;
+
+            // Add the text before the newline character
+            if (i > startIndex)
+            {
+                run.Append(new Text(text.Substring(startIndex, i - startIndex))
                     { Space = SpaceProcessingModeValues.Preserve });
                 run.Append(new Break());
             }
-            shift = c + 1;
+
+            startIndex = i + 1;
         }
 
-        if (c > shift)
-            run.Append(new Text(new string(chars, shift, c - shift)) 
+        // Add any remaining text after the last newline character
+        if (startIndex < text.Length)
+        {
+            run.Append(new Text(text.Substring(startIndex))
                 { Space = SpaceProcessingModeValues.Preserve });
+        }
 
-        return [run];
+        return run;
+    }
+
+    private static bool IsLineBreak(char ch, ref bool wasCR)
+    {
+        if (ch == Symbols.CarriageReturn)
+        {
+            wasCR = true;
+            return true;
+        }
+
+        if (ch == Symbols.LineFeed && wasCR)
+        {
+            // Skip LF character after CR to avoid adding an extra break for CR-LF sequence
+            wasCR = false;
+            return false;
+        }
+
+        wasCR = false;
+        return ch == Symbols.LineFeed;
     }
 }

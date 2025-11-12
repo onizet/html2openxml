@@ -126,7 +126,13 @@ public class DefaultWebRequest : IWebRequest
             resource.StatusCode = response.StatusCode;
 
             if (response.IsSuccessStatusCode)
+            {
                 resource.Content = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+                if (response.Content.Headers.TryGetValues("Content-Type", out var mime))
+                {
+                    resource.Headers.Add("Content-Type", string.Join(", ", mime));
+                }
+            }
 
             foreach (var header in response.Headers)
                 resource.Headers.Add(header.Key, string.Join(", ", header.Value));

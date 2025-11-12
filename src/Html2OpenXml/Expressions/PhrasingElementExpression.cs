@@ -1,4 +1,4 @@
-/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -12,10 +12,8 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
-using AngleSharp.Text;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
 
@@ -56,7 +54,8 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
                 runs.Add(element);
             }
         }
-        return CombineRuns(runs);
+
+        return runs;
     }
 
     public override void CascadeStyles(OpenXmlElement element)
@@ -188,41 +187,5 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
         // size are half-point font size
         if (font.Size.IsFixed)
             runProperties.FontSize = new FontSize() { Val = Math.Round(font.Size.ValueInPoint * 2).ToString(CultureInfo.InvariantCulture) };
-    }
-
-    /// <summary>
-    /// Mimics the behaviour of Html rendering when 2 consecutives runs are separated by a space.
-    /// </summary>
-    protected static IEnumerable<OpenXmlElement> CombineRuns(IEnumerable<OpenXmlElement> runs)
-    {
-        if (runs.Count() == 1)
-        {
-            yield return runs.First();
-            yield break;
-        }
-
-        bool endsWithSpace = true;
-        foreach (var run in runs)
-        {
-            var textElement = run.GetFirstChild<Text>();
-            // run can be also a hyperlink
-            textElement ??= run.GetFirstChild<Run>()?.GetFirstChild<Text>();
-
-            if (textElement != null) // could be null when <br/>
-            {
-                var text = textElement.Text;
-                // we know that the text cannot be empty because we skip them in TextExpression
-                if (!endsWithSpace && !text[0].IsSpaceCharacter())
-                {
-                    yield return new Run(new Text(" ") { Space = SpaceProcessingModeValues.Preserve });
-                }
-                endsWithSpace = text[text.Length - 1].IsSpaceCharacter();
-            }
-            else if (run.LastChild is Break)
-            {
-                endsWithSpace = true;
-            }
-            yield return run;
-        }
     }
 }

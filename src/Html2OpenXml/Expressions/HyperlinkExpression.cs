@@ -112,12 +112,6 @@ sealed class HyperlinkExpression(IHtmlAnchorElement node) : PhrasingElementExpre
         {
             h = new Hyperlink() { History = true, Anchor = "_top" };
         }
-        // is it an anchor?
-        else if (context.Converter.SupportsAnchorLinks && linkNode.Hash.Length > 1 && linkNode.Hash[0] == '#')
-        {
-            h = new Hyperlink(
-                ) { History = true, Anchor = linkNode.Hash.Substring(1) };
-        }
         // ensure the links does not start with javascript:
         else if (AngleSharpExtensions.TryParseUrl(att, UriKind.Absolute, out var uri))
         {
@@ -125,6 +119,13 @@ sealed class HyperlinkExpression(IHtmlAnchorElement node) : PhrasingElementExpre
 
             h = new Hyperlink(
                 ) { History = true, Id = extLink.Id };
+        }
+        // is it an anchor?
+        else if (context.Converter.SupportsAnchorLinks && linkNode.Hash.Length > 1 && linkNode.Hash[0] == '#')
+        {
+            h = new Hyperlink(
+                )
+            { History = true, Anchor = linkNode.Hash.Substring(1) };
         }
 
         if (h == null)

@@ -47,3 +47,26 @@ public readonly struct QuoteChars(string begin, string end)
     internal string Prefix { get; } = begin;
     internal string Suffix { get; } = end;
 }
+
+/// <summary>
+/// Specifies how images should be processed during HTML to OpenXML conversion.
+/// </summary>
+public enum ImageProcessingMode
+{
+    /// <summary>
+    /// Downloads and embeds all images into the document (default behaviour).
+    /// This creates self-contained documents but may result in large file sizes.
+    /// </summary>
+    Embed = 0,
+    /// <summary>
+    /// Links to external images via external relationships instead of downloading them.
+    /// This keeps document size small but images won't display offline or if URLs become unavailable.
+    /// Data URI images (base64 encoded) are still embedded.
+    /// </summary>
+    LinkExternal = 1,
+    /// <summary>
+    /// Only embeds data URI images (base64 encoded inline images).
+    /// External images (http/https/file) are skipped entirely.
+    /// </summary>
+    EmbedDataUriOnly = 2,
+}

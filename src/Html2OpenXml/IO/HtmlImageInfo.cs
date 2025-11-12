@@ -37,6 +37,12 @@ sealed class HtmlImageInfo(string source, string partId)
     /// Gets the content type of the image.
     /// </summary>
     public PartTypeInfo TypeInfo { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether this image is linked externally rather than embedded.
+    /// When true, <see cref="ImagePartId"/> contains an external relationship ID instead of an embedded image part ID.
+    /// </summary>
+    public bool IsExternal { get; set; }
 }
 
 /// <summary>

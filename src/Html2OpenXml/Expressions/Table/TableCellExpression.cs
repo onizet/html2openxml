@@ -31,9 +31,6 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : TableElementExpre
     {
         var childElements = base.Interpret (context);
 
-        if (!childElements.Any()) // Word requires that the cell is not empty
-            childElements = [new Paragraph()];
-
         var cell = new TableCell (cellProperties);
 
         if (cellNode.ColumnSpan > 1)
@@ -44,6 +41,13 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : TableElementExpre
         if (IsValidRowSpan(cellNode.RowSpan))
         {
             cellProperties.VerticalMerge = new() { Val = MergedCellValues.Restart };
+        }
+
+        // Word requires at least one paragraph in a cell
+        // OpenXmlValidator does not catch this error
+        if (!childElements.Any(c => c is Paragraph))
+        {
+            childElements = childElements.Append(new Paragraph());
         }
 
         cell.Append(childElements);

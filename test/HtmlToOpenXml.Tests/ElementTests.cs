@@ -28,7 +28,6 @@ namespace HtmlToOpenXml.Tests
         [TestCase(@"<sup>Superscript</sup>", ExpectedResult = "superscript")]
         public string? SubSup_ReturnsRunWithVerticalAlignment (string html)
         {
-            //var val = new VerticalPositionValues(tagName);
             var textAlign = ParsePhrasing<VerticalTextAlignment>(html);
             Assert.That(textAlign.Val?.HasValue, Is.True);
             return textAlign.Val.InnerText;
@@ -154,9 +153,32 @@ background:red;
 
             Assert.Multiple(() =>
             {
-                Assert.That(elements[0].ChildElements, Has.Count.EqualTo(3));
                 Assert.That(elements[0].HasChild<Run>(), Is.True);
                 Assert.That(elements[0].HasChild<SimpleField>(), Is.True);
+                Assert.That(elements[0].Elements<Run>().Count(), Is.EqualTo(3));
+                Assert.That(elements[0].GetFirstChild<ParagraphProperties>()!.KeepNext, Is.Null);
+                Assert.That(elements[0].GetFirstChild<SimpleField>()!.Instruction?.Value, Does.Contain("SEQ Figure \\* ARABIC"));
+            });
+        }
+
+        [Test]
+        public void FigCaption_WithHeading_ReturnsParagraphWithSimpleField()
+        {
+            var elements = converter.Parse(@"<figcaption>
+                <h2>Puppy School</h2>
+                <p>Championship Class of 2016</p>
+            </figcaption>");
+
+            Assert.That(elements, Has.Count.EqualTo(2));
+            Assert.That(elements, Is.All.TypeOf<Paragraph>());
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(elements[0].HasChild<Run>(), Is.True);
+                Assert.That(elements[0].HasChild<SimpleField>(), Is.True);
+                Assert.That(elements[0].GetFirstChild<ParagraphProperties>()!.KeepNext, Is.Not.Null);
+                Assert.That(elements[1].HasChild<Run>(), Is.True);
+                Assert.That(elements[1].HasChild<SimpleField>(), Is.False);
             });
         }
 

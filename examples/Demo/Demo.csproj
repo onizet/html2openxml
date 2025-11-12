@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\*" />
+    <Content Include="images\*" CopyToOutputDirectory="PreserveNewest"/>
   </ItemGroup>
 
 </Project>

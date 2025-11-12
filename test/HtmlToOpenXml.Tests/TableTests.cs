@@ -247,7 +247,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [TestCaseSource(nameof(BorderWidthCases))]
-        public void HtmlBorders_ShouldSucceed(string borderAtrribute, IEnumerable<string> expectedBorderValue, IEnumerable<uint?> expectedBorderWidth)
+        public void HtmlBorders_ShouldSucceed(string borderAtrribute, IEnumerable<string>? expectedBorderValue, IEnumerable<uint?>? expectedBorderWidth)
         {
             // we specify a style which doesn't handle borders
             converter.HtmlStyles.AddStyle(new Style {
@@ -260,6 +260,12 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements, Has.All.TypeOf<Table>());
             var borders = elements[0].GetFirstChild<TableProperties>()?.TableBorders;
+            if (expectedBorderValue is null)
+            {
+                Assert.That(borders, Is.Null);
+                return;
+            }
+
             Assert.That(borders, Is.Not.Null);
             Assert.That(borders.HasChild<BorderType>(), Is.True);
             Assert.That(new string?[] { borders.TopBorder?.Val?.InnerText,
@@ -289,8 +295,8 @@ namespace HtmlToOpenXml.Tests
         static readonly object[] BorderWidthCases =
         [
             // Negative border should be considered as zero
-            new object[] { "border='-1'", Enumerable.Repeat("none", 6), null! },
-            new object[] { "border='0'", Enumerable.Repeat("none", 6), null! },
+            new object[] { "border='-1'", null!, null! },
+            new object[] { "border='0'", null!, null! },
             new object[] { "border='1'",
                 new string[] { "none", "none", "none", "none", "single", "single" }, 
                 new uint?[] { null, null, null, null, 14, 14 } },
@@ -330,9 +336,9 @@ namespace HtmlToOpenXml.Tests
             });
         }
 
-        [TestCase("right", "right")]
-        [TestCase("", "center")]
-        public void TableCaptionAlign_ReturnsPositionedParagraph_AlignedWithTable(string alignment, string expectedAlign)
+        [TestCase("right", ExpectedResult = "right")]
+        [TestCase("", ExpectedResult = "center")]
+        public string? TableCaptionAlign_ReturnsPositionedParagraph_AlignedWithTable(string alignment)
         {
             var elements = converter.Parse(@$"<table align=""center"">
                     <caption align=""{alignment}"">Some table caption</caption>
@@ -341,7 +347,35 @@ namespace HtmlToOpenXml.Tests
 
             Assert.That(elements, Has.Count.EqualTo(2));
             var caption = (Paragraph) elements[1];
-            Assert.That(caption.ParagraphProperties?.Justification?.Val?.ToString(), Is.EqualTo(expectedAlign));
+            return caption.ParagraphProperties?.Justification?.Val?.ToString();
+        }
+
+        [TestCase("align='right'", ExpectedResult = "right")]
+        [TestCase("style='justify-self:center'", ExpectedResult = "center")]
+        [TestCase("style='margin-left:auto'", ExpectedResult = "right")]
+        [TestCase("style='margin-left:auto;margin-right:auto'", ExpectedResult = "center")]
+        public string? TableAlign_ReturnsTableJustification(string style)
+        {
+            var elements = converter.Parse(@$"<table {style}>
+                    <tr><td>Cell 1.1</td></tr>
+                </table>");
+
+            Assert.That(elements, Has.Count.EqualTo(1));
+            return elements[0].GetFirstChild<TableProperties>()?.TableJustification?.Val?.ToString();
+        }
+
+        [TestCase("", ExpectedResult = "right")]
+        [TestCase("justify-self:center", ExpectedResult = "center")]
+        public string? NestedTableAlign_ReturnsTableOrParentJustification(string tableStyle)
+        {
+            var elements = converter.Parse(@$"<div style='justify-content: right'>
+                <table style='{tableStyle}'>
+                    <tr><td>Cell 1.1</td></tr>
+                </table>
+                </div>");
+
+            Assert.That(elements, Has.Count.EqualTo(1));
+            return elements[0].GetFirstChild<TableProperties>()?.TableJustification?.Val?.ToString();
         }
 
         [Test]
@@ -467,6 +501,7 @@ namespace HtmlToOpenXml.Tests
             var cell = elements[0].GetFirstChild<TableRow>()?.GetFirstChild<TableCell>();
             Assert.That(cell, Is.Not.Null);
             Assert.That(cell.HasChild<Table>(), Is.True);
+            Assert.That(cell.HasChild<Paragraph>(), Is.True, "Word requires at least a paragraph");
         }
 
         [Test]
@@ -487,8 +522,8 @@ namespace HtmlToOpenXml.Tests
             Assert.Multiple(() =>
             {
                 Assert.That(columns.Count(), Is.EqualTo(2));
-                //Assert.That(columns.First().Width?.Value, Is.EqualTo("1500"));
-                //Assert.That(columns.Last().Width?.Value, Is.EqualTo("750"));
+                Assert.That(columns.First().Width?.Value, Is.EqualTo("1500"));
+                Assert.That(columns.Last().Width?.Value, Is.EqualTo("750"));
             });
 
             var cells = elements[0].GetFirstChild<TableRow>()?.Elements<TableCell>();
@@ -626,6 +661,70 @@ namespace HtmlToOpenXml.Tests
             var runs = paragraphs.First().Elements<Run>();
             Assert.That(runs.Count(), Is.EqualTo(1));
             Assert.That(runs.First().RunProperties?.Border, Is.Null);
+        }
+
+        [TestCase("100%", "pct", "5000")]
+        [TestCase("auto", "auto", "0")]
+        [TestCase("120px", "dxa", "1800")]
+        [TestCase("", "pct", "5000", Description = "Defaults to 100%")]
+        public void Width_ReturnsRefineTableWidth(string width, string expectedUnit, string expectedValue)
+        {
+            var elements = converter.Parse(@$"<table style='width: {width}'>
+                <tr><td>Placeholder</td></tr>
+            </table>");
+
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Table>());
+            var tableWidth = elements[0].GetFirstChild<TableProperties>()?.TableWidth;
+            Assert.That(tableWidth, Is.Not.Null);
+            Assert.Multiple(() =>
+            {
+                Assert.That(tableWidth?.Type?.Value, Is.EqualTo(new TableWidthUnitValues(expectedUnit)));
+                Assert.That(tableWidth?.Width?.Value, Is.EqualTo(expectedValue));
+            });
+        }
+
+        [Test]
+        public void ColWithPercentWidth_ReturnsRefineTableWidth()
+        {
+            var elements = converter.Parse(@"<table style='width: 75%'>
+                <colgroup><col style='width: 13.185%;'><col style='width: 86.9293%;'></colgroup>
+                <tbody>
+                    <tr>
+                        <td>Cell 1</td>
+                        <td>Cell 2</td>
+                    </tr>
+                </tbody>
+                </table>");
+
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Table>());
+            var tableWidth = elements[0].GetFirstChild<TableProperties>()?.TableWidth;
+            Assert.That(tableWidth, Is.Not.Null);
+            Assert.Multiple(() =>
+            {
+                Assert.That(tableWidth?.Type?.Value, Is.EqualTo(TableWidthUnitValues.Pct));
+                Assert.That(tableWidth?.Width?.Value, Is.EqualTo("3750"));
+            });
+
+            var columns = elements[0].GetFirstChild<TableGrid>()?.Elements<GridColumn>();
+            Assert.That(columns, Is.Not.Null);
+            Assert.Multiple(() =>
+            {
+                Assert.That(columns.Count(), Is.EqualTo(2));
+                Assert.That(columns.First().Width?.Value, Is.EqualTo("1269"));
+                Assert.That(columns.Last().Width?.Value, Is.EqualTo("8365"));
+            });
+
+            var cells = elements[0].GetFirstChild<TableRow>()?.Elements<TableCell>();
+            Assert.That(cells, Is.Not.Null);
+            Assert.Multiple(() =>
+            {
+                Assert.That(cells.Count(), Is.EqualTo(2));
+                // width on cell are on 5000 basis
+                Assert.That(cells.First().TableCellProperties?.TableCellWidth?.Width?.Value, Is.EqualTo("659"));
+                Assert.That(cells.Last().TableCellProperties?.TableCellWidth?.Width?.Value, Is.EqualTo("4346"));
+            });
         }
     }
 }

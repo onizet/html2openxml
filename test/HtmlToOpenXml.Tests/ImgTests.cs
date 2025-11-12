@@ -3,6 +3,7 @@ using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Moq;
+using System.Net.Http;
 
 namespace HtmlToOpenXml.Tests
 {
@@ -16,12 +17,26 @@ namespace HtmlToOpenXml.Tests
     public class ImgTests : HtmlConverterTestBase
     {
         [TestCase("https://www.w3schools.com/tags/smiley.gif", "image/gif")]
-        [TestCase("https://dev.w3.org/SVG/tools/svgweb/samples/svg-files/helloworld.svg", "image/svg+xml")]
-        public void AbsoluteUri_ReturnsDrawing_WithDownloadedData(string imageUri, string contentType)
+        [TestCase("https://upload.wikimedia.org/wikipedia/commons/b/b0/Mozilla_dinosaur_head_logo.svg", "image/svg+xml")]
+        public async Task AbsoluteUri_ReturnsDrawing_WithDownloadedData(string imageUri, string contentType)
         {
-            var elements = converter.Parse(@$"<img src='{imageUri}' alt='Smiley face' width='42' height='42'>");
-            Assert.That(elements, Has.Count.EqualTo(1));
-            var (_, imagePart) = AssertIsImg(mainPart, elements[0]);
+            var mockHttp = new ProxyHttpMessageHandler(uri => Task.FromResult(new HttpResponseMessage {
+                StatusCode = System.Net.HttpStatusCode.OK,
+                Content = new StreamContent(ResourceHelper.GetStream("Resources." + Path.GetFileName(imageUri))) { 
+                    Headers = { { "Content-Type", contentType } }
+                }
+            }));
+
+            var webRequest = new IO.DefaultWebRequest(new HttpClient(mockHttp));
+            converter = new HtmlConverter(mainPart, webRequest);
+
+            await converter.ParseBody(
+                @$"<img src='{imageUri}' width='42' height='42'>",
+                TestContext.CurrentContext.CancellationToken);
+
+            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
+            Assert.That(paragraphs.Count(), Is.EqualTo(1));
+            var (_, imagePart) = AssertIsImg(mainPart, paragraphs.First());
             Assert.That(imagePart.ContentType, Is.EqualTo(contentType));
         }
 
@@ -36,12 +51,22 @@ namespace HtmlToOpenXml.Tests
         [Test]
         public void WithBorder_ReturnsRunWithBorder()
         {
-            var elements = converter.Parse(@"<img src='https://www.w3schools.com/tags/smiley.gif' border='1'>");
+            var elements = converter.Parse(@"<img border='1' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=='>");
             AssertIsImg(mainPart, elements[0]);
             var run = elements[0].GetFirstChild<Run>();
             var runProperties = run?.GetFirstChild<RunProperties>();
             Assert.That(runProperties, Is.Not.Null);
             Assert.That(runProperties.Border, Is.Not.Null);
+        }
+
+        [Test]
+        public void PercentageSize_ReturnsDrawing_WithSizeRelativeToPage()
+        {
+            var elements = converter.Parse(@"<img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==' style='max-width:100%'>");
+            AssertIsImg(mainPart, elements[0]);
+            var drawing = elements[0].GetFirstChild<Run>()!.GetFirstChild<Drawing>()!;
+            Assert.That(drawing.Inline?.Extent?.Cx?.Value, Is.EqualTo(6115050));
+            Assert.That(drawing.Inline?.Extent?.Cy?.Value, Is.EqualTo(6115050));
         }
 
         [Test]
@@ -128,7 +153,8 @@ namespace HtmlToOpenXml.Tests
             converter = new HtmlConverter(mainPart, new IO.DefaultWebRequest() { 
                 BaseImageUrl = new Uri("http://github.com/onizet/html2openxml")
             });
-            var elements = await converter.ParseAsync($"<img src='/blob/dev/icon.png'>");
+            var elements = await converter.ParseAsync($"<img src='/blob/dev/icon.png'>",
+                TestContext.CurrentContext.CancellationToken);
             Assert.That(elements, Is.Not.Empty);
             AssertIsImg(mainPart, elements.First());
         }
@@ -235,7 +261,201 @@ namespace HtmlToOpenXml.Tests
                 Justification?.Val?.Value == JustificationValues.Center;
         }
 
-        private static (Drawing, ImagePart) AssertIsImg (OpenXmlPartContainer container, OpenXmlElement paragraph)
+        [Test]
+        public async Task DuplicateImgSource__DownloadOnce()
+        {
+            var webRequest = new Mock<IO.IWebRequest>();
+            webRequest.Setup(x => x.FetchAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult<IO.Resource?>(new() {
+                    Content = new MemoryStream(Convert.FromBase64String(@"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")),
+                    StatusCode = System.Net.HttpStatusCode.OK
+                }));
+            converter = new HtmlConverter(mainPart, webRequest.Object);
+
+            await converter.ParseBody(@"
+                <img src='/images/5499ef48-29e6-4fc2-b652-5a85b49a1f0f.png'>
+                <img src='/images/5499ef48-29e6-4fc2-b652-5a85b49a1f0f.png'>
+            ");
+
+            webRequest.Verify(s => s.FetchAsync(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+            Assert.That(mainPart.ImageParts.Count(), Is.EqualTo(1));
+            var paragraph = mainPart.Document.Body!.GetFirstChild<Paragraph>();
+            Assert.That(paragraph, Is.Not.Null);
+            var runs = paragraph.Elements<Run>();
+            Assert.That(runs.Count(), Is.EqualTo(2));
+            Assert.That(runs.Select(r => r.GetFirstChild<Drawing>()), Has.All.Not.Null);
+        }
+
+        [Test]
+        public async Task ExternalLinkMode_RemoteImage_ShouldCreateExternalRelationship()
+        {
+            var mockMessageHandler = new MockHttpMessageHandler();
+            var webRequest = mockMessageHandler.GetWebRequest();
+            converter = new HtmlConverter(mainPart, webRequest) {
+                ImageProcessing = ImageProcessingMode.LinkExternal
+            };
+
+            await converter.ParseBody(
+                @"<img src='https://www.example.com/image.gif' width='42' height='42'>",
+                TestContext.CurrentContext.CancellationToken);
+
+            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
+            Assert.That(paragraphs.Count(), Is.EqualTo(1));
+
+            var run = paragraphs.First().GetFirstChild<Run>();
+            Assert.That(run, Is.Not.Null);
+            var drawing = run.GetFirstChild<Drawing>();
+            Assert.That(drawing, Is.Not.Null);
+
+            mockMessageHandler.AssertNeverCalled();
+
+            var pic = drawing.Inline?.Graphic?.GraphicData?.GetFirstChild<pic.Picture>();
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(pic?.BlipFill?.Blip, Is.Not.Null);
+
+                // Verify it's using Link instead of Embed
+                Assert.That(pic?.BlipFill?.Blip?.Link, Is.Not.Null);
+                Assert.That(pic?.BlipFill?.Blip?.Embed, Is.Null);
+            }
+
+            // Verify external relationship was created
+            var externalRels = mainPart.ExternalRelationships
+                .Where(r => r.RelationshipType == "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image");
+            Assert.That(externalRels.Count(), Is.EqualTo(1));
+            Assert.That(externalRels.First().Uri.ToString(), Is.EqualTo("https://www.example.com/image.gif"));
+
+            // Verify no image parts were created
+            Assert.That(mainPart.ImageParts.Count(), Is.EqualTo(0));
+        }
+
+        [Test]
+        public async Task ExternalLinkMode_DataUri_ShouldStillEmbed()
+        {
+            converter = new HtmlConverter(mainPart) {
+                ImageProcessing = ImageProcessingMode.LinkExternal
+            };
+
+            await converter.ParseBody(
+                @"<img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==' width='42' height='42'>",
+                TestContext.CurrentContext.CancellationToken);
+
+            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
+            Assert.That(paragraphs.Count(), Is.EqualTo(1));
+
+            var run = paragraphs.First().GetFirstChild<Run>();
+            var drawing = run?.GetFirstChild<Drawing>();
+            var pic = drawing?.Inline?.Graphic?.GraphicData?.GetFirstChild<pic.Picture>();
+
+            using (Assert.EnterMultipleScope())
+            {
+                // Data URIs should still be embedded
+                Assert.That(pic?.BlipFill?.Blip?.Embed, Is.Not.Null);
+                Assert.That(pic?.BlipFill?.Blip?.Link, Is.Null);
+                Assert.That(mainPart.ImageParts.Count(), Is.EqualTo(1));
+            }
+        }
+
+        [Test]
+        public async Task EmbedDataUriOnlyMode_RemoteImage_ShouldBeSkipped()
+        {
+            var mockMessageHandler = new MockHttpMessageHandler();
+            var webRequest = mockMessageHandler.GetWebRequest();
+            converter = new HtmlConverter(mainPart, webRequest) {
+                ImageProcessing = ImageProcessingMode.EmbedDataUriOnly
+            };
+
+            await converter.ParseBody(
+                @"<img src='https://www.example.com/image.gif' width='42' height='42'>",
+                TestContext.CurrentContext.CancellationToken);
+
+            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
+            // Image should be skipped, so paragraph should be empty or not contain drawing
+            Assert.That(paragraphs.Count(), Is.EqualTo(0));
+            Assert.That(mainPart.ImageParts.Count(), Is.EqualTo(0));
+
+            mockMessageHandler.AssertNeverCalled();
+        }
+
+        [Test]
+        public async Task EmbedDataUriOnlyMode_DataUri_ShouldEmbed()
+        {
+            converter = new HtmlConverter(mainPart) {
+                ImageProcessing = ImageProcessingMode.EmbedDataUriOnly
+            };
+
+            await converter.ParseBody(
+                @"<img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==' width='42' height='42'>",
+                TestContext.CurrentContext.CancellationToken);
+
+            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
+            Assert.That(paragraphs.Count(), Is.EqualTo(1));
+            AssertIsImg(mainPart, paragraphs.First());
+            Assert.That(mainPart.ImageParts.Count(), Is.EqualTo(1));
+        }
+
+        [Test]
+        public async Task EmbedMode_RemoteImage_ShouldDownloadAndEmbed()
+        {
+            var mockHttp = new ProxyHttpMessageHandler(uri => Task.FromResult(new HttpResponseMessage {
+                StatusCode = System.Net.HttpStatusCode.OK,
+                Content = new StreamContent(ResourceHelper.GetStream("Resources.smiley.gif")) {
+                    Headers = { { "Content-Type", "image/gif" } }
+                }
+            }));
+
+            var webRequest = new IO.DefaultWebRequest(new HttpClient(mockHttp));
+            converter = new HtmlConverter(mainPart, webRequest) {
+                ImageProcessing = ImageProcessingMode.Embed // Default behavior
+            };
+
+            await converter.ParseBody(
+                @"<img src='https://www.example.com/image.gif' width='42' height='42'>",
+                TestContext.CurrentContext.CancellationToken);
+
+            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
+            Assert.That(paragraphs.Count(), Is.EqualTo(1));
+            AssertIsImg(mainPart, paragraphs.First());
+            Assert.That(mainPart.ImageParts.Count(), Is.EqualTo(1));
+        }
+
+        [Test(Description = "Prevent concurrent access to the OpenXml mainPart")]
+        public void MultipleImgInTag_ReturnsTwoDistinctImage()
+        {
+            var webRequest = new Mock<IO.IWebRequest>();
+            webRequest.Setup(x => x.SupportsProtocol(It.IsAny<string>())).Returns(true);
+            webRequest.Setup(x => x.FetchAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .Returns<Uri, CancellationToken>((uri, token) => {
+                    return Task.FromResult<IO.Resource?>(new() {
+                        Content = new MemoryStream(Convert.FromBase64String(@"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")),
+                        StatusCode = System.Net.HttpStatusCode.OK
+                    });
+                });
+            converter = new HtmlConverter(mainPart, webRequest.Object);
+
+            Assert.DoesNotThrowAsync(async () => {
+                await converter.ParseBody(@"
+                    <table>
+                    <tr>
+                        <td>
+                        <img src='https://domain/a.png'>
+                        <img src='https://domain/b.png'>
+                        </td>
+                    </tr>
+                    </table>");
+            }, "Should not raise ObjectDisposedException");
+
+            webRequest.Verify(s => s.FetchAsync(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()),
+                Times.Exactly(2));
+            Assert.That(mainPart.ImageParts.Count(), Is.EqualTo(2));
+        }
+
+        private static (Drawing, ImagePart) AssertIsImg(OpenXmlPartContainer container, OpenXmlElement paragraph)
         {
             var run = paragraph.GetFirstChild<Run>();
             Assert.That(run, Is.Not.Null);
@@ -249,7 +469,7 @@ namespace HtmlToOpenXml.Tests
             Assert.That(imagePartId, Is.Not.Null);
             var imagePart = container.GetPartById(imagePartId);
             Assert.That(imagePart, Is.TypeOf(typeof(ImagePart)));
-            return (drawing, (ImagePart) imagePart);
+            return (drawing, (ImagePart)imagePart);
         }
     }
 }

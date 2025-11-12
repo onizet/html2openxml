@@ -209,8 +209,7 @@ static class Converter
             Color = border.Color.ToHexString(),
             // according to MSDN,  sz=24 = 3 point
             // https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.wordprocessing.tablecellborders
-            Size = (uint) Math.Round(border.Width.ValueInPoint * 8),
-            Space = 1U
+            Size = (uint) Math.Round(border.Width.ValueInPoint * 8)
         };
     }
 

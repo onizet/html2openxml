@@ -153,6 +153,21 @@ readonly partial struct HtmlColor : IEquatable<HtmlColor>
     }
 
     /// <summary>
+    /// Convert a potential percentage value to its numeric representation.
+    /// Saturation and Lightness can contains both a percentage value or a value comprised between 0.0 and 1.0. 
+    /// </summary>
+    private static double ParsePercent (string value)
+    {
+        double parsedValue;
+        if (value.IndexOf('%') > -1)
+            parsedValue = double.Parse(value.Replace('%', ' '), CultureInfo.InvariantCulture) / 100d;
+        else
+            parsedValue = double.Parse(value, CultureInfo.InvariantCulture);
+
+        return Math.Min(1, Math.Max(0, parsedValue));
+    }
+
+    /// <summary>
     /// Creates a <see cref="HtmlColor"/> structure from the four RGB component values.
     /// </summary>
     /// <param name="red">The red component.</param>
