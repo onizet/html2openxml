@@ -7,10 +7,11 @@
     <Nullable>enable</Nullable>
     <SonarQubeExclude>true</SonarQubeExclude>
     <LangVersion>latest</LangVersion>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BenchmarkDotnet" Version="0.14.0" />
+    <PackageReference Include="BenchmarkDotnet" Version="0.15.6" />
     <ProjectReference Include="..\..\src\Html2OpenXml\HtmlToOpenXml.csproj" />
   </ItemGroup>
 
