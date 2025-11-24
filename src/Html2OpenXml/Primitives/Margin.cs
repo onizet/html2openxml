@@ -20,40 +20,48 @@ namespace HtmlToOpenXml;
 struct Margin
 {
     /// <summary>Represents an empty margin (not defined).</summary>
-    public static readonly Margin Empty = new() { sides = new Unit[4] };
-    private Unit[] sides;
+    public static readonly Margin Empty = new();
+
+    private Unit top;
+    private Unit right;
+    private Unit bottom;
+    private Unit left;
 
 
     /// <summary>Apply to all four sides.</summary>
     public Margin(Unit all)
     {
-        this.sides = [all, all, all, all];
+        this.top = all;
+        this.right = all;
+        this.bottom = all;
+        this.left = all;
     }
 
     /// <summary>Top and bottom | left and right.</summary>
     public Margin(Unit topAndBottom, Unit leftAndRight)
     {
-        this.sides = [topAndBottom, leftAndRight, topAndBottom, leftAndRight];
+        this.top = topAndBottom;
+        this.bottom = topAndBottom;
+        this.left = leftAndRight;
+        this.right = leftAndRight;
     }
 
     /// <summary>Top | left and right | bottom.</summary>
     public Margin(Unit top, Unit leftAndRight, Unit bottom)
     {
-        this.sides = [top, leftAndRight, bottom, leftAndRight];
+        this.top = top;
+        this.right = leftAndRight;
+        this.bottom = bottom;
+        this.left = leftAndRight;
     }
 
     /// <summary>Top | right | bottom | left.</summary>
     public Margin(Unit top, Unit right, Unit bottom, Unit left)
     {
-        this.sides = [top, right, bottom, left];
-    }
-
-    /// <inheritdoc cref="Parse(ReadOnlySpan{char})"/>
-    public static Margin Parse(string? str)
-    {
-        if (str == null)
-            return Empty;
-        return Parse(str.AsSpan());
+        this.top = top;
+        this.right = right;
+        this.bottom = bottom;
+        this.left = left;
     }
 
     /// <summary>
@@ -112,8 +120,8 @@ struct Margin
     /// </summary>
     public Unit Bottom
     {
-        readonly get => sides[2];
-        set { sides[2] = value; }
+        readonly get => bottom;
+        set => bottom = value;
     }
 
     /// <summary>
@@ -121,8 +129,8 @@ struct Margin
     /// </summary>
     public Unit Left
     {
-        readonly get => sides[3];
-        set { sides[3] = value; }
+        readonly get => left;
+        set => left = value;
     }
 
     /// <summary>
@@ -130,8 +138,8 @@ struct Margin
     /// </summary>
     public Unit Top
     {
-        readonly get => sides[0];
-        set { sides[0] = value; }
+        readonly get => top;
+        set => top = value;
     }
 
     /// <summary>
@@ -139,11 +147,11 @@ struct Margin
     /// </summary>
     public Unit Right
     {
-        readonly get => sides[1];
-        set { sides[1] = value; }
+        readonly get => right;
+        set => right = value;
     }
 
-    public readonly bool IsValid
+    public bool IsValid
     {
         get => Left.IsValid && Right.IsValid && Bottom.IsValid && Top.IsValid;
     }
@@ -151,7 +159,7 @@ struct Margin
     /// <summary>
     /// Gets whether at least one side has been specified.
     /// </summary>
-    public readonly bool IsEmpty
+    public bool IsEmpty
     {
         get => !(Left.IsValid || Right.IsValid || Bottom.IsValid || Top.IsValid);
     }
