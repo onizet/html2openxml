@@ -97,14 +97,6 @@ readonly struct Unit
         return new Unit(metric, value);
     }
 
-    public static Unit Parse(string? str, UnitMetric defaultMetric = UnitMetric.Unitless)
-    {
-        if (string.IsNullOrWhiteSpace(str))
-            return Empty;
-
-        return Parse(str.AsSpan(), defaultMetric);
-    }
-
     /// <summary>
     /// Gets the value expressed in the English Metrics Units.
     /// </summary>

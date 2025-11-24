@@ -49,100 +49,28 @@ readonly partial struct HtmlColor : IEquatable<HtmlColor>
     public static HtmlColor Parse(ReadOnlySpan<char> span)
     {
         span = span.Trim();
+        if (span.Length < 3)
+            return Empty;
  
-        // Is it in hexa? Note: we no more accept hexa value without preceding the '#'
-        if (span[0] == '#')
-        {
-            if (span.Length == 7)
-            {
-                return FromArgb(
-                    span.Slice(1, 2).AsByte(NumberStyles.HexNumber),
-                    span.Slice(3, 2).AsByte(NumberStyles.HexNumber),
-                    span.Slice(5, 2).AsByte(NumberStyles.HexNumber));
-            }
-            if (span.Length == 4)
-            {
-                // #0FF --> #00FFFF
-                ReadOnlySpan<char> r = [span[1], span[1]];
-                ReadOnlySpan<char> g = [span[2], span[2]];
-                ReadOnlySpan<char> b = [span[3], span[3]];
-                return FromArgb(
-                        r.AsByte(NumberStyles.HexNumber),
-                        g.AsByte(NumberStyles.HexNumber),
-                        b.AsByte(NumberStyles.HexNumber));
-            }
-            return Empty;
-        }
-
-        // RGB or RGBA
-        if (span.StartsWith(['r','g','b'], StringComparison.OrdinalIgnoreCase))
-        {
-            int startIndex = span.IndexOf('('), endIndex = span.LastIndexOf(')');
-            if (startIndex < 3 || endIndex == -1)
-                return Empty;
-
-            span = span.Slice(startIndex + 1, endIndex - startIndex - 1);
-            Span<Range> tokens = stackalloc Range[5];
-            var sep = span.IndexOf(',') > -1? ',' : ' ';
-            return span.Split(tokens, sep, StringSplitOptions.RemoveEmptyEntries) switch
-            {
-                3 => FromArgb(1.0,
-                    span.Slice(tokens[0]).AsByte(NumberStyles.Integer),
-                    span.Slice(tokens[1]).AsByte(NumberStyles.Integer),
-                    span.Slice(tokens[2]).AsByte(NumberStyles.Integer)),
-                4 => FromArgb(span.Slice(tokens[3]).AsDouble(),
-                    span.Slice(tokens[0]).AsByte(NumberStyles.Integer),
-                    span.Slice(tokens[1]).AsByte(NumberStyles.Integer),
-                    span.Slice(tokens[2]).AsByte(NumberStyles.Integer)),
-                // r g b / a
-                5 => FromArgb(span.Slice(tokens[4]).AsDouble(),
-                    span.Slice(tokens[0]).AsByte(NumberStyles.Integer),
-                    span.Slice(tokens[1]).AsByte(NumberStyles.Integer),
-                    span.Slice(tokens[2]).AsByte(NumberStyles.Integer)),
-                _ => Empty
-            };
-        }
-
-        // HSL or HSLA
-        if (span.StartsWith(['h','s','l'], StringComparison.OrdinalIgnoreCase))
-        {
-            int startIndex = span.IndexOf('('), endIndex = span.LastIndexOf(')');
-            if (startIndex < 3 || endIndex == -1)
-                return Empty;
-
-            span = span.Slice(startIndex + 1, endIndex - startIndex - 1);
-            Span<Range> tokens = stackalloc Range[5];
-            var sep = span.IndexOf(',') > -1? ',' : ' ';
-            return span.Split(tokens, sep, StringSplitOptions.RemoveEmptyEntries) switch
-            {
-                3 => FromHsl(1.0,
-                    span.Slice(tokens[0]).AsDouble(),
-                    span.Slice(tokens[1]).AsPercent(),
-                    span.Slice(tokens[2]).AsPercent()),
-                4 => FromHsl(span.Slice(tokens[3]).AsDouble(),
-                    span.Slice(tokens[0]).AsDouble(),
-                    span.Slice(tokens[1]).AsPercent(),
-                    span.Slice(tokens[2]).AsPercent()),
-                _ => Empty
-            };
-        }
-
-        return GetNamedColor(span);
-    }
-
-    /// <summary>
-    /// Try to parse a value (RGB(A) or HSL(A), hexadecimal, or named color) to its RGB representation.
-    /// </summary>
-    /// <param name="htmlColor">The color to parse.</param>
-    /// <returns>Returns <see cref="HtmlColor.Empty"/> if parsing failed.</returns>
-    public static HtmlColor Parse(string? htmlColor)
-    {
-        if (string.IsNullOrEmpty(htmlColor))
-            return Empty;
-
         try
         {
-            return Parse(htmlColor.AsSpan());
+            // Is it in hexa? Note: we no more accept hexa value without preceding the '#'
+            if (span[0] == '#')
+            {
+                return ParseHexa(span);
+            }
+
+            // RGB or RGBA
+            if (span.StartsWith(['r','g','b'], StringComparison.OrdinalIgnoreCase))
+            {
+                return ParseRgb(span);
+            }
+
+            // HSL or HSLA
+            if (span.StartsWith(['h','s','l'], StringComparison.OrdinalIgnoreCase))
+            {
+                return ParseHsl(span);
+            }
         }
         catch (Exception exc)
         {
@@ -150,6 +78,82 @@ readonly partial struct HtmlColor : IEquatable<HtmlColor>
                 return Empty;
             throw;
         }
+
+        return GetNamedColor(span);
+    }
+
+    private static HtmlColor ParseHexa(ReadOnlySpan<char> span)
+    {
+        if (span.Length == 7)
+        {
+            return FromArgb(
+                span.Slice(1, 2).AsByte(NumberStyles.HexNumber),
+                span.Slice(3, 2).AsByte(NumberStyles.HexNumber),
+                span.Slice(5, 2).AsByte(NumberStyles.HexNumber));
+        }
+        if (span.Length == 4)
+        {
+            // #0FF --> #00FFFF
+            ReadOnlySpan<char> r = [span[1], span[1]];
+            ReadOnlySpan<char> g = [span[2], span[2]];
+            ReadOnlySpan<char> b = [span[3], span[3]];
+            return FromArgb(
+                    r.AsByte(NumberStyles.HexNumber),
+                    g.AsByte(NumberStyles.HexNumber),
+                    b.AsByte(NumberStyles.HexNumber));
+        }
+        return Empty;
+    }
+
+    private static HtmlColor ParseRgb(ReadOnlySpan<char> span)
+    {
+        int startIndex = span.IndexOf('('), endIndex = span.LastIndexOf(')');
+        if (startIndex < 3 || endIndex == -1)
+            return Empty;
+
+        span = span.Slice(startIndex + 1, endIndex - startIndex - 1);
+        Span<Range> tokens = stackalloc Range[5];
+        var sep = span.IndexOf(',') > -1? ',' : ' ';
+        return span.Split(tokens, sep, StringSplitOptions.RemoveEmptyEntries) switch
+        {
+            3 => FromArgb(1.0,
+                span.Slice(tokens[0]).AsByte(NumberStyles.Integer),
+                span.Slice(tokens[1]).AsByte(NumberStyles.Integer),
+                span.Slice(tokens[2]).AsByte(NumberStyles.Integer)),
+            4 => FromArgb(span.Slice(tokens[3]).AsDouble(),
+                span.Slice(tokens[0]).AsByte(NumberStyles.Integer),
+                span.Slice(tokens[1]).AsByte(NumberStyles.Integer),
+                span.Slice(tokens[2]).AsByte(NumberStyles.Integer)),
+            // r g b / a
+            5 => FromArgb(span.Slice(tokens[4]).AsDouble(),
+                span.Slice(tokens[0]).AsByte(NumberStyles.Integer),
+                span.Slice(tokens[1]).AsByte(NumberStyles.Integer),
+                span.Slice(tokens[2]).AsByte(NumberStyles.Integer)),
+            _ => Empty
+        };
+    }
+
+    private static HtmlColor ParseHsl(ReadOnlySpan<char> span)
+    {
+        int startIndex = span.IndexOf('('), endIndex = span.LastIndexOf(')');
+        if (startIndex < 3 || endIndex == -1)
+            return Empty;
+
+        span = span.Slice(startIndex + 1, endIndex - startIndex - 1);
+        Span<Range> tokens = stackalloc Range[5];
+        var sep = span.IndexOf(',') > -1? ',' : ' ';
+        return span.Split(tokens, sep, StringSplitOptions.RemoveEmptyEntries) switch
+        {
+            3 => FromHsl(1.0,
+                span.Slice(tokens[0]).AsDouble(),
+                span.Slice(tokens[1]).AsPercent(),
+                span.Slice(tokens[2]).AsPercent()),
+            4 => FromHsl(span.Slice(tokens[3]).AsDouble(),
+                span.Slice(tokens[0]).AsDouble(),
+                span.Slice(tokens[1]).AsPercent(),
+                span.Slice(tokens[2]).AsPercent()),
+            _ => Empty
+        };
     }
 
     /// <summary>

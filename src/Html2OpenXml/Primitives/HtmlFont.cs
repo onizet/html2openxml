@@ -30,14 +30,6 @@ readonly struct HtmlFont(Unit size, string? family, FontStyle? style,
     private readonly Unit lineHeight = lineHeight;
 
 
-    /// <inheritdoc cref="Parse(ReadOnlySpan{char})"/>
-    public static HtmlFont Parse(string? str)
-    {
-        if (str == null)
-            return Empty;
-        return Parse(str.AsSpan());
-    }
-
     /// <summary>
     /// Parse the font style attribute.
     /// </summary>

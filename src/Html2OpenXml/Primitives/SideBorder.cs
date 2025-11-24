@@ -28,12 +28,6 @@ readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
     private readonly HtmlColor color = color;
     private readonly Unit size = size;
 
-    public static SideBorder Parse(string? str)
-    {
-        if (str == null) return Empty;
-        return Parse(str.AsSpan());
-    }
-
     public static SideBorder Parse(ReadOnlySpan<char> span)
     {
         // The properties of a border that can be set, are (in order): border-width, border-style, and border-color.
