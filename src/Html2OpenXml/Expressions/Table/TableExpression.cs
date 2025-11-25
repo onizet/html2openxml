@@ -9,10 +9,7 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -169,7 +166,7 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
 
         styleAttributes = tableNode.GetStyles();
         var width = styleAttributes.GetUnit("width", UnitMetric.Pixel);
-        if (!width.IsValid) width = Unit.Parse(tableNode.GetAttribute("width"), UnitMetric.Pixel);
+        if (!width.IsValid) width = Unit.Parse(tableNode.GetAttribute("width").AsSpan(), UnitMetric.Pixel);
         if (!width.IsValid) width = new Unit(UnitMetric.Percent, 100);
 
         switch (width.Metric)

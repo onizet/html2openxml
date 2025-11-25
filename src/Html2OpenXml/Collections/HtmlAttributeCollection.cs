@@ -9,8 +9,6 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
-using System.Collections.Generic;
 using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml;
@@ -18,7 +16,7 @@ namespace HtmlToOpenXml;
 /// <summary>
 /// Represents the collection of attributes present in the current html tag.
 /// </summary>
-sealed partial class HtmlAttributeCollection
+readonly struct HtmlAttributeCollection
 {
     // Style key associated with a pointer to rawValue.
     private readonly Dictionary<string, Range> attributes = [];

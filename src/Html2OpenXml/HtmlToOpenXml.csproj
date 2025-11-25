@@ -27,6 +27,7 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <DebugType>embedded</DebugType>
     <NoWarn>$(NoWarn);CS8981</NoWarn>
+    <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <Import Project="..\..\build\SignAssembly.props" />
 

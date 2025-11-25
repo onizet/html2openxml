@@ -10,8 +10,6 @@
  * PARTICULAR PURPOSE.
  */
 
-using System;
-
 namespace HtmlToOpenXml;
 
 /// <summary>
@@ -151,7 +149,7 @@ struct Margin
         set => right = value;
     }
 
-    public bool IsValid
+    public readonly bool IsValid
     {
         get => Left.IsValid && Right.IsValid && Bottom.IsValid && Top.IsValid;
     }
@@ -159,7 +157,7 @@ struct Margin
     /// <summary>
     /// Gets whether at least one side has been specified.
     /// </summary>
-    public bool IsEmpty
+    public readonly bool IsEmpty
     {
         get => !(Left.IsValid || Right.IsValid || Bottom.IsValid || Top.IsValid);
     }

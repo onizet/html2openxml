@@ -9,7 +9,6 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -21,7 +20,8 @@ namespace HtmlToOpenXml.IO;
 [System.Diagnostics.DebuggerDisplay("{Mime,nq}")]
 public sealed class DataUri
 {
-    private readonly static Regex dataUriRegex = new Regex(
+    // mime-type can be: svg+xml, x-png
+    private readonly static Regex dataUriRegex = new(
             @"data\:(?<mime>\w+/[\w\-\+\.]+)?(?:;charset=(?<charset>[a-zA-Z_0-9-]+))?(?<base64>;base64)?,(?<data>.*)",
             RegexOptions.IgnoreCase | RegexOptions.Singleline,
             TimeSpan.FromMilliseconds(200));

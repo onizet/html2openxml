@@ -9,8 +9,6 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System.Collections.Generic;
-using System.Linq;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
 
@@ -65,7 +63,7 @@ abstract class ImageExpressionBase(AngleSharp.Dom.IElement node)  : HtmlDomExpre
         }
         else
         {
-            var borderWidth = Unit.Parse(node.GetAttribute("border"));
+            var borderWidth = Unit.Parse(node.GetAttribute("border").AsSpan());
             if (borderWidth.IsValid)
             {
                 border.Val = BorderValues.Single;

@@ -9,7 +9,6 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System.Collections.Generic;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -103,7 +102,7 @@ sealed class TableRowExpression : TableElementExpressionBase
         base.ComposeStyles(context);
 
         Unit unit = styleAttributes!.GetUnit("height", UnitMetric.Pixel);
-        if (!unit.IsValid) unit = Unit.Parse(rowNode.GetAttribute("height"), UnitMetric.Pixel);
+        if (!unit.IsValid) unit = Unit.Parse(rowNode.GetAttribute("height").AsSpan(), UnitMetric.Pixel);
 
         switch (unit.Metric)
         {

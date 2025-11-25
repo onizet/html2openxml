@@ -9,11 +9,8 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
 using System.Text;
-using System.IO;
 using System.Globalization;
-using System.Collections.Generic;
 
 namespace HtmlToOpenXml;
 

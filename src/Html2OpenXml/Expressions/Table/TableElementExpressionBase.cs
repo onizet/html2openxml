@@ -9,7 +9,6 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System.Collections.Generic;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -83,7 +82,7 @@ abstract class TableElementExpressionBase(IHtmlElement node) : PhrasingElementEx
         cellProperties.TableCellVerticalAlignment = new() { Val = valign };
 
         var bgcolor = styleAttributes.GetColor("background-color");
-        if (bgcolor.IsEmpty) bgcolor = HtmlColor.Parse(node.GetAttribute("bgcolor"));
+        if (bgcolor.IsEmpty) bgcolor = HtmlColor.Parse(node.GetAttribute("bgcolor").AsSpan());
         if (bgcolor.IsEmpty) bgcolor = styleAttributes.GetColor("background");
         if (!bgcolor.IsEmpty)
         {

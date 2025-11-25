@@ -11,7 +11,7 @@
  */
 using DocumentFormat.OpenXml.Packaging;
 
-namespace HtmlToOpenXml;
+namespace HtmlToOpenXml.IO;
 
 /// <summary>
 /// Represents an image and its metadata.

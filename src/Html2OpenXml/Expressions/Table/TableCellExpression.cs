@@ -9,9 +9,7 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -70,7 +68,7 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : TableElementExpre
             var widthValue = cellNode.GetAttribute("width");
             if (!string.IsNullOrEmpty(widthValue))
             {
-                width = Unit.Parse(widthValue);
+                width = Unit.Parse(widthValue.AsSpan());
             }
         }
 

@@ -12,8 +12,6 @@
 #if NET5_0_OR_GREATER
 using System.Collections.Frozen;
 #endif
-using System.Collections.Generic;
-using System.Linq;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;

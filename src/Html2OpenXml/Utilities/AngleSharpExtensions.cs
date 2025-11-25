@@ -9,8 +9,6 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
@@ -84,7 +82,7 @@ static class AngleSharpExtensions
     /// <remarks>Inline data in <see cref="IO.DataUri"/> would returns <see langword="false"/>.</remarks>
     public static bool TryParseUrl(string? uriString, UriKind uriKind,
 #if NET5_0_OR_GREATER
-    [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] 
+    [System.Diagnostics.CodeAnalysis.NotNullWhen(true)]
 #endif
     out Uri? result)
     {
