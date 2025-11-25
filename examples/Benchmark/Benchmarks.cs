@@ -8,6 +8,7 @@ using HtmlToOpenXml;
 [MemoryDiagnoser]
 [SimpleJob(runtimeMoniker: RuntimeMoniker.Net48)]
 [SimpleJob(runtimeMoniker: RuntimeMoniker.Net80, baseline: true)]
+[SimpleJob(runtimeMoniker: RuntimeMoniker.Net10_0)]
 public class Benchmarks
 {
     [Benchmark]
