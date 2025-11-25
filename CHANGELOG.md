@@ -4,6 +4,7 @@
 
 - Rewriting of parsing to use System.Span instead of Regex
 - Set Timeout on remaining Regex to prevent any DoS attack
+- Remove extra border space in table #156
 
 ## 3.2.8
 
