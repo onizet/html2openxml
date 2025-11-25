@@ -9,10 +9,7 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -267,7 +264,7 @@ class BlockElementExpression: PhrasingElementExpression
 
         if (lineHeight.IsValid)
         {
-            if (lineHeight.Type == UnitMetric.Unitless)
+            if (lineHeight.Metric == UnitMetric.Unitless)
             {
                 // auto should be considered as 240ths of a line
                 // https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.wordprocessing.spacingbetweenlines.line?view=openxml-3.0.1
@@ -276,7 +273,7 @@ class BlockElementExpression: PhrasingElementExpression
                     Line = Math.Round(lineHeight.Value * 240).ToString(CultureInfo.InvariantCulture)
                 };
             }
-            else if (lineHeight.Type == UnitMetric.Percent)
+            else if (lineHeight.Metric == UnitMetric.Percent)
             {
                 // percentage depends on the font size which is hard to determine here
                 // let's rely this to "auto" behaviour

@@ -9,8 +9,6 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
-using System.Collections.Generic;
 using System.Globalization;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
@@ -28,7 +26,7 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
     private readonly OpenXmlLeafElement? defaultStyleProperty = styleProperty;
 
     protected readonly RunProperties runProperties = new();
-    protected HtmlAttributeCollection? styleAttributes;
+    protected HtmlAttributeCollection styleAttributes;
     protected IHtmlElement node = node;
 
 
@@ -117,7 +115,7 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
         }
 
         var colorValue = styleAttributes.GetColor("color");
-        if (colorValue.IsEmpty) colorValue = HtmlColor.Parse(node.GetAttribute("color"));
+        if (colorValue.IsEmpty) colorValue = HtmlColor.Parse(node.GetAttribute("color").AsSpan());
         if (!colorValue.IsEmpty)
             runProperties.Color = new Color { Val = colorValue.ToHexString() };
 
@@ -130,7 +128,7 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
             runProperties.Shading = new Shading { Val = ShadingPatternValues.Clear, Fill = bgcolor.ToHexString() };
         }
 
-        foreach (var decoration in Converter.ToTextDecoration(styleAttributes["text-decoration"]))
+        foreach (var decoration in styleAttributes.GetTextDecorations("text-decoration"))
         {
             switch (decoration)
             {

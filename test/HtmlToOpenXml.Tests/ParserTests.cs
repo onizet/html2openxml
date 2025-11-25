@@ -89,7 +89,7 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements[1].Elements<Run>().Count, Is.EqualTo(1));
             Assert.That(elements[1].FirstChild, Is.TypeOf(typeof(Run)));
 
-            var runProperties = elements[1].FirstChild.GetFirstChild<RunProperties>();
+            var runProperties = elements[1].FirstChild!.GetFirstChild<RunProperties>();
             Assert.That(runProperties, Is.Null);
         }
 

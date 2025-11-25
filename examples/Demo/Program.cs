@@ -47,7 +47,7 @@ namespace Demo
                     AssertThatOpenXmlDocumentIsValid(package);
                 }
 
-                File.WriteAllBytes(filename, generatedDocument.ToArray());
+                await File.WriteAllBytesAsync(filename, generatedDocument.ToArray());
             }
 
             Process.Start(new ProcessStartInfo(filename) { UseShellExecute = true });

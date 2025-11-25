@@ -9,8 +9,6 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
-using System.Collections.Generic;
 using System.Globalization;
 using DocumentFormat.OpenXml.Wordprocessing;
 
@@ -55,42 +53,44 @@ static class Converter
     /// <summary>
     /// Convert Html regular font-size to OpenXml font value (expressed in point).
     /// </summary>
-    public static Unit ToFontSize(string? htmlSize)
+    public static Unit ToFontSize(ReadOnlySpan<char> span)
     {
-        if (htmlSize == null) return Unit.Empty;
-        switch (htmlSize.ToLowerInvariant())
-        {
-            case "1":
-            case "xx-small": return new Unit(UnitMetric.Point, 10);
-            case "2":
-            case "x-small": return new Unit(UnitMetric.Point, 15);
-            case "3":
-            case "small": return new Unit(UnitMetric.Point, 20);
-            case "4":
-            case "medium": return new Unit(UnitMetric.Point, 27);
-            case "5":
-            case "large": return new Unit(UnitMetric.Point, 36);
-            case "6":
-            case "x-large": return new Unit(UnitMetric.Point, 48);
-            case "7":
-            case "xx-large": return new Unit(UnitMetric.Point, 72);
-            default:
-                // the font-size is specified in positive half-points
-                Unit unit = Unit.Parse(htmlSize, UnitMetric.Pixel);
-                if (!unit.IsValid || unit.Value <= 0)
-                    return Unit.Empty;
+        if (span.IsEmpty) return Unit.Empty;
 
-                // this is a rough conversion to support some percent size, considering 100% = 11 pt
-                if (unit.Type == UnitMetric.Percent) unit = new Unit(UnitMetric.Point, unit.Value * 0.11);
-                return unit;
+        Span<char> loweredValue = span.Length <= 128 ? stackalloc char[span.Length] : new char[span.Length];
+        span.ToLowerInvariant(loweredValue);
+        var unit = loweredValue switch
+        {
+            "1" or "xx-small" => new Unit(UnitMetric.Point, 10),
+            "2" or "x-small" => new Unit(UnitMetric.Point, 15),
+            "3" or "small" => new Unit(UnitMetric.Point, 20),
+            "4" or "medium" => new Unit(UnitMetric.Point, 27),
+            "5" or "large" => new Unit(UnitMetric.Point, 36),
+            "6" or "x-large" => new Unit(UnitMetric.Point, 48),
+            "7" or "xx-large" => new Unit(UnitMetric.Point, 72),
+            _ => Unit.Empty
+        };
+
+        if (!unit.IsValid)
+        {
+            // the font-size is specified in positive half-points
+            unit = Unit.Parse(loweredValue, UnitMetric.Pixel);
+            if (!unit.IsValid || unit.Value <= 0)
+                return Unit.Empty;
+
+            // this is a rough conversion to support some percent size, considering 100% = 11 pt
+            if (unit.Metric == UnitMetric.Percent) unit = new Unit(UnitMetric.Point, unit.Value * 0.11);
         }
+        return unit;
     }
 
-    public static FontVariant? ToFontVariant(string? html)
+    public static FontVariant? ToFontVariant(ReadOnlySpan<char> span)
     {
-        if (html == null) return null;
+        if (span.IsEmpty) return null;
 
-        return html.ToLowerInvariant() switch
+        Span<char> loweredValue = span.Length <= 128 ? stackalloc char[span.Length] : new char[span.Length];
+        span.ToLowerInvariant(loweredValue);
+        return loweredValue switch
         {
             "small-caps" => FontVariant.SmallCaps,
             "normal" => FontVariant.Normal,
@@ -98,10 +98,13 @@ static class Converter
         };
     }
 
-    public static FontStyle? ToFontStyle(string? html)
+    public static FontStyle? ToFontStyle(ReadOnlySpan<char> span)
     {
-        if (html == null) return null;
-        return html.ToLowerInvariant() switch
+        if (span.IsEmpty) return null;
+
+        Span<char> loweredValue = span.Length <= 128 ? stackalloc char[span.Length] : new char[span.Length];
+        span.ToLowerInvariant(loweredValue);
+        return loweredValue switch
         {
             "italic" or "oblique" => FontStyle.Italic,
             "normal" => FontStyle.Normal,
@@ -109,10 +112,13 @@ static class Converter
         };
     }
 
-    public static FontWeight? ToFontWeight(string? html)
+    public static FontWeight? ToFontWeight(ReadOnlySpan<char> span)
     {
-        if (html == null) return null;
-        return html.ToLowerInvariant() switch
+        if (span.IsEmpty) return null;
+
+        Span<char> loweredValue = span.Length <= 128 ? stackalloc char[span.Length] : new char[span.Length];
+        span.ToLowerInvariant(loweredValue);
+        return loweredValue switch
         {
             "700" or "bold" => FontWeight.Bold,
             "bolder" => FontWeight.Bolder,
@@ -121,33 +127,26 @@ static class Converter
         };
     }
 
-    public static string? ToFontFamily(string? str)
+    public static string? ToFontFamily(ReadOnlySpan<char> span)
     {
-        if (str == null) return null;
+        if (span.IsEmpty) return null;
 
-        var names = str.Split(',' );
-        for (int i = 0; i < names.Length; i++)
-        {
-            string fontName = names[i];
-            if (fontName.Length == 0) continue;
-            try
-            {
-                if (fontName[0] == '\'' && fontName[fontName.Length-1] == '\'') fontName = fontName.Substring(1, fontName.Length - 2);
-                return fontName;
-            }
-            catch (ArgumentException)
-            {
-                // the name is not a TrueType font or is not a font installed on this computer
-            }
-        }
-
-        return null;
+        // return the first font name
+        Span<Range> tokens = stackalloc Range[1];
+        return span.SplitCompositeAttribute(tokens, ',') switch {
+            1 => span.Slice(tokens[0]).ToString(),
+            _ => null
+        };
     }
 
-    public static BorderValues ToBorderStyle(string? borderStyle)
+    public static BorderValues ToBorderStyle(ReadOnlySpan<char> span)
     {
-        if (borderStyle == null) return BorderValues.Nil;
-        return borderStyle.ToLowerInvariant() switch
+        if (span.IsEmpty)
+            return BorderValues.Nil;
+
+        Span<char> loweredValue = span.Length <= 128 ? stackalloc char[span.Length] : new char[span.Length];
+        span.ToLowerInvariant(loweredValue);
+        return loweredValue switch
         {
             "dotted" => BorderValues.Dotted,
             "dashed" => BorderValues.Dashed,
@@ -160,24 +159,6 @@ static class Converter
         };
     }
 
-    public static UnitMetric ToUnitMetric(string? type)
-    {
-        if (type == null) return UnitMetric.Unitless;
-        return type.ToLowerInvariant() switch
-        {
-            "%" => UnitMetric.Percent,
-            "in" => UnitMetric.Inch,
-            "cm" => UnitMetric.Centimeter,
-            "mm" => UnitMetric.Millimeter,
-            "em" => UnitMetric.EM,
-            "ex" => UnitMetric.Ex,
-            "pt" => UnitMetric.Point,
-            "pc" => UnitMetric.Pica,
-            "px" => UnitMetric.Pixel,
-            _ => UnitMetric.Unknown,
-        };
-    }
-
     public static PageOrientationValues ToPageOrientation(string? orientation)
     {
         if ( "landscape".Equals(orientation,StringComparison.OrdinalIgnoreCase))
@@ -186,17 +167,23 @@ static class Converter
         return PageOrientationValues.Portrait;
     }
 
-    public static IEnumerable<TextDecoration> ToTextDecoration(string? html)
+    public static ICollection<TextDecoration> ToTextDecoration(ReadOnlySpan<char> values)
     {
         // this style could take multiple values separated by a space
         // ex: text-decoration: blink underline;
 
         var decorations = new List<TextDecoration>();
+        if (values.IsEmpty) return decorations;
 
-        if (html == null) return decorations;
-        foreach (string part in html.ToLowerInvariant().Split(' '))
+        Span<char> loweredValue = values.Length <= 128 ? stackalloc char[values.Length] : new char[values.Length];
+        values.ToLowerInvariant(loweredValue);
+
+        Span<Range> tokens = stackalloc Range[5];
+        ReadOnlySpan<char> span = loweredValue;
+        var tokenCount = span.Split(tokens, ' ', StringSplitOptions.RemoveEmptyEntries);
+        for (int i = 0; i < tokenCount; i++)
         {
-            switch (part)
+            switch (span.Slice(tokens[i]))
             {
                 case "underline": decorations.Add(TextDecoration.Underline); break;
                 case "line-through": decorations.Add(TextDecoration.LineThrough); break;

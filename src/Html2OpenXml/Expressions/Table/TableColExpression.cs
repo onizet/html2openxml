@@ -44,7 +44,7 @@ sealed class TableColExpression(IHtmlTableColumnElement node) : TableElementExpr
                 // If this attribute is omitted, then the last saved width of the grid column is assumed to be zero.
                 column.Width = Math.Round(width.ValueInPoint * 20).ToString(CultureInfo.InvariantCulture);
             }
-            else if (width.Type == UnitMetric.Percent)
+            else if (width.Metric == UnitMetric.Percent)
             {
                 var maxWidth = context.IsLandscape ? MaxTableLandscapeWidth : MaxTablePortraitWidth;
                 percentWidth = Math.Max(0, Math.Min(100, width.Value));

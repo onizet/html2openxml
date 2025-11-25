@@ -34,7 +34,7 @@ sealed class SvgExpression(ISvgSvgElement node) : ImageExpressionBase(node)
     protected override Drawing? CreateDrawing(ParsingContext context)
     {
         var imgPart = context.MainPart.AddImagePart(ImagePartType.Svg);
-        using var stream = new System.IO.MemoryStream(Encoding.UTF8.GetBytes(svgNode.OuterHtml), writable: false);
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(svgNode.OuterHtml), writable: false);
             imgPart.FeedData(stream);
         var imagePartId = context.MainPart.GetIdOfPart(imgPart);
         return CreateSvgDrawing(context, svgNode, imagePartId, Size.Empty);
@@ -42,8 +42,8 @@ sealed class SvgExpression(ISvgSvgElement node) : ImageExpressionBase(node)
 
     internal static Drawing CreateSvgDrawing(ParsingContext context, ISvgSvgElement svgNode, string imagePartId, Size preferredSize)
     {
-        var width = Unit.Parse(svgNode.GetAttribute("width"));
-        var height = Unit.Parse(svgNode.GetAttribute("height"));
+        var width = Unit.Parse(svgNode.GetAttribute("width").AsSpan());
+        var height = Unit.Parse(svgNode.GetAttribute("height").AsSpan());
         long widthInEmus, heightInEmus;
         if (width.IsValid && height.IsValid)
         {

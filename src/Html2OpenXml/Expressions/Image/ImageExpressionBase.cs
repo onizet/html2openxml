@@ -9,8 +9,6 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System.Collections.Generic;
-using System.Linq;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
 
@@ -65,7 +63,7 @@ abstract class ImageExpressionBase(AngleSharp.Dom.IElement node)  : HtmlDomExpre
         }
         else
         {
-            var borderWidth = Unit.Parse(node.GetAttribute("border"));
+            var borderWidth = Unit.Parse(node.GetAttribute("border").AsSpan());
             if (borderWidth.IsValid)
             {
                 border.Val = BorderValues.Single;
@@ -81,8 +79,8 @@ abstract class ImageExpressionBase(AngleSharp.Dom.IElement node)  : HtmlDomExpre
         // if the layout is not inline and both left and right are auto, image appears centered
         // https://developer.mozilla.org/en-US/docs/Web/CSS/margin-left
         var margin = styleAttributes.GetMargin("margin");
-        if (margin.Left.Type == UnitMetric.Auto 
-            && margin.Right.Type == UnitMetric.Auto
+        if (margin.Left.Metric == UnitMetric.Auto 
+            && margin.Right.Metric == UnitMetric.Auto
             && !AngleSharpExtensions.IsInlineLayout(styleAttributes["display"], "inline-block"))
         {
             paraProperties.Justification = new() { Val = JustificationValues.Center };

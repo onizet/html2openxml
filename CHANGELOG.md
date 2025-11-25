@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.3.0
+
+- Rewriting of parsing to use System.Span instead of Regex
+- Set Timeout on remaining Regex to prevent any DoS attack
+- Remove extra border space in table #156
+
 ## 3.2.8
 
 - Fix a fatal crash when trying to convert multiple images #215

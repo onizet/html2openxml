@@ -9,9 +9,7 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -70,7 +68,7 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : TableElementExpre
             var widthValue = cellNode.GetAttribute("width");
             if (!string.IsNullOrEmpty(widthValue))
             {
-                width = Unit.Parse(widthValue);
+                width = Unit.Parse(widthValue.AsSpan());
             }
         }
 
@@ -78,8 +76,8 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : TableElementExpre
         {
             cellProperties.TableCellWidth = new TableCellWidth
             {
-                Type = width.Type == UnitMetric.Percent ? TableWidthUnitValues.Pct : TableWidthUnitValues.Dxa,
-                Width = width.Type == UnitMetric.Percent
+                Type = width.Metric == UnitMetric.Percent ? TableWidthUnitValues.Pct : TableWidthUnitValues.Dxa,
+                Width = width.Metric == UnitMetric.Percent
                     ? ((int) (width.Value * 50)).ToString(CultureInfo.InvariantCulture)
                     : width.ValueInDxa.ToString(CultureInfo.InvariantCulture)
             };
