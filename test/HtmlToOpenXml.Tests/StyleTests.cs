@@ -25,7 +25,7 @@ namespace HtmlToOpenXml.Tests
                     Type = args.Type,
                     BasedOn = new BasedOn { Val = "Normal" },
                     StyleRunProperties = new() {
-                        Color = new() { Val = HtmlColor.Parse("red").ToHexString() }
+                        Color = new() { Val = HtmlColor.Parse("red".AsSpan()).ToHexString() }
                     }
                 });
             };

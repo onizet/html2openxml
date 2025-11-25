@@ -21,7 +21,7 @@ namespace HtmlToOpenXml.Tests.Primitives
         [TestCase("hsl(0, 200%, 150%)", 255, 255, 255, 1, Description = "Percentage not respected that should be maxed out")]
         public void ParseHtmlColor_ShouldSucceed(string htmlColor, byte red, byte green, byte blue, double alpha)
         {
-            var color = HtmlColor.Parse(htmlColor);
+            var color = HtmlColor.Parse(htmlColor.AsSpan());
 
             Assert.Multiple(() => {
                 Assert.That(color.IsEmpty, Is.False);
@@ -39,7 +39,7 @@ namespace HtmlToOpenXml.Tests.Primitives
         [TestCase("rgb")]
         public void ParseInvalidHtmlColor_ReturnsEmpty(string htmlColor)
         {
-            var color = HtmlColor.Parse(htmlColor);
+            var color = HtmlColor.Parse(htmlColor.AsSpan());
             Assert.That(color.IsEmpty, Is.True);
         }
 

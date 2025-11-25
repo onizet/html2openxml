@@ -14,7 +14,7 @@ namespace HtmlToOpenXml.Tests.Primitives
         [TestCase("thin dotted white", "dotted", 255, 255, 255)]
         public void ParseHtmlBorder_ShouldSucceed(string htmlBorder, string borderStyle, byte red, byte green, byte blue)
         {
-            var border = SideBorder.Parse(htmlBorder);
+            var border = SideBorder.Parse(htmlBorder.AsSpan());
 
             Assert.Multiple(() => {
                 Assert.That(border.IsValid, Is.True);
@@ -29,14 +29,14 @@ namespace HtmlToOpenXml.Tests.Primitives
         [TestCase("abc")]
         public void InvalidBorder_ShouldFail(string htmlBorder)
         {
-            var border = SideBorder.Parse(htmlBorder);
+            var border = SideBorder.Parse(htmlBorder.AsSpan());
             Assert.That(border.IsValid, Is.False);
         }
 
         [Test]
         public void Border_ShouldSucceed()
         {
-            var border = SideBorder.Parse("3px solid black");
+            var border = SideBorder.Parse("3px solid black".AsSpan());
             Assert.That(border.IsValid, Is.True);
             Assert.That(border.Width.ValueInPx, Is.EqualTo(3));
             Assert.That(border.Width.ValueInPoint, Is.EqualTo(2.25));

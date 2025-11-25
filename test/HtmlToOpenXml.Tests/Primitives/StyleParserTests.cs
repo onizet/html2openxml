@@ -41,7 +41,7 @@ namespace HtmlToOpenXml.Tests.Primitives
         {
             var styles = HtmlAttributeCollection.ParseStyle("text-decoration:underline dotted wavy");
             var decorations = styles.GetTextDecorations("text-decoration");
-            Assert.That(decorations, Is.EquivalentTo(new [] { TextDecoration.Underline, TextDecoration.Dotted, TextDecoration.Wave }));
+            Assert.That(decorations, Is.EquivalentTo([TextDecoration.Underline, TextDecoration.Dotted, TextDecoration.Wave]));
         }
     }
 }

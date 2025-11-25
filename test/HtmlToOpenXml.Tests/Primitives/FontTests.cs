@@ -13,7 +13,7 @@ namespace HtmlToOpenXml.Tests.Primitives
         [TestCase("italic Verdana", ExpectedResult = false)]
         public bool WithMinimal_ReturnsValid (string html)
         {
-            var font = HtmlFont.Parse(html);
+            var font = HtmlFont.Parse(html.AsSpan());
             Assert.Multiple(() => {
                 Assert.That(font.Style, Is.Null);
                 Assert.That(font.Weight, Is.Null);
@@ -25,7 +25,7 @@ namespace HtmlToOpenXml.Tests.Primitives
         [TestCase("Verdana  1.2em  bold  italic ")]
         public void WithDisordered_ShouldSucceed (string html)
         {
-            var font = HtmlFont.Parse(html);
+            var font = HtmlFont.Parse(html.AsSpan());
             Assert.Multiple(() => {
                 Assert.That(font.Style, Is.EqualTo(FontStyle.Italic));
                 Assert.That(font.Weight, Is.EqualTo(FontWeight.Bold));
@@ -38,7 +38,7 @@ namespace HtmlToOpenXml.Tests.Primitives
         [Test(Description = "Multiple font families must keep the first one")]
         public void WithMultipleFamily_ShouldSucceed ()
         {
-            var font = HtmlFont.Parse("Verdana, Arial bolder 1.2em");
+            var font = HtmlFont.Parse("Verdana, Arial bolder 1.2em".AsSpan());
             Assert.Multiple(() => {
                 Assert.That(font.Style, Is.Null);
                 Assert.That(font.Weight, Is.EqualTo(FontWeight.Bolder));
@@ -51,7 +51,7 @@ namespace HtmlToOpenXml.Tests.Primitives
         [Test(Description = "Font families with quotes must unescape the first one")]
         public void WithQuotedFamily_ShouldSucceed ()
         {
-            var font = HtmlFont.Parse("'Times New Roman', Times, Verdana, Arial bolder 1.2em");
+            var font = HtmlFont.Parse("'Times New Roman', Times, Verdana, Arial bolder 1.2em".AsSpan());
             Assert.Multiple(() => {
                 Assert.That(font.Style, Is.Null);
                 Assert.That(font.Weight, Is.EqualTo(FontWeight.Bolder));
@@ -64,7 +64,7 @@ namespace HtmlToOpenXml.Tests.Primitives
         [Test]
         public void WithFontSizeLineHeight_ShouldSucceed()
         {
-            var font = HtmlFont.Parse("italic small-caps bold 12px/30px Georgia, serif");
+            var font = HtmlFont.Parse("italic small-caps bold 12px/30px Georgia, serif".AsSpan());
             Assert.Multiple(() => {
                 Assert.That(font.Variant, Is.EqualTo(FontVariant.SmallCaps));
                 Assert.That(font.Style, Is.EqualTo(FontStyle.Italic));

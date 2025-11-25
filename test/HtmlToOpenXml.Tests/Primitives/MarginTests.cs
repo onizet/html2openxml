@@ -15,10 +15,10 @@ namespace HtmlToOpenXml.Tests.Primitives
         [TestCase("25px   75px", 25, 75, 25, 75)]
         public void ParseHtmlString_ShouldSucceed (string html, int top, int right, int bottom, int left)
         {
-            var margin = Margin.Parse(html);
+            var margin = Margin.Parse(html.AsSpan());
 
             Assert.Multiple(() => {
-                Assert.That(margin.IsValid, Is.EqualTo(true));
+                Assert.That(margin.IsValid, Is.True);
                 Assert.That(margin.Top.ValueInPx, Is.EqualTo(top));
                 Assert.That(margin.Right.ValueInPx, Is.EqualTo(right));
                 Assert.That(margin.Bottom.ValueInPx, Is.EqualTo(bottom));
@@ -29,12 +29,12 @@ namespace HtmlToOpenXml.Tests.Primitives
         [Test]
         public void ParseWithFloat_ShouldSucceed ()
         {
-            var margin = Margin.Parse("0 50% 9.5pt .00001pt");
+            var margin = Margin.Parse("0 50% 9.5pt .00001pt".AsSpan());
 
             Assert.Multiple(() => {
-                Assert.That(margin.IsValid, Is.EqualTo(true));
+                Assert.That(margin.IsValid, Is.True);
 
-                Assert.That(margin.Top.Value, Is.EqualTo(0));
+                Assert.That(margin.Top.Value, Is.Zero);
                 Assert.That(margin.Top.Metric, Is.EqualTo(UnitMetric.Pixel));
 
                 Assert.That(margin.Right.Value, Is.EqualTo(50));
@@ -56,15 +56,15 @@ namespace HtmlToOpenXml.Tests.Primitives
         [Test]
         public void ParseWithAuto_ShouldSucceed ()
         {
-            var margin = Margin.Parse("0 auto");
+            var margin = Margin.Parse("0 auto".AsSpan());
 
             Assert.Multiple(() => {
-                Assert.That(margin.IsValid, Is.EqualTo(true));
+                Assert.That(margin.IsValid, Is.True);
 
-                Assert.That(margin.Top.Value, Is.EqualTo(0));
+                Assert.That(margin.Top.Value, Is.Zero);
                 Assert.That(margin.Top.Metric, Is.EqualTo(UnitMetric.Pixel));
 
-                Assert.That(margin.Bottom.Value, Is.EqualTo(0));
+                Assert.That(margin.Bottom.Value, Is.Zero);
                 Assert.That(margin.Bottom.Metric, Is.EqualTo(UnitMetric.Pixel));
 
                 Assert.That(margin.Left.Metric, Is.EqualTo(UnitMetric.Auto));

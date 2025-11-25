@@ -16,7 +16,7 @@ namespace HtmlToOpenXml.Tests.Primitives
         [TestCase("9", 9, UnitMetric.Unitless)]
         public void ParseHtmlUnit_ShouldSucceed(string str, double value, UnitMetric metric)
         {
-            var unit = Unit.Parse(str);
+            var unit = Unit.Parse(str.AsSpan());
 
             Assert.Multiple(() => {
                 Assert.That(unit.IsValid, Is.True);
@@ -31,7 +31,7 @@ namespace HtmlToOpenXml.Tests.Primitives
         [TestCase("%")]
         public void ParseInvalidHtmlColor_ReturnsEmpty(string str)
         {
-            var unit = Unit.Parse(str);
+            var unit = Unit.Parse(str.AsSpan());
             Assert.That(unit.IsValid, Is.False);
         }
     }
