@@ -15,7 +15,6 @@ partial struct HtmlColor
     {
         // the longest built-in Color's name is much lower than this check, so we should not allocate here in a typical usage
         Span<char> loweredValue = name.Length <= 128 ? stackalloc char[name.Length] : new char[name.Length];
-
         name.ToLowerInvariant(loweredValue);
 
         namedColors.TryGetValue(loweredValue.ToString(), out var color);

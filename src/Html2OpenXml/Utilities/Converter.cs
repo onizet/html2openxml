@@ -22,12 +22,13 @@ static class Converter
     /// <summary>
     /// Convert the Html text align attribute (horizontal alignement) to its corresponding OpenXml value.
     /// </summary>
-    public static JustificationValues? ToParagraphAlign(string? htmlAlign)
+    public static JustificationValues? ToParagraphAlign(ReadOnlySpan<char> span)
     {
-        if (htmlAlign == null) return null;
-        return htmlAlign.ToLowerInvariant() switch
+        Span<char> loweredValue = span.Length <= 128 ? stackalloc char[span.Length] : new char[span.Length];
+        span.ToLowerInvariant(loweredValue);
+        return loweredValue switch
         {
-            "left" => JustificationValues.Left,
+           "left" => JustificationValues.Left,
             "right" => JustificationValues.Right,
             "center" => JustificationValues.Center,
             "justify" => JustificationValues.Both,
@@ -38,10 +39,11 @@ static class Converter
     /// <summary>
     /// Convert the Html vertical-align attribute to its corresponding OpenXml value.
     /// </summary>
-    public static TableVerticalAlignmentValues? ToVAlign(string? htmlAlign)
+    public static TableVerticalAlignmentValues? ToVAlign(ReadOnlySpan<char> span)
     {
-        if (htmlAlign == null) return null;
-        return htmlAlign.ToLowerInvariant() switch
+        Span<char> loweredValue = span.Length <= 128 ? stackalloc char[span.Length] : new char[span.Length];
+        span.ToLowerInvariant(loweredValue);
+        return loweredValue switch
         {
             "top" => TableVerticalAlignmentValues.Top,
             "middle" => TableVerticalAlignmentValues.Center,
@@ -157,14 +159,6 @@ static class Converter
             "none" => BorderValues.None,
             _ => BorderValues.Nil,
         };
-    }
-
-    public static PageOrientationValues ToPageOrientation(string? orientation)
-    {
-        if ( "landscape".Equals(orientation,StringComparison.OrdinalIgnoreCase))
-            return PageOrientationValues.Landscape;
-
-        return PageOrientationValues.Portrait;
     }
 
     public static ICollection<TextDecoration> ToTextDecoration(ReadOnlySpan<char> values)

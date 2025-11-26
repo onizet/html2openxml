@@ -214,14 +214,14 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
     {
         var styleAttributes = listNode.GetStyles();
         bool orderedList = listNode.NodeName.Equals("ol", StringComparison.OrdinalIgnoreCase);
-        string? type = styleAttributes["list-style-type"];
+        var type = styleAttributes["list-style-type"];
 
-        if(orderedList && string.IsNullOrEmpty(type))
+        if(orderedList && type.IsEmpty)
         {
             type = ListTypeToListStyleType(listNode.GetAttribute("type"));
         }
 
-        if (string.IsNullOrEmpty(type) || !supportedListTypes.Contains(type!))
+        if (type.IsEmpty || !supportedListTypes.Contains(type.ToString()))
         {
             if (parentName != null && IsCascadingStyle(parentName))
                 return parentName!;
@@ -229,7 +229,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
             type = orderedList? "decimal" : "disc";
         }
 
-        return type!;
+        return type.ToString();
     }
 
     /// <summary>

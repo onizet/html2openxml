@@ -101,7 +101,7 @@ sealed class TableRowExpression : TableElementExpressionBase
     {
         base.ComposeStyles(context);
 
-        Unit unit = styleAttributes!.GetUnit("height", UnitMetric.Pixel);
+        Unit unit = styleAttributes.GetUnit("height", UnitMetric.Pixel);
         if (!unit.IsValid) unit = Unit.Parse(rowNode.GetAttribute("height").AsSpan(), UnitMetric.Pixel);
 
         switch (unit.Metric)

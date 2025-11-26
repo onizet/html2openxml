@@ -107,14 +107,32 @@ readonly struct HtmlAttributeCollection
     /// <summary>
     /// Gets the named attribute.
     /// </summary>
-    public string? this[string name]
+    public ReadOnlySpan<char> this[string name]
     {
         get 
         {
             if (attributes.TryGetValue(name, out var range))
-                return rawValue.AsSpan().Slice(range).ToString().Trim();
-            return null;
+                return rawValue.AsSpan().Slice(range).Trim();
+            return [];
         }
+    }
+
+    /// <summary>
+    /// Determines whether the collection contains the specified key.
+    /// </summary>
+    public bool ContainsKey(string name)
+    {
+        return attributes.ContainsKey(name);
+    }
+
+    /// <summary>
+    /// Efficient way to determine if a style is equals to a value.
+    /// </summary>
+    public bool HasKeyEqualsTo(string name, ReadOnlySpan<char> value)
+    {
+        if (attributes.TryGetValue(name, out var range))
+            return rawValue.AsSpan().Slice(range).Trim().Equals(value, StringComparison.InvariantCultureIgnoreCase);
+        return false;
     }
 
     /// <summary>
@@ -147,6 +165,8 @@ readonly struct HtmlAttributeCollection
     public Margin GetMargin(string name)
     {
         Margin margin = Margin.Empty;
+        if (IsEmpty) return margin;
+
         if (attributes.TryGetValue(name, out var range))
             margin = Margin.Parse(rawValue.AsSpan().Slice(range));
 
@@ -194,6 +214,8 @@ readonly struct HtmlAttributeCollection
     public SideBorder GetSideBorder(string name)
     {
         SideBorder border = SideBorder.Empty;
+        if (IsEmpty) return border;
+
         if (attributes.TryGetValue(name, out Range range))
             border = SideBorder.Parse(rawValue.AsSpan().Slice(range));
 
@@ -224,6 +246,8 @@ readonly struct HtmlAttributeCollection
     public HtmlFont GetFont(string name)
     {
         HtmlFont font = HtmlFont.Empty;
+        if (IsEmpty) return font;
+
         if (attributes.TryGetValue(name, out Range range))
             font = HtmlFont.Parse(rawValue.AsSpan().Slice(range));
 

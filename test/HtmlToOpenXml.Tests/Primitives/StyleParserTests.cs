@@ -9,21 +9,22 @@ namespace HtmlToOpenXml.Tests.Primitives
     public class StyleParserTests
     {
         [TestCase("text-decoration:underline; color: red ")]
-        [TestCase("text-decoration&#58;underline&#59;color:red")]
+        [TestCase("text-decoration &#58; underline &#59;color :red")]
         public void ParseStyle_ShouldSucceed(string htmlStyle)
         {
             var styles = HtmlAttributeCollection.ParseStyle(htmlStyle);
             Assert.Multiple(() => {
-                Assert.That(styles["text-decoration"], Is.EqualTo("underline"));
-                Assert.That(styles["color"], Is.EqualTo("red"));
+                Assert.That(styles.HasKeyEqualsTo("text-decoration", "underline"), Is.True);
+                Assert.That(styles.HasKeyEqualsTo("color", "red"), Is.True);
+                Assert.That(styles["color"].ToString(), Is.EqualTo("red"));
             });
         }
 
         [Test(Description = "Parser should consider the last occurence of a style")]
         public void DuplicateStyle_ReturnsLatter()
         {
-            var styleAttributes = HtmlAttributeCollection.ParseStyle("color:red;color:blue");
-            Assert.That(styleAttributes["color"], Is.EqualTo("blue"));
+            var styleAttributes = HtmlAttributeCollection.ParseStyle("color:red;color:BLUE");
+            Assert.That(styleAttributes.HasKeyEqualsTo("color", "blue"), Is.True);
         }
 
         [TestCase("color;color;")]
@@ -33,7 +34,7 @@ namespace HtmlToOpenXml.Tests.Primitives
         {
             var styles = HtmlAttributeCollection.ParseStyle(htmlStyle);
             Assert.That(styles.IsEmpty, Is.True);
-            Assert.That(styles["color"], Is.Null);
+            Assert.That(styles.ContainsKey("color"), Is.False);
         }
 
         [Test]

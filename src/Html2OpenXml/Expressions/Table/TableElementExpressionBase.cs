@@ -71,7 +71,7 @@ abstract class TableElementExpressionBase(IHtmlElement node) : PhrasingElementEx
     {
         base.ComposeStyles(context);
 
-        var valign = Converter.ToVAlign(styleAttributes!["vertical-align"]);
+        var valign = Converter.ToVAlign(styleAttributes["vertical-align"]);
         if (!valign.HasValue) valign = Converter.ToVAlign(node.GetAttribute("valign"));
         if (!valign.HasValue)
         {
