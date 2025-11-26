@@ -187,7 +187,7 @@ class BlockElementExpression: PhrasingElementExpression
         }
 
         JustificationValues? align = Converter.ToParagraphAlign(styleAttributes["text-align"]);
-        if (!align.HasValue) align = Converter.ToParagraphAlign(node.GetAttribute("align"));
+        if (!align.HasValue) align = Converter.ToParagraphAlign(node.GetAttribute("align").AsSpan());
         if (!align.HasValue) align = Converter.ToParagraphAlign(styleAttributes["justify-content"]);
         if (align.HasValue)
         {

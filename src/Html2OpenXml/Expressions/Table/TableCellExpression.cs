@@ -87,15 +87,15 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : TableElementExpre
         var direction = styleAttributes["writing-mode"];
         if (!direction.IsEmpty)
         {
-            if (direction.Equals("tb-lr", StringComparison.InvariantCultureIgnoreCase) ||
-                direction.Equals("vertical-lr", StringComparison.InvariantCultureIgnoreCase))
+            if (direction.Equals("tb-lr".AsSpan(), StringComparison.InvariantCultureIgnoreCase) ||
+                direction.Equals("vertical-lr".AsSpan(), StringComparison.InvariantCultureIgnoreCase))
             {
                 cellProperties.TextDirection = new() { Val = TextDirectionValues.BottomToTopLeftToRight };
                 cellProperties.TableCellVerticalAlignment = new() { Val = TableVerticalAlignmentValues.Center };
                 paraProperties.Justification = new() { Val = JustificationValues.Center };
             }
-            else if (direction.Equals("tb-rl", StringComparison.InvariantCultureIgnoreCase) ||
-                direction.Equals("vertical-rl", StringComparison.InvariantCultureIgnoreCase))
+            else if (direction.Equals("tb-rl".AsSpan(), StringComparison.InvariantCultureIgnoreCase) ||
+                direction.Equals("vertical-rl".AsSpan(), StringComparison.InvariantCultureIgnoreCase))
             {
                 cellProperties.TextDirection = new() { Val = TextDirectionValues.TopToBottomRightToLeft };
                 cellProperties.TableCellVerticalAlignment = new() { Val = TableVerticalAlignmentValues.Center };
