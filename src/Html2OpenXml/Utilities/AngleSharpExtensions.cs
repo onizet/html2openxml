@@ -161,6 +161,6 @@ static class AngleSharpExtensions
         if (displayMode.IsEmpty)
             displayMode = defaultLayout.AsSpan();
 
-        return displayMode.StartsWith("inline", StringComparison.InvariantCultureIgnoreCase);
+        return displayMode.StartsWith("inline".AsSpan(), StringComparison.InvariantCultureIgnoreCase);
     }
 }

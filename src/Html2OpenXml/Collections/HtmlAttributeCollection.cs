@@ -128,10 +128,13 @@ readonly struct HtmlAttributeCollection
     /// <summary>
     /// Efficient way to determine if a style is equals to a value.
     /// </summary>
-    public bool HasKeyEqualsTo(string name, ReadOnlySpan<char> value)
+    public bool HasKeyEqualsTo(string name, string value)
     {
         if (attributes.TryGetValue(name, out var range))
-            return rawValue.AsSpan().Slice(range).Trim().Equals(value, StringComparison.InvariantCultureIgnoreCase);
+        {
+            var span = rawValue.AsSpan().Slice(range).Trim();
+            return span.Equals(value.AsSpan(), StringComparison.InvariantCultureIgnoreCase);
+        }
         return false;
     }
 
