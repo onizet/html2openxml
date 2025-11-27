@@ -278,7 +278,7 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
             }
         }
 
-        var align = Converter.ToParagraphAlign(tableNode.GetAttribute("align"))
+        var align = Converter.ToParagraphAlign(tableNode.GetAttribute("align").AsSpan())
             ?? Converter.ToParagraphAlign(styleAttributes["justify-self"]);
         if (!align.HasValue)
         {

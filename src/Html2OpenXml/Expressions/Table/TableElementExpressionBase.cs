@@ -71,8 +71,8 @@ abstract class TableElementExpressionBase(IHtmlElement node) : PhrasingElementEx
     {
         base.ComposeStyles(context);
 
-        var valign = Converter.ToVAlign(styleAttributes!["vertical-align"]);
-        if (!valign.HasValue) valign = Converter.ToVAlign(node.GetAttribute("valign"));
+        var valign = Converter.ToVAlign(styleAttributes["vertical-align"]);
+        if (!valign.HasValue) valign = Converter.ToVAlign(node.GetAttribute("valign").AsSpan());
         if (!valign.HasValue)
         {
             // in Html, table cell are vertically centered by default
@@ -92,7 +92,7 @@ abstract class TableElementExpressionBase(IHtmlElement node) : PhrasingElementEx
         }
 
         var halign = Converter.ToParagraphAlign(styleAttributes["text-align"]);
-        if (!halign.HasValue) halign = Converter.ToParagraphAlign(node.GetAttribute("align"));
+        if (!halign.HasValue) halign = Converter.ToParagraphAlign(node.GetAttribute("align").AsSpan());
         if (halign.HasValue)
         {
             paraProperties.KeepNext = new();

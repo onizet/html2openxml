@@ -62,7 +62,7 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : TableElementExpre
     {
         base.ComposeStyles(context);
 
-        Unit width = styleAttributes!.GetUnit("width");
+        Unit width = styleAttributes.GetUnit("width");
         if (!width.IsValid)
         {
             var widthValue = cellNode.GetAttribute("width");
@@ -84,23 +84,22 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : TableElementExpre
         }
 
         // Manage vertical text (only for table cell)
-        string? direction = styleAttributes!["writing-mode"];
-        if (direction != null)
+        var direction = styleAttributes["writing-mode"];
+        if (!direction.IsEmpty)
         {
-            switch (direction)
+            if (direction.Equals("tb-lr".AsSpan(), StringComparison.InvariantCultureIgnoreCase) ||
+                direction.Equals("vertical-lr".AsSpan(), StringComparison.InvariantCultureIgnoreCase))
             {
-                case "tb-lr":
-                case "vertical-lr":
-                    cellProperties.TextDirection = new() { Val = TextDirectionValues.BottomToTopLeftToRight };
-                    cellProperties.TableCellVerticalAlignment = new() { Val = TableVerticalAlignmentValues.Center };
-                    paraProperties.Justification = new() { Val = JustificationValues.Center };
-                    break;
-                case "tb-rl":
-                case "vertical-rl":
-                    cellProperties.TextDirection = new() { Val = TextDirectionValues.TopToBottomRightToLeft };
-                    cellProperties.TableCellVerticalAlignment = new() { Val = TableVerticalAlignmentValues.Center };
-                    paraProperties.Justification = new() { Val = JustificationValues.Center };
-                    break;
+                cellProperties.TextDirection = new() { Val = TextDirectionValues.BottomToTopLeftToRight };
+                cellProperties.TableCellVerticalAlignment = new() { Val = TableVerticalAlignmentValues.Center };
+                paraProperties.Justification = new() { Val = JustificationValues.Center };
+            }
+            else if (direction.Equals("tb-rl".AsSpan(), StringComparison.InvariantCultureIgnoreCase) ||
+                direction.Equals("vertical-rl".AsSpan(), StringComparison.InvariantCultureIgnoreCase))
+            {
+                cellProperties.TextDirection = new() { Val = TextDirectionValues.TopToBottomRightToLeft };
+                cellProperties.TableCellVerticalAlignment = new() { Val = TableVerticalAlignmentValues.Center };
+                paraProperties.Justification = new() { Val = JustificationValues.Center };
             }
         }
     }

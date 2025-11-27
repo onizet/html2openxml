@@ -214,7 +214,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
     {
         var styleAttributes = listNode.GetStyles();
         bool orderedList = listNode.NodeName.Equals("ol", StringComparison.OrdinalIgnoreCase);
-        string? type = styleAttributes["list-style-type"];
+        string? type = styleAttributes["list-style-type"].ToString();
 
         if(orderedList && string.IsNullOrEmpty(type))
         {

@@ -90,7 +90,7 @@ class BlockElementExpression: PhrasingElementExpression
     {
         return ComposeChildren(context, childNodes, paraProperties,
             (runs) => {
-                if ("always".Equals(styleAttributes!["page-break-before"], StringComparison.OrdinalIgnoreCase))
+                if (styleAttributes.HasKeyEqualsTo("page-break-before", "always"))
                 {
                     runs.Add(
                         new Run(
@@ -102,7 +102,7 @@ class BlockElementExpression: PhrasingElementExpression
                 }
             },
             (runs) => {
-                if ("always".Equals(styleAttributes!["page-break-after"], StringComparison.OrdinalIgnoreCase))
+                if (styleAttributes.HasKeyEqualsTo("page-break-after", "always"))
                 {
                     runs.Add(new Run(
                         new Break() { Type = BreakValues.Page }));
@@ -186,8 +186,8 @@ class BlockElementExpression: PhrasingElementExpression
             };
         }
 
-        JustificationValues? align = Converter.ToParagraphAlign(styleAttributes!["text-align"]);
-        if (!align.HasValue) align = Converter.ToParagraphAlign(node.GetAttribute("align"));
+        JustificationValues? align = Converter.ToParagraphAlign(styleAttributes["text-align"]);
+        if (!align.HasValue) align = Converter.ToParagraphAlign(node.GetAttribute("align").AsSpan());
         if (!align.HasValue) align = Converter.ToParagraphAlign(styleAttributes["justify-content"]);
         if (align.HasValue)
         {
@@ -256,7 +256,7 @@ class BlockElementExpression: PhrasingElementExpression
 
         var lineHeight = styleAttributes.GetUnit("line-height");
         if (!lineHeight.IsValid 
-            && "normal".Equals(styleAttributes["line-height"], StringComparison.OrdinalIgnoreCase))
+            && styleAttributes.HasKeyEqualsTo("line-height", "normal"))
         {
             // if `normal` is specified, reset any values
             lineHeight = new Unit(UnitMetric.Unitless, 1);

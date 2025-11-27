@@ -156,9 +156,11 @@ static class AngleSharpExtensions
     /// Determines whether the layout mode is inline vs block or flex.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsInlineLayout(string? displayMode, string defaultLayout)
+    public static bool IsInlineLayout(ReadOnlySpan<char> displayMode, string defaultLayout)
     {
-        return (displayMode ?? defaultLayout)
-            .StartsWith("inline", StringComparison.OrdinalIgnoreCase) == true;
+        if (displayMode.IsEmpty)
+            displayMode = defaultLayout.AsSpan();
+
+        return displayMode.StartsWith("inline".AsSpan(), StringComparison.InvariantCultureIgnoreCase);
     }
 }

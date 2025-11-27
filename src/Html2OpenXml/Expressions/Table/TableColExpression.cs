@@ -35,7 +35,7 @@ sealed class TableColExpression(IHtmlTableColumnElement node) : TableElementExpr
         ComposeStyles(context);
 
         var column = new GridColumn();
-        var width = styleAttributes!.GetUnit("width");
+        var width = styleAttributes.GetUnit("width");
         if (width.IsValid)
         {
             if (width.IsFixed)
