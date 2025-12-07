@@ -23,7 +23,7 @@ public sealed class DataUri
     // mime-type can be: svg+xml, x-png
     private readonly static Regex dataUriRegex = new(
             @"data\:(?<mime>\w+/[\w\-\+\.]+)?(?:;charset=(?<charset>[a-zA-Z_0-9-]+))?(?<base64>;base64)?,(?<data>.*)",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline,
+            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled,
             TimeSpan.FromMilliseconds(200));
 
     private DataUri(string mime, byte[] data)

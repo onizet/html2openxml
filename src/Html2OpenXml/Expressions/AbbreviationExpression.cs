@@ -22,7 +22,7 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 sealed class AbbreviationExpression(IHtmlElement node) : PhrasingElementExpression(node)
 {
-    private static readonly Regex linkRegex = new(@"^((https?|ftps?|mailto|file)://|[\\]{2})(?:[\w][\w.-]?)", RegexOptions.Compiled, TimeSpan.FromMilliseconds(100));
+    private static readonly Regex linkRegex = new(@"^((https?|ftps?|mailto|file)://|[\\]{2})(?:[\w][\w.-]?)", RegexOptions.IgnoreCase | RegexOptions.Compiled, TimeSpan.FromMilliseconds(100));
 
 
     /// <inheritdoc/>
