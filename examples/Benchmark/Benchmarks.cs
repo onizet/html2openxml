@@ -5,7 +5,7 @@ using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using HtmlToOpenXml;
 
-[MemoryDiagnoser]
+[MemoryDiagnoser(displayGenColumns: false)]
 [SimpleJob(runtimeMoniker: RuntimeMoniker.Net48)]
 [SimpleJob(runtimeMoniker: RuntimeMoniker.Net80, baseline: true)]
 [SimpleJob(runtimeMoniker: RuntimeMoniker.Net10_0)]
