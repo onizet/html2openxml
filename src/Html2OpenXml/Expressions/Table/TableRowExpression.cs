@@ -9,6 +9,7 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
+using System.Globalization;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -55,6 +56,7 @@ sealed class TableRowExpression : TableElementExpressionBase
         var rowContext = context.CreateChild(this);
         var tableRow = new TableRow(rowProperties);
         int colIndex = 0;
+        int specifiedWidthCount = 0;
         foreach (var cell in cells)
         {
             // this is the cell we have inserted ourselves for carrying over the rowSpan
@@ -76,6 +78,9 @@ sealed class TableRowExpression : TableElementExpressionBase
             {
                 rowContext.CascadeStyles(element);
                 tableRow.AppendChild(element);
+
+                if (element.GetFirstChild<TableCellProperties>()?.HasChild<TableCellWidth>() == true)
+                    specifiedWidthCount++;
             }
 
             if (TableCellExpression.IsValidRowSpan(cell.RowSpan))
@@ -94,6 +99,12 @@ sealed class TableRowExpression : TableElementExpressionBase
         }
 
         rowSpans.UnionWith(carriedRowSpans);
+
+        /*if (specifiedWidthCount > 0 && specifiedWidthCount < columCount)
+        {
+            DistributeCellWidths(tableRow.Elements<TableCell>());
+        }*/
+
         return [tableRow];
     }
 
@@ -114,6 +125,39 @@ sealed class TableRowExpression : TableElementExpressionBase
                 break;
         }
     }
+
+    /*private void DistributeCellWidths(IEnumerable<TableCell> cells)
+    {
+        // ignore percent width as they have priority, only distribute fixed widths
+        if (!cells.Any(c => c.TableCellProperties!.TableCellWidth?.Type?.Value == TableWidthUnitValues.Dxa))
+            return;
+
+        int availableWidth = TableColExpression.MaxTablePortraitWidth;
+        var cellsWithoutWidths = new List<TableCell>(cells.Count());
+        foreach (var cell in cells)
+        {
+            var cellWidth = cell.TableCellProperties!.TableCellWidth;
+            if (cellWidth == null || cellWidth.Type?.Value == TableWidthUnitValues.Auto)
+            {
+                cellsWithoutWidths.Add(cell);
+                continue;
+            }
+
+            if (cellWidth.Type?.Value == TableWidthUnitValues.Dxa && cellWidth.Width?.HasValue == true)
+            {
+                availableWidth -= Convert.ToInt32(cellWidth.Width.Value);
+            }
+        }
+
+        var widthPerCell = (availableWidth / cellsWithoutWidths.Count).ToString(CultureInfo.InvariantCulture);
+        foreach (var cell in cellsWithoutWidths)
+        {
+            cell.TableCellProperties!.TableCellWidth = new() {
+                Type = TableWidthUnitValues.Dxa,
+                Width = widthPerCell
+            };
+        }
+    }*/
 
     /// <summary>
     /// The carried row spans.

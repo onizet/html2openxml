@@ -23,6 +23,8 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : TableElementExpre
 {
     private readonly IHtmlTableCellElement cellNode = node;
 
+    public int ColumnSpan => cellNode.ColumnSpan;
+
 
     /// <inheritdoc/>
     public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)

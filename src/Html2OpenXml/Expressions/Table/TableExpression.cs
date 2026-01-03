@@ -26,8 +26,9 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
     private readonly IHtmlTableElement tableNode = node;
     private readonly Table table = new();
     private readonly TableProperties tableProperties = new();
-    private TableColExpression[]? colStyleExpressions;
+    private ColStyleBinder[]? colStyleExpressions;
     private int colIndex;
+    private bool isFixedLayout;
 
 
     /// <inheritdoc/>
@@ -79,7 +80,7 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
     private IEnumerable<GridColumn> InterpretGridColumns(ParsingContext context, int columnCount)
     {
         var columns = new List<GridColumn>(columnCount);
-        var colStyleExpressions = new List<TableColExpression>(columnCount);
+        var colStyleExpressions = new List<ColStyleBinder>(columnCount);
 
         var colgroup = tableNode.Children.FirstOrDefault(n => n.LocalName == "colgroup");
         // if colgroup tag is not found, maybe the table was misformed and they stand below the root level
@@ -92,9 +93,33 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
             foreach (var child in expression.Interpret(context).Cast<GridColumn>())
             {
                 columns.Add(child);
-                colStyleExpressions.Add(expression);
+                colStyleExpressions.Add(new ColStyleBinder(isFixedLayout, expression));
             }
         }
+
+        // for fixed-layout: when the number of <col> is not complete, 
+        // or no width information was provided, we will inspect the first row for any size indication
+        if (isFixedLayout && (columns.Count < columnCount || !colStyleExpressions.Any(c => c.IsWidthDefined)))
+        {
+            //colStyleExpressions.AddRange(Enumerable.Repeat(new TableColExpression(null, true), columns.Count - columnCount));
+            var row = tableNode.Rows.First();
+            foreach (var cell in row.Cells)
+            {
+                var colExpression = new ColStyleBinder(isFixedLayout: true);
+                colStyleExpressions.Add(colExpression);
+            }
+
+            /*var row = new TableRowExpression(tableNode.Rows.First(), columnCount, []);
+            foreach (var cell in row.Interpret(context))
+            {
+                //colStyleExpressions.Add(new TableColExpression(cell.ColumnSpan, true));
+            }*/
+        }
+
+        /*if (specifiedWidthCount > 0 && specifiedWidthCount < columCount)
+        {
+            DistributeCellWidths(tableRow.Elements<TableCell>());
+        }*/
 
         for (int c = columns.Count; c < columnCount ; c++)
         {
@@ -160,7 +185,7 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
         return Math.Min(columnCount, MaxColumns);
     }
 
-    protected override void ComposeStyles (ParsingContext context)
+    protected override void ComposeStyles(ParsingContext context)
     {
         tableProperties.TableStyle = context.DocumentStyle.GetTableStyle(context.DocumentStyle.DefaultStyles.TableStyle);
 
@@ -180,8 +205,11 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
                 break;
             case UnitMetric.Point:
             case UnitMetric.Pixel:
-                tableProperties.TableWidth = new() { Type = TableWidthUnitValues.Dxa, 
-                    Width = width.ValueInDxa.ToString(CultureInfo.InvariantCulture) };
+                tableProperties.TableWidth = new()
+                {
+                    Type = TableWidthUnitValues.Dxa,
+                    Width = width.ValueInDxa.ToString(CultureInfo.InvariantCulture)
+                };
                 break;
             case UnitMetric.Auto:
                 tableProperties.TableWidth = new() { Width = "0", Type = TableWidthUnitValues.Auto };
@@ -200,25 +228,28 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
 
         var dir = tableNode.GetTextDirection();
         if (dir.HasValue)
-            tableProperties.BiDiVisual = new() { 
-                Val = dir == AngleSharp.Dom.DirectionMode.Rtl? OnOffOnlyValues.On : OnOffOnlyValues.Off
+            tableProperties.BiDiVisual = new()
+            {
+                Val = dir == AngleSharp.Dom.DirectionMode.Rtl ? OnOffOnlyValues.On : OnOffOnlyValues.Off
             };
 
         var spacing = Convert.ToInt16(tableNode.GetAttribute("cellspacing"));
         if (spacing > 0)
-            tableProperties.TableCellSpacing = new() {
-                Type = TableWidthUnitValues.Dxa, 
+            tableProperties.TableCellSpacing = new()
+            {
+                Type = TableWidthUnitValues.Dxa,
                 Width = new Unit(UnitMetric.Pixel, spacing).ValueInDxa.ToString(CultureInfo.InvariantCulture)
-        };
+            };
 
         var padding = Convert.ToInt16(tableNode.GetAttribute("cellpadding"));
         if (padding > 0)
         {
-            int paddingDxa = (int) new Unit(UnitMetric.Pixel, padding).ValueInDxa;
+            int paddingDxa = (int)new Unit(UnitMetric.Pixel, padding).ValueInDxa;
 
-            TableCellMarginDefault cellMargin = new() {
-                TableCellLeftMargin = new() { Type = TableWidthValues.Dxa, Width = (short) paddingDxa },
-                TableCellRightMargin = new() { Type = TableWidthValues.Dxa, Width = (short) paddingDxa },
+            TableCellMarginDefault cellMargin = new()
+            {
+                TableCellLeftMargin = new() { Type = TableWidthValues.Dxa, Width = (short)paddingDxa },
+                TableCellRightMargin = new() { Type = TableWidthValues.Dxa, Width = (short)paddingDxa },
                 TopMargin = new() { Type = TableWidthUnitValues.Dxa, Width = paddingDxa.ToString(CultureInfo.InvariantCulture) },
                 BottomMargin = new() { Type = TableWidthUnitValues.Dxa, Width = paddingDxa.ToString(CultureInfo.InvariantCulture) }
             };
@@ -229,7 +260,8 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
 
         if (!styleBorder.IsEmpty)
         {
-            var tableBorders = new TableBorders {
+            var tableBorders = new TableBorders
+            {
                 TopBorder = Converter.ToBorder<TopBorder>(styleBorder.Top),
                 LeftBorder = Converter.ToBorder<LeftBorder>(styleBorder.Left),
                 RightBorder = Converter.ToBorder<RightBorder>(styleBorder.Right),
@@ -242,7 +274,8 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
         // but only remove border if the html style border was set, otherwise leave the border style as-is.
         else if (!styleBorder.IsEmpty && tableNode.Border == 0)
         {
-            tableProperties.TableBorders = new TableBorders() {
+            tableProperties.TableBorders = new TableBorders()
+            {
                 TopBorder = new TopBorder { Val = BorderValues.None },
                 LeftBorder = new LeftBorder { Val = BorderValues.None },
                 RightBorder = new RightBorder { Val = BorderValues.None },
@@ -266,8 +299,9 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
             // its grid lines. Otherwise the default table style hides the grid lines.
             if (handleBorders)
             {
-                uint borderSize = (uint) new Unit(UnitMetric.Pixel, tableNode.Border).ValueInDxa;
-                tableProperties.TableBorders = new TableBorders() {
+                uint borderSize = (uint)new Unit(UnitMetric.Pixel, tableNode.Border).ValueInDxa;
+                tableProperties.TableBorders = new TableBorders()
+                {
                     TopBorder = new TopBorder { Val = BorderValues.None },
                     LeftBorder = new LeftBorder { Val = BorderValues.None },
                     RightBorder = new RightBorder { Val = BorderValues.None },
@@ -294,5 +328,7 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
 
         if (align.HasValue)
             tableProperties.TableJustification = new() { Val = align.Value.ToTableRowAlignment() };
+
+        isFixedLayout = styleAttributes.HasKeyEqualsTo("table-layout", "fixed");
     }
 }
