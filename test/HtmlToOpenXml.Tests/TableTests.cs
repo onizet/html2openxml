@@ -7,7 +7,7 @@ namespace HtmlToOpenXml.Tests
     /// Tests for <c>table</c> or <c>pre</c>.
     /// </summary>
     [TestFixture]
-    public class TableTests : HtmlConverterTestBase
+    public partial class TableTests : HtmlConverterTestBase
     {
         [TestCase("<table><tr></tr></table>", Description = "Row with no cells")]
         [TestCase("<table></table>", Description = "No rows")]
