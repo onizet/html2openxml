@@ -45,7 +45,7 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
         if (shouldRegisterTopBookmark && elements.Any())
         {
             // Check whether it already exists
-            if (body.Descendants<BookmarkStart>().Where(b => b.Name?.Value == "_top").Any())
+            if (body.Descendants<BookmarkStart>().Any(b => b.Name?.Value == "_top"))
             {
                 return elements;
             }
