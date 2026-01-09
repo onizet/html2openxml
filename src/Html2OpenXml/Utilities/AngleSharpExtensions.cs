@@ -163,4 +163,20 @@ static class AngleSharpExtensions
 
         return displayMode.StartsWith("inline".AsSpan(), StringComparison.InvariantCultureIgnoreCase);
     }
+
+    public static bool RequiresPageBreakBefore(this HtmlAttributeCollection styleAttributes)
+    {
+        if (styleAttributes.HasKeyEqualsTo("break-before", "page") ||
+            styleAttributes.HasKeyEqualsTo("page-break-before", "always"))
+            return true;
+        return false;
+    }
+
+    public static bool RequiresPageBreakAfter(this HtmlAttributeCollection styleAttributes)
+    {
+        if (styleAttributes.HasKeyEqualsTo("break-after", "page") ||
+            styleAttributes.HasKeyEqualsTo("page-break-after", "always"))
+            return true;
+        return false;
+    }
 }

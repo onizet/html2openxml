@@ -17,35 +17,35 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements, Has.All.TypeOf<Paragraph>());
             var p = (Paragraph) elements[0];
             Assert.That(p.ParagraphProperties, Is.Not.Null);
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(p.ParagraphProperties.Indentation?.FirstLine?.HasValue, Is.True);
                 Assert.That(p.ParagraphProperties.ParagraphBorders, Is.Not.Null);
                 Assert.That(p.ParagraphProperties.Justification?.Val?.Value, Is.EqualTo(JustificationValues.Center));
                 Assert.That(p.ParagraphProperties.SpacingBetweenLines?.Line?.Value, Is.EqualTo("600"));
                 Assert.That(p.ParagraphProperties.Indentation?.Right?.Value, Is.EqualTo("239"));
-            });
+            }
 
             var borders = p.ParagraphProperties?.ParagraphBorders?.Elements<BorderType>();
             Assert.That(borders, Is.Not.Null);
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(borders.Count(), Is.EqualTo(4));
                 Assert.That(borders.Select(b => b.Color?.Value), Has.All.EqualTo("FF0000"));
                 Assert.That(borders.Select(b => b.Val?.Value), Has.All.EqualTo(BorderValues.Dotted));
-            });
+            }
         }
 
         [Test]
         public void PageBreakBefore_ReturnsOneParagraphThenTwo()
         {
             var elements = converter.Parse(@"Lorem
-                <div style='page-break-before:always'>Placeholder</div>
+                <div style='break-before:page'>Placeholder</div>
                 Ipsum");
             Assert.That(elements, Has.Count.EqualTo(3));
             Assert.That(elements, Has.All.TypeOf<Paragraph>());
             Assert.That(elements[0].ChildElements, Has.Count.EqualTo(1));
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(elements[0].ChildElements, Has.All.TypeOf<Run>());
                 Assert.That(elements[0].InnerText, Is.EqualTo("Lorem"));
@@ -53,35 +53,36 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(elements[2].ChildElements, Has.All.TypeOf<Run>());
                 Assert.That(elements[2].InnerText, Is.EqualTo("Ipsum"));
                 Assert.That(elements[2].ChildElements, Has.Count.EqualTo(1));
-            });
-            Assert.Multiple(() =>
+            }
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(elements[1].ChildElements, Has.All.TypeOf<Run>());
                 Assert.That(elements[1].ChildElements[0].HasChild<Break>(), Is.True);
                 Assert.That(elements[1].ChildElements[1].HasChild<LastRenderedPageBreak>(), Is.True);
                 Assert.That(elements[1].ChildElements[2].InnerText, Is.EqualTo("Placeholder"));
                 Assert.That(elements[1].InnerText, Is.EqualTo("Placeholder"));
-            });
+            }
         }
 
         [Test]
         public void PageBreakAfter_ReturnsTwoParagraphsThenOne()
         {
             var elements = converter.Parse(@"Lorem
-                <div style='page-break-after:always'>Placeholder</div>
+                <div style='break-after:page'>Placeholder</div>
                 Ipsum");
             Assert.That(elements, Has.Count.EqualTo(3));
             Assert.That(elements, Has.All.TypeOf<Paragraph>());
             Assert.That(elements[0].ChildElements, Has.Count.EqualTo(1));
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(elements[0].ChildElements, Has.All.TypeOf<Run>());
                 Assert.That(elements[0].InnerText, Is.EqualTo("Lorem"));
                 Assert.That(elements[1].ChildElements, Has.All.TypeOf<Run>());
                 Assert.That(elements[1].InnerText, Is.EqualTo("Placeholder"));
+                Assert.That(elements[1].LastChild?.HasChild<Break>(), Is.True);
                 Assert.That(elements[2].ChildElements, Has.All.TypeOf<Run>());
                 Assert.That(elements[2].InnerText, Is.EqualTo("Ipsum"));
-            });
+            }
             Assert.That(elements[1].LastChild?.HasChild<LastRenderedPageBreak>(), Is.False);
         }
 
@@ -141,10 +142,11 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements, Has.All.TypeOf<Paragraph>());
             var lastRun = elements.First().LastChild;
             Assert.That(lastRun, Is.Not.Null);
-            Assert.Multiple(() => {
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(lastRun.LastChild, Is.Not.TypeOf<Break>());
                 Assert.That(lastRun.LastChild, Is.TypeOf<Text>());
-            });
+            }
             Assert.That(((Text)lastRun.LastChild).Text, Is.Empty);
         }
 
@@ -180,10 +182,13 @@ namespace HtmlToOpenXml.Tests
             paragraphs = cell.Elements<Paragraph>();
             Assert.That(paragraphs, Is.Not.Empty);
 
-            Assert.That(paragraphs.Last().ParagraphProperties?.Indentation?.FirstLine?.Value, Is.EqualTo("1080"),
-                "Assert that paragraph with text-indent is preserved");
-            Assert.That(paragraphs.Last().ParagraphProperties?.Indentation?.Right, Is.Null,
-                "Assert that paragraph with right indentation is preserved");
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(paragraphs.Last().ParagraphProperties?.Indentation?.FirstLine?.Value, Is.EqualTo("1080"),
+                            "Assert that paragraph with text-indent is preserved");
+                Assert.That(paragraphs.Last().ParagraphProperties?.Indentation?.Right, Is.Null,
+                    "Assert that paragraph with right indentation is preserved");
+            }
         }
 
         [Test(Description = "Background color defined on container should render its content with one bordered frame")] 

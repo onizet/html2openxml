@@ -90,7 +90,7 @@ class BlockElementExpression: PhrasingElementExpression
     {
         return ComposeChildren(context, childNodes, paraProperties,
             (runs) => {
-                if (styleAttributes.HasKeyEqualsTo("page-break-before", "always"))
+                if (styleAttributes.RequiresPageBreakBefore())
                 {
                     runs.Add(
                         new Run(
@@ -102,7 +102,7 @@ class BlockElementExpression: PhrasingElementExpression
                 }
             },
             (runs) => {
-                if (styleAttributes.HasKeyEqualsTo("page-break-after", "always"))
+                if (styleAttributes.RequiresPageBreakAfter())
                 {
                     runs.Add(new Run(
                         new Break() { Type = BreakValues.Page }));
@@ -369,7 +369,7 @@ class BlockElementExpression: PhrasingElementExpression
         p.Append(runs);
 
         // in Html, if a paragraph is ending with a line break, it is ignored
-        if (p.LastChild is Run run && run.LastChild is Break lineBreak)
+        if (p.LastChild is Run run && run.LastChild is Break lineBreak && lineBreak.Type == null)
         {
             // is this a standalone <br> inside the block? If so, replace the lineBreak with an empty paragraph
             if (runs.Count == 1) run.Append(new Text());
