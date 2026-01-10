@@ -42,11 +42,11 @@ namespace HtmlToOpenXml.Tests.ImageFormats
             using (var imageStream = ResourceHelper.GetStream("Resources.lumileds.png"))
             {
                 Size size = ImageHeader.GetDimensions(imageStream);
-                Assert.Multiple(() =>
+                using (Assert.EnterMultipleScope())
                 {
                     Assert.That(size.Width, Is.EqualTo(500));
                     Assert.That(size.Height, Is.EqualTo(500));
-                });
+                }
             }
         }
 

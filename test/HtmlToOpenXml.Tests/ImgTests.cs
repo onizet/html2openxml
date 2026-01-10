@@ -34,7 +34,7 @@ namespace HtmlToOpenXml.Tests
                 @$"<img src='{imageUri}' width='42' height='42'>",
                 TestContext.CurrentContext.CancellationToken);
 
-            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
+            var paragraphs = mainPart.Document!.Body!.Elements<Paragraph>();
             Assert.That(paragraphs.Count(), Is.EqualTo(1));
             var (_, imagePart) = AssertIsImg(mainPart, paragraphs.First());
             Assert.That(imagePart.ContentType, Is.EqualTo(contentType));
@@ -171,15 +171,15 @@ namespace HtmlToOpenXml.Tests
             MainDocumentPart mainPart = package.MainDocumentPart!;
 
             var beforeMaxDocPropId = new[] {
-                mainPart.Document.Body!.Descendants<wp.DocProperties>(),
-                mainPart.HeaderParts.SelectMany(x => x.Header.Descendants<wp.DocProperties>()),
-                mainPart.FooterParts.SelectMany(x => x.Footer.Descendants<wp.DocProperties>())
+                mainPart.Document!.Body!.Descendants<wp.DocProperties>(),
+                mainPart.HeaderParts.SelectMany(x => x.Header!.Descendants<wp.DocProperties>()),
+                mainPart.FooterParts.SelectMany(x => x.Footer!.Descendants<wp.DocProperties>())
             }.SelectMany(x => x).MaxBy(x => x.Id?.Value ?? 0)?.Id?.Value;
             Assert.That(beforeMaxDocPropId, Is.Not.Null);
 
             HtmlConverter converter = new(mainPart);
             await converter.ParseBody("<img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==' width='42' height='42'>");
-            mainPart.Document.Save();
+            mainPart.Document!.Save();
 
             var img = mainPart.Document.Body!.Descendants<Drawing>().FirstOrDefault();
             Assert.That(img, Is.Not.Null);
@@ -212,7 +212,7 @@ namespace HtmlToOpenXml.Tests
         public async Task ParseIntoDocumentPart_ReturnsImageParentedToPart (Type openXmlPartType)
         {
             string html = @"<img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==' alt='Smiley face' width='42' height='42'>";
-            OpenXmlElement host;
+            OpenXmlElement? host;
             OpenXmlPartContainer container;
 
             if (openXmlPartType == typeof(HeaderPart))
@@ -231,13 +231,14 @@ namespace HtmlToOpenXml.Tests
             {
                 await converter.ParseBody(html);
                 container = mainPart;
-                host = mainPart.Document.Body!;
+                host = mainPart.Document!.Body!;
             }
             else
             {
                 throw new NotSupportedException($"Test case not supported for {openXmlPartType.FullName}");
             }
 
+            Assert.That(host, Is.Not.Null);
             Assert.That(host.ChildElements, Has.Count.EqualTo(1));
             var p = host.ChildElements.FirstOrDefault(c => c is Paragraph);
             Assert.That(p, Is.Not.Null);
@@ -282,7 +283,7 @@ namespace HtmlToOpenXml.Tests
                 It.IsAny<CancellationToken>()),
             Times.Once);
             Assert.That(mainPart.ImageParts.Count(), Is.EqualTo(1));
-            var paragraph = mainPart.Document.Body!.GetFirstChild<Paragraph>();
+            var paragraph = mainPart.Document!.Body!.GetFirstChild<Paragraph>();
             Assert.That(paragraph, Is.Not.Null);
             var runs = paragraph.Elements<Run>();
             Assert.That(runs.Count(), Is.EqualTo(2));
@@ -302,7 +303,7 @@ namespace HtmlToOpenXml.Tests
                 @"<img src='https://www.example.com/image.gif' width='42' height='42'>",
                 TestContext.CurrentContext.CancellationToken);
 
-            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
+            var paragraphs = mainPart.Document!.Body!.Elements<Paragraph>();
             Assert.That(paragraphs.Count(), Is.EqualTo(1));
 
             var run = paragraphs.First().GetFirstChild<Run>();
@@ -343,7 +344,7 @@ namespace HtmlToOpenXml.Tests
                 @"<img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==' width='42' height='42'>",
                 TestContext.CurrentContext.CancellationToken);
 
-            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
+            var paragraphs = mainPart.Document!.Body!.Elements<Paragraph>();
             Assert.That(paragraphs.Count(), Is.EqualTo(1));
 
             var run = paragraphs.First().GetFirstChild<Run>();
@@ -372,7 +373,7 @@ namespace HtmlToOpenXml.Tests
                 @"<img src='https://www.example.com/image.gif' width='42' height='42'>",
                 TestContext.CurrentContext.CancellationToken);
 
-            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
+            var paragraphs = mainPart.Document!.Body!.Elements<Paragraph>();
             // Image should be skipped, so paragraph should be empty or not contain drawing
             Assert.That(paragraphs.Count(), Is.EqualTo(0));
             Assert.That(mainPart.ImageParts.Count(), Is.EqualTo(0));
@@ -391,7 +392,7 @@ namespace HtmlToOpenXml.Tests
                 @"<img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==' width='42' height='42'>",
                 TestContext.CurrentContext.CancellationToken);
 
-            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
+            var paragraphs = mainPart.Document!.Body!.Elements<Paragraph>();
             Assert.That(paragraphs.Count(), Is.EqualTo(1));
             AssertIsImg(mainPart, paragraphs.First());
             Assert.That(mainPart.ImageParts.Count(), Is.EqualTo(1));
@@ -416,7 +417,7 @@ namespace HtmlToOpenXml.Tests
                 @"<img src='https://www.example.com/image.gif' width='42' height='42'>",
                 TestContext.CurrentContext.CancellationToken);
 
-            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
+            var paragraphs = mainPart.Document!.Body!.Elements<Paragraph>();
             Assert.That(paragraphs.Count(), Is.EqualTo(1));
             AssertIsImg(mainPart, paragraphs.First());
             Assert.That(mainPart.ImageParts.Count(), Is.EqualTo(1));

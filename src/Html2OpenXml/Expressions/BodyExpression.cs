@@ -33,7 +33,7 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
     {
         MarkAllBookmarks();
 
-        var body = context.MainPart.Document.Body!;
+        var body = context.MainPart.Document!.Body!;
         var sectionProperties = body.Descendants<SectionProperties>().LastOrDefault();
         if (sectionProperties != null)
         {
@@ -75,7 +75,7 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
             if (styleAttributes.HasKeyEqualsTo("page-orientation", "landscape"))
                 orientation = PageOrientationValues.Landscape;
 
-            var sectionProperties = mainPart.Document.Body!.GetFirstChild<SectionProperties>();
+            var sectionProperties = mainPart.Document!.Body!.GetFirstChild<SectionProperties>();
             if (sectionProperties == null || sectionProperties.GetFirstChild<PageSize>() == null)
             {
                 context.IsLandscape = orientation == PageOrientationValues.Landscape;
@@ -98,7 +98,7 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
 
         if (paraProperties.BiDi is not null)
         {
-            var sectionProperties = mainPart.Document.Body!.GetFirstChild<SectionProperties>();
+            var sectionProperties = mainPart.Document!.Body!.GetFirstChild<SectionProperties>();
             if (sectionProperties == null || sectionProperties.GetFirstChild<PageSize>() == null)
             {
                mainPart.Document.Body.Append(sectionProperties = new());

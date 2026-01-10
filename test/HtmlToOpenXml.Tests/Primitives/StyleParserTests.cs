@@ -13,11 +13,12 @@ namespace HtmlToOpenXml.Tests.Primitives
         public void ParseStyle_ShouldSucceed(string htmlStyle)
         {
             var styles = HtmlAttributeCollection.ParseStyle(htmlStyle);
-            Assert.Multiple(() => {
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(styles.HasKeyEqualsTo("text-decoration", "underline"), Is.True);
                 Assert.That(styles.HasKeyEqualsTo("color", "red"), Is.True);
                 Assert.That(styles["color"].ToString(), Is.EqualTo("red"));
-            });
+            }
         }
 
         [Test(Description = "Parser should consider the last occurence of a style")]

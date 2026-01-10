@@ -52,7 +52,8 @@ background:red;
 
             var runProperties = run.GetFirstChild<RunProperties>();
             Assert.That(runProperties, Is.Not.Null);
-            Assert.Multiple(() => {
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(runProperties.HasChild<Bold>(), Is.True);
                 Assert.That(runProperties.HasChild<Italic>(), Is.True);
                 Assert.That(runProperties.HasChild<FontSize>(), Is.True);
@@ -63,7 +64,7 @@ background:red;
                 Assert.That(runProperties.RunFonts?.Ascii?.Value, Is.EqualTo("Verdana"));
                 Assert.That(runProperties.Underline?.Val?.Value, Is.EqualTo(UnderlineValues.Wave));
                 Assert.That(runProperties.Shading?.Fill?.Value, Is.EqualTo("FF0000"));
-            });
+            }
         }
 
         [TestCase("<span style='font-style:normal'><span style='font-style:italic'>Italic!</span></span>")]
@@ -137,11 +138,11 @@ background:red;
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements[0].ChildElements, Has.Count.EqualTo(3));
 
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(elements[0].ChildElements, Has.All.TypeOf<Run>());
                 Assert.That(((Run)elements[0].ChildElements[1]).GetFirstChild<Break>(), Is.Not.Null);
-            });
+            }
         }
 
         [Test]
@@ -151,14 +152,14 @@ background:red;
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements[0], Is.TypeOf<Paragraph>());
 
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(elements[0].HasChild<Run>(), Is.True);
                 Assert.That(elements[0].HasChild<SimpleField>(), Is.True);
                 Assert.That(elements[0].Elements<Run>().Count(), Is.EqualTo(3));
                 Assert.That(elements[0].GetFirstChild<ParagraphProperties>()!.KeepNext, Is.Null);
                 Assert.That(elements[0].GetFirstChild<SimpleField>()!.Instruction?.Value, Does.Contain("SEQ Figure \\* ARABIC"));
-            });
+            }
         }
 
         [Test]
@@ -172,14 +173,14 @@ background:red;
             Assert.That(elements, Has.Count.EqualTo(2));
             Assert.That(elements, Is.All.TypeOf<Paragraph>());
 
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(elements[0].HasChild<Run>(), Is.True);
                 Assert.That(elements[0].HasChild<SimpleField>(), Is.True);
                 Assert.That(elements[0].GetFirstChild<ParagraphProperties>()!.KeepNext, Is.Not.Null);
                 Assert.That(elements[1].HasChild<Run>(), Is.True);
                 Assert.That(elements[1].HasChild<SimpleField>(), Is.False);
-            });
+            }
         }
 
         [Test]
@@ -189,10 +190,11 @@ background:red;
             Assert.That(elements, Has.Count.EqualTo(1));
             var run = elements[0].GetFirstChild<Run>();
             Assert.That(run, Is.Not.Null);
-            Assert.Multiple(() => {
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(run.RunProperties?.FontSize, Is.Not.Null);
                 Assert.That(run.RunProperties?.RunFonts?.Ascii?.Value, Is.EqualTo("Verdana"));
-            });
+            }
         }
 
         [TestCase(@"<span>Placeholder</span>")]
@@ -236,14 +238,14 @@ background:red;
             Assert.That(elements, Has.All.TypeOf<Paragraph>());
 
             var p = (Paragraph) elements[0];
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(p.ParagraphProperties?.BiDi?.Val?.Value, Is.EqualTo(expectRtl), $"Expected RTL={expectRtl}");
                 Assert.That(p.ParagraphProperties?.ParagraphMarkRunProperties?
                     .GetFirstChild<Languages>()?.Val?.Value, Is.EqualTo(expectLang), $"expected lang={expectLang}");
                 Assert.That(p.GetFirstChild<Run>()?.GetFirstChild<RunProperties>()?
                     .Languages?.Val?.Value, Is.EqualTo(expectLang), $"expected lang={expectLang}");
-            });
+            }
         }
 
         [TestCase("<p>Pineapple</p>", Description = "Inherited from parent container")]
@@ -255,14 +257,14 @@ background:red;
             Assert.That(elements, Has.All.TypeOf<Paragraph>());
 
             var p = (Paragraph) elements[0];
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(p.ParagraphProperties?.BiDi?.Val?.Value, Is.EqualTo(false));
                 Assert.That(p.ParagraphProperties?.ParagraphMarkRunProperties?
                     .GetFirstChild<Languages>()?.Val?.Value, Is.EqualTo("en"));
                 Assert.That(p.GetFirstChild<Run>()?.GetFirstChild<RunProperties>()?
                     .Languages?.Val?.Value, Is.EqualTo("en"));
-            });
+            }
         }
 
         private T ParsePhrasing<T> (string html) where T : OpenXmlElement

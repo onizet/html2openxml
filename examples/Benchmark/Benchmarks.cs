@@ -31,7 +31,7 @@ public class Benchmarks
             converter.ImageProcessing = ImageProcessingMode.LinkExternal;
 
             await converter.ParseBody(html);
-            mainPart.Document.Save();
+            mainPart.Document!.Save();
         }
     }
 }

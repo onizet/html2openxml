@@ -17,7 +17,7 @@ namespace HtmlToOpenXml.Tests
             await converter.ParseBody($@"<body style=""page-orientation:{orientation}""><body>");
             AssertThatOpenXmlDocumentIsValid();
 
-            var sectionProperties = mainPart.Document.Body!.GetFirstChild<SectionProperties>();
+            var sectionProperties = mainPart.Document!.Body!.GetFirstChild<SectionProperties>();
             Assert.That(sectionProperties, Is.Not.Null);
             var pageSize = sectionProperties.GetFirstChild<PageSize>();
             Assert.That(pageSize, Is.Not.Null);
@@ -40,7 +40,7 @@ namespace HtmlToOpenXml.Tests
             await converter.ParseBody($@"<body style=""page-orientation:{orientation}""><body>");
             AssertThatOpenXmlDocumentIsValid();
 
-            var sectionProperties = mainPart.Document.Body!.GetFirstChild<SectionProperties>();
+            var sectionProperties = mainPart.Document!.Body!.GetFirstChild<SectionProperties>();
             Assert.That(sectionProperties, Is.Not.Null);
             var pageSize = sectionProperties.GetFirstChild<PageSize>();
             Assert.That(pageSize, Is.Not.Null);
@@ -56,7 +56,7 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements, Has.All.TypeOf<Paragraph>());
 
-            var bidi = mainPart.Document.Body!.GetFirstChild<SectionProperties>()?.GetFirstChild<BiDi>();
+            var bidi = mainPart.Document!.Body!.GetFirstChild<SectionProperties>()?.GetFirstChild<BiDi>();
             return bidi?.Val?.Value;
         }
     }

@@ -97,10 +97,11 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements[0].InnerText, Is.EqualTo("HelloWorld"));
             var runs = elements[0].Elements<Run>();
             Assert.That(runs.Count(), Is.EqualTo(3));
-            Assert.Multiple(() => {
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(runs.ElementAt(1).LastChild, Is.TypeOf<Break>());
                 Assert.That(runs.ElementAt(2).FirstChild, Is.TypeOf<Text>());
-            });
+            }
             Assert.That(((Text)runs.ElementAt(2).FirstChild).Text, Is.EqualTo("World"));
         }
 
@@ -109,12 +110,12 @@ namespace HtmlToOpenXml.Tests
         {
             var elements = converter.Parse("<span>  <div>   <br />   <div id='div2'>    <span>Texte</span>   </div>  </div> </span>");
             Assert.That(elements, Has.Count.GreaterThanOrEqualTo(2));
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(elements[0].GetFirstChild<Run>()?.HasChild<Break>(), Is.False, "Standalone line break is replaced with an empty paragraph");
                 Assert.That(elements.Last().InnerText, Is.EqualTo("Texte"));
                 Assert.That(elements.Select(e => e.Elements<Run>().Count()), Has.All.EqualTo(1));
-            });
+            }
         }
 
         [Test]

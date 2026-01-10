@@ -194,7 +194,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
                 startValue = val;
         }
 
-        var numbering = context.MainPart.NumberingDefinitionsPart!.Numbering;
+        var numbering = context.MainPart.NumberingDefinitionsPart!.Numbering!;
         numbering.Append(
             new NumberingInstance(
                 new AbstractNumId() { Val = abstractNumId },

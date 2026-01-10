@@ -299,7 +299,7 @@ public partial class HtmlConverter
         bool wasRefSet = false;
         TPart? part = null;
 
-        var sectionProps = mainPart.Document.Body!.Elements<SectionProperties>();
+        var sectionProps = mainPart.Document!.Body!.Elements<SectionProperties>();
         if (!sectionProps.Any())
         {
             sectionProps = [new SectionProperties()];

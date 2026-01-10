@@ -22,11 +22,12 @@ namespace HtmlToOpenXml.Tests
                 <li>Element2</li>
             </ol>");
             Assert.That(elements, Has.Count.EqualTo(2));
-            Assert.Multiple(() => {
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(elements[0], Is.TypeOf(typeof(Paragraph)));
                 Assert.That(elements[0].HasChild<Run>(), Is.True);
                 Assert.That(elements[0].InnerText, Does.StartWith("Element"));
-            });
+            }
         }
 
         [Test(Description = "Two consecutive lists should restart numbering to 1")]
@@ -36,24 +37,25 @@ namespace HtmlToOpenXml.Tests
                 <oL><li>Item 1.1</li></oL>
                 <p>placeholder</p>
                 <ol><li>Item 2.1</li></ol>");
-            var elements = mainPart.Document.Body!.ChildElements;
-            Assert.Multiple(() => {
+            var elements = mainPart.Document!.Body!.ChildElements;
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(elements, Has.Count.EqualTo(3));
                 Assert.That(elements, Is.All.TypeOf<Paragraph>());
-            });
+            }
 
-            var absNum = mainPart.NumberingDefinitionsPart?.Numbering
+            var absNum = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<AbstractNum>()
                 .SingleOrDefault();
             Assert.That(absNum, Is.Not.Null);
 
-            var instances = mainPart.NumberingDefinitionsPart?.Numbering
+            var instances = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<NumberingInstance>().Where(i => i.AbstractNumId?.Val == absNum.AbstractNumberId);
             Assert.That(instances?.Count(), Is.EqualTo(2));
 
             Paragraph p1 = (Paragraph) elements[0];
             Paragraph p2 = (Paragraph) elements[2];
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(new[]{p1, p2}.Select(e => 
                     e.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value),
@@ -62,7 +64,7 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(p1.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value,
                     Is.Not.EqualTo(p2.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value),
                     "Expected two different list instances");
-            });
+            }
             AssertThatOpenXmlDocumentIsValid();
         }
 
@@ -76,30 +78,31 @@ namespace HtmlToOpenXml.Tests
                     </li>
                     <li>Item 2</li>
                 </ol>");
-            var elements = mainPart.Document.Body!.ChildElements;
-            Assert.Multiple(() => {
+            var elements = mainPart.Document!.Body!.ChildElements;
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(elements, Has.Count.EqualTo(3));
                 Assert.That(elements, Is.All.TypeOf<Paragraph>());
                 Assert.That(elements[1].InnerText, Is.EqualTo("Item 1.1"));
                 Assert.That(mainPart.NumberingDefinitionsPart?.Numbering, Is.Not.Null);
-            });
+            }
 
-            var absNum = mainPart.NumberingDefinitionsPart?.Numbering
+            var absNum = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<AbstractNum>()
                 .SingleOrDefault();
             Assert.That(absNum, Is.Not.Null);
 
             // assert numbering template definition
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 // this is not a real expected constant values but something defined internally in ListExpression
                 Assert.That(absNum.AbstractNumDefinitionName?.Val?.Value, Is.EqualTo("decimal"));
                 Assert.That(absNum.MultiLevelType?.Val?.InnerText, Is.AnyOf("hybridMultilevel", "multilevel"));
                 Assert.That(absNum.Elements<Level>().Count(), Is.AtLeast(2), "At least 2 level registred");
                 Assert.That(absNum.GetFirstChild<Level>()?.NumberingFormat?.Val?.Value, Is.EqualTo(NumberFormatValues.Decimal));
-            });
+            }
 
-            var inst = mainPart.NumberingDefinitionsPart?.Numbering
+            var inst = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<NumberingInstance>().Where(i => i.AbstractNumId?.Val == absNum.AbstractNumberId)
                 .SingleOrDefault();
             Assert.That(inst, Is.Not.Null);
@@ -109,7 +112,7 @@ namespace HtmlToOpenXml.Tests
             Paragraph p1_1 = (Paragraph) elements[1];
             Paragraph p2 = (Paragraph) elements[2];
             // assert paragraphs linked to numbering instance
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(elements.Cast<Paragraph>().Select(e => 
                     e.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value),
@@ -118,7 +121,7 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(p1.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value, Is.EqualTo(0));
                 Assert.That(p1_1.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value, Is.EqualTo(1));
                 Assert.That(p2.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value, Is.EqualTo(0));
-            });
+            }
             AssertThatOpenXmlDocumentIsValid();
         }
 
@@ -130,11 +133,11 @@ namespace HtmlToOpenXml.Tests
             var numbering = mainPart.NumberingDefinitionsPart?.Numbering;
             if (numbering != null)
             {
-                Assert.Multiple(() =>
+                using (Assert.EnterMultipleScope())
                 {
                     Assert.That(numbering?.Elements<AbstractNum>(), Is.Empty);
                     Assert.That(numbering?.Elements<NumberingInstance>(), Is.Empty);
-                });
+                }
             }
         }
 
@@ -192,12 +195,12 @@ namespace HtmlToOpenXml.Tests
 
             var elements = converter.Parse(sb.ToString());
 
-            var absNum = mainPart.NumberingDefinitionsPart?.Numbering
+            var absNum = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<AbstractNum>()
                 .SingleOrDefault();
             Assert.That(absNum, Is.Not.Null);
 
-            var inst = mainPart.NumberingDefinitionsPart?.Numbering
+            var inst = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<NumberingInstance>().Where(i => i.AbstractNumId?.Val == absNum.AbstractNumberId)
                 .SingleOrDefault();
             Assert.That(inst, Is.Not.Null);
@@ -259,7 +262,7 @@ namespace HtmlToOpenXml.Tests
             var numbering = mainPart.NumberingDefinitionsPart?.Numbering;
             Assert.That(numbering, Is.Not.Null);
             Assert.That(elements, Has.Count.EqualTo(3));
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(elements.First().GetFirstChild<ParagraphProperties>()?.ParagraphStyleId?.Val?.Value,
                     Is.EqualTo(converter.HtmlStyles.DefaultStyles.ListParagraphStyle));
@@ -267,7 +270,7 @@ namespace HtmlToOpenXml.Tests
                     Is.EqualTo("CustomStyle1"));
                 Assert.That(elements.Last().GetFirstChild<ParagraphProperties>()?.ParagraphStyleId?.Val?.Value,
                     Is.EqualTo(converter.HtmlStyles.DefaultStyles.ListParagraphStyle));
-            });
+            }
         }
 
         [Test(Description = "Resume indenting from existing numbering (default behaviour)")]
@@ -277,21 +280,21 @@ namespace HtmlToOpenXml.Tests
 
             await converter.ParseBody("<ol><li>Item 2</li></ol>");
 
-            var absNum = mainPart.NumberingDefinitionsPart?.Numbering
+            var absNum = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<AbstractNum>()
                 .SingleOrDefault();
             Assert.That(absNum, Is.Not.Null);
 
-            var instances = mainPart.NumberingDefinitionsPart?.Numbering
+            var instances = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<NumberingInstance>().Where(i => i.AbstractNumId!.Val == absNum.AbstractNumberId);
             Assert.That(instances, Is.Not.Null);
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(instances.Count(), Is.EqualTo(1));
                 Assert.That(instances.Select(i => i.NumberID?.HasValue), Has.All.True);
-            });
+            }
 
-            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
+            var paragraphs = mainPart.Document!.Body!.Elements<Paragraph>();
             Assert.That(paragraphs, Is.Not.Empty);
             Assert.That(paragraphs.Select(e => 
                 e.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value),
@@ -308,21 +311,21 @@ namespace HtmlToOpenXml.Tests
             converter.ContinueNumbering = false;
             await converter.ParseBody("<ol><li>Item 2</li></ol>");
 
-            var absNum = mainPart.NumberingDefinitionsPart?.Numbering
+            var absNum = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<AbstractNum>()
                 .SingleOrDefault();
             Assert.That(absNum, Is.Not.Null);
 
-            var instances = mainPart.NumberingDefinitionsPart?.Numbering
+            var instances = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<NumberingInstance>().Where(i => i.AbstractNumId!.Val == absNum.AbstractNumberId);
             Assert.That(instances, Is.Not.Null);
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(instances.Count(), Is.EqualTo(2), "Expecting 2 distinct instances of the list");
                 Assert.That(instances.Select(i => i.NumberID?.HasValue), Has.All.True);
-            });
+            }
 
-            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
+            var paragraphs = mainPart.Document!.Body!.Elements<Paragraph>();
             Assert.That(paragraphs, Is.Not.Empty);
             Assert.That(paragraphs.Select(e => 
                 e.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value),
@@ -345,17 +348,17 @@ namespace HtmlToOpenXml.Tests
                     <li>Item 2</li>
                 </ol>");
 
-            var elements = mainPart.Document.Body!.ChildElements;
-            var absNum = mainPart.NumberingDefinitionsPart?.Numbering
+            var elements = mainPart.Document!.Body!.ChildElements;
+            var absNum = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<AbstractNum>()
                 .SingleOrDefault();
             Assert.That(absNum, Is.Not.Null);
 
-            var instances = mainPart.NumberingDefinitionsPart?.Numbering
+            var instances = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<NumberingInstance>().Where(i => i.AbstractNumId!.Val == absNum.AbstractNumberId);
             Assert.That(instances, Is.Not.Null);
             var levels = absNum.Elements<Level>();
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(instances.Count(), Is.EqualTo(1));
                 Assert.That(instances.Select(i => i.NumberID?.HasValue), Has.All.True);
@@ -363,7 +366,7 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(levels.Select(l => l.NumberingFormat?.Val?.Value), Has.All.EqualTo(NumberFormatValues.Decimal));
                 Assert.That(levels.Select(l => l.PreviousParagraphProperties?.Indentation?.Left?.Value), Has.All.EqualTo("0"),
                     "Decimal Tiered style must all be aligned on left with no indent");
-            });
+            }
 
             Assert.That(elements, Is.Not.Empty);
             // exception rule: this style should cascade to nested lists
@@ -381,7 +384,7 @@ namespace HtmlToOpenXml.Tests
             var elements = converter.Parse($"<ol start='{startLevel}'><li>Item</li></ol>");
             Assert.That(elements, Is.Not.Empty);
 
-            var inst = mainPart.NumberingDefinitionsPart?.Numbering
+            var inst = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<NumberingInstance>()
                 .SingleOrDefault();
             Assert.That(inst, Is.Not.Null);
@@ -395,7 +398,7 @@ namespace HtmlToOpenXml.Tests
             var elements = converter.Parse($"<ul start='3'><li>Item</li></ul>");
             Assert.That(elements, Is.Not.Empty);
 
-            var inst = mainPart.NumberingDefinitionsPart?.Numbering
+            var inst = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<NumberingInstance>()
                 .SingleOrDefault();
             Assert.That(inst, Is.Not.Null);
@@ -411,18 +414,18 @@ namespace HtmlToOpenXml.Tests
                     <li>Item 1</li>
                 </ul>");
 
-            var elements = mainPart.Document.Body!.ChildElements;
+            var elements = mainPart.Document!.Body!.ChildElements;
             Assert.That(elements, Is.Not.Empty);
             Assert.That(elements, Is.All.TypeOf<Paragraph>());
             var numId = ((Paragraph) elements[0]).ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value;
             Assert.That(numId, Is.Not.Null);
 
-            var numInst = mainPart.NumberingDefinitionsPart!.Numbering
+            var numInst = mainPart.NumberingDefinitionsPart!.Numbering!
                 .Elements<NumberingInstance>()
                 .Single(i => i.NumberID?.Value == numId);
             Assert.That(numInst.AbstractNumId?.Val?.Value, Is.Not.Null);
 
-            var absNums = mainPart.NumberingDefinitionsPart.Numbering
+            var absNums = mainPart.NumberingDefinitionsPart.Numbering!
                 .Elements<AbstractNum>();
             var absNum = absNums.FirstOrDefault(a => a.AbstractNumberId == numInst.AbstractNumId.Val);
             Assert.That(absNum, Is.Not.Null);
@@ -454,23 +457,23 @@ namespace HtmlToOpenXml.Tests
                 </li>
                 </ol>");
 
-            var elements = mainPart.Document.Body!.ChildElements;
-            var absNum = mainPart.NumberingDefinitionsPart?.Numbering
+            var elements = mainPart.Document!.Body!.ChildElements;
+            var absNum = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<AbstractNum>();
             Assert.That(absNum, Is.Not.Null);
             Assert.That(absNum.Count(), Is.EqualTo(2));
 
             var absNumIds = new HashSet<int>(absNum.Select(a => a.AbstractNumberId!.Value));
-            var instances = mainPart.NumberingDefinitionsPart?.Numbering
+            var instances = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<NumberingInstance>().Where(i => absNumIds.Contains(i.AbstractNumId!.Val!));
             Assert.That(instances, Is.Not.Null);
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(instances.Count(), Is.EqualTo(4), "Expecting 4 distinct instances of the list");
                 Assert.That(instances.Select(i => i.NumberID?.Value), Is.Unique);
-            });
-            Assert.That(instances.Last().GetFirstChild<LevelOverride>()?.LevelIndex?.Value, Is.EqualTo(1));
-            Assert.That(instances.Last().GetFirstChild<LevelOverride>()?.StartOverrideNumberingValue?.Val?.Value, Is.EqualTo(1));
+                Assert.That(instances.Last().GetFirstChild<LevelOverride>()?.LevelIndex?.Value, Is.EqualTo(1));
+                Assert.That(instances.Last().GetFirstChild<LevelOverride>()?.StartOverrideNumberingValue?.Val?.Value, Is.EqualTo(1));
+            }
             AssertThatOpenXmlDocumentIsValid();
         }
 
@@ -483,11 +486,12 @@ namespace HtmlToOpenXml.Tests
                 <li>Item 1</li><li>Item 2</li>
             </ol>");
 
-            Assert.Multiple(() => {
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(elements, Has.Count.EqualTo(2));
                 Assert.That(elements, Is.All.TypeOf<Paragraph>());
                 Assert.That(mainPart.NumberingDefinitionsPart?.Numbering, Is.Not.Null);
-            });
+            }
             var bidis = elements.Cast<Paragraph>().Select(p => p.ParagraphProperties?.BiDi?.Val?.Value);
             Assert.That(bidis, Is.All.EqualTo(expectedValue));
         }
@@ -504,11 +508,12 @@ namespace HtmlToOpenXml.Tests
                     </li>
                 </ol>");
 
-            Assert.Multiple(() => {
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(elements, Has.Count.EqualTo(2));
                 Assert.That(elements, Is.All.TypeOf<Paragraph>());
                 Assert.That(mainPart.NumberingDefinitionsPart?.Numbering, Is.Not.Null);
-            });
+            }
             var bidi = elements.Last().GetFirstChild<ParagraphProperties>()?.BiDi;
             return bidi?.Val?.Value;
         }
@@ -525,7 +530,7 @@ namespace HtmlToOpenXml.Tests
 
             converter.Parse(sb.ToString());
 
-            var absNum = mainPart.NumberingDefinitionsPart?.Numbering
+            var absNum = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<AbstractNum>()
                 .SingleOrDefault();
             Assert.That(absNum, Is.Not.Null);
@@ -551,34 +556,35 @@ namespace HtmlToOpenXml.Tests
                     <ol><li>Item 2.1</li></ol>
                 </ol>",TestContext.CurrentContext.CancellationToken);
 
-            var absNum = mainPart.NumberingDefinitionsPart?.Numbering
+            var absNum = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<AbstractNum>()
                 .SingleOrDefault();
             Assert.That(absNum, Is.Not.Null);
 
-            var inst = mainPart.NumberingDefinitionsPart?.Numbering
+            var inst = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<NumberingInstance>().Where(i => i.AbstractNumId?.Val == absNum.AbstractNumberId)
                 .SingleOrDefault();
             Assert.That(inst, Is.Not.Null);
             Assert.That(inst.NumberID?.Value, Is.Not.Null);
 
-            var elements = mainPart.Document.Body!.ChildElements;
-            Assert.Multiple(() => {
+            var elements = mainPart.Document!.Body!.ChildElements;
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(elements, Has.Count.EqualTo(3));
                 Assert.That(elements, Is.All.TypeOf<Paragraph>());
                 Assert.That(mainPart.NumberingDefinitionsPart?.Numbering, Is.Not.Null);
-            });
+            }
 
             // assert paragraphs linked to numbering instance
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(elements.Cast<Paragraph>().Select(e => 
                     e.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value),
-                    Has.All.EqualTo(inst.NumberID.Value),
+                    Has.All.EqualTo(inst.NumberID!.Value),
                     "All paragraphs are linked to the same list instance");
                 Assert.That(elements.Take(2).Select(p => p.GetFirstChild<ParagraphProperties>()?.NumberingProperties?.NumberingLevelReference?.Val?.Value), Has.All.EqualTo(0));
                 Assert.That(elements.Last().GetFirstChild<ParagraphProperties>()?.NumberingProperties?.NumberingLevelReference?.Val?.Value, Is.EqualTo(1));
-            });
+            }
             AssertThatOpenXmlDocumentIsValid();
         }
 
@@ -594,11 +600,12 @@ namespace HtmlToOpenXml.Tests
 
             Assert.That(elements, Is.Not.Empty);
 
-            var inst = mainPart.NumberingDefinitionsPart?.Numbering
+            var inst = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<NumberingInstance>()
                 .SingleOrDefault();
             Assert.That(inst, Is.Not.Null);
-            Assert.Multiple(() => {
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(elements.Last().GetFirstChild<ParagraphProperties>()?.NumberingProperties?.NumberingId,
                     Is.Null,
                     "Last paragraph is standalone and not linked to a list instance");
@@ -609,7 +616,7 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(elements.Last().GetFirstChild<ParagraphProperties>()?.Indentation?.Left?.Value,
                     Is.EqualTo("720"),
                     "Last standalone paragraph is aligned with the level 1");
-            });
+            }
         }
 
         [Test]

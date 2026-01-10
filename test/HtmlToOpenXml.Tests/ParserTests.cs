@@ -55,11 +55,11 @@ namespace HtmlToOpenXml.Tests
         {
             var elements = converter.Parse("<p>First paragraph in semi-<i>italics <p>Second paragraph still italic <b>but also in bold</b></p>");
             Assert.That(elements, Has.Count.EqualTo(2));
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(elements[0].Elements<Run>().Count, Is.EqualTo(2));
                 Assert.That(elements[1].Elements<Run>().Count, Is.EqualTo(2));
-            });
+            }
 
             var runProperties = elements[0].ChildElements[0].GetFirstChild<RunProperties>();
             Assert.That(runProperties, Is.Null);

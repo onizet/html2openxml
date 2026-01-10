@@ -16,13 +16,14 @@ namespace HtmlToOpenXml.Tests.Primitives
         {
             var border = SideBorder.Parse(htmlBorder.AsSpan());
 
-            Assert.Multiple(() => {
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(border.IsValid, Is.True);
                 Assert.That(((IEnumValue) border.Style).Value, Is.EqualTo(borderStyle));
                 Assert.That(border.Color.R, Is.EqualTo(red));
                 Assert.That(border.Color.B, Is.EqualTo(blue));
                 Assert.That(border.Color.G, Is.EqualTo(green));
-            });
+            }
         }
 
         [TestCase("")]

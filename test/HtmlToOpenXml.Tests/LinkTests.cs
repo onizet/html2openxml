@@ -33,11 +33,12 @@ namespace HtmlToOpenXml.Tests
 
             var elements = converter.Parse(html);
             Assert.That(elements, Has.Count.EqualTo(1));
-            Assert.Multiple(() => {
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(elements[0], Is.TypeOf(typeof(Paragraph)));
                 Assert.That(elements[0].FirstChild, Is.TypeOf(typeof(Run)));
                 Assert.That(elements[0].FirstChild?.FirstChild, Is.TypeOf(typeof(Text)));
-            });
+            }
         }
 
         [Test]
@@ -109,14 +110,14 @@ namespace HtmlToOpenXml.Tests
             var elements = converter.Parse(str);
             Assert.That(elements, Has.Count.EqualTo(2));
             Assert.That(elements, Has.All.TypeOf<Paragraph>());
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(elements[0].HasChild<Hyperlink>(), Is.True);
                 Assert.That(elements[1].HasChild<BookmarkStart>(), Is.True);
                 Assert.That(elements[1].HasChild<BookmarkEnd>(), Is.True);
                 Assert.That(elements[0].GetFirstChild<Hyperlink>()?.Anchor?.Value, Is.EqualTo("heading1"));
                 Assert.That(elements[1].GetFirstChild<BookmarkStart>()?.Name?.Value, Is.EqualTo("heading1"));
-            });
+            }
         }
 
         [Test(Description = "Anchor is targeting an empty link inside a heading")]
@@ -126,14 +127,14 @@ namespace HtmlToOpenXml.Tests
             var elements = converter.Parse(str);
             Assert.That(elements, Has.Count.EqualTo(2));
             Assert.That(elements, Has.All.TypeOf<Paragraph>());
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(elements[0].HasChild<Hyperlink>(), Is.True);
                 Assert.That(elements[1].HasChild<BookmarkStart>(), Is.True);
                 Assert.That(elements[1].HasChild<BookmarkEnd>(), Is.True);
                 Assert.That(elements[0].GetFirstChild<Hyperlink>()?.Anchor?.Value, Is.EqualTo("heading1"));
                 Assert.That(elements[1].GetFirstChild<BookmarkStart>()?.Name?.Value, Is.EqualTo("heading1"));
-            });
+            }
         }
 
         [Test(Description = "Link inside a paragraph")]
@@ -142,11 +143,12 @@ namespace HtmlToOpenXml.Tests
             var elements = converter.Parse(@"Some <a href=""www.site.com"">inline</a> link.");
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements[0], Is.TypeOf(typeof(Paragraph)));
-            Assert.Multiple(() => {
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(elements[0].ElementAt(0), Is.TypeOf<Run>());
                 Assert.That(elements[0].ElementAt(1), Is.TypeOf<Hyperlink>());
                 Assert.That(elements[0].ElementAt(2), Is.TypeOf<Run>());
-            });
+            }
         }
 
         [Test(Description = "Many runs inside the link should respect whitespaces")]
@@ -168,7 +170,7 @@ namespace HtmlToOpenXml.Tests
         public async Task ParseIntoDocumentPart_ReturnsHyperlinkParentedToPart (Type openXmlPartType)
         {
             string html = @"<a href=""www.site.com"" title=""Test Tooltip"">Test Caption</a>";
-            OpenXmlElement host;
+            OpenXmlElement? host;
             OpenXmlPartContainer container;
 
             if (openXmlPartType == typeof(HeaderPart))
@@ -187,13 +189,14 @@ namespace HtmlToOpenXml.Tests
             {
                 await converter.ParseBody(html);
                 container = mainPart;
-                host = mainPart.Document.Body!;
+                host = mainPart.Document!.Body!;
             }
             else
             {
                 throw new NotSupportedException($"Test case not supported for {openXmlPartType.FullName}");
             }
 
+            Assert.That(host, Is.Not.Null);
             AssertHyperlink(container, host.ChildElements, "http://www.site.com/");
             AssertThatOpenXmlDocumentIsValid();
         }
@@ -204,7 +207,7 @@ namespace HtmlToOpenXml.Tests
         {
             await converter.ParseBody($"<table><tr><td>Cell1</td></tr></table><a href='#{anchor}'>Move to top</a>");
 
-            Assert.That(mainPart.Document.Body!.Elements().Count(), Is.EqualTo(3));
+            Assert.That(mainPart.Document!.Body!.Elements().Count(), Is.EqualTo(3));
             Assert.That(mainPart.Document.Body!.FirstChild, Is.TypeOf<Paragraph>());
             Assert.That(mainPart.Document.Body!.ElementAt(1), Is.TypeOf<Table>());
             Assert.That(mainPart.Document.Body!.LastChild, Is.TypeOf<Paragraph>());
@@ -222,16 +225,16 @@ namespace HtmlToOpenXml.Tests
             await converter.ParseBody(@"<h1>Heading 1</h1>
                 <a href='#_top'>Move to top</a>");
 
-            var p = mainPart.Document.Body!.GetFirstChild<Paragraph>();
+            var p = mainPart.Document!.Body!.GetFirstChild<Paragraph>();
             Assert.That(p, Is.Not.Null);
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(p.GetFirstChild<BookmarkStart>()?.Name?.Value, Is.EqualTo("_top"),
                     "Expected `_top` bookmark in the first body paragraph");
                 Assert.That(p.GetFirstChild<Run>(), Is.Not.Null);
                 Assert.That(p.ParagraphProperties?.ParagraphStyleId?.Val?.Value, Is.EqualTo("Heading1"),
                     "Expected first paragraph is the heading");
-            });
+            }
         }
 
         [Test(Description = "Clickable image pointing to `_top` bookmark requires additional link relationship")]
@@ -240,7 +243,7 @@ namespace HtmlToOpenXml.Tests
             await converter.ParseBody(@"<a href='#_top'>Move to top
                     <img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=='>
                 </a>");
-            var p = mainPart.Document.Body!.GetFirstChild<Paragraph>();
+            var p = mainPart.Document!.Body!.GetFirstChild<Paragraph>();
             var drawing = p?.Descendants<Drawing>().FirstOrDefault();
             Assert.That(drawing, Is.Not.Null);
             var linkTarget = drawing?.Inline?.DocProperties?.GetFirstChild<a.HyperlinkOnClick>()?.Id?.Value;
@@ -254,22 +257,23 @@ namespace HtmlToOpenXml.Tests
             string expectedUri)
         {
             Assert.That(elements.Count(), Is.EqualTo(1));
-            Assert.Multiple(() => {
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(elements.First(), Is.TypeOf(typeof(Paragraph)));
                 Assert.That(elements.First().HasChild<Hyperlink>(), Is.True);
-            });
+            }
             var hyperlink = elements.First().GetFirstChild<Hyperlink>()!;
             Assert.That(hyperlink.Tooltip, Is.Not.Null);
             Assert.That(hyperlink.Tooltip.Value, Is.EqualTo("Test Tooltip"));
             Assert.That(hyperlink.HasChild<Run>(), Is.True);
             Assert.That(elements.First().InnerText, Is.EqualTo("Test Caption"));
 
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(hyperlink.Id, Is.Not.Null);
                 Assert.That(hyperlink.History?.Value, Is.EqualTo(true));
                 Assert.That(container.HyperlinkRelationships.Count(), Is.GreaterThan(0));
-            });
+            }
 
             var extLink = container.HyperlinkRelationships.FirstOrDefault(r => r.Id == hyperlink.Id);
             Assert.That(extLink, Is.Not.Null);

@@ -23,13 +23,14 @@ namespace HtmlToOpenXml.Tests.Primitives
         {
             var color = HtmlColor.Parse(htmlColor.AsSpan());
 
-            Assert.Multiple(() => {
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(color.IsEmpty, Is.False);
                 Assert.That(color.R, Is.EqualTo(red));
                 Assert.That(color.B, Is.EqualTo(blue));
                 Assert.That(color.G, Is.EqualTo(green));
                 Assert.That(color.A, Is.EqualTo(alpha));
-            });
+            }
         }
 
         // Failure that leads to empty

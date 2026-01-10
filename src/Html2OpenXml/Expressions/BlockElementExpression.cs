@@ -427,7 +427,7 @@ class BlockElementExpression: PhrasingElementExpression
         if (!bookmarkRef.HasValue)
         {
             bookmarkRef = 0;
-            foreach (var b in context.MainPart.Document.Body!.Descendants<BookmarkStart>())
+            foreach (var b in context.MainPart.Document!.Body!.Descendants<BookmarkStart>())
             {
                 // OpenXml SDK expose the ID as a string value but this is really an integer
                 if (b.Id != null && int.TryParse(b.Id.Value, out int id) && id > bookmarkRef)

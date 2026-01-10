@@ -75,14 +75,14 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements, Is.Not.Empty);
             var tableProperties = elements[0].GetFirstChild<TableProperties>();
             Assert.That(tableProperties, Is.Not.Null);
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(tableProperties.TableStyle, Is.Not.Null);
                 Assert.That(tableProperties.TableBorders, Is.Not.Null);
-            });
+            }
 
             // the TableNormal doesn't define any borders while default shipped Table style does
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(tableProperties.TableStyle?.Val?.Value, Is.EqualTo("TableNormal"));
                 Assert.That(tableProperties.TableBorders.LeftBorder?.Val?.Value, Is.EqualTo(BorderValues.None));
@@ -91,7 +91,7 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(tableProperties.TableBorders.BottomBorder?.Val?.Value, Is.EqualTo(BorderValues.None));
                 Assert.That(tableProperties.TableBorders.InsideHorizontalBorder?.Val?.Value, Is.EqualTo(BorderValues.Single));
                 Assert.That(tableProperties.TableBorders.InsideVerticalBorder?.Val?.Value, Is.EqualTo(BorderValues.Single));
-            });
+            }
         }
 
         [Test]

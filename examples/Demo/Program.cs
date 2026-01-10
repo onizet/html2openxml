@@ -31,7 +31,7 @@ namespace Demo
                 //using (WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true))
                 using (WordprocessingDocument package = WordprocessingDocument.Create(generatedDocument, WordprocessingDocumentType.Document))
                 {
-                    MainDocumentPart mainPart = package.MainDocumentPart;
+                    MainDocumentPart? mainPart = package.MainDocumentPart;
                     if (mainPart == null)
                     {
                         mainPart = package.AddMainDocumentPart();
@@ -67,7 +67,7 @@ namespace Demo
             Console.ForegroundColor = ConsoleColor.Gray;
             foreach (ValidationErrorInfo error in errors)
             {
-                Console.Write("{0}\n\t{1}", error.Path.XPath, error.Description);
+                Console.Write("{0}\n\t{1}", error.Path!.XPath, error.Description);
                 Console.WriteLine();
             }
 

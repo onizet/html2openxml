@@ -165,7 +165,7 @@ namespace HtmlToOpenXml.Tests
             </div>");
             AssertThatOpenXmlDocumentIsValid();
 
-            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
+            var paragraphs = mainPart.Document!.Body!.Elements<Paragraph>();
             Assert.That(paragraphs, Is.Empty, "Assert that all the paragraphs stand inside the framed table");
 
             var framedTable = mainPart.Document.Body!.Elements<Table>().FirstOrDefault();
@@ -200,7 +200,7 @@ namespace HtmlToOpenXml.Tests
             </article>");
             AssertThatOpenXmlDocumentIsValid();
 
-            var paragraphs = mainPart.Document.Body!.Elements<Paragraph>();
+            var paragraphs = mainPart.Document!.Body!.Elements<Paragraph>();
             Assert.That(paragraphs, Is.Empty, "Assert that all the paragraphs stand inside the framed table");
 
             var framedTable = mainPart.Document.Body!.Elements<Table>().FirstOrDefault();

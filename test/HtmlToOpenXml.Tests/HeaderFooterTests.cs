@@ -23,7 +23,7 @@ namespace HtmlToOpenXml.Tests
             Assert.That(p.Select(p => p.ParagraphProperties?.ParagraphStyleId?.Val?.Value), 
                 Has.All.EqualTo(converter.HtmlStyles.DefaultStyles.HeaderStyle));
 
-            var sectionProperties = mainPart.Document.Body!.Elements<SectionProperties>();
+            var sectionProperties = mainPart.Document!.Body!.Elements<SectionProperties>();
             Assert.That(sectionProperties, Is.Not.Empty);
             Assert.That(sectionProperties.SelectMany(s => s.Elements<HeaderReference>())
                 .Any(r => r.Type?.Value == HeaderFooterValues.First), Is.True);
@@ -39,7 +39,7 @@ namespace HtmlToOpenXml.Tests
             Assert.That(footerPart, Is.Not.Null);
             Assert.That(footerPart.Footer, Is.Not.Null);
 
-            var sectionProperties = mainPart.Document.Body!.Elements<SectionProperties>();
+            var sectionProperties = mainPart.Document!.Body!.Elements<SectionProperties>();
             Assert.That(sectionProperties, Is.Not.Empty);
             Assert.That(sectionProperties.Any(s => s.HasChild<FooterReference>()), Is.True);
             AssertThatOpenXmlDocumentIsValid();
@@ -56,14 +56,14 @@ namespace HtmlToOpenXml.Tests
             using WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true);
             MainDocumentPart mainPart = package.MainDocumentPart!;
 
-            var sectionProperties = mainPart.Document.Body!.Elements<SectionProperties>();
+            var sectionProperties = mainPart.Document!.Body!.Elements<SectionProperties>();
             Assert.That(sectionProperties, Is.Not.Empty);
             var headerRefs = sectionProperties.SelectMany(s => s.Elements<HeaderReference>());
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(headerRefs.Count(), Is.EqualTo(1));
                 Assert.That(headerRefs.Count(r => r.Type?.Value == HeaderFooterValues.Default), Is.EqualTo(1), "Default header exist");
-            });
+            }
 
             HtmlConverter converter = new(mainPart);
             await converter.ParseHeader("Header content");
@@ -86,14 +86,14 @@ namespace HtmlToOpenXml.Tests
             using WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true);
             MainDocumentPart mainPart = package.MainDocumentPart!;
 
-            var sectionProperties = mainPart.Document.Body!.Elements<SectionProperties>();
+            var sectionProperties = mainPart.Document!.Body!.Elements<SectionProperties>();
             Assert.That(sectionProperties, Is.Not.Empty);
             var headerRefs = sectionProperties.SelectMany(s => s.Elements<HeaderReference>());
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(headerRefs.Count(r => r.Type?.Value == HeaderFooterValues.Default), Is.EqualTo(1), "Default header exist");
                 Assert.That(headerRefs.Count(r => r.Type?.Value == HeaderFooterValues.Even), Is.Zero, "No event header has been yet defined");
-            });
+            }
 
             HtmlConverter converter = new(mainPart);
             await converter.ParseHeader("Header even content", HeaderFooterValues.Even);
@@ -102,11 +102,11 @@ namespace HtmlToOpenXml.Tests
             Assert.That(sectionProperties, Is.Not.Empty);
             Assert.That(sectionProperties.Count(s => s.HasChild<HeaderReference>()), Is.EqualTo(1));
             headerRefs = sectionProperties.SelectMany(s => s.Elements<HeaderReference>());
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(headerRefs.Count(r => r.Type?.Value == HeaderFooterValues.Default), Is.EqualTo(1));
                 Assert.That(headerRefs.Count(r => r.Type?.Value == HeaderFooterValues.Even), Is.EqualTo(1));
-            });
+            }
             AssertThatOpenXmlDocumentIsValid();
         }
 
@@ -150,7 +150,7 @@ namespace HtmlToOpenXml.Tests
             var paragraphs = footer.Elements<Paragraph>();
             Assert.That(paragraphs.Count(), Is.EqualTo(1));
             var paragraph = paragraphs.First();
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(paragraph.Elements<Run>().Count, Is.EqualTo(2), "One whitespace and one for <small>");
                 Assert.That(paragraph.Elements<Hyperlink>().Count, Is.EqualTo(1));
@@ -158,7 +158,7 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(paragraph.GetLastChild<Run>()?.InnerText, Is.EqualTo("© Copyright 2058, Company Inc."));
                 Assert.That(paragraphs.Select(p => p.ParagraphProperties?.ParagraphStyleId?.Val?.Value),
                     Has.All.EqualTo(converter.HtmlStyles.DefaultStyles.FooterStyle));
-            });
+            }
         }
     }
 }

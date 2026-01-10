@@ -17,13 +17,14 @@ namespace HtmlToOpenXml.Tests.Primitives
         {
             var margin = Margin.Parse(html.AsSpan());
 
-            Assert.Multiple(() => {
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(margin.IsValid, Is.True);
                 Assert.That(margin.Top.ValueInPx, Is.EqualTo(top));
                 Assert.That(margin.Right.ValueInPx, Is.EqualTo(right));
                 Assert.That(margin.Bottom.ValueInPx, Is.EqualTo(bottom));
                 Assert.That(margin.Left.ValueInPx, Is.EqualTo(left));
-            });
+            }
         }
 
         [Test]
@@ -31,7 +32,8 @@ namespace HtmlToOpenXml.Tests.Primitives
         {
             var margin = Margin.Parse("0 50% 9.5pt .00001pt".AsSpan());
 
-            Assert.Multiple(() => {
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(margin.IsValid, Is.True);
 
                 Assert.That(margin.Top.Value, Is.Zero);
@@ -50,7 +52,7 @@ namespace HtmlToOpenXml.Tests.Primitives
                 Assert.That(margin.Left.Metric, Is.EqualTo(UnitMetric.Point));
                 // but due to conversion: 0 (OpenXml relies mostly on long value, not on float)
                 Assert.That(Math.Round(margin.Left.ValueInPoint * 2).ToString(), Is.EqualTo("0"));
-            });
+            }
         }
 
         [Test]
@@ -58,7 +60,8 @@ namespace HtmlToOpenXml.Tests.Primitives
         {
             var margin = Margin.Parse("0 auto".AsSpan());
 
-            Assert.Multiple(() => {
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(margin.IsValid, Is.True);
 
                 Assert.That(margin.Top.Value, Is.Zero);
@@ -69,7 +72,7 @@ namespace HtmlToOpenXml.Tests.Primitives
 
                 Assert.That(margin.Left.Metric, Is.EqualTo(UnitMetric.Auto));
                 Assert.That(margin.Right.Metric, Is.EqualTo(UnitMetric.Auto));
-            });
+            }
         }
     }
 }

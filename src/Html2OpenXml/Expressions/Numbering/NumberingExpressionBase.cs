@@ -48,7 +48,7 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
             return abstractNumId;
         }
 
-        Numbering numberingPart = context.MainPart.NumberingDefinitionsPart!.Numbering;
+        Numbering numberingPart = context.MainPart.NumberingDefinitionsPart!.Numbering!;
 
         // at this stage, we have sanitized the list style so it's safe to grab them from the predefined template lists
         var abstractNum =  predefinedNumberingLists[listName];

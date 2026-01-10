@@ -18,11 +18,12 @@ namespace HtmlToOpenXml.Tests.Primitives
         {
             var unit = Unit.Parse(str.AsSpan());
 
-            Assert.Multiple(() => {
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(unit.IsValid, Is.True);
                 Assert.That(unit.Metric, Is.EqualTo(metric));
                 Assert.That(unit.Value, Is.EqualTo(value));
-            });
+            }
         }
 
         [TestCase("    ")]

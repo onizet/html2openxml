@@ -95,7 +95,7 @@ sealed class FigureCaptionExpression(IHtmlElement node) : BlockElementExpression
         if (!figCaptionRef.HasValue)
         {
             figCaptionRef = 0;
-            foreach (var p in context.MainPart.Document.Descendants<SimpleField>())
+            foreach (var p in context.MainPart.Document!.Descendants<SimpleField>())
             {
                 if (p.Instruction == " SEQ Figure \\* ARABIC ")
                     figCaptionRef++;

@@ -14,10 +14,11 @@ namespace HtmlToOpenXml.Tests.Primitives
         public bool WithMinimal_ReturnsValid (string html)
         {
             var font = HtmlFont.Parse(html.AsSpan());
-            Assert.Multiple(() => {
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(font.Style, Is.Null);
                 Assert.That(font.Weight, Is.Null);
-            });
+            }
             return font.Size.IsValid;
         }
 
@@ -26,46 +27,50 @@ namespace HtmlToOpenXml.Tests.Primitives
         public void WithDisordered_ShouldSucceed (string html)
         {
             var font = HtmlFont.Parse(html.AsSpan());
-            Assert.Multiple(() => {
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(font.Style, Is.EqualTo(FontStyle.Italic));
                 Assert.That(font.Weight, Is.EqualTo(FontWeight.Bold));
                 Assert.That(font.Family, Is.EqualTo("Verdana"));
                 Assert.That(font.Size.Metric, Is.EqualTo(UnitMetric.EM));
                 Assert.That(font.Size.Value, Is.EqualTo(1.2));
-            });
+            }
         }
 
         [Test(Description = "Multiple font families must keep the first one")]
         public void WithMultipleFamily_ShouldSucceed ()
         {
             var font = HtmlFont.Parse("Verdana, Arial bolder 1.2em".AsSpan());
-            Assert.Multiple(() => {
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(font.Style, Is.Null);
                 Assert.That(font.Weight, Is.EqualTo(FontWeight.Bolder));
                 Assert.That(font.Family, Is.EqualTo("Verdana"));
                 Assert.That(font.Size.Metric, Is.EqualTo(UnitMetric.EM));
                 Assert.That(font.Size.Value, Is.EqualTo(1.2));
-            });
+            }
         }
 
         [Test(Description = "Font families with quotes must unescape the first one")]
         public void WithQuotedFamily_ShouldSucceed ()
         {
             var font = HtmlFont.Parse("'Times New Roman', Times, Verdana, Arial bolder 1.2em".AsSpan());
-            Assert.Multiple(() => {
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(font.Style, Is.Null);
                 Assert.That(font.Weight, Is.EqualTo(FontWeight.Bolder));
                 Assert.That(font.Family, Is.EqualTo("Times New Roman"));
                 Assert.That(font.Size.Metric, Is.EqualTo(UnitMetric.EM));
                 Assert.That(font.Size.Value, Is.EqualTo(1.2));
-            });
+            }
         }
 
         [Test]
         public void WithFontSizeLineHeight_ShouldSucceed()
         {
             var font = HtmlFont.Parse("italic small-caps bold 12px/30px Georgia, serif".AsSpan());
-            Assert.Multiple(() => {
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(font.Variant, Is.EqualTo(FontVariant.SmallCaps));
                 Assert.That(font.Style, Is.EqualTo(FontStyle.Italic));
                 Assert.That(font.Weight, Is.EqualTo(FontWeight.Bold));
@@ -74,7 +79,7 @@ namespace HtmlToOpenXml.Tests.Primitives
                 Assert.That(font.Size.Value, Is.EqualTo(12));
                 Assert.That(font.LineHeight.Metric, Is.EqualTo(UnitMetric.Pixel));
                 Assert.That(font.LineHeight.Value, Is.EqualTo(30));
-            });
+            }
         }
     }
 }
