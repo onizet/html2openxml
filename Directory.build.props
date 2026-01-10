@@ -7,6 +7,6 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <DocumentFormatOpenXmlPackageVersion>3.3.0</DocumentFormatOpenXmlPackageVersion>
+        <DocumentFormatOpenXmlPackageVersion>3.4.1</DocumentFormatOpenXmlPackageVersion>
     </PropertyGroup>
 </Project>
