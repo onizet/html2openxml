@@ -23,6 +23,7 @@ static class SpanExtensions
     /// Shim method to convert <see cref="string"/> to <see cref="byte"/>.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [System.Diagnostics.DebuggerHidden]
     public static byte AsByte(this ReadOnlySpan<char> span, NumberStyles style)
     {
 #if NET5_0_OR_GREATER
@@ -36,6 +37,7 @@ static class SpanExtensions
     /// Shim method to convert <see cref="string"/> to <see cref="double"/>.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [System.Diagnostics.DebuggerHidden]
     public static double AsDouble(this ReadOnlySpan<char> span)
     {
 #if NET5_0_OR_GREATER
@@ -50,6 +52,7 @@ static class SpanExtensions
     /// Saturation and Lightness can contains both a percentage value or a value comprised between 0.0 and 1.0. 
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [System.Diagnostics.DebuggerHidden]
     public static double AsPercent (this ReadOnlySpan<char> span)
     {
         int index = span.IndexOf('%');
@@ -66,6 +69,7 @@ static class SpanExtensions
     /// Shim method to remain compliant with pre-NET 8 framework.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [System.Diagnostics.DebuggerHidden]
     public static ReadOnlySpan<T> Slice<T>(this ReadOnlySpan<T> span, Range range)
     {
 #if NET5_0_OR_GREATER
