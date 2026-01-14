@@ -163,7 +163,7 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
 
             // we will be able to retrieve the target during the processing
             target.Attributes.SetNamedItemWithNamespaceUri(
-                new Attr("h2ox", "bookmark", id, InternalNamespaceUri));
+                new Attr("data-bookmark", id));
         }
     }
 }

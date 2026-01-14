@@ -35,9 +35,9 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements, Has.Count.EqualTo(1));
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(elements[0], Is.TypeOf(typeof(Paragraph)));
-                Assert.That(elements[0].FirstChild, Is.TypeOf(typeof(Run)));
-                Assert.That(elements[0].FirstChild?.FirstChild, Is.TypeOf(typeof(Text)));
+                Assert.That(elements[0], Is.TypeOf<Paragraph>());
+                Assert.That(elements[0].FirstChild, Is.TypeOf<Run>());
+                Assert.That(elements[0].FirstChild?.FirstChild, Is.TypeOf<Text>());
             }
         }
 
@@ -45,13 +45,16 @@ namespace HtmlToOpenXml.Tests
         public void TextImageLink_ReturnsHyperlinkWithTextAndImage ()
         {
             var elements = converter.Parse(@"<a href=""www.site.com""><img src=""data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=="" alt=""Red dot"" /> Test Caption</a>");
-            Assert.That(elements[0].FirstChild, Is.TypeOf(typeof(Hyperlink)));
+            Assert.That(elements[0].FirstChild, Is.TypeOf<Hyperlink>());
 
             var hyperlink = (Hyperlink) elements[0].FirstChild;
-            Assert.That(hyperlink.ChildElements, Has.Count.EqualTo(2));
-            Assert.That(hyperlink.FirstChild, Is.TypeOf(typeof(Run)));
-            Assert.That(hyperlink.FirstChild.HasChild<Drawing>(), Is.True);
-            Assert.That(hyperlink.LastChild?.InnerText, Is.EqualTo(" Test Caption"));
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(hyperlink.ChildElements, Has.Count.EqualTo(2));
+                Assert.That(hyperlink.FirstChild, Is.TypeOf<Run>());
+                Assert.That(hyperlink.FirstChild?.HasChild<Drawing>(), Is.True);
+                Assert.That(hyperlink.LastChild?.InnerText, Is.EqualTo(" Test Caption"));
+            }
         }
 
         [Test(Description = "Assert that `figcaption` tag doesn't generate paragraphs")]
@@ -60,11 +63,11 @@ namespace HtmlToOpenXml.Tests
             var elements = converter.Parse(@"<a href='www.site.com'>Go to
                 <img src=""data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=="" />
                 <figcaption>Caption for the image</figcaption></a>");
-            Assert.That(elements[0].FirstChild, Is.TypeOf(typeof(Hyperlink)));
+            Assert.That(elements[0].FirstChild, Is.TypeOf<Hyperlink>());
 
             var hyperlink = (Hyperlink) elements[0].FirstChild;
             Assert.That(hyperlink.ChildElements, Has.Count.EqualTo(6));
-            Assert.That(hyperlink.ChildElements, Has.All.TypeOf(typeof(Run)), "Hyperlinks don't accept inner paragraphs");
+            Assert.That(hyperlink.ChildElements, Has.All.TypeOf<Run>(), "Hyperlinks don't accept inner paragraphs");
             Assert.That(hyperlink.Descendants<Drawing>(), Is.Not.Null);
         }
 
@@ -73,12 +76,27 @@ namespace HtmlToOpenXml.Tests
         {
             var elements = converter.Parse(@"<a href=""#anchor1"">Anchor1</a>");
             Assert.That(elements, Has.Count.EqualTo(1));
-            Assert.That(elements[0], Is.TypeOf(typeof(Paragraph)));
+            Assert.That(elements[0], Is.TypeOf<Paragraph>());
             Assert.That(elements[0].HasChild<Hyperlink>(), Is.True);
 
             var hyperlink = elements[0].GetFirstChild<Hyperlink>()!;
             Assert.That(hyperlink.Id, Is.Null);
             Assert.That(hyperlink.Anchor?.Value, Is.EqualTo("anchor1"));
+        }
+
+        [Test]
+        public void CustomBookmark_ReturnsBookmarkWithNoHyperlink()
+        {
+            var elements = converter.Parse(@"<h1 data-bookmark=""heading1"">Heading 1</h1>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(elements[0], Is.TypeOf<Paragraph>());
+                Assert.That(elements[0].HasChild<Hyperlink>(), Is.False);
+                Assert.That(elements[0].HasChild<BookmarkStart>(), Is.True);
+                Assert.That(elements[0].HasChild<BookmarkEnd>(), Is.True);
+                Assert.That(elements[0].GetFirstChild<BookmarkStart>()?.Name?.Value, Is.EqualTo("heading1"));
+            }
         }
 
         [Test]
@@ -89,7 +107,7 @@ namespace HtmlToOpenXml.Tests
             // _top is always present and bypass the previous rule
             var elements = converter.Parse(@"<a href=""#_top"">Anchor2</a>");
             Assert.That(elements, Has.Count.EqualTo(1));
-            Assert.That(elements[0], Is.TypeOf(typeof(Paragraph)));
+            Assert.That(elements[0], Is.TypeOf<Paragraph>());
             Assert.That(elements[0].HasChild<Hyperlink>(), Is.True);
 
             var hyperlink = elements[0].GetFirstChild<Hyperlink>();
@@ -97,7 +115,7 @@ namespace HtmlToOpenXml.Tests
 
             // this should generate a Run and not an Hyperlink
             elements = converter.Parse(@"<a href=""#_anchor3"">Anchor3</a>");
-            Assert.That(elements[0].FirstChild, Is.TypeOf(typeof(Run)));
+            Assert.That(elements[0].FirstChild, Is.TypeOf<Run>());
         }
 
         [TestCase("h1", "id")]
@@ -142,7 +160,7 @@ namespace HtmlToOpenXml.Tests
         {
             var elements = converter.Parse(@"Some <a href=""www.site.com"">inline</a> link.");
             Assert.That(elements, Has.Count.EqualTo(1));
-            Assert.That(elements[0], Is.TypeOf(typeof(Paragraph)));
+            Assert.That(elements[0], Is.TypeOf<Paragraph>());
             using (Assert.EnterMultipleScope())
             {
                 Assert.That(elements[0].ElementAt(0), Is.TypeOf<Run>());
@@ -156,11 +174,11 @@ namespace HtmlToOpenXml.Tests
         {
             var elements = converter.Parse(@"<a href=""https://github.com/onizet/html2openxml""><b>Html</b> to <b>OpenXml</b> !</a>");
             Assert.That(elements, Has.Count.EqualTo(1));
-            Assert.That(elements[0], Is.TypeOf(typeof(Paragraph)));
+            Assert.That(elements[0], Is.TypeOf<Paragraph>());
             var h = elements[0].GetFirstChild<Hyperlink>();
 
             Assert.That(h, Is.Not.Null);
-            Assert.That(h.ChildElements, Has.All.TypeOf(typeof(Run)));
+            Assert.That(h.ChildElements, Has.All.TypeOf<Run>());
             Assert.That(h.InnerText, Is.EqualTo("Html to OpenXml !"));
         }
 
@@ -259,7 +277,7 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements.Count(), Is.EqualTo(1));
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(elements.First(), Is.TypeOf(typeof(Paragraph)));
+                Assert.That(elements.First(), Is.TypeOf<Paragraph>());
                 Assert.That(elements.First().HasChild<Hyperlink>(), Is.True);
             }
             var hyperlink = elements.First().GetFirstChild<Hyperlink>()!;
@@ -271,13 +289,13 @@ namespace HtmlToOpenXml.Tests
             using (Assert.EnterMultipleScope())
             {
                 Assert.That(hyperlink.Id, Is.Not.Null);
-                Assert.That(hyperlink.History?.Value, Is.EqualTo(true));
+                Assert.That(hyperlink.History?.Value, Is.True);
                 Assert.That(container.HyperlinkRelationships.Count(), Is.GreaterThan(0));
             }
 
             var extLink = container.HyperlinkRelationships.FirstOrDefault(r => r.Id == hyperlink.Id);
             Assert.That(extLink, Is.Not.Null);
-            Assert.That(extLink.IsExternal, Is.EqualTo(true));
+            Assert.That(extLink.IsExternal, Is.True);
             Assert.That(extLink.Uri.AbsoluteUri, Is.EqualTo(expectedUri));
         }
     }

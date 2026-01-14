@@ -46,7 +46,7 @@ class BlockElementExpression: PhrasingElementExpression
     {
         var childElements = base.Interpret(context);
 
-        var bookmarkTarget = node.GetAttribute(InternalNamespaceUri, "bookmark");
+        var bookmarkTarget = node.GetAttribute("data-bookmark");
         if (bookmarkTarget is not null)
         {
             var bookmarkId = IncrementBookmarkId(context).ToString(CultureInfo.InvariantCulture);
