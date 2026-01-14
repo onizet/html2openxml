@@ -9,10 +9,7 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -49,7 +46,7 @@ class BlockElementExpression: PhrasingElementExpression
     {
         var childElements = base.Interpret(context);
 
-        var bookmarkTarget = node.GetAttribute(InternalNamespaceUri, "bookmark");
+        var bookmarkTarget = node.GetAttribute("data-bookmark");
         if (bookmarkTarget is not null)
         {
             var bookmarkId = IncrementBookmarkId(context).ToString(CultureInfo.InvariantCulture);
@@ -93,7 +90,7 @@ class BlockElementExpression: PhrasingElementExpression
     {
         return ComposeChildren(context, childNodes, paraProperties,
             (runs) => {
-                if ("always".Equals(styleAttributes!["page-break-before"], StringComparison.OrdinalIgnoreCase))
+                if (styleAttributes.RequiresPageBreakBefore())
                 {
                     runs.Add(
                         new Run(
@@ -105,7 +102,7 @@ class BlockElementExpression: PhrasingElementExpression
                 }
             },
             (runs) => {
-                if ("always".Equals(styleAttributes!["page-break-after"], StringComparison.OrdinalIgnoreCase))
+                if (styleAttributes.RequiresPageBreakAfter())
                 {
                     runs.Add(new Run(
                         new Break() { Type = BreakValues.Page }));
@@ -189,8 +186,8 @@ class BlockElementExpression: PhrasingElementExpression
             };
         }
 
-        JustificationValues? align = Converter.ToParagraphAlign(styleAttributes!["text-align"]);
-        if (!align.HasValue) align = Converter.ToParagraphAlign(node.GetAttribute("align"));
+        JustificationValues? align = Converter.ToParagraphAlign(styleAttributes["text-align"]);
+        if (!align.HasValue) align = Converter.ToParagraphAlign(node.GetAttribute("align").AsSpan());
         if (!align.HasValue) align = Converter.ToParagraphAlign(styleAttributes["justify-content"]);
         if (align.HasValue)
         {
@@ -259,7 +256,7 @@ class BlockElementExpression: PhrasingElementExpression
 
         var lineHeight = styleAttributes.GetUnit("line-height");
         if (!lineHeight.IsValid 
-            && "normal".Equals(styleAttributes["line-height"], StringComparison.OrdinalIgnoreCase))
+            && styleAttributes.HasKeyEqualsTo("line-height", "normal"))
         {
             // if `normal` is specified, reset any values
             lineHeight = new Unit(UnitMetric.Unitless, 1);
@@ -267,7 +264,7 @@ class BlockElementExpression: PhrasingElementExpression
 
         if (lineHeight.IsValid)
         {
-            if (lineHeight.Type == UnitMetric.Unitless)
+            if (lineHeight.Metric == UnitMetric.Unitless)
             {
                 // auto should be considered as 240ths of a line
                 // https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.wordprocessing.spacingbetweenlines.line?view=openxml-3.0.1
@@ -276,7 +273,7 @@ class BlockElementExpression: PhrasingElementExpression
                     Line = Math.Round(lineHeight.Value * 240).ToString(CultureInfo.InvariantCulture)
                 };
             }
-            else if (lineHeight.Type == UnitMetric.Percent)
+            else if (lineHeight.Metric == UnitMetric.Percent)
             {
                 // percentage depends on the font size which is hard to determine here
                 // let's rely this to "auto" behaviour
@@ -372,7 +369,7 @@ class BlockElementExpression: PhrasingElementExpression
         p.Append(runs);
 
         // in Html, if a paragraph is ending with a line break, it is ignored
-        if (p.LastChild is Run run && run.LastChild is Break lineBreak)
+        if (p.LastChild is Run run && run.LastChild is Break lineBreak && lineBreak.Type == null)
         {
             // is this a standalone <br> inside the block? If so, replace the lineBreak with an empty paragraph
             if (runs.Count == 1) run.Append(new Text());
@@ -430,7 +427,7 @@ class BlockElementExpression: PhrasingElementExpression
         if (!bookmarkRef.HasValue)
         {
             bookmarkRef = 0;
-            foreach (var b in context.MainPart.Document.Body!.Descendants<BookmarkStart>())
+            foreach (var b in context.MainPart.Document!.Body!.Descendants<BookmarkStart>())
             {
                 // OpenXml SDK expose the ID as a string value but this is really an integer
                 if (b.Id != null && int.TryParse(b.Id.Value, out int id) && id > bookmarkRef)

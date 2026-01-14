@@ -9,8 +9,6 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
@@ -84,7 +82,7 @@ static class AngleSharpExtensions
     /// <remarks>Inline data in <see cref="IO.DataUri"/> would returns <see langword="false"/>.</remarks>
     public static bool TryParseUrl(string? uriString, UriKind uriKind,
 #if NET5_0_OR_GREATER
-    [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] 
+    [System.Diagnostics.CodeAnalysis.NotNullWhen(true)]
 #endif
     out Uri? result)
     {
@@ -158,9 +156,27 @@ static class AngleSharpExtensions
     /// Determines whether the layout mode is inline vs block or flex.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsInlineLayout(string? displayMode, string defaultLayout)
+    public static bool IsInlineLayout(ReadOnlySpan<char> displayMode, string defaultLayout)
     {
-        return (displayMode ?? defaultLayout)
-            .StartsWith("inline", StringComparison.OrdinalIgnoreCase) == true;
+        if (displayMode.IsEmpty)
+            displayMode = defaultLayout.AsSpan();
+
+        return displayMode.StartsWith("inline".AsSpan(), StringComparison.InvariantCultureIgnoreCase);
+    }
+
+    public static bool RequiresPageBreakBefore(this HtmlAttributeCollection styleAttributes)
+    {
+        if (styleAttributes.HasKeyEqualsTo("break-before", "page") ||
+            styleAttributes.HasKeyEqualsTo("page-break-before", "always"))
+            return true;
+        return false;
+    }
+
+    public static bool RequiresPageBreakAfter(this HtmlAttributeCollection styleAttributes)
+    {
+        if (styleAttributes.HasKeyEqualsTo("break-after", "page") ||
+            styleAttributes.HasKeyEqualsTo("page-break-after", "always"))
+            return true;
+        return false;
     }
 }

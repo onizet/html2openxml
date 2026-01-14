@@ -9,11 +9,6 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using AngleSharp;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
@@ -304,7 +299,7 @@ public partial class HtmlConverter
         bool wasRefSet = false;
         TPart? part = null;
 
-        var sectionProps = mainPart.Document.Body!.Elements<SectionProperties>();
+        var sectionProps = mainPart.Document!.Body!.Elements<SectionProperties>();
         if (!sectionProps.Any())
         {
             sectionProps = [new SectionProperties()];

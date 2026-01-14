@@ -14,6 +14,7 @@ namespace HtmlToOpenXml.Tests
         public void Standalone_ReturnsWithNoSpacing ()
         {
             var elements = converter.Parse("<hr>");
+            TestContext.Out.WriteLine(elements[0]!.OuterXml);
             AssertIsHr(elements[0], false);
         }
 
@@ -51,12 +52,12 @@ namespace HtmlToOpenXml.Tests
             var props = hr.GetFirstChild<ParagraphProperties>();
             Assert.That(props, Is.Not.Null);
 
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(props.ChildElements, Has.Count.EqualTo(expectSpacing ? 2 : 1));
                 Assert.That(props.ParagraphBorders, Is.Not.Null);
                 Assert.That(props.ParagraphBorders?.TopBorder, Is.Not.Null);
-            });
+            }
 
             Assert.That(props.SpacingBetweenLines, expectSpacing? Is.Not.Null : Is.Null);
         }

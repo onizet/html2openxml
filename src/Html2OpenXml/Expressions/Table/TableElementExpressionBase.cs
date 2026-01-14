@@ -9,7 +9,6 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System.Collections.Generic;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -72,8 +71,8 @@ abstract class TableElementExpressionBase(IHtmlElement node) : PhrasingElementEx
     {
         base.ComposeStyles(context);
 
-        var valign = Converter.ToVAlign(styleAttributes!["vertical-align"]);
-        if (!valign.HasValue) valign = Converter.ToVAlign(node.GetAttribute("valign"));
+        var valign = Converter.ToVAlign(styleAttributes["vertical-align"]);
+        if (!valign.HasValue) valign = Converter.ToVAlign(node.GetAttribute("valign").AsSpan());
         if (!valign.HasValue)
         {
             // in Html, table cell are vertically centered by default
@@ -83,7 +82,7 @@ abstract class TableElementExpressionBase(IHtmlElement node) : PhrasingElementEx
         cellProperties.TableCellVerticalAlignment = new() { Val = valign };
 
         var bgcolor = styleAttributes.GetColor("background-color");
-        if (bgcolor.IsEmpty) bgcolor = HtmlColor.Parse(node.GetAttribute("bgcolor"));
+        if (bgcolor.IsEmpty) bgcolor = HtmlColor.Parse(node.GetAttribute("bgcolor").AsSpan());
         if (bgcolor.IsEmpty) bgcolor = styleAttributes.GetColor("background");
         if (!bgcolor.IsEmpty)
         {
@@ -93,7 +92,7 @@ abstract class TableElementExpressionBase(IHtmlElement node) : PhrasingElementEx
         }
 
         var halign = Converter.ToParagraphAlign(styleAttributes["text-align"]);
-        if (!halign.HasValue) halign = Converter.ToParagraphAlign(node.GetAttribute("align"));
+        if (!halign.HasValue) halign = Converter.ToParagraphAlign(node.GetAttribute("align").AsSpan());
         if (halign.HasValue)
         {
             paraProperties.KeepNext = new();

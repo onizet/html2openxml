@@ -18,20 +18,20 @@ namespace HtmlToOpenXml.Tests
         {
             var elements = converter.Parse(html);
 
-            var absNum = mainPart.NumberingDefinitionsPart?.Numbering
+            var absNum = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<AbstractNum>()
                 .Where(abs => abs.AbstractNumDefinitionName?.Val == NumberingExpressionBase.HeadingNumberingName)
                 .SingleOrDefault();
             Assert.That(absNum, Is.Not.Null);
 
-            var inst = mainPart.NumberingDefinitionsPart?.Numbering
+            var inst = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<NumberingInstance>().Where(i => i.AbstractNumId?.Val == absNum.AbstractNumberId)
                 .FirstOrDefault();
             Assert.That(inst, Is.Not.Null);
             Assert.That(inst.NumberID?.Value, Is.Not.Null);
 
             var paragraphs = elements.Cast<Paragraph>();
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(paragraphs.Count(), Is.EqualTo(2));
                 Assert.That(paragraphs.Select(p => p.InnerText),
@@ -48,7 +48,7 @@ namespace HtmlToOpenXml.Tests
                     e.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value),
                     Has.All.EqualTo(1),
                     "All paragraphs stand on level 1");
-            });
+            }
         }
 
         [TestCase("<h1>1. Heading 1</h1><h2>1.1 Heading Normal Case</h1>")]
@@ -60,21 +60,21 @@ namespace HtmlToOpenXml.Tests
             converter.SupportsHeadingNumbering = false;
             var elements = converter.Parse(html);
 
-            var absNum = mainPart.NumberingDefinitionsPart?.Numbering
+            var absNum = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<AbstractNum>()
                 .Where(abs => abs.AbstractNumDefinitionName?.Val == NumberingExpressionBase.HeadingNumberingName)
                 .SingleOrDefault();
             Assert.That(absNum, Is.Null);
 
             var paragraphs = elements.Cast<Paragraph>();
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(paragraphs.Count(), Is.EqualTo(2));
                 Assert.That(paragraphs.First().InnerText, Is.EqualTo("1. Heading 1"));
                 Assert.That(paragraphs.First().ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val,
                     Is.Null,
                     "First paragraph is not a numbering");
-            });
+            }
         }
 
         [Test]
@@ -87,19 +87,19 @@ namespace HtmlToOpenXml.Tests
 
             var elements = converter.Parse(sb.ToString());
 
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(elements.Count(), Is.EqualTo(maxLevel + 1));
                 Assert.That(elements, Has.All.TypeOf<Paragraph>());
-            });
+            }
 
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(elements.Take(maxLevel).Select(p => p.GetFirstChild<ParagraphProperties>()?.ParagraphStyleId?.Val?.Value),
                             Has.All.StartsWith("Heading"));
                 Assert.That(elements.Last().GetFirstChild<ParagraphProperties>()?.ParagraphStyleId,
                     Is.Null, $"Only {maxLevel+1} levels of heading supported");
-            });
+            }
         }
 
         [Test(Description = "Heading with number but no text should be ignored (issue #189)")]
@@ -107,21 +107,21 @@ namespace HtmlToOpenXml.Tests
         {
             var elements = converter.Parse("<h1>00</h1>");
 
-            var absNum = mainPart.NumberingDefinitionsPart?.Numbering
+            var absNum = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<AbstractNum>()
                 .Where(abs => abs.AbstractNumDefinitionName?.Val == NumberingExpressionBase.HeadingNumberingName)
                 .SingleOrDefault();
             Assert.That(absNum, Is.Null);
 
             var paragraphs = elements.Cast<Paragraph>();
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(paragraphs.Count(), Is.EqualTo(1));
                 Assert.That(paragraphs.First().InnerText, Is.EqualTo("00"));
                 Assert.That(paragraphs.First().ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val,
                     Is.Null,
                     "First paragraph is not a numbering");
-            });
+            }
         }
     }
 }

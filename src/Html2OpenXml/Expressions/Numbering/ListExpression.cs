@@ -9,9 +9,6 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
@@ -197,7 +194,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
                 startValue = val;
         }
 
-        var numbering = context.MainPart.NumberingDefinitionsPart!.Numbering;
+        var numbering = context.MainPart.NumberingDefinitionsPart!.Numbering!;
         numbering.Append(
             new NumberingInstance(
                 new AbstractNumId() { Val = abstractNumId },
@@ -217,7 +214,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
     {
         var styleAttributes = listNode.GetStyles();
         bool orderedList = listNode.NodeName.Equals("ol", StringComparison.OrdinalIgnoreCase);
-        string? type = styleAttributes["list-style-type"];
+        string? type = styleAttributes["list-style-type"].ToString();
 
         if(orderedList && string.IsNullOrEmpty(type))
         {

@@ -18,23 +18,24 @@ namespace HtmlToOpenXml.Tests
         {
             var elements = converter.Parse(html);
             Assert.That(elements, Has.Count.EqualTo(1));
-            Assert.Multiple(() => {
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(elements[0], Is.TypeOf(typeof(Paragraph)));
                 Assert.That(elements[0].HasChild<Run>(), Is.True);
                 Assert.That(elements[0].InnerText, Is.EqualTo("NASA"));
-            });
+            }
 
             var noteRef = elements[0].GetLastChild<Run>()?.GetFirstChild<FootnoteReference>();
             Assert.That(noteRef, Is.Not.Null);
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(noteRef.Id?.HasValue, Is.EqualTo(true));
                 Assert.That(mainPart.FootnotesPart, Is.Not.Null);
-            });
+            }
 
             Assert.That(mainPart.FootnotesPart.HyperlinkRelationships.Count(), Is.EqualTo(0));
 
-            var fnotes = mainPart.FootnotesPart.Footnotes.Elements<Footnote>().FirstOrDefault(f => f.Id?.Value == noteRef.Id.Value);
+            var fnotes = mainPart.FootnotesPart.Footnotes!.Elements<Footnote>().FirstOrDefault(f => f.Id?.Value == noteRef.Id.Value);
             Assert.That(fnotes, Is.Not.Null);
         }
 
@@ -47,21 +48,22 @@ namespace HtmlToOpenXml.Tests
         {
             var elements = converter.Parse(html);
             Assert.That(elements, Has.Count.EqualTo(1));
-            Assert.Multiple(() => {
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(elements[0], Is.TypeOf(typeof(Paragraph)));
                 Assert.That(elements[0].HasChild<Run>(), Is.True);
                 Assert.That(elements[0].InnerText, Is.EqualTo("NASA"));
-            });
+            }
 
             var noteRef = elements[0].GetLastChild<Run>()?.GetFirstChild<FootnoteReference>();
             Assert.That(noteRef, Is.Not.Null);
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(noteRef.Id?.HasValue, Is.EqualTo(true));
                 Assert.That(mainPart.FootnotesPart, Is.Not.Null);
-            });
+            }
 
-            var fnotes = mainPart.FootnotesPart.Footnotes.Elements<Footnote>().FirstOrDefault(f => f.Id?.Value == noteRef.Id.Value);
+            var fnotes = mainPart.FootnotesPart.Footnotes!.Elements<Footnote>().FirstOrDefault(f => f.Id?.Value == noteRef.Id.Value);
             Assert.That(fnotes, Is.Not.Null);
 
             var link = fnotes.FirstChild?.GetFirstChild<Hyperlink>();
@@ -69,11 +71,11 @@ namespace HtmlToOpenXml.Tests
 
             var extLink = mainPart.FootnotesPart.HyperlinkRelationships.FirstOrDefault(r => r.Id == link.Id);
             Assert.That(extLink, Is.Not.Null);
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(extLink.IsExternal, Is.EqualTo(true));
                 Assert.That(extLink.Uri.AbsoluteUri, Is.EqualTo(expectedUri));
-            });
+            }
         }
 
         [Test]
@@ -84,13 +86,13 @@ namespace HtmlToOpenXml.Tests
 
             var noteRef = elements[0].GetLastChild<Run>()?.GetFirstChild<EndnoteReference>();
             Assert.That(noteRef, Is.Not.Null);
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(noteRef.Id?.HasValue, Is.EqualTo(true));
                 Assert.That(mainPart.EndnotesPart, Is.Not.Null);
-            });
+            }
 
-            var fnotes = mainPart.EndnotesPart.Endnotes.Elements<Endnote>().FirstOrDefault(f => f.Id?.Value == noteRef.Id.Value);
+            var fnotes = mainPart.EndnotesPart.Endnotes!.Elements<Endnote>().FirstOrDefault(f => f.Id?.Value == noteRef.Id.Value);
             Assert.That(fnotes, Is.Not.Null);
         }
 
@@ -140,12 +142,12 @@ namespace HtmlToOpenXml.Tests
             if (acronymPosition == AcronymPosition.PageEnd)
             {
                 noteRef = elements[0].GetLastChild<Run>()?.GetFirstChild<FootnoteReference>();
-                Assert.That(mainPart.FootnotesPart!.Footnotes.Elements<Footnote>().Select(fn => fn.Id?.Value), Is.Unique);
+                Assert.That(mainPart.FootnotesPart!.Footnotes!.Elements<Footnote>().Select(fn => fn.Id?.Value), Is.Unique);
             }
             else
             {
                 noteRef = elements[0].GetLastChild<Run>()?.GetFirstChild<EndnoteReference>();
-                Assert.That(mainPart.EndnotesPart!.Endnotes.Elements<Endnote>().Select(fn => fn.Id?.Value), Is.Unique);
+                Assert.That(mainPart.EndnotesPart!.Endnotes!.Elements<Endnote>().Select(fn => fn.Id?.Value), Is.Unique);
             }
 
             Assert.That(noteRef, Is.Not.Null);
@@ -154,12 +156,12 @@ namespace HtmlToOpenXml.Tests
             FootnoteEndnoteType? note;
             if (acronymPosition == AcronymPosition.PageEnd)
             {
-                note = mainPart.FootnotesPart!.Footnotes.Elements<Footnote>()
+                note = mainPart.FootnotesPart!.Footnotes!.Elements<Footnote>()
                     .FirstOrDefault(fn => fn.Id?.Value == noteRef.Id.Value);
             }
             else
             {
-                note = mainPart.EndnotesPart!.Endnotes.Elements<Endnote>()
+                note = mainPart.EndnotesPart!.Endnotes!.Elements<Endnote>()
                     .FirstOrDefault(fn => fn.Id?.Value == noteRef.Id.Value);
             }
             Assert.That(note, Is.Not.Null);
@@ -173,12 +175,13 @@ namespace HtmlToOpenXml.Tests
                 <abbr title='National Aeronautics and Space Administration'>NASA</abbr>
                 is an independent agency of the U.S. federal government responsible for the civil space program, aeronautics research, and space research.</p>");
             Assert.That(elements, Has.Count.EqualTo(1));
-            Assert.Multiple(() => {
+            using (Assert.EnterMultipleScope())
+            {
                 Assert.That(elements[0], Is.TypeOf(typeof(Paragraph)));
                 Assert.That(elements[0].Elements<Run>().Count(), Is.EqualTo(4), "4 runs: Pre abbr, abbr, quote number, post abbr");
                 Assert.That(elements[0].Elements<Run>().Any(r => r.HasChild<FootnoteReference>()), Is.True);
                 Assert.That(elements[0].InnerText, Is.EqualTo("The NASA is an independent agency of the U.S. federal government responsible for the civil space program, aeronautics research, and space research."));
-            });
+            }
         }
 
         [TestCase("<abbr title='National Aeronautics and Space Administration'>NASA</abbr>")]
@@ -189,14 +192,14 @@ namespace HtmlToOpenXml.Tests
             var header = mainPart.HeaderParts?.FirstOrDefault()?.Header;
             Assert.That(header, Is.Not.Null);
             Assert.That(header.ChildElements, Has.Count.EqualTo(1));
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(header.ChildElements, Is.All.TypeOf<Paragraph>());
                 Assert.That(header.FirstChild!.InnerText, Is.EqualTo("NASA"));
                 Assert.That(mainPart.FootnotesPart, Is.Null);
                 Assert.That(mainPart.EndnotesPart, Is.Null);
                 AssertThatOpenXmlDocumentIsValid();
-            });
+            }
         }
 
         [TestCase("<abbr title='National Aeronautics and Space Administration'>NASA</abbr>")]
@@ -207,14 +210,14 @@ namespace HtmlToOpenXml.Tests
             var footer = mainPart.FooterParts?.FirstOrDefault()?.Footer;
             Assert.That(footer, Is.Not.Null);
             Assert.That(footer.ChildElements, Has.Count.EqualTo(1));
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(footer.ChildElements, Is.All.TypeOf<Paragraph>());
                 Assert.That(footer.FirstChild!.InnerText, Is.EqualTo("NASA"));
                 Assert.That(mainPart.FootnotesPart, Is.Null);
                 Assert.That(mainPart.EndnotesPart, Is.Null);
                 AssertThatOpenXmlDocumentIsValid();
-            });
+            }
         }
     }
 }

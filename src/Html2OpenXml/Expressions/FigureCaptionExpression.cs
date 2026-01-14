@@ -9,9 +9,7 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -97,7 +95,7 @@ sealed class FigureCaptionExpression(IHtmlElement node) : BlockElementExpression
         if (!figCaptionRef.HasValue)
         {
             figCaptionRef = 0;
-            foreach (var p in context.MainPart.Document.Descendants<SimpleField>())
+            foreach (var p in context.MainPart.Document!.Descendants<SimpleField>())
             {
                 if (p.Instruction == " SEQ Figure \\* ARABIC ")
                     figCaptionRef++;

@@ -9,8 +9,6 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
-using System.Threading;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using AngleSharp.Svg.Dom;
@@ -163,7 +161,7 @@ class ImageExpression(IHtmlImageElement node) : ImageExpressionBase(node)
 
         if (unit.IsValid)
         {
-            return unit.Type == UnitMetric.Percent ?
+            return unit.Metric == UnitMetric.Percent ?
                 (int)(unit.Value * percentageBase / 100) :
                 unit.ValueInPx;
         }

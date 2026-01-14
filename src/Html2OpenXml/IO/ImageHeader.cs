@@ -13,10 +13,6 @@
  * http://stackoverflow.com/questions/111345/getting-image-dimensions-without-reading-the-entire-file/111349
  * EMF Specifications: https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/ae7e7437-cfe5-485e-84ea-c74b51b000be
  */
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text;
 using System.Xml.XPath;
 
@@ -45,6 +41,7 @@ public static class ImageHeader
         { new byte[] { 0x1, 0, 0, 0 }, FileType.Emf },
         { Encoding.UTF8.GetBytes("<?xml "), FileType.Xml }, // Xml so potentially Svg
     };
+
 
     private static readonly int MaxMagicBytesLength = imageFormatDecoders
         .Keys.OrderByDescending(x => x.Length).First().Length;
@@ -277,8 +274,8 @@ public static class ImageHeader
             nav = nav.SelectSingleNode("/*[local-name() = 'svg']");
             if (nav is not null)
             {
-                var width = Unit.Parse(nav.GetAttribute("width", string.Empty));
-                var height = Unit.Parse(nav.GetAttribute("height", string.Empty));
+                var width = Unit.Parse(nav.GetAttribute("width", string.Empty).AsSpan());
+                var height = Unit.Parse(nav.GetAttribute("height", string.Empty).AsSpan());
                 if (width.IsValid && height.IsValid)
                     return new Size(width.ValueInPx, height.ValueInPx);
             }

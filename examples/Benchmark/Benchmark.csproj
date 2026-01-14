@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net48;net8.0;net10.0</TargetFrameworks>
+    <SonarQubeExclude>true</SonarQubeExclude>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotnet" Version="0.15.6" />
+    <ProjectReference Include="..\..\src\Html2OpenXml\HtmlToOpenXml.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="*.html" />
+  </ItemGroup>
+
+</Project>

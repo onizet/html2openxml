@@ -1,21 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net462;net8.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net462;net8.0;net10.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Nullable>enable</Nullable>
-    <LangVersion>latest</LangVersion>
     <AssemblyName>HtmlToOpenXml</AssemblyName>
     <RootNamespace>HtmlToOpenXml</RootNamespace>
     <PackageId>HtmlToOpenXml.dll</PackageId>
-    <Version>3.2.8</Version>
+    <Version>3.3.0</Version>
     <PackageIcon>icon.png</PackageIcon>
-    <Copyright>Copyright 2009-$([System.DateTime]::Now.Year) Olivier Nizet</Copyright>
     <PackageReleaseNotes>See changelog https://github.com/onizet/html2openxml/blob/master/CHANGELOG.md</PackageReleaseNotes>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>office openxml netcore html</PackageTags>
-    <AssemblyVersion>3.2.8</AssemblyVersion>
+    <AssemblyVersion>3.3.0</AssemblyVersion>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/onizet/html2openxml</PackageProjectUrl>
     <RepositoryUrl>https://github.com/onizet/html2openxml</RepositoryUrl>
@@ -39,13 +36,13 @@
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
 
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net8.0' ">
+  <PropertyGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
     <DefineConstants>$(DefineConstants);NET5_0_OR_GREATER</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AngleSharp" Version="1.2.0" />
-    <PackageReference Include="DocumentFormat.OpenXml" Version="3.1.0" />
+    <PackageReference Include="AngleSharp" Version="1.4.0" />
+    <PackageReference Include="DocumentFormat.OpenXml" Version="$(DocumentFormatOpenXmlPackageVersion)" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
   </ItemGroup>
@@ -64,5 +61,15 @@
   <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
     <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
   </PropertyGroup>
+
+  <!-- replace nuget release notes from changelog -->
+  <Target Name="PreparePackageReleaseNotesFromFile" BeforeTargets="GenerateNuspec">
+    <ReadLinesFromFile File="../../CHANGELOG.md">
+      <Output TaskParameter="Lines" ItemName="ReleaseNoteLines" />
+    </ReadLinesFromFile>
+    <PropertyGroup>
+      <PackageReleaseNotes>@(ReleaseNoteLines, '%0a')</PackageReleaseNotes>
+    </PropertyGroup>
+  </Target>
  
 </Project>

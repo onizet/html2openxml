@@ -9,8 +9,9 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System.Collections.Generic;
-using System.Linq;
+#if NET5_0_OR_GREATER
+using System.Collections.Frozen;
+#endif
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -26,7 +27,7 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
     public const int MaxLevel = 8;
     protected const int Indentation = 360;
     public const string HeadingNumberingName = "decimal-heading-multi";
-    private static readonly IDictionary<string, AbstractNum> predefinedNumberingLists = InitKnownLists();
+    private static readonly IReadOnlyDictionary<string, AbstractNum> predefinedNumberingLists = InitKnownLists();
     /// <summary>Contains the list of templated list along with the AbstractNumbId</summary>
     private Dictionary<string, int>? knownAbsNumIds;
     /// <summary>Contains the list of numbering instance.</summary>
@@ -47,7 +48,7 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
             return abstractNumId;
         }
 
-        Numbering numberingPart = context.MainPart.NumberingDefinitionsPart!.Numbering;
+        Numbering numberingPart = context.MainPart.NumberingDefinitionsPart!.Numbering!;
 
         // at this stage, we have sanitized the list style so it's safe to grab them from the predefined template lists
         var abstractNum =  predefinedNumberingLists[listName];
@@ -218,7 +219,7 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
     /// <summary>
     /// Predefined template of lists.
     /// </summary>
-    private static Dictionary<string, AbstractNum> InitKnownLists()
+    private static IReadOnlyDictionary<string, AbstractNum> InitKnownLists()
     {
         var knownAbstractNums = new Dictionary<string, AbstractNum>();
 
@@ -292,6 +293,10 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
             knownAbstractNums.Add(listName, abstractNum);
         }
 
+#if NET5_0_OR_GREATER
+        return knownAbstractNums.ToFrozenDictionary();
+#else
         return knownAbstractNums;
+#endif
     }
 }

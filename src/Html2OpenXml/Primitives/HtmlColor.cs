@@ -9,7 +9,6 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
 using System.Globalization;
 
 namespace HtmlToOpenXml;
@@ -44,78 +43,116 @@ readonly partial struct HtmlColor : IEquatable<HtmlColor>
     /// <summary>
     /// Try to parse a value (RGB(A) or HSL(A), hexadecimal, or named color) to its RGB representation.
     /// </summary>
-    /// <param name="htmlColor">The color to parse.</param>
+    /// <param name="span">The color to parse.</param>
     /// <returns>Returns <see cref="HtmlColor.Empty"/> if parsing failed.</returns>
-    public static HtmlColor Parse(string? htmlColor)
+    public static HtmlColor Parse(ReadOnlySpan<char> span)
     {
-        if (string.IsNullOrEmpty(htmlColor))
-            return HtmlColor.Empty;
-
-        // Bug fixed by jairoXXX to support rgb(r,g,b) format
-        // RGB or RGBA
+        span = span.Trim();
+        if (span.Length < 3)
+            return Empty;
+ 
         try
         {
-            if (htmlColor!.StartsWith("rgb", StringComparison.OrdinalIgnoreCase))
+            // Is it in hexa? Note: we no more accept hexa value without preceding the '#'
+            if (span[0] == '#')
             {
-                int startIndex = htmlColor.IndexOf('(', 3), endIndex = htmlColor.LastIndexOf(')');
-                if (startIndex >= 3 && endIndex > -1)
-                {
-                    var colorStringArray = htmlColor.Substring(startIndex + 1, endIndex - startIndex - 1).Split(',');
-                    if (colorStringArray.Length < 3) return HtmlColor.Empty;
+                return ParseHexa(span);
+            }
 
-                    return FromArgb(
-                        colorStringArray.Length == 3 ? 1.0: double.Parse(colorStringArray[3], CultureInfo.InvariantCulture),
-                        Byte.Parse(colorStringArray[0], NumberStyles.Integer, CultureInfo.InvariantCulture),
-                        Byte.Parse(colorStringArray[1], NumberStyles.Integer, CultureInfo.InvariantCulture),
-                        Byte.Parse(colorStringArray[2], NumberStyles.Integer, CultureInfo.InvariantCulture)
-                    );
-                }
+            // RGB or RGBA
+            if (span.StartsWith(['r','g','b'], StringComparison.OrdinalIgnoreCase))
+            {
+                return ParseRgb(span);
             }
 
             // HSL or HSLA
-            if (htmlColor.StartsWith("hsl", StringComparison.OrdinalIgnoreCase))
+            if (span.StartsWith(['h','s','l'], StringComparison.OrdinalIgnoreCase))
             {
-                int startIndex = htmlColor.IndexOf('(', 3), endIndex = htmlColor.LastIndexOf(')');
-                if (startIndex >= 3 && endIndex > -1)
-                {
-                    var colorStringArray = htmlColor.Substring(startIndex + 1, endIndex - startIndex - 1).Split(',');
-                    if (colorStringArray.Length < 3) return HtmlColor.Empty;
-
-                    return FromHsl(
-                        colorStringArray.Length == 3 ? 1d: double.Parse(colorStringArray[3], CultureInfo.InvariantCulture),
-                        double.Parse(colorStringArray[0], CultureInfo.InvariantCulture),
-                        ParsePercent(colorStringArray[1]),
-                        ParsePercent(colorStringArray[2])
-                    );
-                }
-            }
-
-            // Is it in hexa? Note: we no more accept hexa value without preceding the '#'
-            if (htmlColor[0] == '#' && (htmlColor.Length == 7 || htmlColor.Length == 4))
-            {
-                if (htmlColor.Length == 7)
-                {
-                    return FromArgb(
-                        Convert.ToByte(htmlColor.Substring(1, 2), 16),
-                        Convert.ToByte(htmlColor.Substring(3, 2), 16),
-                        Convert.ToByte(htmlColor.Substring(5, 2), 16));
-                }
-
-                // #0FF --> #00FFFF
-                return FromArgb(
-                        Convert.ToByte(new string(htmlColor[1], 2), 16),
-                        Convert.ToByte(new string(htmlColor[2], 2), 16),
-                        Convert.ToByte(new string(htmlColor[3], 2), 16));
+                return ParseHsl(span);
             }
         }
         catch (Exception exc)
         {
             if (exc is FormatException || exc is OverflowException || exc is ArgumentOutOfRangeException)
-                return HtmlColor.Empty;
+                return Empty;
             throw;
         }
 
-        return GetNamedColor(htmlColor.AsSpan());
+        return GetNamedColor(span);
+    }
+
+    private static HtmlColor ParseHexa(ReadOnlySpan<char> span)
+    {
+        if (span.Length == 7)
+        {
+            return FromArgb(
+                span.Slice(1, 2).AsByte(NumberStyles.HexNumber),
+                span.Slice(3, 2).AsByte(NumberStyles.HexNumber),
+                span.Slice(5, 2).AsByte(NumberStyles.HexNumber));
+        }
+        if (span.Length == 4)
+        {
+            // #0FF --> #00FFFF
+            ReadOnlySpan<char> r = [span[1], span[1]];
+            ReadOnlySpan<char> g = [span[2], span[2]];
+            ReadOnlySpan<char> b = [span[3], span[3]];
+            return FromArgb(
+                    r.AsByte(NumberStyles.HexNumber),
+                    g.AsByte(NumberStyles.HexNumber),
+                    b.AsByte(NumberStyles.HexNumber));
+        }
+        return Empty;
+    }
+
+    private static HtmlColor ParseRgb(ReadOnlySpan<char> span)
+    {
+        int startIndex = span.IndexOf('('), endIndex = span.LastIndexOf(')');
+        if (startIndex < 3 || endIndex == -1)
+            return Empty;
+
+        span = span.Slice(startIndex + 1, endIndex - startIndex - 1);
+        Span<Range> tokens = stackalloc Range[5];
+        var sep = span.IndexOf(',') > -1? ',' : ' ';
+        return span.Split(tokens, sep, StringSplitOptions.RemoveEmptyEntries) switch
+        {
+            3 => FromArgb(1.0,
+                span.Slice(tokens[0]).AsByte(NumberStyles.Integer),
+                span.Slice(tokens[1]).AsByte(NumberStyles.Integer),
+                span.Slice(tokens[2]).AsByte(NumberStyles.Integer)),
+            4 => FromArgb(span.Slice(tokens[3]).AsDouble(),
+                span.Slice(tokens[0]).AsByte(NumberStyles.Integer),
+                span.Slice(tokens[1]).AsByte(NumberStyles.Integer),
+                span.Slice(tokens[2]).AsByte(NumberStyles.Integer)),
+            // r g b / a
+            5 => FromArgb(span.Slice(tokens[4]).AsDouble(),
+                span.Slice(tokens[0]).AsByte(NumberStyles.Integer),
+                span.Slice(tokens[1]).AsByte(NumberStyles.Integer),
+                span.Slice(tokens[2]).AsByte(NumberStyles.Integer)),
+            _ => Empty
+        };
+    }
+
+    private static HtmlColor ParseHsl(ReadOnlySpan<char> span)
+    {
+        int startIndex = span.IndexOf('('), endIndex = span.LastIndexOf(')');
+        if (startIndex < 3 || endIndex == -1)
+            return Empty;
+
+        span = span.Slice(startIndex + 1, endIndex - startIndex - 1);
+        Span<Range> tokens = stackalloc Range[5];
+        var sep = span.IndexOf(',') > -1? ',' : ' ';
+        return span.Split(tokens, sep, StringSplitOptions.RemoveEmptyEntries) switch
+        {
+            3 => FromHsl(1.0,
+                span.Slice(tokens[0]).AsDouble(),
+                span.Slice(tokens[1]).AsPercent(),
+                span.Slice(tokens[2]).AsPercent()),
+            4 => FromHsl(span.Slice(tokens[3]).AsDouble(),
+                span.Slice(tokens[0]).AsDouble(),
+                span.Slice(tokens[1]).AsPercent(),
+                span.Slice(tokens[2]).AsPercent()),
+            _ => Empty
+        };
     }
 
     /// <summary>
@@ -220,21 +257,15 @@ readonly partial struct HtmlColor : IEquatable<HtmlColor>
         byte iMid = Convert.ToByte(fMid * 255);
         byte iMin = Convert.ToByte(fMin * 255);
 
-        switch (iSextant)
+        return iSextant switch
         {
-            case 1:
-                return FromArgb(alpha, iMid, iMax, iMin);
-            case 2:
-                return FromArgb(alpha, iMin, iMax, iMid);
-            case 3:
-                return FromArgb(alpha, iMin, iMid, iMax);
-            case 4:
-                return FromArgb(alpha, iMid, iMin, iMax);
-            case 5:
-                return FromArgb(alpha, iMax, iMin, iMid);
-            default:
-                return FromArgb(alpha, iMax, iMid, iMin);
-        }
+            1 => FromArgb(alpha, iMid, iMax, iMin),
+            2 => FromArgb(alpha, iMin, iMax, iMid),
+            3 => FromArgb(alpha, iMin, iMid, iMax),
+            4 => FromArgb(alpha, iMid, iMin, iMax),
+            5 => FromArgb(alpha, iMax, iMin, iMid),
+            _ => FromArgb(alpha, iMax, iMid, iMin),
+        };
     }
 
     /// <summary>

@@ -1,0 +1,12 @@
+<Project>
+    <PropertyGroup>
+        <Copyright>Copyright 2009-$([System.DateTime]::Today.Year) Olivier Nizet</Copyright>
+        <Nullable>enable</Nullable>
+        <LangVersion>latest</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <DocumentFormatOpenXmlPackageVersion>3.4.1</DocumentFormatOpenXmlPackageVersion>
+    </PropertyGroup>
+</Project>

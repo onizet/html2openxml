@@ -9,9 +9,6 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
@@ -99,7 +96,6 @@ sealed class HeadingElementExpression(IHtmlElement node) : NumberingExpressionBa
         {
             return false;
         }
-
 
         // Make sure we only grab the heading if it starts with a number
         if (regexMatch.Success && headingText.Length > regexMatch.Groups["number"].Length)

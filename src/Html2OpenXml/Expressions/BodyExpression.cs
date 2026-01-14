@@ -9,9 +9,7 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
@@ -35,7 +33,7 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
     {
         MarkAllBookmarks();
 
-        var body = context.MainPart.Document.Body!;
+        var body = context.MainPart.Document!.Body!;
         var sectionProperties = body.Descendants<SectionProperties>().LastOrDefault();
         if (sectionProperties != null)
         {
@@ -47,7 +45,7 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
         if (shouldRegisterTopBookmark && elements.Any())
         {
             // Check whether it already exists
-            if (body.Descendants<BookmarkStart>().Where(b => b.Name?.Value == "_top").Any())
+            if (body.Descendants<BookmarkStart>().Any(b => b.Name?.Value == "_top"))
             {
                 return elements;
             }
@@ -71,12 +69,13 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
 
         // Unsupported W3C attribute but claimed by users. Specified at <body> level, the page
         // orientation is applied on the whole document
-        string? attr = styleAttributes!["page-orientation"];
-        if (attr != null)
+        if (styleAttributes.ContainsKey("page-orientation"))
         {
-            PageOrientationValues orientation = Converter.ToPageOrientation(attr);
+            PageOrientationValues orientation = PageOrientationValues.Portrait;
+            if (styleAttributes.HasKeyEqualsTo("page-orientation", "landscape"))
+                orientation = PageOrientationValues.Landscape;
 
-            var sectionProperties = mainPart.Document.Body!.GetFirstChild<SectionProperties>();
+            var sectionProperties = mainPart.Document!.Body!.GetFirstChild<SectionProperties>();
             if (sectionProperties == null || sectionProperties.GetFirstChild<PageSize>() == null)
             {
                 context.IsLandscape = orientation == PageOrientationValues.Landscape;
@@ -99,7 +98,7 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
 
         if (paraProperties.BiDi is not null)
         {
-            var sectionProperties = mainPart.Document.Body!.GetFirstChild<SectionProperties>();
+            var sectionProperties = mainPart.Document!.Body!.GetFirstChild<SectionProperties>();
             if (sectionProperties == null || sectionProperties.GetFirstChild<PageSize>() == null)
             {
                mainPart.Document.Body.Append(sectionProperties = new());
@@ -164,7 +163,7 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
 
             // we will be able to retrieve the target during the processing
             target.Attributes.SetNamedItemWithNamespaceUri(
-                new Attr("h2ox", "bookmark", id, InternalNamespaceUri));
+                new Attr("data-bookmark", id));
         }
     }
 }

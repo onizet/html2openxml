@@ -25,7 +25,7 @@ namespace HtmlToOpenXml.Tests
                     Type = args.Type,
                     BasedOn = new BasedOn { Val = "Normal" },
                     StyleRunProperties = new() {
-                        Color = new() { Val = HtmlColor.Parse("red").ToHexString() }
+                        Color = new() { Val = HtmlColor.Parse("red".AsSpan()).ToHexString() }
                     }
                 });
             };
@@ -75,14 +75,14 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements, Is.Not.Empty);
             var tableProperties = elements[0].GetFirstChild<TableProperties>();
             Assert.That(tableProperties, Is.Not.Null);
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(tableProperties.TableStyle, Is.Not.Null);
                 Assert.That(tableProperties.TableBorders, Is.Not.Null);
-            });
+            }
 
             // the TableNormal doesn't define any borders while default shipped Table style does
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(tableProperties.TableStyle?.Val?.Value, Is.EqualTo("TableNormal"));
                 Assert.That(tableProperties.TableBorders.LeftBorder?.Val?.Value, Is.EqualTo(BorderValues.None));
@@ -91,7 +91,7 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(tableProperties.TableBorders.BottomBorder?.Val?.Value, Is.EqualTo(BorderValues.None));
                 Assert.That(tableProperties.TableBorders.InsideHorizontalBorder?.Val?.Value, Is.EqualTo(BorderValues.Single));
                 Assert.That(tableProperties.TableBorders.InsideVerticalBorder?.Val?.Value, Is.EqualTo(BorderValues.Single));
-            });
+            }
         }
 
         [Test]
@@ -163,23 +163,23 @@ For 50 years, <b>WWF</b> has been protecting the future of nature. The world's l
         public void DuplicateStyle_ReturnsLatter()
         {
             var styleAttributes = HtmlAttributeCollection.ParseStyle("color:red;color:blue");
-            Assert.That(styleAttributes["color"], Is.EqualTo("blue"));
+            Assert.That(styleAttributes["color"].ToString(), Is.EqualTo("blue"));
         }
 
         [Test(Description = "Encoded ':' and ';' characters are valid")]
         public void EncodedStyle_ShouldSucceed()
         {
             var styleAttributes = HtmlAttributeCollection.ParseStyle("text-decoration&#58;underline&#59;color:red");
-            Assert.That(styleAttributes["text-decoration"], Is.EqualTo("underline"));
-            Assert.That(styleAttributes["color"], Is.EqualTo("red"));
+            Assert.That(styleAttributes["text-decoration"].ToString(), Is.EqualTo("underline"));
+            Assert.That(styleAttributes["color"].ToString(), Is.EqualTo("red"));
         }
 
         [Test(Description = "Key style with no value should be ignored")]
-        public void EmptyStyle_ShouldBeIgnoredd()
+        public void EmptyStyle_ShouldBeIgnored()
         {
             var styleAttributes = HtmlAttributeCollection.ParseStyle("text-decoration;color:red");
-            Assert.That(styleAttributes["text-decoration"], Is.Null);
-            Assert.That(styleAttributes["color"], Is.EqualTo("red"));
+            Assert.That(styleAttributes.ContainsKey("text-decoration"), Is.False);
+            Assert.That(styleAttributes["color"].ToString(), Is.EqualTo("red"));
         }
     }
 }

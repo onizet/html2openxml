@@ -9,8 +9,6 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
-using System.Collections.Generic;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
@@ -23,7 +21,6 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 abstract class HtmlDomExpression
 {
-    protected const string InternalNamespaceUri = "https://github.com/onizet/html2openxml";
     static readonly Dictionary<string, Func<IElement, HtmlDomExpression>> knownTags = InitKnownTags();
     static readonly HashSet<string> ignoreTags = new(StringComparer.OrdinalIgnoreCase) {
         TagNames.Xml, TagNames.AnnotationXml, TagNames.Button, TagNames.Progress,

@@ -9,9 +9,6 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
@@ -25,6 +22,8 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 sealed class AbbreviationExpression(IHtmlElement node) : PhrasingElementExpression(node)
 {
+    private static readonly Regex linkRegex = new(@"^((https?|ftps?|mailto|file)://|[\\]{2})(?:[\w][\w.-]?)", RegexOptions.IgnoreCase | RegexOptions.Compiled, TimeSpan.FromMilliseconds(100));
+
 
     /// <inheritdoc/>
     public override IEnumerable<OpenXmlElement> Interpret(ParsingContext context)
@@ -132,8 +131,16 @@ sealed class AbbreviationExpression(IHtmlElement node) : PhrasingElementExpressi
 
 
         // Description in footnote reference can be plain text or a web protocols/file share (like \\server01)
-        Regex linkRegex = new(@"^((https?|ftps?|mailto|file)://|[\\]{2})(?:[\w][\w.-]?)");
-        if (linkRegex.IsMatch(description) && Uri.TryCreate(description, UriKind.Absolute, out var uriReference))
+        bool isValidLink;
+        try
+        {
+            isValidLink = linkRegex.IsMatch(description);
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            isValidLink = false;
+        }
+        if (isValidLink && Uri.TryCreate(description, UriKind.Absolute, out var uriReference))
         {
             // when URI references a network server (ex: \\server01), System.IO.Packaging is not resolving the correct URI and this leads
             // to a bad-formed XML not recognized by Word. To enforce the "original URI", a fresh new instance must be created

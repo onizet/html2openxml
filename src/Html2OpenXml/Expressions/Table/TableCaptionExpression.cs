@@ -54,8 +54,9 @@ sealed class TableCaptionExpression(Table table, IHtmlElement node) : PhrasingEl
         }
         p.Append(childElements);
 
-        string? att = styleAttributes!["text-align"] ?? node.GetAttribute("align");
-        if (!string.IsNullOrEmpty(att))
+        var att = styleAttributes["text-align"];
+        if (att.IsEmpty) att = node.GetAttribute("align").AsSpan();
+        if (!att.IsEmpty)
         {
             JustificationValues? align = Converter.ToParagraphAlign(att);
             if (align.HasValue)
