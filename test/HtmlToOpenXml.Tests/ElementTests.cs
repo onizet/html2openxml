@@ -37,13 +37,13 @@ namespace HtmlToOpenXml.Tests
         public void MultipleStyle_ShouldBeAllApplied ()
         {
             var elements = converter.Parse(@"<b style=""
-font-style:italic;
-font-size:12px;
-font-family:Verdana;
-font-variant:small-caps;
-color:white;
-text-decoration:wavy line-through double;
-background:red;
+font-style: italic;
+font-size: 12px;
+font-family: Verdana;
+font-variant: small-caps;
+color: white;
+text-decoration: wavy line-through double;
+background: red;
 "">bold with italic style</b>");
             Assert.That(elements, Has.Count.EqualTo(1));
 
@@ -67,7 +67,7 @@ background:red;
             }
         }
 
-        [TestCase("<span style='font-style:normal'><span style='font-style:italic'>Italic!</span></span>")]
+        [TestCase("<span style='font-style: normal'><span style='font-style: italic'>Italic!</span></span>")]
         [TestCase("<div style='font-style:italic'><span style='font-style:normal'><span style='font-style:italic'>Italic!</span></span></div>")]
         [TestCase("<div id='outer' style='font-style:italic'><div id='inner'>Italic</div></div>")]
         public void NestedTagWithStyle_ShouldCascadeParentStyle (string html)
