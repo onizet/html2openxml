@@ -26,9 +26,9 @@ static class Converter
     {
         Span<char> loweredValue = span.Length <= 128 ? stackalloc char[span.Length] : new char[span.Length];
         span.ToLowerInvariant(loweredValue);
-        return loweredValue switch
+        return loweredValue.Trim() switch
         {
-           "left" => JustificationValues.Left,
+            "left" => JustificationValues.Left,
             "right" => JustificationValues.Right,
             "center" => JustificationValues.Center,
             "justify" => JustificationValues.Both,
@@ -43,7 +43,7 @@ static class Converter
     {
         Span<char> loweredValue = span.Length <= 128 ? stackalloc char[span.Length] : new char[span.Length];
         span.ToLowerInvariant(loweredValue);
-        return loweredValue switch
+        return loweredValue.Trim() switch
         {
             "top" => TableVerticalAlignmentValues.Top,
             "middle" => TableVerticalAlignmentValues.Center,
@@ -61,7 +61,7 @@ static class Converter
 
         Span<char> loweredValue = span.Length <= 128 ? stackalloc char[span.Length] : new char[span.Length];
         span.ToLowerInvariant(loweredValue);
-        var unit = loweredValue switch
+        var unit = loweredValue.Trim() switch
         {
             "1" or "xx-small" => new Unit(UnitMetric.Point, 10),
             "2" or "x-small" => new Unit(UnitMetric.Point, 15),
@@ -92,7 +92,7 @@ static class Converter
 
         Span<char> loweredValue = span.Length <= 128 ? stackalloc char[span.Length] : new char[span.Length];
         span.ToLowerInvariant(loweredValue);
-        return loweredValue switch
+        return loweredValue.Trim() switch
         {
             "small-caps" => FontVariant.SmallCaps,
             "normal" => FontVariant.Normal,
@@ -106,7 +106,7 @@ static class Converter
 
         Span<char> loweredValue = span.Length <= 128 ? stackalloc char[span.Length] : new char[span.Length];
         span.ToLowerInvariant(loweredValue);
-        return loweredValue switch
+        return loweredValue.Trim() switch
         {
             "italic" or "oblique" => FontStyle.Italic,
             "normal" => FontStyle.Normal,
@@ -120,7 +120,7 @@ static class Converter
 
         Span<char> loweredValue = span.Length <= 128 ? stackalloc char[span.Length] : new char[span.Length];
         span.ToLowerInvariant(loweredValue);
-        return loweredValue switch
+        return loweredValue.Trim() switch
         {
             "700" or "bold" => FontWeight.Bold,
             "bolder" => FontWeight.Bolder,
@@ -135,8 +135,9 @@ static class Converter
 
         // return the first font name
         Span<Range> tokens = stackalloc Range[1];
-        return span.SplitCompositeAttribute(tokens, ',') switch {
-            1 => span.Slice(tokens[0]).ToString(),
+        return span.SplitCompositeAttribute(tokens, ',') switch
+        {
+            1 => span.Slice(tokens[0]).Trim().ToString(),
             _ => null
         };
     }
@@ -148,7 +149,7 @@ static class Converter
 
         Span<char> loweredValue = span.Length <= 128 ? stackalloc char[span.Length] : new char[span.Length];
         span.ToLowerInvariant(loweredValue);
-        return loweredValue switch
+        return loweredValue.Trim() switch
         {
             "dotted" => BorderValues.Dotted,
             "dashed" => BorderValues.Dashed,
@@ -177,7 +178,7 @@ static class Converter
         var tokenCount = span.Split(tokens, ' ', StringSplitOptions.RemoveEmptyEntries);
         for (int i = 0; i < tokenCount; i++)
         {
-            switch (span.Slice(tokens[i]))
+            switch (span.Slice(tokens[i]).Trim())
             {
                 case "underline": decorations.Add(TextDecoration.Underline); break;
                 case "line-through": decorations.Add(TextDecoration.LineThrough); break;
