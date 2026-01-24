@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.3.1
+
+- Improve parsing to correctly handle spaces in css style #222
+
 ## 3.3.0
 
 - Rewriting of parsing to use `Span<char>` instead of Regex for +25% performance gain 🚀

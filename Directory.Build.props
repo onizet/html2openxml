@@ -4,6 +4,7 @@
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
+        <Version>3.3.1</Version>
     </PropertyGroup>
 
     <PropertyGroup>
