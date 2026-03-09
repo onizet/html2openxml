@@ -103,8 +103,7 @@ namespace HtmlToOpenXml.Tests
             }
 
             var inst = mainPart.NumberingDefinitionsPart?.Numbering?
-                .Elements<NumberingInstance>().Where(i => i.AbstractNumId?.Val == absNum.AbstractNumberId)
-                .SingleOrDefault();
+                .Elements<NumberingInstance>().SingleOrDefault(i => i.AbstractNumId?.Val == absNum.AbstractNumberId);
             Assert.That(inst, Is.Not.Null);
             Assert.That(inst.NumberID?.Value, Is.Not.Null);
 
@@ -201,8 +200,7 @@ namespace HtmlToOpenXml.Tests
             Assert.That(absNum, Is.Not.Null);
 
             var inst = mainPart.NumberingDefinitionsPart?.Numbering?
-                .Elements<NumberingInstance>().Where(i => i.AbstractNumId?.Val == absNum.AbstractNumberId)
-                .SingleOrDefault();
+                .Elements<NumberingInstance>().SingleOrDefault(i => i.AbstractNumId?.Val == absNum.AbstractNumberId);
             Assert.That(inst, Is.Not.Null);
             Assert.That(inst.NumberID?.Value, Is.Not.Null);
 
@@ -562,8 +560,7 @@ namespace HtmlToOpenXml.Tests
             Assert.That(absNum, Is.Not.Null);
 
             var inst = mainPart.NumberingDefinitionsPart?.Numbering?
-                .Elements<NumberingInstance>().Where(i => i.AbstractNumId?.Val == absNum.AbstractNumberId)
-                .SingleOrDefault();
+                .Elements<NumberingInstance>().SingleOrDefault(i => i.AbstractNumId?.Val == absNum.AbstractNumberId);
             Assert.That(inst, Is.Not.Null);
             Assert.That(inst.NumberID?.Value, Is.Not.Null);
 
