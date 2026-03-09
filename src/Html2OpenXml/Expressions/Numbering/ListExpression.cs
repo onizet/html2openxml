@@ -40,6 +40,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
     private static readonly HashSet<string> supportedListTypes = 
         ["disc", "decimal", "square", "circle",
          "lower-alpha", "upper-alpha", "lower-latin", "upper-latin",
+         "lower-greek", "upper-greek",
          "lower-roman", "upper-roman",
          "decimal-tiered" /* not W3C compliant */];
     private ParagraphStyleId? listParagraphStyleId;
@@ -243,6 +244,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         "A" => "upper-alpha",
         "i" => "lower-roman",
         "I" => "upper-roman",
+        "lower-greek" or "upper-greek" => type,
         _ => null
     };
 
