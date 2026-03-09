@@ -1,4 +1,4 @@
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using DocumentFormat.OpenXml.Wordprocessing;
 using DocumentFormat.OpenXml.Packaging;
 
@@ -647,6 +647,58 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(tableProperties.TableWidth.Type?.Value, Is.EqualTo(TableWidthUnitValues.Pct));
                 Assert.That(tableProperties.TableWidth.Width?.HasValue, Is.True);
                 Assert.That(Convert.ToInt32(tableProperties.TableWidth.Width.Value), Is.GreaterThan(0).And.LessThan(5000));
+            }
+        }
+
+        [Test]
+        public async Task LowerGreekList_ReturnsListWithGreekNumbering()
+        {
+            await converter.ParseBody(@"
+                <ol style='list-style-type: lower-greek'>
+                    <li>Item 1</li>
+                    <li>Item 2</li>
+                </ol>"
+            );
+
+            var elements = mainPart.Document!.Body!.Elements<Paragraph>().ToList();
+            Assert.That(elements, Has.Count.EqualTo(2));
+
+            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
+            var absNum = numbering.Elements<AbstractNum>().SingleOrDefault();
+
+            Assert.That(absNum, Is.Not.Null);
+            Assert.That(absNum.AbstractNumDefinitionName?.Val?.Value, Is.EqualTo("lower-greek"));
+
+            var level = absNum.Elements<Level>().First();
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(level.NumberingFormat?.Val?.Value, Is.EqualTo(NumberFormatValues.LowerLetter));
+                Assert.That(level.LevelText?.Val?.Value, Is.EqualTo("%1."));
+            }
+        }
+
+        [Test]
+        public async Task UpperGreekList_ReturnsListWithGreekNumbering()
+        {
+            await converter.ParseBody(@"
+                <ol style='list-style-type: upper-greek'>
+                    <li>Item 1</li>
+                </ol>"
+            );
+
+            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
+            var absNum = numbering.Elements<AbstractNum>().SingleOrDefault();
+
+            Assert.That(absNum, Is.Not.Null);
+            Assert.That(absNum.AbstractNumDefinitionName?.Val?.Value, Is.EqualTo("upper-greek"));
+
+            var level = absNum.Elements<Level>().First();
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(level.NumberingFormat?.Val?.Value, Is.EqualTo(NumberFormatValues.UpperLetter));
+                Assert.That(level.LevelText?.Val?.Value,  Is.EqualTo("%1."));
             }
         }
     }
