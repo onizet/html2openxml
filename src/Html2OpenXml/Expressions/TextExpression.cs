@@ -33,7 +33,7 @@ sealed class TextExpression(INode node) : HtmlDomExpression
         var sets = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase) {
             TagNames.A, TagNames.Abbr, TagNames.B, TagNames.Big, TagNames.Cite, TagNames.Code,
             TagNames.Del, TagNames.Dfn, TagNames.Em, TagNames.Font, TagNames.Hr, TagNames.I,
-            TagNames.Img, TagNames.Ins, TagNames.Kbd, TagNames.Mark, TagNames.NoBr, TagNames.Q,
+            TagNames.Ins, TagNames.Kbd, TagNames.Mark, TagNames.NoBr, TagNames.Q,
             TagNames.Rp, TagNames.Rt, TagNames.S, TagNames.Samp, TagNames.Small, TagNames.Span,
             TagNames.Strike, TagNames.Strong, TagNames.Sub, TagNames.Sup, TagNames.Time,
             TagNames.Tt, TagNames.U, TagNames.Var
@@ -65,13 +65,15 @@ sealed class TextExpression(INode node) : HtmlDomExpression
         // If there is a space between two phrasing elements, the user agent should collapse it to a single space character.
         if (context.CollapseWhitespaces)
         {
+            var previousSibling = node.PreviousSibling;
+            var nextSibling = node.NextSibling;
             bool startsWithSpace = text[0].IsWhiteSpaceCharacter(),
                 endsWithSpace = text[text.Length - 1].IsWhiteSpaceCharacter(),
                 preserveBorderSpaces = AllPhrasings.Contains(node.Parent!.NodeName),
-                prevIsPhrasing = node.PreviousSibling is not null &&
-                    (AllPhrasings.Contains(node.PreviousSibling.NodeName) || node.PreviousSibling!.NodeType == NodeType.Text),
-                nextIsPhrasing = node.NextSibling is not null &&
-                    (AllPhrasings.Contains(node.NextSibling.NodeName) || node.NextSibling!.NodeType == NodeType.Text);
+                prevIsPhrasing = previousSibling is not null && 
+                    (previousSibling.NodeType == NodeType.Text || AllPhrasings.Contains(previousSibling.NodeName)),
+                nextIsPhrasing = nextSibling is not null && 
+                    (nextSibling.NodeType == NodeType.Text || AllPhrasings.Contains(nextSibling.NodeName));
 
             text = text.CollapseAndStrip();
 
@@ -79,36 +81,40 @@ sealed class TextExpression(INode node) : HtmlDomExpression
             // doesn't ends/starts with a whitespace
             if (text.Length == 0 && prevIsPhrasing && nextIsPhrasing
                 && (endsWithSpace || startsWithSpace)
-                && !(node.PreviousSibling!.TextContent.Length == 0
-                    || node.NextSibling!.TextContent.Length == 0
-                    || node.PreviousSibling!.TextContent[node.PreviousSibling!.TextContent.Length - 1].IsWhiteSpaceCharacter()
-                    || node.NextSibling!.TextContent[0].IsWhiteSpaceCharacter()
+                && !(previousSibling!.TextContent.Length == 0
+                    || nextSibling!.TextContent.Length == 0
+                    || previousSibling!.TextContent[previousSibling!.TextContent.Length - 1].IsWhiteSpaceCharacter()
+                    || nextSibling!.TextContent[0].IsWhiteSpaceCharacter()
                 ))
             {
                 return [new Run(new Text(" ") { Space = SpaceProcessingModeValues.Preserve })];
             }
+
+            // is this an inter-element whitespace btw 2 phrasings?
+            var isWhitespace = text.Length == 0;
+
             // we strip out all whitespaces and we stand inside a div. Just skip this text content
-            if (text.Length == 0 && !preserveBorderSpaces)
+            if (isWhitespace && !(prevIsPhrasing && nextIsPhrasing) && !preserveBorderSpaces)
             {
                 return [];
             }
 
             // if previous element is an image, append a space separator
-            if ((startsWithSpace && node.PreviousSibling is IHtmlImageElement)
+            if ((startsWithSpace && previousSibling is IHtmlImageElement)
                 // if this is a non-empty phrasing element, append a space separator
-                || (startsWithSpace && prevIsPhrasing
-                && node.PreviousSibling!.TextContent.Length > 0
-                && !node.PreviousSibling!.TextContent[node.PreviousSibling.TextContent.Length - 1].IsWhiteSpaceCharacter()))
+                || (!isWhitespace && startsWithSpace && prevIsPhrasing
+                && previousSibling!.TextContent.Length > 0
+                && !previousSibling!.TextContent[previousSibling.TextContent.Length - 1].IsWhiteSpaceCharacter()))
             {
                 text = " " + text;
             }
 
-            if (endsWithSpace && (
+            if (endsWithSpace && !isWhitespace && (
                 // next run is not starting with a linebreak
-                (nextIsPhrasing && node.NextSibling!.TextContent.Length > 0 &&
-                    !node.NextSibling!.TextContent[0].IsLineBreak()) ||
+                (nextIsPhrasing && nextSibling!.TextContent.Length > 0 &&
+                    !nextSibling!.TextContent[0].IsLineBreak()) ||
                 // if there is no more text element or is empty, eat the trailing space
-                (preserveBorderSpaces && (node.NextSibling is not null
+                (preserveBorderSpaces && (nextSibling is not null
                     || node.Parent.NextSibling is not null))))
             {
                 text += " ";
