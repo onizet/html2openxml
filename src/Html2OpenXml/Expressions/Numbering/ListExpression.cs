@@ -91,14 +91,14 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 
             // table must be aligned to the list item
             var tables = childElements.OfType<Table>();
-            var tableIndentation = level * Indentation * 2;
+            var tableIndentation = level * Indentation;
             foreach (var table in tables)
             {
                 var tableProperties = table.GetFirstChild<TableProperties>();
                 if (tableProperties == null)
                     table.PrependChild(tableProperties = new());
 
-                tableProperties.TableIndentation ??= new() { Width = tableIndentation };
+                tableProperties.TableIndentation ??= new() { Width = tableIndentation * 2 };
                 // ensure to restrain the table width to the list item
                 if (tableProperties.TableWidth?.Type?.Value == TableWidthUnitValues.Pct
                     && tableProperties.TableWidth?.Width?.Value == "5000")
