@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.3.2
+
+- Supports Greek numbering in ordered lists (upper-greek / lower-greek) #227
+- Fix nested table in list not filing the full width space #225
+- Fix remove extra whitespace when parsing nested span #224
+
 ## 3.3.1
 
 - Improve parsing to correctly handle spaces in css style #222
