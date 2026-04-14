@@ -5,14 +5,20 @@ name: 'dotnet.yml'
 
 on:
   push:
-    branches: [ "dev" ]
+    branches: 
+      - dev
     paths-ignore:
       - 'docs/**'
       - '**/*.md'
   pull_request:
+    branches:
+      - master
+      - dev
 
 jobs:
-  net5_above:
+  build:
+    if: github.event_name != 'push' || github.event.pull_request == null
+  net:
     runs-on: ubuntu-latest
     defaults: 
       run:
@@ -26,7 +32,7 @@ jobs:
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ matrix.dotnet-version }}.x
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.sln') }}
@@ -39,7 +45,7 @@ jobs:
       - name: Run tests
         run: dotnet test --framework net${{ matrix.dotnet-version }} --configuration Release --no-build --verbosity normal
 
-  net462:
+  netfx462:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
