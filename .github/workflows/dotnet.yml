@@ -16,9 +16,8 @@ on:
       - dev
 
 jobs:
-  build:
-    if: github.event_name != 'push' || github.event.pull_request == null
   net:
+    if: github.event_name != 'push' || github.event.pull_request == null
     runs-on: ubuntu-latest
     defaults: 
       run:
@@ -46,6 +45,7 @@ jobs:
         run: dotnet test --framework net${{ matrix.dotnet-version }} --configuration Release --no-build --verbosity normal
 
   netfx462:
+    if: github.event_name != 'push' || github.event.pull_request == null
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
