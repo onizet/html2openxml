@@ -160,7 +160,7 @@ static class SpanExtensions
 
             if (index == -1)
             {
-                    // process the last match
+                // process the last match
                 destination[matches] = new Range(startIndex, startIndex + offsetIndex + span.Length);
                 matches++;
                 break;

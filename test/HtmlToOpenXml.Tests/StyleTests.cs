@@ -178,7 +178,7 @@ For 50 years, <b>WWF</b> has been protecting the future of nature. The world's l
         public void EmptyStyle_ShouldBeIgnored()
         {
             var styleAttributes = HtmlAttributeCollection.ParseStyle("text-decoration;color:red");
-            Assert.That(styleAttributes.ContainsKey("text-decoration"), Is.False);
+            Assert.That(styleAttributes.TryGetValue("text-decoration", out var _), Is.False);
             Assert.That(styleAttributes["color"].ToString(), Is.EqualTo("red"));
         }
     }

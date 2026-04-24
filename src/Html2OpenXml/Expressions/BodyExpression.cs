@@ -69,10 +69,10 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
 
         // Unsupported W3C attribute but claimed by users. Specified at <body> level, the page
         // orientation is applied on the whole document
-        if (styleAttributes.ContainsKey("page-orientation"))
+        if (styleAttributes.TryGetValue("page-orientation", out var attrValue))
         {
             PageOrientationValues orientation = PageOrientationValues.Portrait;
-            if (styleAttributes.HasKeyEqualsTo("page-orientation", "landscape"))
+            if ("landscape".Equals(attrValue, StringComparison.InvariantCultureIgnoreCase))
                 orientation = PageOrientationValues.Landscape;
 
             var sectionProperties = mainPart.Document!.Body!.GetFirstChild<SectionProperties>();
