@@ -57,7 +57,11 @@ public static class ImageHeader
     {
         using var reader = new SequentialBinaryReader(stream, leaveOpen: true);
         type = DetectFileType(reader);
-        stream.Seek(0L, SeekOrigin.Begin);
+        if (type != FileType.Unrecognized)
+        {
+            stream.Seek(0L, SeekOrigin.Begin);            
+        }
+
         return type != FileType.Unrecognized;
     }
 
@@ -71,6 +75,10 @@ public static class ImageHeader
     {
         using var reader = new SequentialBinaryReader(stream, leaveOpen: true);
         FileType type = DetectFileType(reader);
+
+        if (type == FileType.Unrecognized)
+            return Size.Empty;
+
         stream.Seek(0L, SeekOrigin.Begin);
         return type switch
         {
