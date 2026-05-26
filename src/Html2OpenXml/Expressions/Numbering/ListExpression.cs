@@ -227,7 +227,15 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
             if (parentName != null && IsCascadingStyle(parentName))
                 return parentName!;
 
-            type = orderedList? "decimal" : "disc";
+            // If a specific list-style-type is provided for an unordered list (e.g., a custom string like "'-'"),
+            // we strip the surrounding quotes to extract the raw symbol.
+            // Otherwise, we fallback to the default "decimal" or "disc" styles.
+            if (!orderedList && !string.IsNullOrEmpty(type))
+            {
+                return type!.Trim('\'', '\"');
+            }
+            
+            return orderedList ? "decimal" : "disc";
         }
 
         return type!;

@@ -50,8 +50,20 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
 
         Numbering numberingPart = context.MainPart.NumberingDefinitionsPart!.Numbering!;
 
+        AbstractNum abstractNum;
+        
         // at this stage, we have sanitized the list style so it's safe to grab them from the predefined template lists
-        var abstractNum =  predefinedNumberingLists[listName];
+        if (predefinedNumberingLists.TryGetValue(listName, out var predefined))
+        {
+            // If it's a predefined style, we clone it as usual
+            abstractNum = (AbstractNum)predefined.CloneNode(true);
+        }
+        else
+        {
+            // If not found in predefined lists, listName contains a custom bullet character (e.g., "-")
+            abstractNum = CreateCustomBulletAbstractNum(listName);
+        }
+        
         abstractNum = (AbstractNum) abstractNum.CloneNode(true);
         abstractNum.AbstractNumberId = IncrementAbstractNumId(context, numberingPart);
         var level1 = abstractNum.GetFirstChild<Level>()!;
@@ -216,6 +228,38 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
         isInitialized = true;
     }
 
+    /// <summary>
+    /// Generates a custom abstract numbering definition for unordered lists using a specific symbol.
+    /// </summary>
+    /// <param name="customSymbol">The custom character or string to be used as the list bullet.</param>
+    /// <returns>An <see cref="AbstractNum"/> instance configured with the custom bullet symbol across all levels.</returns>
+    private AbstractNum CreateCustomBulletAbstractNum(string customSymbol)
+    {
+        var abstractNum = new AbstractNum {
+            AbstractNumDefinitionName = new() { Val = customSymbol },
+            MultiLevelType = new() { Val = MultiLevelValues.HybridMultilevel }
+        };
+        
+        for (var lvlIndex = 0; lvlIndex <= MaxLevel; lvlIndex++)
+        {
+            abstractNum.Append(new Level {
+                StartNumberingValue = new() { Val = 1 },
+                NumberingFormat = new() { Val = NumberFormatValues.Bullet },
+                LevelIndex = lvlIndex,
+                LevelText = new() { Val = string.Format(customSymbol, lvlIndex+1) },
+                LevelJustification = new() { Val = LevelJustificationValues.Left },
+                PreviousParagraphProperties = new() {
+                    Indentation = new() {
+                        Left = ((lvlIndex + 1) * Indentation * 2).ToString(),
+                        Hanging = Indentation.ToString()
+                    }
+                }
+            });
+        }
+
+        return abstractNum;
+    }
+    
     /// <summary>
     /// Predefined template of lists.
     /// </summary>
