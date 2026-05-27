@@ -274,6 +274,7 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
             ("disc", NumberFormatValues.Bullet, "•"),
             ("square", NumberFormatValues.Bullet, "▪"),
             ("circle", NumberFormatValues.Bullet, "o"),
+            ("dash", NumberFormatValues.Bullet, "-"),
             ("upper-alpha", NumberFormatValues.UpperLetter, "%{0}."),
             ("lower-alpha", NumberFormatValues.LowerLetter, "%{0}."),
             ("upper-roman", NumberFormatValues.UpperRoman, "%{0}."),
