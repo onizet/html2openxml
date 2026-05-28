@@ -6,12 +6,17 @@ on:
   push:
     tags:
       - '[0-9]+.[0-9]+.[0-9]+'
-    workflow_dispatch:  # Allows manual triggering
-      inputs:
-        version:
-          description: 'NuGet package version'
-          required: true
-          default: '1.0.0'
+  workflow_dispatch:  # Allows manual triggering
+    inputs:
+      version:
+        description: 'NuGet package version (SemVer)'
+        required: true
+        default: '1.0.0'
+      publish_to_nuget:
+        description: 'Publish to NuGet.org?'
+        required: false
+        type: boolean
+        default: true
 
 jobs:
   publish:
@@ -55,6 +60,7 @@ jobs:
             -p Version=$VERSION
 
       - name: Push to NuGet.org
+        if: inputs.publish_to_nuget
         run: |
           # Ensure we have packages to push
           if [ ! -f "./nupkg/*.nupkg" ]; then
