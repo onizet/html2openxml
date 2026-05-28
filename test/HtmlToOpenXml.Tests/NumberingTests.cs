@@ -698,5 +698,38 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(level.LevelText?.Val?.Value,  Is.EqualTo("%1."));
             }
         }
+
+        [Test]
+        public async Task CustomBulletList_ReturnsListWithCustomStyle()
+        {
+            await converter.ParseBody(@"<ul style='list-style-type:""😀""'>
+                    <li>Item 1</li>
+                </ul>");
+
+            var elements = mainPart.Document!.Body!.ChildElements;
+            Assert.That(elements, Is.Not.Empty);
+            Assert.That(elements, Is.All.TypeOf<Paragraph>());
+            var numId = ((Paragraph) elements[0]).ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value;
+            Assert.That(numId, Is.Not.Null);
+
+            var numInst = mainPart.NumberingDefinitionsPart!.Numbering!
+                .Elements<NumberingInstance>()
+                .Single(i => i.NumberID?.Value == numId);
+            Assert.That(numInst.AbstractNumId?.Val?.Value, Is.Not.Null);
+
+            var absNums = mainPart.NumberingDefinitionsPart.Numbering!
+                .Elements<AbstractNum>();
+            var absNum = absNums.FirstOrDefault(a => a.AbstractNumberId == numInst.AbstractNumId.Val);
+            Assert.That(absNum, Is.Not.Null);
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(absNum.AbstractNumDefinitionName?.Val?.Value, Is.EqualTo("😀"));
+                Assert.That(absNum.MultiLevelType?.Val?.InnerText, Is.AnyOf("hybridMultilevel", "multilevel"));
+                Assert.That(absNum.Elements<Level>().Count(), Is.AtLeast(2), "At least 2 level registred");
+                Assert.That(absNum.GetFirstChild<Level>()?.NumberingFormat?.Val?.Value, Is.EqualTo(NumberFormatValues.Bullet));
+            }
+
+            AssertThatOpenXmlDocumentIsValid();
+        }
     }
 }
