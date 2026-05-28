@@ -9,6 +9,7 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
+using System.Collections.Concurrent;
 using DocumentFormat.OpenXml.Packaging;
 
 namespace HtmlToOpenXml.IO;
@@ -46,7 +47,7 @@ sealed class ImagePrefetcher<T> : IImageLoader
     };
     private readonly T hostingPart;
     private readonly IWebRequest resourceLoader;
-    private readonly HtmlImageInfoCollection prefetchedImages;
+    private readonly ConcurrentDictionary<string, HtmlImageInfo> prefetchedImages;
     private readonly object lockObject = new();
     private readonly ImageProcessingMode processingMode;
 
@@ -76,13 +77,9 @@ sealed class ImagePrefetcher<T> : IImageLoader
     public async Task<HtmlImageInfo?> Download(string imageUri, CancellationToken cancellationToken)
     {
         // Check if image is already cached using thread-safe operation
-        lock (lockObject)
-        {
-            if (prefetchedImages.Contains(imageUri))
-                return prefetchedImages[imageUri];
-        }
+        if (prefetchedImages.TryGetValue(imageUri, out var iinfo))
+            return iinfo;
 
-        HtmlImageInfo? iinfo;
         if (DataUri.IsWellFormed(imageUri)) // data inline, encoded in base64
         {
             iinfo = ReadDataUri(imageUri);
@@ -110,14 +107,8 @@ sealed class ImagePrefetcher<T> : IImageLoader
         // Add to cache using thread-safe operation
         if (iinfo != null)
         {
-            lock (lockObject)
-            {
-                // Double-check pattern to prevent duplicate adds during concurrent access
-                if (!prefetchedImages.Contains(imageUri))
-                {
-                    prefetchedImages.Add(iinfo);
-                }
-            }
+            // Double-check pattern to prevent duplicate adds during concurrent access
+            prefetchedImages.TryAdd(imageUri, iinfo);
         }
 
         return iinfo;
@@ -183,7 +174,7 @@ sealed class ImagePrefetcher<T> : IImageLoader
 
         // Return image info with external flag set
         // Note: Size will be empty as we don't download the image
-        return new HtmlImageInfo(src, relationshipId) {
+        return new HtmlImageInfo(relationshipId) {
             IsExternal = true,
             Size = Size.Empty,
             TypeInfo = ImagePartType.Png // Default type, actual type doesn't matter for external links
@@ -223,7 +214,7 @@ sealed class ImagePrefetcher<T> : IImageLoader
         }
 
         string partId = hostingPart.GetIdOfPart(ipart);
-        return new HtmlImageInfo(src, partId)
+        return new HtmlImageInfo(partId)
         {
             TypeInfo = type,
             Size = originalSize

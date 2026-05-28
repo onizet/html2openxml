@@ -57,7 +57,11 @@ public static class ImageHeader
     {
         using var reader = new SequentialBinaryReader(stream, leaveOpen: true);
         type = DetectFileType(reader);
-        stream.Seek(0L, SeekOrigin.Begin);
+        if (type != FileType.Unrecognized)
+        {
+            stream.Seek(0L, SeekOrigin.Begin);            
+        }
+
         return type != FileType.Unrecognized;
     }
 
@@ -71,6 +75,10 @@ public static class ImageHeader
     {
         using var reader = new SequentialBinaryReader(stream, leaveOpen: true);
         FileType type = DetectFileType(reader);
+
+        if (type == FileType.Unrecognized)
+            return Size.Empty;
+
         stream.Seek(0L, SeekOrigin.Begin);
         return type switch
         {
@@ -91,19 +99,29 @@ public static class ImageHeader
     {
         int width, height;
 
+        // Handle edge cases where dimensions are zero or negative
+        if (actualSize.Width <= 0 || actualSize.Height <= 0)
+            return Size.Empty;
+
         // Resize by the highest difference ratio between constrained dimension and real one.
-        bool forceResizeByWidth = preferredSize.Height <= 0 && preferredSize.Width > 0;
-        bool forceResizeByHeight = preferredSize.Width <= 0 && preferredSize.Height > 0;
-        if (forceResizeByWidth || (!forceResizeByHeight &&
-            Math.Abs(preferredSize.Width - actualSize.Width) > Math.Abs(preferredSize.Height - actualSize.Height)))
+        bool scaleByWidth = preferredSize.Height <= 0 && preferredSize.Width > 0;
+        bool scaleByHeight = preferredSize.Width <= 0 && preferredSize.Height > 0;
+        if (!scaleByHeight && !scaleByWidth)
+        {
+            int widthDiff = Math.Abs(preferredSize.Width - actualSize.Width);
+            int heightDiff = Math.Abs(preferredSize.Height - actualSize.Height);
+            scaleByWidth = widthDiff >= heightDiff;
+        }
+
+        if (scaleByWidth)
         {
             width = preferredSize.Width;
-            height = (int) ((float) actualSize.Height / actualSize.Width * width);
+            height = actualSize.Height * width / actualSize.Width;
         }
         else
         {
             height = preferredSize.Height;
-            width = (int) ((float) actualSize.Width / actualSize.Height * height);
+            width = actualSize.Width * height / actualSize.Height;
         }
 
         return new Size(width, height);

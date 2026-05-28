@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Html2OpenXml/HtmlToOpenXml.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="examples/Benchmark/Benchmark.csproj" />
+    <Project Path="examples/Demo/Demo.csproj" />
+    <Project Path="test/HtmlToOpenXml.Tests/HtmlToOpenXml.Tests.csproj" />
+  </Folder>
+</Solution>

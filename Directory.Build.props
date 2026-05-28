@@ -4,10 +4,10 @@
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
-        <Version>3.3.2</Version>
+        <Version>3.4.0</Version>
     </PropertyGroup>
 
     <PropertyGroup>
-        <DocumentFormatOpenXmlPackageVersion>3.4.1</DocumentFormatOpenXmlPackageVersion>
+        <DocumentFormatOpenXmlPackageVersion>3.5.1</DocumentFormatOpenXmlPackageVersion>
     </PropertyGroup>
 </Project>
