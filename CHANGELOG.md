@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.4.0
+
+- Numbering list now support `list-style-type: dash`
+- Add support for custom bullet symbols `list-style-type: '👍'` thanks to @AlexAbd1990
+- Minor internal optimisations
+
 ## 3.3.2
 
 - Supports Greek numbering in ordered lists (upper-greek / lower-greek) #227
