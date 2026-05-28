@@ -5,34 +5,72 @@ name: 'publish_nuget.yml'
 on:
   push:
     tags:
-      - '[0-9]+.[0-9]+'
-    branches:
-      - master
+      - '[0-9]+.[0-9]+.[0-9]+'
+    workflow_dispatch:  # Allows manual triggering
+      inputs:
+        version:
+          description: 'NuGet package version'
+          required: true
+          default: '1.0.0'
 
 jobs:
   publish:
-    if: startsWith(github.ref, 'refs/tags/') && github.ref_type == 'tag' && github.ref_name != ''
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    env:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Ensure tag is on master
+      - uses: actions/checkout@v6
+
+      # Only validate tag is on master for auto-triggered runs
+      - name: Validate Tag Position (Auto-Trigger Only)
+        if: github.event_name == 'push'
         run: |
-          TAG_COMMIT=$(git rev-list -n 1 ${{ github.ref_name }})
-          if ! git merge-base --is-ancestor $TAG_COMMIT origin/master; then
-            echo "Tag is not on master branch. Skipping publish."
+          TAG_COMMIT=$(git rev-parse ${{ github.ref }})
+          BASE=$(git merge-base HEAD origin/master)
+          
+          # Allow tag to be ahead of master (new commits since tagging)
+          # But reject if tag is behind or on a different branch
+          if git merge-base --is-ancestor $BASE $TAG_COMMIT; then
+            echo "Tag validation passed"
+          else
+            echo "ERROR: Tag appears to be on wrong branch"
             exit 1
           fi
-      - name: Setup .NET 8.
-        uses: actions/setup-dotnet@v4
+
+      - name: Setup .NET 10.
+        uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: latest
+
       - name: Build
         run: dotnet build --configuration Release
-      - name: Pack
-        run: dotnet pack src/Html2OpenXml/HtmlToOpenXml.csproj --configuration Release --output ./nupkg
-      - name: Push nuget to NuGet.org
-        run: dotnet nuget push ./nupkg/*.nupkg --api-key $NUGET_API_KEY -s https://api.nuget.org/v3/index.json
-        env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-      - name: Create Release and Upload Artifact to Release
-        run: gh release create ${{github.ref_name}} -t "Release ${{github.ref_name}}" *.nupkg --generate-notes --draft
+
+      - name: Pack NuGet Package
+        run: |
+          # Use the version from tag or workflow_dispatch input
+          VERSION=${{ github.ref_name == '' && inputs.version || github.ref_name }}
+          dotnet pack src/Html2OpenXml/HtmlToOpenXml.csproj --configuration Release --output ./nupkg \
+            -p Version=$VERSION
+
+      - name: Push to NuGet.org
+        run: |
+          # Ensure we have packages to push
+          if [ ! -f "./nupkg/*.nupkg" ]; then
+            echo "ERROR: No .nupkg files found in ./nupkg/"
+            exit 1
+          fi
+          
+          dotnet nuget push ./nupkg/*.nupkg \
+            --api-key $NUGET_API_KEY \
+            -s https://api.nuget.org/v3/index.json
+
+      - name: Create GitHub Release
+        run: |
+          VERSION=${{ github.ref_name == '' && inputs.version || github.ref_name }}
+          gh release create "$VERSION" \
+            --title "Release $VERSION" \
+            *.nupkg \
+            --generate-notes \
+            --draft  # Set to false when ready to publish
