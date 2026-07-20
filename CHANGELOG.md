@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.5.0
+
+- Support css margin/padding inline/block
+- Bump AngleSharp to 1.5 due to CVE
+
 ## 3.4.0
 
 - Numbering list now support `list-style-type: dash`

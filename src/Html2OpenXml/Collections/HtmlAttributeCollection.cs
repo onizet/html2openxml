@@ -177,18 +177,32 @@ readonly struct HtmlAttributeCollection
         // shortcut to avoid resolving each individual side when we know this collection is empty
         if (IsEmpty) return margin;
 
-        if (attributes.TryGetValue(name, out var range))
-            margin = Margin.Parse(rawValue.AsSpan().Slice(range));
-
         Unit u;
 
+        if (attributes.TryGetValue(name, out var range))
+            margin = Margin.Parse(rawValue.AsSpan().Slice(range));
+        if (attributes.TryGetValue(name + "-inline", out range))
+        {
+            u = Unit.Parse(rawValue.AsSpan().Slice(range));
+            if (u.IsValid) margin.Left = margin.Right = u;
+        }
+        if (attributes.TryGetValue(name + "-block", out range))
+        {
+            u = Unit.Parse(rawValue.AsSpan().Slice(range));
+            if (u.IsValid) margin.Top = margin.Bottom = u;
+        }
+
         u = GetUnit(name + "-top", UnitMetric.Pixel);
+        if (!u.IsValid) u = GetUnit(name + "-block-start");
         if (u.IsValid) margin.Top = u;
         u = GetUnit(name + "-right", UnitMetric.Pixel);
+        if (!u.IsValid) u = GetUnit(name + "-inline-end");
         if (u.IsValid) margin.Right = u;
         u = GetUnit(name + "-bottom", UnitMetric.Pixel);
+        if (!u.IsValid) u = GetUnit(name + "-block-end");
         if (u.IsValid) margin.Bottom = u;
         u = GetUnit(name + "-left", UnitMetric.Pixel);
+        if (!u.IsValid) u = GetUnit(name + "-inline-start");
         if (u.IsValid) margin.Left = u;
 
         return margin;

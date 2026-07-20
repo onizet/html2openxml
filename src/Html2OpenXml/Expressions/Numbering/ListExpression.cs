@@ -167,7 +167,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
             overrideLevelIndex = currentLevel;
             listContext = new ListContext(listStyle, abstractNumId, instanceId.Value, currentLevel + 1, dir);
         }
-        else if (!instanceId.HasValue || context.Converter.ContinueNumbering == false)
+        else if (!instanceId.HasValue || !context.Converter.ContinueNumbering)
         {
             // create a new instance of that list template
             instanceId = IncrementInstanceId(context, abstractNumId, isReusable: context.Converter.ContinueNumbering);

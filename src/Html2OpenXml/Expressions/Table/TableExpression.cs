@@ -143,7 +143,7 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
 
             for(int i = 0; i < rows.Length; i++)
             {
-                foreach (var cell in rowNodes.ElementAt(i).Cells)
+                foreach (var cell in rowNodes[i].Cells)
                 {
                     var colSpan = Math.Max(1, cell.ColumnSpan);
                     for (int r = i; r < i + cell.RowSpan; r++)

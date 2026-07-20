@@ -33,8 +33,8 @@ static class OpenXmlExtensions
 
         for (int i = element.ChildElements.Count - 1; i >= 0; i--)
         {
-            if (element.ChildElements[i] is T)
-                return element.ChildElements[i] as T;
+            if (element.ChildElements[i] is T t)
+                return t;
         }
 
         return null;

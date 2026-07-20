@@ -191,7 +191,6 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
 
         knownAbsNumIds = [];
         knownInstanceIds = [];
-        int absNumIdRef = 0;
         NumberingDefinitionsPart numberingPart = context.MainPart.NumberingDefinitionsPart
             ?? context.MainPart.AddNewPart<NumberingDefinitionsPart>();
 
@@ -201,21 +200,11 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
         }
 
         var numbering = numberingPart.Numbering!;
-
-        // The absNumIdRef Id is a required field and should be unique. We will loop through the existing Numbering definition
-        // to retrieve the highest Id and reconstruct our own list definition template.
-        foreach (var abs in numbering.Elements<AbstractNum>())
-        {
-            if (abs.AbstractNumberId != null && abs.AbstractNumberId > absNumIdRef)
-                absNumIdRef = abs.AbstractNumberId;
-        }
-        absNumIdRef++;
-
         IEnumerable<AbstractNum> existingAbstractNums = numbering.ChildElements
-            .Where(e => e != null && e is AbstractNum).Cast<AbstractNum>();
+            .OfType<AbstractNum>();
 
         knownAbsNumIds = existingAbstractNums
-            .Where(a => a.AbstractNumDefinitionName != null && a.AbstractNumDefinitionName.Val != null)
+            .Where(a => a.AbstractNumDefinitionName?.Val != null)
             .ToDictionary(a => a.AbstractNumDefinitionName!.Val!.Value!, a => a.AbstractNumberId!.Value);
 
         foreach (NumberingInstance inst in numbering.Elements<NumberingInstance>())
@@ -239,7 +228,7 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
             AbstractNumDefinitionName = new() { Val = customSymbol },
             MultiLevelType = new() { Val = MultiLevelValues.HybridMultilevel }
         };
-        
+
         for (var lvlIndex = 0; lvlIndex <= MaxLevel; lvlIndex++)
         {
             abstractNum.Append(new Level {

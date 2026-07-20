@@ -106,32 +106,34 @@ abstract class ImageExpressionBase(AngleSharp.Dom.IElement node)  : HtmlDomExpre
             imageObjId ??= 1;
 
             var mainPart = context.MainPart;
-            foreach (var part in new[] { 
+            foreach (var part in new[] {
                 mainPart.Document!.Body!.Descendants<Drawing>(),
                 mainPart.HeaderParts.Where(f => f.Header != null).SelectMany(f => f.Header!.Descendants<Drawing>()),
                 mainPart.FooterParts.Where(f => f.Footer != null).SelectMany(f => f.Footer!.Descendants<Drawing>())
             })
-            foreach (Drawing d in part)
             {
-                wp.DocProperties? docProperties = null;
-                pic.NonVisualPictureProperties? nvPr = null;
-
-                if (d.Anchor != null)
+                foreach (Drawing d in part)
                 {
-                    docProperties = d.Anchor.GetFirstChild<wp.DocProperties>();
-                    nvPr = d.Anchor.GetFirstChild<a.Graphic>()?.GraphicData?.GetFirstChild<pic.Picture>()?.GetFirstChild<pic.NonVisualPictureProperties>();
-                }
-                else if (d.Inline != null)
-                {
-                    docProperties = d.Inline!.DocProperties;
-                    nvPr = d.Inline!.Graphic?.GraphicData?.GetFirstChild<pic.NonVisualPictureProperties>();
-                }
+                    wp.DocProperties? docProperties = null;
+                    pic.NonVisualPictureProperties? nvPr = null;
 
-                if (docProperties?.Id != null && docProperties.Id.Value > drawingObjId)
-                    drawingObjId = docProperties.Id.Value;
+                    if (d.Anchor != null)
+                    {
+                        docProperties = d.Anchor.GetFirstChild<wp.DocProperties>();
+                        nvPr = d.Anchor.GetFirstChild<a.Graphic>()?.GraphicData?.GetFirstChild<pic.Picture>()?.GetFirstChild<pic.NonVisualPictureProperties>();
+                    }
+                    else if (d.Inline != null)
+                    {
+                        docProperties = d.Inline!.DocProperties;
+                        nvPr = d.Inline!.Graphic?.GraphicData?.GetFirstChild<pic.NonVisualPictureProperties>();
+                    }
 
-                if (nvPr != null && nvPr.NonVisualDrawingProperties?.Id?.Value > imageObjId)
-                    imageObjId = nvPr.NonVisualDrawingProperties.Id;
+                    if (docProperties?.Id != null && docProperties.Id.Value > drawingObjId)
+                        drawingObjId = docProperties.Id.Value;
+
+                    if (nvPr != null && nvPr.NonVisualDrawingProperties?.Id?.Value > imageObjId)
+                        imageObjId = nvPr.NonVisualDrawingProperties.Id;
+                }
             }
         }
 

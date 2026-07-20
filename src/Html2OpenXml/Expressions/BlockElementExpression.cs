@@ -324,7 +324,7 @@ class BlockElementExpression: PhrasingElementExpression
             foreach (var element in expression.Interpret(context))
             {
                 context.CascadeStyles(element);
-                if (element is Run r || element is Hyperlink)
+                if (element is Run || element is Hyperlink)
                 {
                     runs.Add(element);
                     continue;

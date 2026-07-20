@@ -26,16 +26,36 @@ public class Resource : IDisposable
     /// <summary>
     /// Gets the headers that have been send with the response.
     /// </summary>
-    public IDictionary<string, string> Headers { get; private set; } = new Dictionary<string, string>();
+    public IDictionary<string, string> Headers { get; } = new Dictionary<string, string>();
 
     /// <summary>
     /// Gets the content that has been send with the response.
     /// </summary>
     public Stream Content { get; set; } = Stream.Null;
 
-    void IDisposable.Dispose()
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Release the unmanaged resources used by this class and optionally releases the managed resources.
+    /// </summary>
+    /// <param name="disposing"><see langword="true"/> to release both managed and unmanaged resources;
+    /// <see langword="false"/> to release only unmanaged resources.</param>
+    protected virtual void Dispose(bool disposing)
     {
         Content?.Dispose();
         Headers.Clear();
+    }
+
+    /// <summary>
+    /// Release the both the managed and unmanaged resources used by this class.
+    /// </summary>
+    ~Resource()
+    {
+        Dispose(false);
     }
 }

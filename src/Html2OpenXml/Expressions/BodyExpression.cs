@@ -27,8 +27,8 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
     private const uint PortraitPageWidth = 11906U;
     private const uint PortraitPageHeight = 16838U;
     private bool shouldRegisterTopBookmark;
-    private ParsingContext? overridenContext;
- 
+
+
     public override IEnumerable<OpenXmlElement> Interpret(ParsingContext context)
     {
         MarkAllBookmarks();
@@ -89,9 +89,6 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
                     SectionProperties validSectionProp = ChangePageOrientation(orientation);
                     pageSize?.Remove();
                     sectionProperties.PrependChild(validSectionProp.GetFirstChild<PageSize>()!.CloneNode(true));
-
-                    overridenContext = context.CreateChild(this);
-                    overridenContext.IsLandscape = orientation == PageOrientationValues.Landscape;
                 }
             }
         }

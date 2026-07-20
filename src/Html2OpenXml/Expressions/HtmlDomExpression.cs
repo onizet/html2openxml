@@ -30,7 +30,7 @@ abstract class HtmlDomExpression
     {
         // A complete list of HTML tags can be found here: http://www.w3schools.com/tags/default.asp
 
-        var knownTags = new Dictionary<string, Func<IElement, HtmlDomExpression>>(StringComparer.InvariantCultureIgnoreCase) {
+        return new Dictionary<string, Func<IElement, HtmlDomExpression>>(StringComparer.InvariantCultureIgnoreCase) {
             { TagNames.A, el => new HyperlinkExpression((IHtmlAnchorElement) el) },
             { TagNames.Abbr, el => new AbbreviationExpression((IHtmlElement) el) },
             { "acronym", el => new AbbreviationExpression((IHtmlElement) el) },
@@ -82,8 +82,6 @@ abstract class HtmlDomExpression
             { TagNames.Ul, el => new ListExpression((IHtmlElement) el) },
             { TagNames.Var, el => new PhrasingElementExpression((IHtmlElement) el) }
         };
-
-        return knownTags;
     }
 
     /// <summary>

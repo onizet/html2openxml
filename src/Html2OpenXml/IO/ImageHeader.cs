@@ -157,7 +157,7 @@ public static class ImageHeader
 
     private static Size DecodeBitmap(SequentialBinaryReader reader)
     {
-        var magicNumber = reader.ReadUInt16();
+        var _ = reader.ReadUInt16();
 
         // skip past the rest of the file header
         reader.Skip(4 + 2 + 2 + 4);
@@ -200,7 +200,7 @@ public static class ImageHeader
     private static Size DecodeJfif(SequentialBinaryReader reader)
     {
         reader.IsBigEndian = true;
-        var magicNumber = reader.ReadUInt16(); // first two bytes should be JPEG magic number
+        var _ = reader.ReadUInt16(); // first two bytes should be JPEG magic number
 
         do
         {
