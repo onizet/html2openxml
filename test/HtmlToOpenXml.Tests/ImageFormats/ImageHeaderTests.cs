@@ -60,7 +60,7 @@ namespace HtmlToOpenXml.Tests.ImageFormats
             using var imageStream = ResourceHelper.GetStream(resourceName);
             bool success = ImageHeader.TryDetectFileType(imageStream, out var guessType);
 
-            Assert.That(success, Is.EqualTo(true));
+            Assert.That(success, Is.True);
             return guessType;
         }
 
@@ -70,8 +70,31 @@ namespace HtmlToOpenXml.Tests.ImageFormats
             using var memoryStream = new MemoryStream();
             bool success = ImageHeader.TryDetectFileType(memoryStream, out var guessType);
 
-            Assert.That(success, Is.EqualTo(false));
+            Assert.That(success, Is.False);
             return guessType;
+        }
+
+        [TestCaseSource(nameof(ResizedImageTestCases))]
+        public void KeepAspectRatio_Returns((Size actualSize, Size preferredSize, Size expectedSize) td)
+        {
+            var resized = ImageHeader.KeepAspectRatio(td.actualSize, td.preferredSize);
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(resized.Width, Is.EqualTo(td.expectedSize.Width));
+                Assert.That(resized.Height, Is.EqualTo(td.expectedSize.Height));
+            }
+        }
+
+        private static IEnumerable<(Size, Size, Size)> ResizedImageTestCases()
+        {
+            yield return (new Size(255, 0), new Size(255, 255), Size.Empty);
+            yield return (new Size(255, 255), new Size(255, 255), new Size(255, 255));
+            yield return (new Size(500, 255), new Size(125, 255), new Size(125, 63));
+            yield return (new Size(500, 255), new Size(255, 125), new Size(255, 130));
+            yield return (new Size(255, 500), new Size(255, 125), new Size(63, 125));
+            yield return (new Size(500, 255), new Size(500, 750), new Size(1470, 750));
+            yield return (new Size(9999, 7499), new Size(100, 75), new Size(100, 74));
+            yield return (new Size(1000, 1498), new Size(0, 642), new Size(428, 642));
         }
     }
 }

@@ -38,7 +38,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
     // https://answers.microsoft.com/en-us/msoffice/forum/all/custom-list-number-style/21a54399-4404-4c37-8843-2ccaaf827485
     // Image bullet: http://officeopenxml.com/WPnumbering-imagesAsSymbol.php
     private static readonly HashSet<string> supportedListTypes = 
-        ["disc", "decimal", "square", "circle",
+        ["disc", "decimal", "square", "circle", "dash",
          "lower-alpha", "upper-alpha", "lower-latin", "upper-latin",
          "lower-greek", "upper-greek",
          "lower-roman", "upper-roman",
@@ -91,14 +91,14 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 
             // table must be aligned to the list item
             var tables = childElements.OfType<Table>();
-            var tableIndentation = level * Indentation * 2;
+            var tableIndentation = level * Indentation;
             foreach (var table in tables)
             {
                 var tableProperties = table.GetFirstChild<TableProperties>();
                 if (tableProperties == null)
                     table.PrependChild(tableProperties = new());
 
-                tableProperties.TableIndentation ??= new() { Width = tableIndentation };
+                tableProperties.TableIndentation ??= new() { Width = tableIndentation * 2 };
                 // ensure to restrain the table width to the list item
                 if (tableProperties.TableWidth?.Type?.Value == TableWidthUnitValues.Pct
                     && tableProperties.TableWidth?.Width?.Value == "5000")
@@ -167,7 +167,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
             overrideLevelIndex = currentLevel;
             listContext = new ListContext(listStyle, abstractNumId, instanceId.Value, currentLevel + 1, dir);
         }
-        else if (!instanceId.HasValue || context.Converter.ContinueNumbering == false)
+        else if (!instanceId.HasValue || !context.Converter.ContinueNumbering)
         {
             // create a new instance of that list template
             instanceId = IncrementInstanceId(context, abstractNumId, isReusable: context.Converter.ContinueNumbering);
@@ -227,7 +227,15 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
             if (parentName != null && IsCascadingStyle(parentName))
                 return parentName!;
 
-            type = orderedList? "decimal" : "disc";
+            // If a specific list-style-type is provided for an unordered list (e.g., a custom string like "'-'"),
+            // we strip the surrounding quotes to extract the raw symbol.
+            // Otherwise, we fallback to the default "decimal" or "disc" styles.
+            if (!orderedList && !string.IsNullOrEmpty(type))
+            {
+                return type!.Trim('\'', '\"');
+            }
+            
+            return orderedList ? "decimal" : "disc";
         }
 
         return type!;

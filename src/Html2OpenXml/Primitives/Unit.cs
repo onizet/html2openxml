@@ -114,25 +114,19 @@ readonly struct Unit
          * The list of units supported are explained here: http://www.w3schools.com/css/css_units.asp
          */
 
-        switch (metric)
+        return metric switch
         {
-            case UnitMetric.Auto:
-            case UnitMetric.Unitless:
-            case UnitMetric.Percent: return 0L; // not applicable
-            case UnitMetric.Emus: return (long) value;
-            case UnitMetric.Inch: return (long) (value * 914400L);
-            case UnitMetric.Centimeter: return (long) (value * 360000L);
-            case UnitMetric.Millimeter: return (long) (value * 36000L);
-            case UnitMetric.EM:
-                // well this is a rough conversion but considering 1em = 12pt (http://sureshjain.wordpress.com/2007/07/06/53/)    
-                return (long) (value / 72 * 914400L * 12);
-            case UnitMetric.Ex:
-                return (long) (value / 72 * 914400L * 12) / 2;
-            case UnitMetric.Point: return (long) (value * 12700L);
-            case UnitMetric.Pica: return (long) (value / 72 * 914400L) * 12;
-            case UnitMetric.Pixel: return (long) (value / 96 * 914400L);
-            default: goto case UnitMetric.Pixel;
-        }
+            UnitMetric.Auto or UnitMetric.Unitless or UnitMetric.Percent => 0L,// not applicable
+            UnitMetric.Emus => (long)value,
+            UnitMetric.Inch => (long)(value * 914400L),
+            UnitMetric.Centimeter => (long)(value * 360000L),
+            UnitMetric.Millimeter => (long)(value * 36000L),
+            UnitMetric.EM => (long)(value / 72 * 914400L * 12),// well this is a rough conversion but considering 1em = 12pt (http://sureshjain.wordpress.com/2007/07/06/53/)    
+            UnitMetric.Ex => (long)(value / 72 * 914400L * 12) / 2,
+            UnitMetric.Point => (long)(value * 12700L),
+            UnitMetric.Pica => (long)(value / 72 * 914400L) * 12,
+            _ => (long)(value / 96 * 914400L),
+        };
     }
 
     //____________________________________________________________________

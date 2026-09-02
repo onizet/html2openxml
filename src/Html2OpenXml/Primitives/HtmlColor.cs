@@ -50,7 +50,7 @@ readonly partial struct HtmlColor : IEquatable<HtmlColor>
         span = span.Trim();
         if (span.Length < 3)
             return Empty;
- 
+
         try
         {
             // Is it in hexa? Note: we no more accept hexa value without preceding the '#'
@@ -156,21 +156,6 @@ readonly partial struct HtmlColor : IEquatable<HtmlColor>
     }
 
     /// <summary>
-    /// Convert a potential percentage value to its numeric representation.
-    /// Saturation and Lightness can contains both a percentage value or a value comprised between 0.0 and 1.0. 
-    /// </summary>
-    private static double ParsePercent (string value)
-    {
-        double parsedValue;
-        if (value.IndexOf('%') > -1)
-            parsedValue = double.Parse(value.Replace('%', ' '), CultureInfo.InvariantCulture) / 100d;
-        else
-            parsedValue = double.Parse(value, CultureInfo.InvariantCulture);
-
-        return Math.Min(1, Math.Max(0, parsedValue));
-    }
-
-    /// <summary>
     /// Creates a <see cref="HtmlColor"/> structure from the four RGB component values.
     /// </summary>
     /// <param name="red">The red component.</param>
@@ -217,7 +202,7 @@ readonly partial struct HtmlColor : IEquatable<HtmlColor>
         if (luminosity < 0 || luminosity > 1)
             throw new ArgumentOutOfRangeException(nameof(luminosity), luminosity, "Brightness should be comprised between 0.0 and 1.0");
 
-        if (0 == saturation)
+        if (saturation == 0)
         {
             return FromArgb(alpha, Convert.ToByte(luminosity * 255),
                 Convert.ToByte(luminosity * 255), Convert.ToByte(luminosity * 255));
@@ -273,7 +258,15 @@ readonly partial struct HtmlColor : IEquatable<HtmlColor>
     /// </summary>
     public bool Equals(HtmlColor color)
     {
-        return color.A == A && color.R == R && color.G == G && color.B == B;
+        return AreEqual(color.A, A) && AreEqual(color.R, R) && AreEqual(color.G, G) && AreEqual(color.B, B);
+    }
+
+    /// <summary>
+    /// Compare float-point with a 2-digit precisions
+    /// </summary>
+    private static bool AreEqual(double a, double b, double tolerance = 0.01)
+    {
+        return Math.Abs(a - b) <= tolerance;
     }
 
     /// <summary>

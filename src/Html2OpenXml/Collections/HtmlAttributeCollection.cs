@@ -73,7 +73,7 @@ readonly struct HtmlAttributeCollection
             }
             else if (separator == ':' && !foundKey)
             {
-                key = span.Slice(0, index).Trim().ToString();
+                key = span.Slice(0, index).Trim().ToString().ToLowerInvariant();
                 foundKey = true;
                 index++;
             }
@@ -87,7 +87,7 @@ readonly struct HtmlAttributeCollection
             }
             else if (!foundKey && span.Slice(index).StartsWith(['&','#','5','8',';']))
             {
-                key = span.Slice(0, index).Trim().ToString();
+                key = span.Slice(0, index).Trim().ToString().ToLowerInvariant();
                 foundKey = true;
                 index += 5; // length of "&#58;"
             }
@@ -120,9 +120,15 @@ readonly struct HtmlAttributeCollection
     /// <summary>
     /// Determines whether the collection contains the specified key.
     /// </summary>
-    public bool ContainsKey(string name)
+    public bool TryGetValue(string name, out ReadOnlySpan<char> value)
     {
-        return attributes.ContainsKey(name);
+        if (attributes.TryGetValue(name, out var range))
+        {
+            value = rawValue.AsSpan().Slice(range).Trim();
+            return true;
+        }
+        value = default;
+        return false;
     }
 
     /// <summary>
@@ -168,20 +174,35 @@ readonly struct HtmlAttributeCollection
     public Margin GetMargin(string name)
     {
         Margin margin = Margin.Empty;
+        // shortcut to avoid resolving each individual side when we know this collection is empty
         if (IsEmpty) return margin;
-
-        if (attributes.TryGetValue(name, out var range))
-            margin = Margin.Parse(rawValue.AsSpan().Slice(range));
 
         Unit u;
 
+        if (attributes.TryGetValue(name, out var range))
+            margin = Margin.Parse(rawValue.AsSpan().Slice(range));
+        if (attributes.TryGetValue(name + "-inline", out range))
+        {
+            u = Unit.Parse(rawValue.AsSpan().Slice(range));
+            if (u.IsValid) margin.Left = margin.Right = u;
+        }
+        if (attributes.TryGetValue(name + "-block", out range))
+        {
+            u = Unit.Parse(rawValue.AsSpan().Slice(range));
+            if (u.IsValid) margin.Top = margin.Bottom = u;
+        }
+
         u = GetUnit(name + "-top", UnitMetric.Pixel);
+        if (!u.IsValid) u = GetUnit(name + "-block-start");
         if (u.IsValid) margin.Top = u;
         u = GetUnit(name + "-right", UnitMetric.Pixel);
+        if (!u.IsValid) u = GetUnit(name + "-inline-end");
         if (u.IsValid) margin.Right = u;
         u = GetUnit(name + "-bottom", UnitMetric.Pixel);
+        if (!u.IsValid) u = GetUnit(name + "-block-end");
         if (u.IsValid) margin.Bottom = u;
         u = GetUnit(name + "-left", UnitMetric.Pixel);
+        if (!u.IsValid) u = GetUnit(name + "-inline-start");
         if (u.IsValid) margin.Left = u;
 
         return margin;

@@ -27,8 +27,8 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
     private const uint PortraitPageWidth = 11906U;
     private const uint PortraitPageHeight = 16838U;
     private bool shouldRegisterTopBookmark;
-    private ParsingContext? overridenContext;
- 
+
+
     public override IEnumerable<OpenXmlElement> Interpret(ParsingContext context)
     {
         MarkAllBookmarks();
@@ -69,10 +69,10 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
 
         // Unsupported W3C attribute but claimed by users. Specified at <body> level, the page
         // orientation is applied on the whole document
-        if (styleAttributes.ContainsKey("page-orientation"))
+        if (styleAttributes.TryGetValue("page-orientation", out var attrValue))
         {
             PageOrientationValues orientation = PageOrientationValues.Portrait;
-            if (styleAttributes.HasKeyEqualsTo("page-orientation", "landscape"))
+            if ("landscape".Equals(attrValue, StringComparison.InvariantCultureIgnoreCase))
                 orientation = PageOrientationValues.Landscape;
 
             var sectionProperties = mainPart.Document!.Body!.GetFirstChild<SectionProperties>();
@@ -89,9 +89,6 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
                     SectionProperties validSectionProp = ChangePageOrientation(orientation);
                     pageSize?.Remove();
                     sectionProperties.PrependChild(validSectionProp.GetFirstChild<PageSize>()!.CloneNode(true));
-
-                    overridenContext = context.CreateChild(this);
-                    overridenContext.IsLandscape = orientation == PageOrientationValues.Landscape;
                 }
             }
         }

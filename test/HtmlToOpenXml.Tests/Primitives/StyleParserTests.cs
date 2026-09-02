@@ -35,7 +35,7 @@ namespace HtmlToOpenXml.Tests.Primitives
         {
             var styles = HtmlAttributeCollection.ParseStyle(htmlStyle);
             Assert.That(styles.IsEmpty, Is.True);
-            Assert.That(styles.ContainsKey("color"), Is.False);
+            Assert.That(styles.TryGetValue("color", out var _), Is.False);
         }
 
         [Test]

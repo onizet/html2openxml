@@ -1,4 +1,4 @@
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using DocumentFormat.OpenXml.Wordprocessing;
 using DocumentFormat.OpenXml.Packaging;
 
@@ -103,8 +103,7 @@ namespace HtmlToOpenXml.Tests
             }
 
             var inst = mainPart.NumberingDefinitionsPart?.Numbering?
-                .Elements<NumberingInstance>().Where(i => i.AbstractNumId?.Val == absNum.AbstractNumberId)
-                .SingleOrDefault();
+                .Elements<NumberingInstance>().SingleOrDefault(i => i.AbstractNumId?.Val == absNum.AbstractNumberId);
             Assert.That(inst, Is.Not.Null);
             Assert.That(inst.NumberID?.Value, Is.Not.Null);
 
@@ -201,8 +200,7 @@ namespace HtmlToOpenXml.Tests
             Assert.That(absNum, Is.Not.Null);
 
             var inst = mainPart.NumberingDefinitionsPart?.Numbering?
-                .Elements<NumberingInstance>().Where(i => i.AbstractNumId?.Val == absNum.AbstractNumberId)
-                .SingleOrDefault();
+                .Elements<NumberingInstance>().SingleOrDefault(i => i.AbstractNumId?.Val == absNum.AbstractNumberId);
             Assert.That(inst, Is.Not.Null);
             Assert.That(inst.NumberID?.Value, Is.Not.Null);
 
@@ -562,8 +560,7 @@ namespace HtmlToOpenXml.Tests
             Assert.That(absNum, Is.Not.Null);
 
             var inst = mainPart.NumberingDefinitionsPart?.Numbering?
-                .Elements<NumberingInstance>().Where(i => i.AbstractNumId?.Val == absNum.AbstractNumberId)
-                .SingleOrDefault();
+                .Elements<NumberingInstance>().SingleOrDefault(i => i.AbstractNumId?.Val == absNum.AbstractNumberId);
             Assert.That(inst, Is.Not.Null);
             Assert.That(inst.NumberID?.Value, Is.Not.Null);
 
@@ -648,6 +645,91 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(tableProperties.TableWidth.Width?.HasValue, Is.True);
                 Assert.That(Convert.ToInt32(tableProperties.TableWidth.Width.Value), Is.GreaterThan(0).And.LessThan(5000));
             }
+        }
+
+        [Test]
+        public async Task LowerGreekList_ReturnsListWithGreekNumbering()
+        {
+            await converter.ParseBody(@"
+                <ol style='list-style-type: lower-greek'>
+                    <li>Item 1</li>
+                    <li>Item 2</li>
+                </ol>"
+            );
+
+            var elements = mainPart.Document!.Body!.Elements<Paragraph>().ToList();
+            Assert.That(elements, Has.Count.EqualTo(2));
+
+            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
+            var absNum = numbering.Elements<AbstractNum>().SingleOrDefault();
+
+            Assert.That(absNum, Is.Not.Null);
+            Assert.That(absNum.AbstractNumDefinitionName?.Val?.Value, Is.EqualTo("lower-greek"));
+
+            var level = absNum.Elements<Level>().First();
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(level.NumberingFormat?.Val?.Value, Is.EqualTo(NumberFormatValues.LowerLetter));
+                Assert.That(level.LevelText?.Val?.Value, Is.EqualTo("%1."));
+            }
+        }
+
+        [Test]
+        public async Task UpperGreekList_ReturnsListWithGreekNumbering()
+        {
+            await converter.ParseBody(@"
+                <ol style='list-style-type: upper-greek'>
+                    <li>Item 1</li>
+                </ol>"
+            );
+
+            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
+            var absNum = numbering.Elements<AbstractNum>().SingleOrDefault();
+
+            Assert.That(absNum, Is.Not.Null);
+            Assert.That(absNum.AbstractNumDefinitionName?.Val?.Value, Is.EqualTo("upper-greek"));
+
+            var level = absNum.Elements<Level>().First();
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(level.NumberingFormat?.Val?.Value, Is.EqualTo(NumberFormatValues.UpperLetter));
+                Assert.That(level.LevelText?.Val?.Value,  Is.EqualTo("%1."));
+            }
+        }
+
+        [Test]
+        public async Task CustomBulletList_ReturnsListWithCustomStyle()
+        {
+            await converter.ParseBody(@"<ul style='list-style-type:""😀""'>
+                    <li>Item 1</li>
+                </ul>");
+
+            var elements = mainPart.Document!.Body!.ChildElements;
+            Assert.That(elements, Is.Not.Empty);
+            Assert.That(elements, Is.All.TypeOf<Paragraph>());
+            var numId = ((Paragraph) elements[0]).ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value;
+            Assert.That(numId, Is.Not.Null);
+
+            var numInst = mainPart.NumberingDefinitionsPart!.Numbering!
+                .Elements<NumberingInstance>()
+                .Single(i => i.NumberID?.Value == numId);
+            Assert.That(numInst.AbstractNumId?.Val?.Value, Is.Not.Null);
+
+            var absNums = mainPart.NumberingDefinitionsPart.Numbering!
+                .Elements<AbstractNum>();
+            var absNum = absNums.FirstOrDefault(a => a.AbstractNumberId == numInst.AbstractNumId.Val);
+            Assert.That(absNum, Is.Not.Null);
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(absNum.AbstractNumDefinitionName?.Val?.Value, Is.EqualTo("😀"));
+                Assert.That(absNum.MultiLevelType?.Val?.InnerText, Is.AnyOf("hybridMultilevel", "multilevel"));
+                Assert.That(absNum.Elements<Level>().Count(), Is.AtLeast(2), "At least 2 level registred");
+                Assert.That(absNum.GetFirstChild<Level>()?.NumberingFormat?.Val?.Value, Is.EqualTo(NumberFormatValues.Bullet));
+            }
+
+            AssertThatOpenXmlDocumentIsValid();
         }
     }
 }

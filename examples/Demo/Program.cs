@@ -1,12 +1,9 @@
-﻿using System;
-using System.IO;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Validation;
 using DocumentFormat.OpenXml.Wordprocessing;
 using HtmlToOpenXml;
-using System.Threading.Tasks;
 
 namespace Demo
 {
@@ -15,10 +12,10 @@ namespace Demo
         static async Task Main(string[] args)
         {
             const string filename = "test.docx";
-            string html = ResourceHelper.GetString("Resources.CompleteRunTest.html");
+            string html = ResourceHelper.GetString("Resources.UlStyles.html");
             if (File.Exists(filename)) File.Delete(filename);
 
-            using (MemoryStream generatedDocument = new MemoryStream())
+            using (MemoryStream generatedDocument = new())
             {
                 // Uncomment and comment the second using() to open an existing template document
                 // instead of creating it from scratch.

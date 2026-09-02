@@ -34,15 +34,6 @@ public partial class HtmlConverter
     /// Constructor.
     /// </summary>
     /// <param name="mainPart">The mainDocumentPart of a document where to write the conversion to.</param>
-    /// <remarks>We preload some configuration from inside the document such as style, bookmarks,...</remarks>
-    public HtmlConverter(MainDocumentPart mainPart) : this(mainPart, null)
-    {
-    }
-
-    /// <summary>
-    /// Constructor.
-    /// </summary>
-    /// <param name="mainPart">The mainDocumentPart of a document where to write the conversion to.</param>
     /// <param name="webRequester">Factory to download the images.</param>
     /// <remarks>We preload some configuration from inside the document such as style, bookmarks,...</remarks>
     public HtmlConverter(MainDocumentPart mainPart, IWebRequest? webRequester = null)

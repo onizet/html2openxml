@@ -74,5 +74,22 @@ namespace HtmlToOpenXml.Tests.Primitives
                 Assert.That(margin.Right.Metric, Is.EqualTo(UnitMetric.Auto));
             }
         }
+
+        [TestCase("margin: 25px;margin-block:100px", 100, 25, 100, 25)]
+        [TestCase("margin: 25px;margin-inline:100px", 25, 100, 25, 100)]
+        [TestCase("margin-inline:100px;margin-inline-start:25px", 0, 100, 0, 25)]
+        public void CombinedMarginStyle_ShouldSucceed(string html, int top, int right, int bottom, int left)
+        {
+            var styleAttributes = HtmlAttributeCollection.ParseStyle(html);
+            var margin = styleAttributes.GetMargin("margin");
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(margin.Top.ValueInPx, Is.EqualTo(top));
+                Assert.That(margin.Right.ValueInPx, Is.EqualTo(right));
+                Assert.That(margin.Bottom.ValueInPx, Is.EqualTo(bottom));
+                Assert.That(margin.Left.ValueInPx, Is.EqualTo(left));
+            }
+        }
     }
 }

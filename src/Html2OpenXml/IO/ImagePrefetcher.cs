@@ -9,6 +9,7 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
+using System.Collections.Concurrent;
 using DocumentFormat.OpenXml.Packaging;
 
 namespace HtmlToOpenXml.IO;
@@ -24,29 +25,12 @@ interface IImageLoader
 /// <summary>
 /// Download and provison the metadata of a requested image.
 /// </summary>
-sealed class ImagePrefetcher<T> : IImageLoader
+sealed class ImagePrefetcher<T> : ImagePrefetcherBase, IImageLoader
     where T: OpenXmlPartContainer, ISupportedRelationship<ImagePart>
 {
-    // Map extension to PartTypeInfo
-    private static readonly Dictionary<string, PartTypeInfo> knownExtensions = new(StringComparer.OrdinalIgnoreCase) {
-        { ".gif", ImagePartType.Gif },
-        { ".bmp", ImagePartType.Bmp },
-        { ".emf", ImagePartType.Emf },
-        { ".ico", ImagePartType.Icon },
-        { ".jp2", ImagePartType.Jp2 },
-        { ".jpeg", ImagePartType.Jpeg },
-        { ".jpg", ImagePartType.Jpeg },
-        { ".jpe", ImagePartType.Jpeg },
-        { ".pcx", ImagePartType.Pcx },
-        { ".png", ImagePartType.Png },
-        { ".svg", ImagePartType.Svg },
-        { ".tif", ImagePartType.Tif },
-        { ".tiff", ImagePartType.Tiff },
-        { ".wmf", ImagePartType.Wmf }
-    };
     private readonly T hostingPart;
     private readonly IWebRequest resourceLoader;
-    private readonly HtmlImageInfoCollection prefetchedImages;
+    private readonly ConcurrentDictionary<string, HtmlImageInfo> prefetchedImages;
     private readonly object lockObject = new();
     private readonly ImageProcessingMode processingMode;
 
@@ -76,13 +60,9 @@ sealed class ImagePrefetcher<T> : IImageLoader
     public async Task<HtmlImageInfo?> Download(string imageUri, CancellationToken cancellationToken)
     {
         // Check if image is already cached using thread-safe operation
-        lock (lockObject)
-        {
-            if (prefetchedImages.Contains(imageUri))
-                return prefetchedImages[imageUri];
-        }
+        if (prefetchedImages.TryGetValue(imageUri, out var iinfo))
+            return iinfo;
 
-        HtmlImageInfo? iinfo;
         if (DataUri.IsWellFormed(imageUri)) // data inline, encoded in base64
         {
             iinfo = ReadDataUri(imageUri);
@@ -110,14 +90,8 @@ sealed class ImagePrefetcher<T> : IImageLoader
         // Add to cache using thread-safe operation
         if (iinfo != null)
         {
-            lock (lockObject)
-            {
-                // Double-check pattern to prevent duplicate adds during concurrent access
-                if (!prefetchedImages.Contains(imageUri))
-                {
-                    prefetchedImages.Add(iinfo);
-                }
-            }
+            // Double-check pattern to prevent duplicate adds during concurrent access
+            prefetchedImages.TryAdd(imageUri, iinfo);
         }
 
         return iinfo;
@@ -146,7 +120,7 @@ sealed class ImagePrefetcher<T> : IImageLoader
             return null;
         }
 
-        return SaveImageAssert(src, type, response.Content.CopyTo);
+        return SaveImageAssert(type, response.Content.CopyTo);
     }
 
     /// <summary>
@@ -183,7 +157,7 @@ sealed class ImagePrefetcher<T> : IImageLoader
 
         // Return image info with external flag set
         // Note: Size will be empty as we don't download the image
-        return new HtmlImageInfo(src, relationshipId) {
+        return new HtmlImageInfo(relationshipId) {
             IsExternal = true,
             Size = Size.Empty,
             TypeInfo = ImagePartType.Png // Default type, actual type doesn't matter for external links
@@ -197,15 +171,15 @@ sealed class ImagePrefetcher<T> : IImageLoader
     {
         if (DataUri.TryCreate(src, out var dataUri))
         {
-            knownContentType.TryGetValue(dataUri!.Mime, out PartTypeInfo type);
+            TryInspectMimeType(dataUri!.Mime, out PartTypeInfo type);
 
-            return SaveImageAssert(src, type, stream => stream.Write(dataUri.Data, 0, dataUri.Data.Length));
+            return SaveImageAssert(type, stream => stream.Write(dataUri.Data, 0, dataUri.Data.Length));
         }
 
         return null;
     }
 
-    private HtmlImageInfo SaveImageAssert(string src, PartTypeInfo type, Action<Stream> writeImage)
+    private HtmlImageInfo SaveImageAssert(PartTypeInfo type, Action<Stream> writeImage)
     {
         ImagePart ipart;
         string relationshipId = "img_" + Guid.NewGuid().ToString("N");
@@ -223,104 +197,10 @@ sealed class ImagePrefetcher<T> : IImageLoader
         }
 
         string partId = hostingPart.GetIdOfPart(ipart);
-        return new HtmlImageInfo(src, partId)
+        return new HtmlImageInfo(partId)
         {
             TypeInfo = type,
             Size = originalSize
         };
-    }
-
-    //____________________________________________________________________
-    //
-    // Private Implementation
-
-    // http://stackoverflow.com/questions/58510/using-net-how-can-you-find-the-mime-type-of-a-file-based-on-the-file-signature
-    private static readonly Dictionary<string, PartTypeInfo> knownContentType = new(StringComparer.OrdinalIgnoreCase) {
-        { "image/gif", ImagePartType.Gif },
-        { "image/pjpeg", ImagePartType.Jpeg },
-        { "image/jp2", ImagePartType.Jp2 },
-        { "image/jpg", ImagePartType.Jpeg },
-        { "image/jpeg", ImagePartType.Jpeg },
-        { "image/x-png", ImagePartType.Png },
-        { "image/png", ImagePartType.Png },
-        { "image/tiff", ImagePartType.Tiff },
-        { "image/emf", ImagePartType.Emf },
-        { "image/x-emf", ImagePartType.Emf },
-        { "image/vnd.microsoft.icon", ImagePartType.Icon },
-        // these icons mime type are wrong but we should nevertheless take care (http://en.wikipedia.org/wiki/ICO_%28file_format%29#MIME_type)
-        { "image/x-icon", ImagePartType.Icon },
-        { "image/icon", ImagePartType.Icon },
-        { "image/ico", ImagePartType.Icon },
-        { "text/ico", ImagePartType.Icon },
-        { "text/application-ico", ImagePartType.Icon },
-        { "image/bmp", ImagePartType.Bmp },
-        { "image/svg+xml", ImagePartType.Svg },
-    };
-
-    /// <summary>
-    /// Inspect the response headers of a web request and decode the mime type if provided
-    /// </summary>
-    /// <returns>Returns the extension of the image if provideds.</returns>
-    private static bool TryInspectMimeType(string? contentType, out PartTypeInfo type)
-    {
-        // can be null when the protocol used doesn't allow response headers
-        if (contentType != null &&
-            knownContentType.TryGetValue(contentType, out type))
-            return true;
-
-        type = default;
-        return false;
-    }
-
-    /// <summary>
-    /// Gets the OpenXml PartTypeInfo associated to an image.
-    /// </summary>
-    private static bool TryGuessTypeFromUri(Uri uri, out PartTypeInfo type)
-    {
-        string extension = Path.GetExtension(uri.IsAbsoluteUri ? uri.Segments[uri.Segments.Length - 1] : uri.OriginalString);
-        if (knownExtensions.TryGetValue(extension, out type)) return true;
-
-        // extension not recognized, try with checking the query string. Expecting to resolve something like:
-        // ./image.axd?picture=img1.jpg
-        extension = Path.GetExtension(uri.IsAbsoluteUri ? uri.AbsoluteUri : uri.ToString());
-        if (knownExtensions.TryGetValue(extension, out type)) return true;
-
-        return false;
-    }
-
-    /// <summary>
-    /// Gets the OpenXml PartTypeInfo associated to an image.
-    /// </summary>
-    private static bool TryGuessTypeFromStream(Stream stream, out PartTypeInfo type)
-    {
-        if (ImageHeader.TryDetectFileType(stream, out ImageHeader.FileType guessType))
-        {
-            switch (guessType)
-            {
-                case ImageHeader.FileType.Bitmap: type = ImagePartType.Bmp; return true;
-                case ImageHeader.FileType.Emf: type = ImagePartType.Emf; return true;
-                case ImageHeader.FileType.Gif: type = ImagePartType.Gif; return true;
-                case ImageHeader.FileType.Jpeg: type = ImagePartType.Jpeg; return true;
-                case ImageHeader.FileType.Png: type = ImagePartType.Png; return true;
-            }
-        }
-        type = ImagePartType.Bmp;
-        return false;
-    }
-
-    /// <summary>
-    /// Loads an image from a stream and grab its size.
-    /// </summary>
-    private static Size GetImageSize(Stream imageStream)
-    {
-        // Read only the size of the image
-        try
-        {
-            return ImageHeader.GetDimensions(imageStream);
-        }
-        catch (ArgumentException)
-        {
-            return Size.Empty;
-        }
     }
 }

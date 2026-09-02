@@ -6,7 +6,7 @@ namespace HtmlToOpenXml;
 /// <summary>
 /// Helper class to get chunks of OpenXml predefined style.
 /// </summary>
-internal class PredefinedStyles
+static class PredefinedStyles
 {
     private static ResourceManager? resourceMan;
 

@@ -19,10 +19,8 @@ namespace HtmlToOpenXml;
 /// </summary>
 static class HttpUtility
 {
-    /// <summary>The common characters considered as white space.</summary>
-    internal static readonly char[] WhiteSpaces = [' ', '\t', '\r', '\u00A0', '\u0085'];
+#if !NET5_0_OR_GREATER
     private static readonly char[] entityEndingChars = [';', '&'];
-
 
     static class HtmlEntities
     {
@@ -146,6 +144,7 @@ static class HttpUtility
             }
         }
     }
+#endif
 
     /// <summary>
     /// Converts a string that represents an Html-encoded URL to a decoded string.

@@ -50,8 +50,20 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
 
         Numbering numberingPart = context.MainPart.NumberingDefinitionsPart!.Numbering!;
 
+        AbstractNum abstractNum;
+        
         // at this stage, we have sanitized the list style so it's safe to grab them from the predefined template lists
-        var abstractNum =  predefinedNumberingLists[listName];
+        if (predefinedNumberingLists.TryGetValue(listName, out var predefined))
+        {
+            // If it's a predefined style, we clone it as usual
+            abstractNum = (AbstractNum)predefined.CloneNode(true);
+        }
+        else
+        {
+            // If not found in predefined lists, listName contains a custom bullet character (e.g., "-")
+            abstractNum = CreateCustomBulletAbstractNum(listName);
+        }
+        
         abstractNum = (AbstractNum) abstractNum.CloneNode(true);
         abstractNum.AbstractNumberId = IncrementAbstractNumId(context, numberingPart);
         var level1 = abstractNum.GetFirstChild<Level>()!;
@@ -179,7 +191,6 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
 
         knownAbsNumIds = [];
         knownInstanceIds = [];
-        int absNumIdRef = 0;
         NumberingDefinitionsPart numberingPart = context.MainPart.NumberingDefinitionsPart
             ?? context.MainPart.AddNewPart<NumberingDefinitionsPart>();
 
@@ -189,21 +200,11 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
         }
 
         var numbering = numberingPart.Numbering!;
-
-        // The absNumIdRef Id is a required field and should be unique. We will loop through the existing Numbering definition
-        // to retrieve the highest Id and reconstruct our own list definition template.
-        foreach (var abs in numbering.Elements<AbstractNum>())
-        {
-            if (abs.AbstractNumberId != null && abs.AbstractNumberId > absNumIdRef)
-                absNumIdRef = abs.AbstractNumberId;
-        }
-        absNumIdRef++;
-
         IEnumerable<AbstractNum> existingAbstractNums = numbering.ChildElements
-            .Where(e => e != null && e is AbstractNum).Cast<AbstractNum>();
+            .OfType<AbstractNum>();
 
         knownAbsNumIds = existingAbstractNums
-            .Where(a => a.AbstractNumDefinitionName != null && a.AbstractNumDefinitionName.Val != null)
+            .Where(a => a.AbstractNumDefinitionName?.Val != null)
             .ToDictionary(a => a.AbstractNumDefinitionName!.Val!.Value!, a => a.AbstractNumberId!.Value);
 
         foreach (NumberingInstance inst in numbering.Elements<NumberingInstance>())
@@ -216,6 +217,38 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
         isInitialized = true;
     }
 
+    /// <summary>
+    /// Generates a custom abstract numbering definition for unordered lists using a specific symbol.
+    /// </summary>
+    /// <param name="customSymbol">The custom character or string to be used as the list bullet.</param>
+    /// <returns>An <see cref="AbstractNum"/> instance configured with the custom bullet symbol across all levels.</returns>
+    private AbstractNum CreateCustomBulletAbstractNum(string customSymbol)
+    {
+        var abstractNum = new AbstractNum {
+            AbstractNumDefinitionName = new() { Val = customSymbol },
+            MultiLevelType = new() { Val = MultiLevelValues.HybridMultilevel }
+        };
+
+        for (var lvlIndex = 0; lvlIndex <= MaxLevel; lvlIndex++)
+        {
+            abstractNum.Append(new Level {
+                StartNumberingValue = new() { Val = 1 },
+                NumberingFormat = new() { Val = NumberFormatValues.Bullet },
+                LevelIndex = lvlIndex,
+                LevelText = new() { Val = string.Format(customSymbol, lvlIndex+1) },
+                LevelJustification = new() { Val = LevelJustificationValues.Left },
+                PreviousParagraphProperties = new() {
+                    Indentation = new() {
+                        Left = ((lvlIndex + 1) * Indentation * 2).ToString(),
+                        Hanging = Indentation.ToString()
+                    }
+                }
+            });
+        }
+
+        return abstractNum;
+    }
+    
     /// <summary>
     /// Predefined template of lists.
     /// </summary>
@@ -230,6 +263,7 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
             ("disc", NumberFormatValues.Bullet, "•"),
             ("square", NumberFormatValues.Bullet, "▪"),
             ("circle", NumberFormatValues.Bullet, "o"),
+            ("dash", NumberFormatValues.Bullet, "-"),
             ("upper-alpha", NumberFormatValues.UpperLetter, "%{0}."),
             ("lower-alpha", NumberFormatValues.LowerLetter, "%{0}."),
             ("upper-roman", NumberFormatValues.UpperRoman, "%{0}."),

@@ -16,13 +16,8 @@ namespace HtmlToOpenXml.IO;
 /// <summary>
 /// Represents an image and its metadata.
 /// </summary>
-sealed class HtmlImageInfo(string source, string partId)
+sealed class HtmlImageInfo(string partId)
 {
-    /// <summary>
-    /// The URI identifying this cached image information.
-    /// </summary>
-    public string Source { get; set; } = source;
-
     /// <summary>
     /// The Unique identifier of the ImagePart in the <see cref="MainDocumentPart"/>.
     /// </summary>
@@ -43,15 +38,4 @@ sealed class HtmlImageInfo(string source, string partId)
     /// When true, <see cref="ImagePartId"/> contains an external relationship ID instead of an embedded image part ID.
     /// </summary>
     public bool IsExternal { get; set; }
-}
-
-/// <summary>
-/// Typed dictionary of <see cref="HtmlImageInfo"/> where the Source URI is the identifier.
-/// </summary>
-sealed class HtmlImageInfoCollection : System.Collections.ObjectModel.KeyedCollection<string, HtmlImageInfo>
-{
-    protected override string GetKeyForItem(HtmlImageInfo item)
-    {
-        return item.Source;
-    }
 }
