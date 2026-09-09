@@ -494,3 +494,6 @@ FodyWeavers.xsd
 # Additional files built by Visual Studio
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,visualstudio,macos,windows,git,dotnetcore
+
+# C# Dev Kit in Visual Studio Code
+.csproj.lscache
