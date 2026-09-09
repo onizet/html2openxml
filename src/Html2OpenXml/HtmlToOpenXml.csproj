@@ -41,6 +41,7 @@
     <PackageReference Include="DocumentFormat.OpenXml" Version="$(DocumentFormatOpenXmlPackageVersion)" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.401" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
+    <PackageReference Include="NuSpec.AI" Version="3.1.1" PrivateAssets="all" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">

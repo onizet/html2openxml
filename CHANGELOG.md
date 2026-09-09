@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.5.1
+
+- Fix parsing css styles with encoded quote #239
+- Integrate NuSpec.AI to generate an AI-context-optimized map of this library.
+- Bump AngleSharp to 1.8
+
 ## 3.5.0
 
 - Support css margin/padding inline/block
