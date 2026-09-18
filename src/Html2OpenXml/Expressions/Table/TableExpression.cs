@@ -76,7 +76,7 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
     /// <summary>
     /// Parse the <c>col</c> tags, defining some column styles.
     /// </summary>
-    private IEnumerable<GridColumn> InterpretGridColumns(ParsingContext context, int columnCount)
+    private List<GridColumn> InterpretGridColumns(ParsingContext context, int columnCount)
     {
         var columns = new List<GridColumn>(columnCount);
         var colStyleExpressions = new List<TableColExpression>(columnCount);
@@ -200,16 +200,20 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
 
         var dir = tableNode.GetTextDirection();
         if (dir.HasValue)
+        {
             tableProperties.BiDiVisual = new() { 
                 Val = dir == AngleSharp.Dom.DirectionMode.Rtl? OnOffOnlyValues.On : OnOffOnlyValues.Off
             };
+        }
 
         var spacing = Convert.ToInt16(tableNode.GetAttribute("cellspacing"));
         if (spacing > 0)
+        {
             tableProperties.TableCellSpacing = new() {
                 Type = TableWidthUnitValues.Dxa, 
                 Width = new Unit(UnitMetric.Pixel, spacing).ValueInDxa.ToString(CultureInfo.InvariantCulture)
-        };
+            };
+        }
 
         var padding = Convert.ToInt16(tableNode.GetAttribute("cellpadding"));
         if (padding > 0)
@@ -226,30 +230,29 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
         }
 
         var styleBorder = styleAttributes.GetBorders();
+        var tableBorders = new TableBorders();
 
+        // CSS style is about outside borders only.
         if (!styleBorder.IsEmpty)
         {
-            var tableBorders = new TableBorders {
+            tableBorders = new TableBorders {
                 TopBorder = Converter.ToBorder<TopBorder>(styleBorder.Top),
                 LeftBorder = Converter.ToBorder<LeftBorder>(styleBorder.Left),
                 RightBorder = Converter.ToBorder<RightBorder>(styleBorder.Right),
                 BottomBorder = Converter.ToBorder<BottomBorder>(styleBorder.Bottom)
             };
-
-            tableProperties.TableBorders = tableBorders;
         }
-        // is the border=0? If so, we remove the border regardless the style in use
-        // but only remove border if the html style border was set, otherwise leave the border style as-is.
-        else if (!styleBorder.IsEmpty && tableNode.Border == 0)
+
+        // If the border was explicitly set to 0, we remove the border regardless the Word style in use
+        // IHtmlTableElement.Border don't deal with `undefined` value, that's why we use HasAttribute
+        if (tableNode.HasAttribute("border") && tableNode.Border == 0)
         {
-            tableProperties.TableBorders = new TableBorders() {
-                TopBorder = new TopBorder { Val = BorderValues.None },
-                LeftBorder = new LeftBorder { Val = BorderValues.None },
-                RightBorder = new RightBorder { Val = BorderValues.None },
-                BottomBorder = new BottomBorder { Val = BorderValues.None },
-                InsideHorizontalBorder = new() { Val = BorderValues.None },
-                InsideVerticalBorder = new() { Val = BorderValues.None }
-            };
+            tableBorders.TopBorder ??= new TopBorder { Val = BorderValues.None };
+            tableBorders.LeftBorder ??= new LeftBorder { Val = BorderValues.None };
+            tableBorders.RightBorder ??= new RightBorder { Val = BorderValues.None };
+            tableBorders.BottomBorder ??= new BottomBorder { Val = BorderValues.None };
+            tableBorders.InsideHorizontalBorder = new() { Val = BorderValues.None };
+            tableBorders.InsideVerticalBorder = new() { Val = BorderValues.None };
         }
         else if (tableNode.Border >= 1)
         {
@@ -267,16 +270,17 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
             if (handleBorders)
             {
                 uint borderSize = (uint) new Unit(UnitMetric.Pixel, tableNode.Border).ValueInDxa;
-                tableProperties.TableBorders = new TableBorders() {
-                    TopBorder = new TopBorder { Val = BorderValues.None },
-                    LeftBorder = new LeftBorder { Val = BorderValues.None },
-                    RightBorder = new RightBorder { Val = BorderValues.None },
-                    BottomBorder = new BottomBorder { Val = BorderValues.None },
-                    InsideHorizontalBorder = new() { Val = BorderValues.Single, Size = borderSize },
-                    InsideVerticalBorder = new() { Val = BorderValues.Single, Size = borderSize }
-                };
+                tableBorders.TopBorder ??= new TopBorder { Val = BorderValues.None };
+                tableBorders.LeftBorder ??= new LeftBorder { Val = BorderValues.None };
+                tableBorders.RightBorder ??= new RightBorder { Val = BorderValues.None };
+                tableBorders.BottomBorder ??= new BottomBorder { Val = BorderValues.None };
+                tableBorders.InsideHorizontalBorder = new() { Val = BorderValues.Single, Size = borderSize };
+                tableBorders.InsideVerticalBorder = new() { Val = BorderValues.Single, Size = borderSize };
             }
         }
+
+        if (tableBorders.ChildElements.Count > 0)
+            tableProperties.TableBorders = tableBorders;
 
         var align = Converter.ToParagraphAlign(tableNode.GetAttribute("align").AsSpan())
             ?? Converter.ToParagraphAlign(styleAttributes["justify-self"]);
@@ -285,10 +289,8 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
             var margin = styleAttributes.GetMargin("margin");
             if (margin.Left.Metric == UnitMetric.Auto)
             {
-                if (margin.Right.Metric == UnitMetric.Auto)
-                    align = JustificationValues.Center;
-                else
-                    align = JustificationValues.Right;
+                align = margin.Right.Metric == UnitMetric.Auto?
+                    JustificationValues.Center : JustificationValues.Right;
             }
         }
 
