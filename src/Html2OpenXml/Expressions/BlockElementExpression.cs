@@ -386,6 +386,10 @@ class BlockElementExpression: PhrasingElementExpression
     /// </summary>
     private Table CreateFrame(IEnumerable<OpenXmlElement> childElements)
     {
+        List<OpenXmlElement> childrens = childElements.ToList();
+        if (childrens.LastOrDefault() is not Paragraph)
+            childrens.Add(new Paragraph());
+
         TableCell cell;
         TableProperties tableProperties;
         Table framedTable = new(
@@ -395,7 +399,7 @@ class BlockElementExpression: PhrasingElementExpression
             new TableGrid(
                 new GridColumn() { Width = "9442" }),
             new TableRow(
-                cell = new TableCell(childElements)
+                cell = new TableCell([.. childrens])
                 )
             );
 
