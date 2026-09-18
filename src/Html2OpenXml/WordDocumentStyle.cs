@@ -15,12 +15,22 @@ using DocumentFormat.OpenXml.Wordprocessing;
 namespace HtmlToOpenXml;
 
 /// <summary>
-/// Defines the styles to apply on OpenXml elements.
+/// Provides style-related services used during HTML conversion.
+///
+/// <para>
+/// This class manages style mappings, allows custom OpenXml styles to be registered
+/// in the document, and exposes events that allow missing styles to be provisioned dynamically
+/// during conversion.
+/// </para>
 /// </summary>
 public sealed class WordDocumentStyle
 {
     /// <summary>
-    /// Occurs when a Style is missing in the MainDocumentPart but will be used during the conversion process.
+    /// Occurs when the converter references a style that is not present in the Word document
+    /// and is not one of the buil-in styles known by HtmlToOpenXml.
+    ///
+    /// Handle this event to create and register the missing OpenXml style
+    /// before conversion continues.
     /// </summary>
     public event EventHandler<StyleEventArgs>? StyleMissing;
 
@@ -29,7 +39,7 @@ public sealed class WordDocumentStyle
     private readonly HashSet<string> lazyPredefinedStyles;
 
     private DefaultStyles? defaultStyles;
-    
+
 
     internal WordDocumentStyle(MainDocumentPart mainPart)
     {
@@ -61,7 +71,7 @@ public sealed class WordDocumentStyle
     //
 
     /// <summary>
-    /// Preload the styles in the document to match localized style name.
+    /// Preload the styles from the Word document to match localized style name.
     /// </summary>
     internal void PrepareStyles(MainDocumentPart mainPart)
     {
@@ -137,7 +147,7 @@ public sealed class WordDocumentStyle
                 {
                     string? xml = PredefinedStyles.GetOuterXml(name);
                     if (xml != null)
-                        this.AddStyle(name, style = new Style(xml));
+                        AddStyle(name, style = new Style(xml));
                 }
 
                 if (style is null)
@@ -157,7 +167,7 @@ public sealed class WordDocumentStyle
     }
 
     /// <summary>
-    /// Add a new style inside the document and refresh the style cache.
+    /// Adds a new style to the Word document and refreshes the converter's internal style cache.
     /// </summary>
     public void AddStyle(Style style)
     {
@@ -176,7 +186,7 @@ public sealed class WordDocumentStyle
     }
 
     /// <summary>
-    /// Add a new style inside the document and refresh the style cache.
+    /// Adds a new style to the Word document and refreshes the converter's internal style cache.
     /// </summary>
     internal void AddStyle(string name, Style style)
     {
@@ -201,7 +211,7 @@ public sealed class WordDocumentStyle
     //
 
     /// <summary>
-    /// Contains the default styles for new OpenXML elements
+    /// Contains the default styles for new OpenXml elements.
     /// </summary>
     public DefaultStyles DefaultStyles
     {
@@ -209,7 +219,8 @@ public sealed class WordDocumentStyle
     }
 
     /// <summary>
-    /// Gets or sets the beginning and ending characters used in the &lt;q&gt; tag.
+    /// Defines the beginning and ending characters used in the &lt;q&gt; tag.
+    /// Defaults follow the style: « abc ».
     /// </summary>
     public QuoteChars QuoteCharacters { get; set; } = QuoteChars.IE;
 }

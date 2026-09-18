@@ -18,6 +18,7 @@
     <Authors>Olivier Nizet</Authors>
     <RepositoryType>GIT</RepositoryType>
     <NoWarn>$(NoWarn);CS8981</NoWarn>
+    <NuSpecAiFormats>ultra</NuSpecAiFormats>
   </PropertyGroup>
   <Import Project="..\..\build\SignAssembly.props" />
 

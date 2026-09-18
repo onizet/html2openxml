@@ -26,7 +26,7 @@ sealed class ParsingContext(HtmlConverter converter, OpenXmlPartContainer hostin
 
     public HtmlConverter Converter { get; } = converter;
 
-    public MainDocumentPart MainPart { get; } = converter.MainPart;
+    public MainDocumentPart MainPart { get; } = converter.mainPart;
 
     public OpenXmlPartContainer HostingPart { get; } = hostingPart;
 

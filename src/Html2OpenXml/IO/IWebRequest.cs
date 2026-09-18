@@ -13,15 +13,26 @@
 namespace HtmlToOpenXml.IO;
 
 /// <summary>
-/// Interface used to handle resource requests for a document. These
-/// requests include, but are not limited to, media, script and styling
-/// resources.
-/// The expected protocols to support are: http, https and file.
+/// Handle retrieval of external resources referenced during HTML conversion.
+///
+/// Resources may include images, stylesheets, scripts and local files.
+/// <para>
+/// Implement this interface to customize resource resolution, provide authentication,
+/// support additional formats, rewrite URLs, or transform downlaoded content before it is
+/// inserted into the document.
+/// </para>
+/// <para>
+/// Implementations are expected to support the http, https and file protocols.
+/// </para>
 /// </summary>
 public interface IWebRequest
 {
     /// <summary>
-    /// Performs an asynchronous request that can be cancelled.
+    /// Retrieves a resource referenced by the HTML document.
+    ///
+    /// Returns <see langword="null"/> when the resource cannot be retrieved.
+    /// The returned <see cref="Resource"/> must provide a readable content stream.
+    /// Returned <see cref="Resource"/> instances are disposed by HtmlToOpenXml after processing.
     /// </summary>
     /// <param name="requestUri">The Uri the request is sent to.</param>
     /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive

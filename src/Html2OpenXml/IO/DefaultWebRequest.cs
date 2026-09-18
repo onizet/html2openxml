@@ -10,14 +10,19 @@
  * PARTICULAR PURPOSE.
  */
 using System.Net;
+#if !NET5_0_OR_GREATER
 using System.Net.Http;
+#endif
 using Microsoft.Extensions.Logging;
 
 namespace HtmlToOpenXml.IO;
 
 /// <summary>
-/// Default implementation of the <see cref="IWebRequest"/>.
-/// Supports http, https, local file and inline data.
+/// Default implementation of <see cref="IWebRequest"/>.
+/// Supports http, https, local file and inline data (base64).
+///
+/// Derive from this class to customise resource retrieval, authenatication, image processing,
+/// URL resolution, or content transformation while reusing the built-in behaviour.
 /// </summary>
 public class DefaultWebRequest : IWebRequest
 {
@@ -41,9 +46,13 @@ public class DefaultWebRequest : IWebRequest
     /// <summary>
     /// Initialize a new instance of the <see cref="DefaultWebRequest"/> class with
     /// the specified <see cref="HttpClient"/>.
+    /// <para>
+    /// Supply your own <see cref="HttpClient"/> to customise how external resources are retrieved,
+    /// for example to configure cookies, authentication headers, API keys, proxies, or message handlers.
+    /// </para>
     /// </summary>
     /// <param name="httpClient">The HTTP client to use to download remote resources.</param>
-    /// <param name="logger">Provide an logging mechanism for diagnose.</param>
+    /// <param name="logger">Provide a logging mechanism for diagnose.</param>
     public DefaultWebRequest(HttpClient httpClient, ILogger? logger = null)
     {
         this.httpClient = httpClient ?? DefaultHttp;
@@ -87,17 +96,21 @@ public class DefaultWebRequest : IWebRequest
 
         try
         {
-            logger?.LogDebug("Downloading local file: {0}", requestUri);
+            if (logger?.IsEnabled(LogLevel.Debug) == true)
+            {
+                logger.LogDebug("Downloading local file: {RequestUri}", requestUri);
+            }
+
             return Task.FromResult<Resource?>(new Resource() {
-                Content = System.IO.File.OpenRead(localPath),
+                Content = File.OpenRead(localPath),
                 StatusCode = HttpStatusCode.OK
             });
         }
         catch (Exception exc)
         {
-            logger?.LogError(exc, "Failed to download file: {0}", requestUri);
+            logger?.LogError(exc, "Failed to download file: {RequestUri}", requestUri);
 
-            if (exc is System.IO.IOException || exc is UnauthorizedAccessException || exc is System.Security.SecurityException || exc is NotSupportedException)
+            if (exc is IOException || exc is UnauthorizedAccessException || exc is System.Security.SecurityException || exc is NotSupportedException)
                 return Task.FromResult<Resource?>(null);
             throw;
         }
@@ -112,7 +125,10 @@ public class DefaultWebRequest : IWebRequest
 
         try
         {
-            logger?.LogDebug("Downloading remote file: {0}", requestUri);
+            if (logger?.IsEnabled(LogLevel.Debug) == true)
+            {
+                logger.LogDebug("Downloading remote file: {RequestUri}", requestUri);
+            }
 
             if (httpClient.BaseAddress is null && !requestUri.IsAbsoluteUri)
                 return null;
@@ -141,7 +157,7 @@ public class DefaultWebRequest : IWebRequest
         }
         catch(Exception exc)
         {
-            logger?.LogError(exc, "Failed to download file: {0}", requestUri);
+            logger?.LogError(exc, "Failed to download file: {RequestUri}", requestUri);
             throw;
         }
 
@@ -171,12 +187,17 @@ public class DefaultWebRequest : IWebRequest
     }
 
     /// <summary>
-    /// Gets or sets the base Uri used to automaticaly resolve relative images 
-    /// if used with ImageProcessing = AutomaticDownload.
+    /// Defines the base URI used to resolve image URLS.
+    /// <para>
+    /// Use this property when HTML content contains relative images references such as
+    /// <c>/images/logo.png</c> or <c>/../assets/banner.jpg</c>.
+    /// During conversion, relative URLs are combined with this base URI to locate
+    /// and download the image resource
+    /// </para>
     /// </summary>
     public Uri? BaseImageUrl
     {
-        get { return this.baseImageUri; }
+        get { return baseImageUri; }
         set
         {
             if (value != null)
@@ -189,7 +210,7 @@ public class DefaultWebRequest : IWebRequest
                 if (value.IsFile && value.LocalPath[value.LocalPath.Length - 1] != '/')
                     value = new Uri(value.OriginalString + '/');
             }
-            this.baseImageUri = value;
+            baseImageUri = value;
         }
     }
 }

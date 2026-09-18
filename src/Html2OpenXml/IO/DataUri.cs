@@ -15,7 +15,11 @@ using System.Text.RegularExpressions;
 namespace HtmlToOpenXml.IO;
 
 /// <summary>
-/// Represents an URI that includes inline data as if they were external resources.
+/// Represents a Data URI containing inline content encoded directly in the URI string,
+/// typically using Base64 encoding.
+/// 
+/// Data URIs are commonly used to embed images in HTML without referencing an external
+/// resource, for example: <c>data:image/png;base64,...</c>
 /// </summary>
 [System.Diagnostics.DebuggerDisplay("{Mime,nq}")]
 public sealed class DataUri
@@ -28,8 +32,8 @@ public sealed class DataUri
 
     private DataUri(string mime, byte[] data)
     {
-        this.Mime = mime;
-        this.Data = data;
+        Mime = mime;
+        Data = data;
     }
 
     /// <summary>
@@ -132,12 +136,12 @@ public sealed class DataUri
     //
 
     /// <summary>
-    /// Gets the MIME type of the encoded data.
+    /// Gets the MIME type declared by the Data URI, such as image/png or image/jpeg.
     /// </summary>
     public string Mime { get; private set; }
 
     /// <summary>
-    /// Gets the decoded data.
+    /// Gets the decoded binary content extracted from the Data URI.
     /// </summary>
     public byte[] Data { get; private set; }
 }

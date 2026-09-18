@@ -14,23 +14,31 @@ using DocumentFormat.OpenXml.Wordprocessing;
 namespace HtmlToOpenXml;
 
 /// <summary>
-/// The event arguments used for a StyleMissing event.
+/// Provides information about a style requested during conversion that could not
+/// be found in the Word document.
+///
+/// <para>
+/// The <see cref="WordDocumentStyle.StyleMissing" /> event uses these arguments to
+/// indicate which style should be dynimacally provisioned and which OpenXml style type is expected.
+/// </para>
 /// </summary>
 public class StyleEventArgs : EventArgs
 {
     internal StyleEventArgs(string styleId, StyleValues type)
     {
-        this.Name = styleId;
-        this.Type = type;
+        Name = styleId;
+        Type = type;
     }
 
     /// <summary>
-    /// Gets the invariant name of the style.
+    /// Gets the identifier of the missing style.
+    /// Use this value when creating and registering the style.
     /// </summary>
-    public string Name { get; private set; }
+    public string Name { get; init; }
 
     /// <summary>
-    /// Gets the type of style seeked (character or paragraph).
+    /// Gets the OpenXml style type expected by the converter,
+    /// such as paragraph, table or character.
     /// </summary>
-    public StyleValues Type { get; private set; }
+    public StyleValues Type { get; init; }
 }

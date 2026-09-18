@@ -19,15 +19,20 @@ using System.Xml.XPath;
 namespace HtmlToOpenXml.IO;
 
 /// <summary>
-/// Utility class to extract some information of an image file without reading the entire file.
+/// Utility methods used to inspect image streams and determine image characteristics
+/// without loading the entire image.
+/// 
+/// These helpers are used internally by HtmlToOpenXml when processing images but may also
+/// be useful when implementing custom image handling logic.
 /// </summary>
+[NuSpec.AI.AiIgnore]
 public static class ImageHeader
 {
     // https://en.wikipedia.org/wiki/List_of_file_signatures
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
     public enum FileType { Unrecognized, Bitmap, Gif, Png, Jpeg, Emf, Xml }
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning restore CS1591
 
     private static readonly byte[] pngSignatureBytes = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
 
@@ -50,7 +55,7 @@ public static class ImageHeader
     /// <summary>
     /// Read a image stream and try to detect its file type.
     /// </summary>
-    /// <param name="stream">The readable image stream</param>
+    /// <param name="stream">The readable image stream. Stream should support seeking.</param>
     /// <param name="type">The guess file type.</param>
     /// <returns>Returns true if the detection was successful.</returns>
     public static bool TryDetectFileType(Stream stream, out FileType type)
@@ -59,7 +64,7 @@ public static class ImageHeader
         type = DetectFileType(reader);
         if (type != FileType.Unrecognized)
         {
-            stream.Seek(0L, SeekOrigin.Begin);            
+            stream.Seek(0L, SeekOrigin.Begin);
         }
 
         return type != FileType.Unrecognized;
@@ -68,9 +73,9 @@ public static class ImageHeader
     /// <summary>
     /// Gets the dimensions of an image.
     /// </summary>
-    /// <param name="stream">The content of the image.</param>
+    /// <param name="stream">The readable image stream. Stream should support seeking.</param>
     /// <returns>The dimensions of the specified image.</returns>
-    /// <exception cref="ArgumentException">The image was of an unrecognised format.</exception>
+    /// <exception cref="ArgumentException">The image is in an unrecognised format.</exception>
     public static Size GetDimensions(Stream stream)
     {
         using var reader = new SequentialBinaryReader(stream, leaveOpen: true);

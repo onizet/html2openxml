@@ -13,7 +13,11 @@
 namespace HtmlToOpenXml;
 
 /// <summary>
-/// Contains the default styles of Word elements
+/// Contains the default OpenXml style mappings used by <see cref="HtmlConverter"/>.
+/// <para>
+/// Common HTML elements are mapped to built-in Word styles that are automatically inserted into
+/// the document when missing. Customise these mappings to use your own style names during conversion.
+/// </para>
 /// </summary>
 public class DefaultStyles
 {
