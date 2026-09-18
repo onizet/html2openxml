@@ -463,6 +463,54 @@ namespace HtmlToOpenXml.Tests
             Assert.That(runProperties?.Shading, Is.Null);
         }
 
+        [Test(Description = "Ancestor block background-color must not paint table cell runs")]
+        public void ParentDivBackground_ShouldNotCascadeRunShadingIntoCell()
+        {
+            var elements = converter.Parse(@"<div style='background:#ff0000;color:#0000ff;font-family:Arial'>
+                    <table><tr><td>Cell</td></tr></table>
+                </div>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Is.All.TypeOf<Table>());
+
+            var cell = elements[0].GetFirstChild<TableRow>()?.GetFirstChild<TableCell>();
+            Assert.That(cell, Is.Not.Null);
+            var runProperties = cell.GetFirstChild<Paragraph>()?.GetFirstChild<Run>()?.RunProperties;
+            Assert.That(runProperties, Is.Not.Null);
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(runProperties.Shading, Is.Null,
+                    "Outer div background must not become run shading inside the cell");
+                Assert.That(runProperties.Color?.Val?.Value, Is.EqualTo("0000FF"),
+                    "Color from the outer div should still cascade");
+                Assert.That(runProperties.RunFonts?.Ascii?.Value, Is.EqualTo("Arial"),
+                    "Font from the outer div should still cascade");
+            }
+        }
+
+        [Test(Description = "Explicit span background inside a cell is kept even when a parent div has a fill")]
+        public void ParentDivBackground_SpanInCell_KeepsOwnShading()
+        {
+            var elements = converter.Parse(@"<div style='background:#ff0000'>
+                    <table><tr><td><span style='background:#ffff00'>Cell</span></td></tr></table>
+                </div>");
+
+            var cell = elements[0].GetFirstChild<TableRow>()?.GetFirstChild<TableCell>();
+            var runProperties = cell?.GetFirstChild<Paragraph>()?.GetFirstChild<Run>()?.RunProperties;
+            Assert.That(runProperties?.Shading?.Fill?.Value, Is.EqualTo("FFFF00"));
+        }
+
+        [Test(Description = "Background on a div inside a cell still applies to the run")]
+        public void InnerDivBackground_InsideCell_StillCascadesToRun()
+        {
+            var elements = converter.Parse(@"<table><tr><td>
+                    <div style='background:#00ff00'>Cell</div>
+                </td></tr></table>");
+
+            var cell = elements[0].GetFirstChild<TableRow>()?.GetFirstChild<TableCell>();
+            var runProperties = cell?.GetFirstChild<Paragraph>()?.GetFirstChild<Run>()?.RunProperties;
+            Assert.That(runProperties?.Shading?.Fill?.Value, Is.EqualTo("00FF00"));
+        }
+
         [Test]
         public void CellStyle_ReturnsRunWithCascadeStyle()
         {

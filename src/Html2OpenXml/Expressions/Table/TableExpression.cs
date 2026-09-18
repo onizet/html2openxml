@@ -45,6 +45,7 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
         grid.Append(InterpretGridColumns(context, columnCount));
 
         var tableContext = context.CreateChild(this);
+        tableContext.InsideTable = true;
         foreach (var part in tableNode.AsTablePartEnumerable())
         {
             var expression = new TablePartExpression(part, columnCount);
@@ -109,9 +110,9 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
         return columns;
     }
 
-    public override void CascadeStyles(OpenXmlElement element)
+    public override void CascadeStyles(OpenXmlElement element, StyleCascade cascade)
     {
-        base.CascadeStyles(element);
+        base.CascadeStyles(element, cascade);
 
         if (colStyleExpressions != null)
         {
@@ -121,7 +122,7 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
             }
 
             if (colIndex < colStyleExpressions.Length)
-                colStyleExpressions![colIndex].CascadeStyles(element);
+                colStyleExpressions![colIndex].CascadeStyles(element, cascade);
 
             if (element is TableCell)
             {

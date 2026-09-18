@@ -21,5 +21,13 @@ abstract class HtmlElementExpression : HtmlDomExpression
     /// <summary>
     /// Apply the style properties on the provided element.
     /// </summary>
-    public abstract void CascadeStyles (OpenXmlElement element);
+    public void CascadeStyles(OpenXmlElement element)
+        => CascadeStyles(element, StyleCascade.All);
+
+    /// <summary>
+    /// Apply the style properties on the provided element.
+    /// </summary>
+    /// <param name="element">The OpenXml element receiving inherited properties.</param>
+    /// <param name="cascade">Which inherited properties to copy. Use <see cref="StyleCascade.All"/> by default.</param>
+    public abstract void CascadeStyles(OpenXmlElement element, StyleCascade cascade);
 }

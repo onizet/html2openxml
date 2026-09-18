@@ -64,9 +64,9 @@ sealed class TableColExpression(IHtmlTableColumnElement node) : TableElementExpr
         return elements;
     }
 
-    public override void CascadeStyles(OpenXmlElement element)
+    public override void CascadeStyles(OpenXmlElement element, StyleCascade cascade)
     {
-        base.CascadeStyles(element);
+        base.CascadeStyles(element, cascade);
 
         if (percentWidth.HasValue && element is TableCell cell &&
             cell.TableCellProperties?.TableCellWidth is null)

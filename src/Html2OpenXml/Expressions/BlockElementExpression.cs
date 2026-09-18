@@ -1,4 +1,4 @@
-/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -110,9 +110,9 @@ class BlockElementExpression: PhrasingElementExpression
             });
     }
 
-    public override void CascadeStyles(OpenXmlElement element)
+    public override void CascadeStyles(OpenXmlElement element, StyleCascade cascade)
     {
-        base.CascadeStyles(element);
+        base.CascadeStyles(element, cascade);
         if (!paraProperties.HasChildren)
             return;
 

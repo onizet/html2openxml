@@ -25,9 +25,9 @@ abstract class TableElementExpressionBase(IHtmlElement node) : PhrasingElementEx
 
 
 
-    public override void CascadeStyles(OpenXmlElement element)
+    public override void CascadeStyles(OpenXmlElement element, StyleCascade cascade)
     {
-        base.CascadeStyles(element);
+        base.CascadeStyles(element, cascade);
 
         if (paraProperties.HasChildren && element is Paragraph p)
         {

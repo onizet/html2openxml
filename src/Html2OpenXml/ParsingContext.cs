@@ -1,4 +1,4 @@
-/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -32,6 +32,11 @@ sealed class ParsingContext(HtmlConverter converter, OpenXmlPartContainer hostin
 
     public IO.IImageLoader ImageLoader { get; } = imageLoader;
 
+    /// <summary>
+    /// Whether the current context is processing descendants of <table/>.
+    /// </summary>
+    public bool InsideTable { get; set; }
+
 
     private HtmlElementExpression? parentExpression;
     private ParsingContext? parentContext;
@@ -48,10 +53,22 @@ sealed class ParsingContext(HtmlConverter converter, OpenXmlPartContainer hostin
 
 
 
-    public void CascadeStyles (OpenXmlElement element)
+    public void CascadeStyles(OpenXmlElement element)
+        => CascadeStyles(element, StyleCascade.All);
+
+    public void CascadeStyles(OpenXmlElement element, StyleCascade cascade)
     {
-        parentExpression?.CascadeStyles(element);
-        parentContext?.CascadeStyles(element);
+        parentExpression?.CascadeStyles(element, cascade);
+
+        if (parentContext is null)
+            return;
+
+        // Table cells own background on tcPr. Ancestor blocks outside the table
+        // may still cascade color/font, but must not stamp w:shd onto cell runs.
+        if (InsideTable && !parentContext.InsideTable)
+            cascade = cascade with { RunShading = false };
+
+        parentContext.CascadeStyles(element, cascade);
     }
 
     public ParsingContext CreateChild(HtmlElementExpression expression)
@@ -60,7 +77,10 @@ sealed class ParsingContext(HtmlConverter converter, OpenXmlPartContainer hostin
             propertyBag = propertyBag,
             parentExpression = expression,
             parentContext = this,
-            IsLandscape = IsLandscape
+            IsLandscape = IsLandscape,
+            InsideTable = InsideTable,
+            PreserveLinebreaks = PreserveLinebreaks,
+            CollapseWhitespaces = CollapseWhitespaces
         };
         return childContext;
     }
