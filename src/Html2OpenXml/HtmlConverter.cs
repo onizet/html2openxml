@@ -74,7 +74,14 @@ public partial class HtmlConverter
     }
 
     /// <summary>
-    /// Parse some HTML content where the output is intended to be inserted in <see cref="MainDocumentPart"/>.
+    /// Convert HTML into OpenXml elements and return them to the caller.
+    /// 
+    /// <para>
+    /// Use this method when your HTML is simple and don't need to download any external
+    /// resources.
+    /// </para>
+    /// This method exist for backward compatibility reason.
+    /// Prefer ParseAsync() or for most scenarios, use ParseBody().
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <returns>Returns a collection of generated OpenXml elements.</returns>
