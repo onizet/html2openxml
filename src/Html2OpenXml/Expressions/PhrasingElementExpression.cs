@@ -56,7 +56,7 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
         return runs;
     }
 
-    public override void CascadeStyles(OpenXmlElement element, StyleCascade cascade)
+    public override void CascadeStyles(OpenXmlElement element)
     {
         if (!runProperties.HasChildren || element is not Run run)
             return;
@@ -72,9 +72,6 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
 
         foreach (var prop in runProperties)
         {
-            if (prop is Shading && !cascade.RunShading)
-                continue;
-
             if (!knownTags.Contains(prop.LocalName))
                 run.RunProperties.AddChild(prop.CloneNode(true));
         }

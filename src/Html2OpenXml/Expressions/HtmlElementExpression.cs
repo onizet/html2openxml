@@ -1,4 +1,4 @@
-/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -21,13 +21,5 @@ abstract class HtmlElementExpression : HtmlDomExpression
     /// <summary>
     /// Apply the style properties on the provided element.
     /// </summary>
-    public void CascadeStyles(OpenXmlElement element)
-        => CascadeStyles(element, StyleCascade.All);
-
-    /// <summary>
-    /// Apply the style properties on the provided element.
-    /// </summary>
-    /// <param name="element">The OpenXml element receiving inherited properties.</param>
-    /// <param name="cascade">Which inherited properties to copy. Use <see cref="StyleCascade.All"/> by default.</param>
-    public abstract void CascadeStyles(OpenXmlElement element, StyleCascade cascade);
+    public abstract void CascadeStyles(OpenXmlElement element);
 }

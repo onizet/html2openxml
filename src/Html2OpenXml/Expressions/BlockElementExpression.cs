@@ -110,9 +110,9 @@ class BlockElementExpression: PhrasingElementExpression
             });
     }
 
-    public override void CascadeStyles(OpenXmlElement element, StyleCascade cascade)
+    public override void CascadeStyles(OpenXmlElement element)
     {
-        base.CascadeStyles(element, cascade);
+        base.CascadeStyles(element);
         if (!paraProperties.HasChildren)
             return;
 

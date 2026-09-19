@@ -1,4 +1,4 @@
-/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -64,9 +64,9 @@ sealed class TableColExpression(IHtmlTableColumnElement node) : TableElementExpr
         return elements;
     }
 
-    public override void CascadeStyles(OpenXmlElement element, StyleCascade cascade)
+    public override void CascadeStyles(OpenXmlElement element)
     {
-        base.CascadeStyles(element, cascade);
+        base.CascadeStyles(element);
 
         if (percentWidth.HasValue && element is TableCell cell &&
             cell.TableCellProperties?.TableCellWidth is null)

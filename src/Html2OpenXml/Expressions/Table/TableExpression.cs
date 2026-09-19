@@ -110,9 +110,9 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
         return columns;
     }
 
-    public override void CascadeStyles(OpenXmlElement element, StyleCascade cascade)
+    public override void CascadeStyles(OpenXmlElement element)
     {
-        base.CascadeStyles(element, cascade);
+        base.CascadeStyles(element);
 
         if (colStyleExpressions != null)
         {
@@ -122,7 +122,7 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
             }
 
             if (colIndex < colStyleExpressions.Length)
-                colStyleExpressions![colIndex].CascadeStyles(element, cascade);
+                colStyleExpressions![colIndex].CascadeStyles(element);
 
             if (element is TableCell)
             {

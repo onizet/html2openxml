@@ -1,4 +1,4 @@
-/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -25,9 +25,9 @@ abstract class TableElementExpressionBase(IHtmlElement node) : PhrasingElementEx
 
 
 
-    public override void CascadeStyles(OpenXmlElement element, StyleCascade cascade)
+    public override void CascadeStyles(OpenXmlElement element)
     {
-        base.CascadeStyles(element, cascade);
+        base.CascadeStyles(element);
 
         if (paraProperties.HasChildren && element is Paragraph p)
         {

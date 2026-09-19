@@ -11,6 +11,7 @@
  */
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
 using HtmlToOpenXml.Expressions;
 
 namespace HtmlToOpenXml;
@@ -51,24 +52,25 @@ sealed class ParsingContext(HtmlConverter converter, OpenXmlPartContainer hostin
     /// <summary>Whether the page orientation is portrait or landscape.</summary>
     public bool IsLandscape { get; set; }
 
-
-
     public void CascadeStyles(OpenXmlElement element)
-        => CascadeStyles(element, StyleCascade.All);
-
-    public void CascadeStyles(OpenXmlElement element, StyleCascade cascade)
     {
-        parentExpression?.CascadeStyles(element, cascade);
+        parentExpression?.CascadeStyles(element);
 
         if (parentContext is null)
             return;
 
         // Table cells own background on tcPr. Ancestor blocks outside the table
         // may still cascade color/font, but must not stamp w:shd onto cell runs.
-        if (InsideTable && !parentContext.InsideTable)
-            cascade = cascade with { RunShading = false };
+        if (InsideTable && !parentContext.InsideTable && element is Run run)
+        {
+            bool hadShading = run.RunProperties?.Shading != null;
+            parentContext.CascadeStyles(element);
+            if (!hadShading)
+                run.RunProperties?.GetFirstChild<Shading>()?.Remove();
+            return;
+        }
 
-        parentContext.CascadeStyles(element, cascade);
+        parentContext.CascadeStyles(element);
     }
 
     public ParsingContext CreateChild(HtmlElementExpression expression)
