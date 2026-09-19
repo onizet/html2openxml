@@ -1,4 +1,4 @@
-/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -21,5 +21,5 @@ abstract class HtmlElementExpression : HtmlDomExpression
     /// <summary>
     /// Apply the style properties on the provided element.
     /// </summary>
-    public abstract void CascadeStyles (OpenXmlElement element);
+    public abstract void CascadeStyles(OpenXmlElement element);
 }

@@ -1,4 +1,4 @@
-/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -11,6 +11,7 @@
  */
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
 using HtmlToOpenXml.Expressions;
 
 namespace HtmlToOpenXml;
@@ -31,6 +32,11 @@ sealed class ParsingContext(HtmlConverter converter, OpenXmlPartContainer hostin
 
     public IO.IImageLoader ImageLoader { get; } = imageLoader;
 
+    /// <summary>
+    /// Whether the current context is processing descendants of <table/>.
+    /// </summary>
+    public bool InsideTable { get; set; }
+
 
     private HtmlElementExpression? parentExpression;
     private ParsingContext? parentContext;
@@ -45,12 +51,25 @@ sealed class ParsingContext(HtmlConverter converter, OpenXmlPartContainer hostin
     /// <summary>Whether the page orientation is portrait or landscape.</summary>
     public bool IsLandscape { get; set; }
 
-
-
-    public void CascadeStyles (OpenXmlElement element)
+    public void CascadeStyles(OpenXmlElement element)
     {
         parentExpression?.CascadeStyles(element);
-        parentContext?.CascadeStyles(element);
+
+        if (parentContext is null)
+            return;
+
+        // Table cells own background on tcPr. Ancestor blocks outside the table
+        // may still cascade color/font, but must not stamp w:shd onto cell runs.
+        if (InsideTable && !parentContext.InsideTable && element is Run run)
+        {
+            bool hadShading = run.RunProperties?.Shading != null;
+            parentContext.CascadeStyles(element);
+            if (!hadShading)
+                run.RunProperties?.GetFirstChild<Shading>()?.Remove();
+            return;
+        }
+
+        parentContext.CascadeStyles(element);
     }
 
     public ParsingContext CreateChild(HtmlElementExpression expression)
@@ -59,7 +78,10 @@ sealed class ParsingContext(HtmlConverter converter, OpenXmlPartContainer hostin
             propertyBag = propertyBag,
             parentExpression = expression,
             parentContext = this,
-            IsLandscape = IsLandscape
+            IsLandscape = IsLandscape,
+            InsideTable = InsideTable,
+            PreserveLinebreaks = PreserveLinebreaks,
+            CollapseWhitespaces = CollapseWhitespaces
         };
         return childContext;
     }
