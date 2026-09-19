@@ -505,7 +505,8 @@ public partial class HtmlConverter
     /// 
     /// <para>
     /// Missing heading styles are added automatically when required.
-    /// When heading text beings with a numbering pattern such as <c>"1.", "1.1.", or "1 "</c>, the converter
+    /// When heading text beings with a numbering pattern such as <c>"1.", "1.1.", or "1 "</c> or the list
+    /// use the CSS class <c>`decimal-tiered`</c>, the converter
     /// interprets it as a numbered heading. Any associated heading numbering is then managed by Word
     /// through the Heading styles.
     /// </para>

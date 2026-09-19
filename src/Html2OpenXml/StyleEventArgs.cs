@@ -34,11 +34,11 @@ public class StyleEventArgs : EventArgs
     /// Gets the identifier of the missing style.
     /// Use this value when creating and registering the style.
     /// </summary>
-    public string Name { get; init; }
+    public string Name { get; private set; }
 
     /// <summary>
     /// Gets the OpenXml style type expected by the converter,
     /// such as paragraph, table or character.
     /// </summary>
-    public StyleValues Type { get; init; }
+    public StyleValues Type { get; private set; }
 }

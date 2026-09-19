@@ -18,7 +18,6 @@ namespace HtmlToOpenXml;
 /// <summary>
 /// Contains information that is global to the parsing.
 /// </summary>
-/// <remarks>The list of paragraphs that will be returned.</remarks>
 sealed class ParsingContext(HtmlConverter converter, OpenXmlPartContainer hostingPart, IO.IImageLoader imageLoader)
 {
     /// <summary>Shorthand for <see cref="Converter"/>.HtmlStyles</summary>
