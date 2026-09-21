@@ -21,7 +21,7 @@ namespace HtmlToOpenXml.IO;
 /// Default implementation of <see cref="IWebRequest"/>.
 /// Supports http, https, local file and inline data (base64).
 ///
-/// Derive from this class to customise resource retrieval, authenatication, image processing,
+/// Derive from this class to customise resource retrieval, authentication, image processing,
 /// URL resolution, or content transformation while reusing the built-in behaviour.
 /// </summary>
 public class DefaultWebRequest : IWebRequest
@@ -187,7 +187,7 @@ public class DefaultWebRequest : IWebRequest
     }
 
     /// <summary>
-    /// Defines the base URI used to resolve image URLS.
+    /// Defines the base URI used to resolve image URLs.
     /// <para>
     /// Use this property when HTML content contains relative images references such as
     /// <c>/images/logo.png</c> or <c>/../assets/banner.jpg</c>.

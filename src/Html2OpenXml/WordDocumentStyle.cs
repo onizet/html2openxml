@@ -18,9 +18,9 @@ namespace HtmlToOpenXml;
 /// Provides style-related services used during HTML conversion.
 ///
 /// <para>
-/// This class manages style mappings, allows custom OpenXml styles to be registered
-/// in the document, and exposes events that allow missing styles to be provisioned dynamically
-/// during conversion.
+/// HTML class names may be mapped directly to Word styles with the same name (case insensitive).
+/// When a referenced style cannot be found, the <see cref="StyleMissing"/> event
+/// allows it to be provisioned dynamically.
 /// </para>
 /// </summary>
 public sealed class WordDocumentStyle

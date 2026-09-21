@@ -21,9 +21,27 @@ namespace HtmlToOpenXml;
 /// <summary>
 /// Primary entry point for converting HTML into OpenXml Word document.
 /// 
-/// The convert can be used with newly created documents as well as existing document templates.
+/// The converter can be used with newly created documents as well as existing document templates.
 /// When a template is used, styles, themes, numbering definitions, bookmarks, and other Word settings
 /// are automatically reused.
+///
+/// <para>
+/// Supports both left-to-right (LTR) and right-to-left (LTR) content. Direction can be specified
+/// using the HTML <c>div</c> attribute (recommended) or inferred from the <c>lang</c> attribute.
+/// When not specified, the converter preserves the layout defined by the target Word document.
+/// </para>
+///
+/// <para>
+/// Supports advanced HTML table layouts including nested tables, combined row and column spanning,
+/// column definitions, vertical text, and automatic conversion of table widths.
+/// Table widths can be specified using auto, percentages, or fixed dimensions (px/pt).
+/// </para>
+///
+/// <para>
+/// Use <see cref="HtmlStyles"/> to customise styling and <see cref="IWebRequest"/> to customise
+/// external resource retrieval.
+/// </para>
+///
 /// <para>
 /// Typical usage:
 /// <list type="number">
@@ -80,8 +98,9 @@ public partial class HtmlConverter
     /// Use this method when your HTML is simple and don't need to download any external
     /// resources.
     /// </para>
-    /// This method exist for backward compatibility reason.
-    /// Prefer ParseAsync() or for most scenarios, use ParseBody().
+    /// Parse() is equivalent to ParseAsync() and is retained for backward compatibility.
+    /// New code should prefer ParseBody(), ParseHeader() or ParseFooter() to make the target
+    /// document section explicit.
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <returns>Returns a collection of generated OpenXml elements.</returns>
@@ -109,6 +128,9 @@ public partial class HtmlConverter
 
     /// <summary>
     /// Convert HTML into OpenXml elements and return them to the caller.
+    /// However, the conversion process itself may still update the underlying document
+    /// by creating styles, numbering definitions, image parts, bookmarks, or other resources
+    /// required by the generated content.
     /// 
     /// <para>
     /// Use this method when you need full control over the insertion point or need
@@ -204,8 +226,22 @@ public partial class HtmlConverter
     }
 
     /// <summary>
-    /// Parse asynchronously the Html and append the output into the Body of the document.
+    /// Parses some Html and appends the generated content to the document body.
     /// This is the recommended method for most scenarios.
+    /// 
+    /// <para>
+    /// <c>Page Break</c> can be inserted using the CSS properties <c>page-break-before</c>
+    /// and <c>page-break-after</c> with the value "always".
+    /// Useful for reports, invoices, contracts, and other multi-page business documents.
+    /// </para>
+    /// 
+    /// <para>
+    /// <c>Page Orientation</c> can be changed through the non-standard <c>page-orientation</c>
+    /// attribute (supported values: portrait and landscape).
+    /// This is useful for wide tables, reports and other content that benefits
+    /// from a landscape layout.
+    /// Currently, the attribute is supported on the body element and applies to the main document.
+    /// </para>
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <param name="cancellationToken">The cancellation token.</param>
@@ -398,12 +434,17 @@ public partial class HtmlConverter
     public AcronymPosition AcronymPosition { get; set; }
 
     /// <summary>
-    /// Defines whether internal anchor hyperlinks are converted.
+    /// Defines whether internal anchor hyperlinks are converted to Word bookmarks.
     /// 
     /// <para>
-    /// Anchor links are hyperlinks targeting a location within the document, such as
+    /// Anchor links target another location within the document, such as
     /// <c>#_top</c> or a bookmark reference (<c>#bookmarkReference</c>).
+    /// Bookmars can be created automatically from HTML anchors or explicitely
+    /// using the <c>data-bookmark</c> attribute.
     /// </para>
+    /// <code>
+    /// &lt;h1 data-bookmark="chapter1"&gt;Introduction&lt;/h1&gt;
+    /// </code>
     /// Anchor links are enabled by default. If the target cannot be resolved in the current Word
     /// document, the content will be rendered as a simple text.
     /// </summary>
@@ -496,26 +537,26 @@ public partial class HtmlConverter
     public ImageProcessingMode ImageProcessing { get; set; } = ImageProcessingMode.Embed;
 
     /// <summary>
-    /// Defines whether numbering is preserved across multiple ordered lists (<c>ol</c>).
+    /// Defines whether consecutive ordered lists continue the numbering sequence from previous lists.
     /// 
     /// <para>
-    /// By default, a subsequent <c>ol</c> continues numbering from the previous one.
-    /// Use the HTML <c>start</c> attribute to reset or override the next number. When this property
-    /// is <see langword="false"/>, each <c>ol</c> starts at 1 unless specified otherwise.
+    /// By default, numbering continues across multiple <c>ol</c> elements.
+    /// Use the HTML <c>start</c> attribute to restart numbering or begin at a specific value.
     /// </para>
-    /// Defaults to true.
+    /// When disabled, each ordered list starts a new numbering sequence.
     /// </summary>
     public bool ContinueNumbering { get; set; } = true;
 
     /// <summary>
-    /// Defines whether (<c>h1-h6</c>) elements are rendered using the corresponding Word heading style.
+    /// Defines whether (<c>h1-h6</c>) elements are mapped to the corresponding Word heading style.
     /// 
     /// <para>
     /// Missing heading styles are added automatically when required.
-    /// When heading text beings with a numbering pattern such as <c>"1.", "1.1.", or "1 "</c> or the list
-    /// use the CSS class <c>`decimal-tiered`</c>, the converter
-    /// interprets it as a numbered heading. Any associated heading numbering is then managed by Word
-    /// through the Heading styles.
+    /// When heading text begins with a numbering pattern such as <c>"1.", "1.1.", or "1 "</c> or
+    /// when the heading uses the <c>`decimal-tiered`</c> CSS class, the converter
+    /// interprets it as a numbered heading.
+    /// 
+    /// Any associated heading numbering is then managed by Word through the Heading styles.
     /// </para>
     /// This feature is enabled by default.
     /// </summary>

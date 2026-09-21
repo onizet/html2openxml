@@ -14,9 +14,12 @@ namespace HtmlToOpenXml;
 
 /// <summary>
 /// Contains the default OpenXml style mappings used by <see cref="HtmlConverter"/>.
+/// Styles selected through these mappings provide the base formatting. CSS attributes
+/// defined on HTML elements are still applied on top of the resulting Word style.
 /// <para>
-/// Common HTML elements are mapped to built-in Word styles that are automatically inserted into
-/// the document when missing. Customise these mappings to use your own style names during conversion.
+/// Several commonly used Word styles such as headings, hyperlinks, captions, tables,
+/// footnotes and quotes can be created automatically when missing from the document.
+/// Customise these mappings to use your own style names during conversion.
 /// </para>
 /// </summary>
 public class DefaultStyles

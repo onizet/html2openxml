@@ -19,7 +19,7 @@ namespace HtmlToOpenXml;
 ///
 /// <para>
 /// The <see cref="WordDocumentStyle.StyleMissing" /> event uses these arguments to
-/// indicate which style should be dynimacally provisioned and which OpenXml style type is expected.
+/// indicate which style should be dynamically provisioned and which OpenXml style type is expected.
 /// </para>
 /// </summary>
 public class StyleEventArgs : EventArgs
