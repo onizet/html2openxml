@@ -26,6 +26,7 @@ namespace HtmlToOpenXml.IO;
 /// be useful when implementing custom image handling logic.
 /// </summary>
 [NuSpec.AI.AiIgnore]
+[Obsolete("This class is for internal usage and will be removed from the public surface API")]
 public static class ImageHeader
 {
     // https://en.wikipedia.org/wiki/List_of_file_signatures

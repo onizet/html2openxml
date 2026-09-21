@@ -15,22 +15,19 @@ namespace HtmlToOpenXml;
 /// <summary>
 /// Represents a dimension in 2D coordinate space.
 /// </summary>
-public struct Size : System.IEquatable<Size>
+/// <remarks>
+/// Initializes a new instance of the <see cref='Size'/> class from
+/// the specified dimensions.
+/// </remarks>
+[NuSpec.AI.AiIgnore]
+[Obsolete("This class is for internal usage and will be removed from the public surface API")]
+public struct Size(int width, int height) : IEquatable<Size>
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref='HtmlToOpenXml.Size'/> class.
+    /// Initializes a new instance of the <see cref='Size'/> class.
     /// </summary>
-    public static readonly Size Empty = new Size();
+    public static readonly Size Empty = new();
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref='HtmlToOpenXml.Size'/> class from
-    /// the specified dimensions.
-    /// </summary>
-    public Size(int width, int height)
-    {
-        this.Width = width;
-        this.Height = height;
-    }
 
     /// <summary>
     /// Tests whether this size has zero width and height.
@@ -40,12 +37,12 @@ public struct Size : System.IEquatable<Size>
     /// <summary>
     /// Represents the horizontal component of this size.
     /// </summary>
-    public int Width { get; set; }
+    public int Width { get; set; } = width;
 
     /// <summary>
     /// Represents the vertical component of this size.
     /// </summary>
-    public int Height { get; set; }
+    public int Height { get; set; } = height;
 
     /// <inheritdoc/>
     public bool Equals(Size other)
