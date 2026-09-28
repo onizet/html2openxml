@@ -11,7 +11,6 @@
  */
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
-using DocumentFormat.OpenXml.Wordprocessing;
 using HtmlToOpenXml.Expressions;
 
 namespace HtmlToOpenXml;
@@ -54,23 +53,15 @@ sealed class ParsingContext(HtmlConverter converter, OpenXmlPartContainer hostin
 
     public void CascadeStyles(OpenXmlElement element)
     {
-        parentExpression?.CascadeStyles(element);
-
-        if (parentContext is null)
-            return;
-
-        // Table cells own background on tcPr. Ancestor blocks outside the table
-        // may still cascade color/font, but must not stamp w:shd onto cell runs.
-        if (InsideTable && !parentContext.InsideTable && element is Run run)
+        if (parentExpression is null)
         {
-            bool hadShading = run.RunProperties?.Shading != null;
-            parentContext.CascadeStyles(element);
-            if (!hadShading)
-                run.RunProperties?.GetFirstChild<Shading>()?.Remove();
+            parentContext?.CascadeStyles(element);
             return;
         }
-
-        parentContext.CascadeStyles(element);
+        parentExpression.CascadeStyles(element);
+        if (parentContext is null)
+            return;
+        parentExpression.CascadeToParentContext(element, parentContext);
     }
 
     public ParsingContext CreateChild(HtmlElementExpression expression)
