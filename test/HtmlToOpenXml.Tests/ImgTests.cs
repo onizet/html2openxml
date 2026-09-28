@@ -190,7 +190,7 @@ namespace HtmlToOpenXml.Tests
 
         [GenericTestCase(typeof(HeaderPart), Description = "Incomplete header or footer definition must be skipped #159")]
         [GenericTestCase(typeof(FooterPart))]
-        public void WithIncompleteHeader_ShouldNotThrow<T>() where T : OpenXmlPart, IFixedContentTypePart
+        public async Task WithIncompleteHeader_ShouldNotThrow<T>() where T : OpenXmlPart, IFixedContentTypePart
         {
             using var generatedDocument = new MemoryStream();
             using (var buffer = ResourceHelper.GetStream("Resources.DocWithImgHeaderFooter.docx"))
@@ -202,7 +202,7 @@ namespace HtmlToOpenXml.Tests
             mainPart.AddNewPart<T>(); // this code is incomplete as it's missing the header content
 
             HtmlConverter converter = new(mainPart);
-            Assert.DoesNotThrowAsync(async () =>
+            await Assert.DoesNotThrowAsync(async () =>
                 await converter.ParseBody("<img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==' width='42' height='42'>"));
         }
 
@@ -424,7 +424,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test(Description = "Prevent concurrent access to the OpenXml mainPart")]
-        public void MultipleImgInTag_ReturnsTwoDistinctImage()
+        public async Task MultipleImgInTag_ReturnsTwoDistinctImage()
         {
             var webRequest = new Mock<IO.IWebRequest>();
             webRequest.Setup(x => x.SupportsProtocol(It.IsAny<string>())).Returns(true);
@@ -437,7 +437,7 @@ namespace HtmlToOpenXml.Tests
                 });
             converter = new HtmlConverter(mainPart, webRequest.Object);
 
-            Assert.DoesNotThrowAsync(async () => {
+            await Assert.DoesNotThrowAsync(async () => {
                 await converter.ParseBody(@"
                     <table>
                     <tr>
