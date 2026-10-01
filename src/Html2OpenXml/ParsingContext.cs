@@ -47,15 +47,8 @@ sealed class ParsingContext(HtmlConverter converter, OpenXmlPartContainer hostin
 
     public void CascadeStyles(OpenXmlElement element)
     {
-        if (parentExpression is null)
-        {
-            parentContext?.CascadeStyles(element);
-            return;
-        }
-        parentExpression.CascadeStyles(element);
-        if (parentContext is null)
-            return;
-        parentContext.CascadeStyles(element);
+        parentExpression?.CascadeStyles(element);
+        parentContext?.CascadeStyles(element);
     }
 
     public ParsingContext CreateChild(HtmlElementExpression expression, bool isStyleScoped = false)
