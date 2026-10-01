@@ -1,4 +1,4 @@
-/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -31,7 +31,6 @@ sealed class ParsingContext(HtmlConverter converter, OpenXmlPartContainer hostin
 
     public IO.IImageLoader ImageLoader { get; } = imageLoader;
 
-
     private HtmlElementExpression? parentExpression;
     private ParsingContext? parentContext;
     private Dictionary<string, object?> propertyBag = [];
@@ -45,21 +44,21 @@ sealed class ParsingContext(HtmlConverter converter, OpenXmlPartContainer hostin
     /// <summary>Whether the page orientation is portrait or landscape.</summary>
     public bool IsLandscape { get; set; }
 
-
-
-    public void CascadeStyles (OpenXmlElement element)
+    public void CascadeStyles(OpenXmlElement element)
     {
         parentExpression?.CascadeStyles(element);
         parentContext?.CascadeStyles(element);
     }
 
-    public ParsingContext CreateChild(HtmlElementExpression expression)
+    public ParsingContext CreateChild(HtmlElementExpression expression, bool isStyleScoped = false)
     {
         var childContext = new ParsingContext(Converter, HostingPart, ImageLoader) {
             propertyBag = propertyBag,
             parentExpression = expression,
-            parentContext = this,
-            IsLandscape = IsLandscape
+            parentContext = isStyleScoped ? null :this,
+            IsLandscape = IsLandscape,
+            PreserveLinebreaks = PreserveLinebreaks,
+            CollapseWhitespaces = CollapseWhitespaces
         };
         return childContext;
     }

@@ -44,7 +44,7 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
 
         grid.Append(InterpretGridColumns(context, columnCount));
 
-        var tableContext = context.CreateChild(this);
+        var tableContext = context.CreateChild(this, true);
         foreach (var part in tableNode.AsTablePartEnumerable())
         {
             var expression = new TablePartExpression(part, columnCount);
