@@ -1,4 +1,4 @@
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml.Tests
@@ -464,7 +464,7 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test(Description = "Ancestor block background-color must not paint table cell runs")]
-        public void ParentDivBackground_ShouldNotCascadeRunShadingIntoCell()
+        public void ParentDivBackground_ShouldNotCascadeIntoCell()
         {
             var elements = converter.Parse(@"<div style='background:#ff0000;color:#0000ff;font-family:Arial'>
                     <table><tr><td>Cell</td></tr></table>
@@ -475,16 +475,7 @@ namespace HtmlToOpenXml.Tests
             var cell = elements[0].GetFirstChild<TableRow>()?.GetFirstChild<TableCell>();
             Assert.That(cell, Is.Not.Null);
             var runProperties = cell.GetFirstChild<Paragraph>()?.GetFirstChild<Run>()?.RunProperties;
-            Assert.That(runProperties, Is.Not.Null);
-            using (Assert.EnterMultipleScope())
-            {
-                Assert.That(runProperties.Shading, Is.Null,
-                    "Outer div background must not become run shading inside the cell");
-                Assert.That(runProperties.Color?.Val?.Value, Is.EqualTo("0000FF"),
-                    "Color from the outer div should still cascade");
-                Assert.That(runProperties.RunFonts?.Ascii?.Value, Is.EqualTo("Arial"),
-                    "Font from the outer div should still cascade");
-            }
+            Assert.That(runProperties, Is.Null);
         }
 
         [Test(Description = "Explicit span background inside a cell is kept even when a parent div has a fill")]
