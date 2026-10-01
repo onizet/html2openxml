@@ -32,12 +32,6 @@ sealed class ParsingContext(HtmlConverter converter, OpenXmlPartContainer hostin
 
     public IO.IImageLoader ImageLoader { get; } = imageLoader;
 
-    /// <summary>
-    /// Whether the current context is processing descendants of <table/>.
-    /// </summary>
-    public bool InsideTable { get; set; }
-
-
     private HtmlElementExpression? parentExpression;
     private ParsingContext? parentContext;
     private Dictionary<string, object?> propertyBag = [];
@@ -61,17 +55,16 @@ sealed class ParsingContext(HtmlConverter converter, OpenXmlPartContainer hostin
         parentExpression.CascadeStyles(element);
         if (parentContext is null)
             return;
-        parentExpression.CascadeToParentContext(element, parentContext);
+        parentExpression.CascadeStyles(element);
     }
 
-    public ParsingContext CreateChild(HtmlElementExpression expression)
+    public ParsingContext CreateChild(HtmlElementExpression expression, bool isStyleScoped = false)
     {
         var childContext = new ParsingContext(Converter, HostingPart, ImageLoader) {
             propertyBag = propertyBag,
             parentExpression = expression,
-            parentContext = this,
+            parentContext = isStyleScoped ? null :this,
             IsLandscape = IsLandscape,
-            InsideTable = InsideTable,
             PreserveLinebreaks = PreserveLinebreaks,
             CollapseWhitespaces = CollapseWhitespaces
         };

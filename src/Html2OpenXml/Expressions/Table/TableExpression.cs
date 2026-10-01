@@ -44,8 +44,7 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
 
         grid.Append(InterpretGridColumns(context, columnCount));
 
-        var tableContext = context.CreateChild(this);
-        tableContext.InsideTable = true;
+        var tableContext = context.CreateChild(this, true);
         foreach (var part in tableNode.AsTablePartEnumerable())
         {
             var expression = new TablePartExpression(part, columnCount);
@@ -295,25 +294,5 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
 
         if (align.HasValue)
             tableProperties.TableJustification = new() { Val = align.Value.ToTableRowAlignment() };
-    }
-
-    /// <summary>
-    /// Cascade parent styles while maintaining the shading rule  
-    /// </summary>
-    /// <param name="element"></param>
-    /// <param name="parentContext"></param>
-    public override void CascadeToParentContext(OpenXmlElement element, ParsingContext parentContext)
-    {
-        // Table cells own background on tcPr. Ancestor blocks outside the table
-        // still cascade color/font, but must not inherit w:shd onto cell runs.
-        if (element is Run run && !parentContext.InsideTable)
-        {
-            bool hadShading = run.RunProperties?.Shading != null;
-            parentContext.CascadeStyles(element);
-            if (!hadShading)
-                run.RunProperties?.GetFirstChild<Shading>()?.Remove();
-            return;
-        }
-        parentContext.CascadeStyles(element);
     }
 }

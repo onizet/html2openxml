@@ -22,9 +22,4 @@ abstract class HtmlElementExpression : HtmlDomExpression
     /// Apply the style properties on the provided element.
     /// </summary>
     public abstract void CascadeStyles(OpenXmlElement element);
-
-    /// <summary>
-    /// cascading styles to ancestor contexts after current expression has applied its own styles.
-    /// </summary>
-    public virtual void CascadeToParentContext(OpenXmlElement element, ParsingContext parentContext) => parentContext.CascadeStyles(element);
 }
