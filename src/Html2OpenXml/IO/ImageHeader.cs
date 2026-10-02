@@ -25,9 +25,7 @@ namespace HtmlToOpenXml.IO;
 /// These helpers are used internally by HtmlToOpenXml when processing images but may also
 /// be useful when implementing custom image handling logic.
 /// </summary>
-[NuSpec.AI.AiIgnore]
-[Obsolete("This class is for internal usage and will be removed from the public surface API")]
-public static class ImageHeader
+static class ImageHeader
 {
     // https://en.wikipedia.org/wiki/List_of_file_signatures
 

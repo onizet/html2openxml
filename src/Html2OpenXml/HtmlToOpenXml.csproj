@@ -6,7 +6,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <AssemblyName>HtmlToOpenXml</AssemblyName>
     <RootNamespace>HtmlToOpenXml</RootNamespace>
-    <PackageId>HtmlToOpenXml.dll</PackageId>
+    <PackageId>HtmlToOpenXml</PackageId>
     <PackageIcon>icon.png</PackageIcon>
     <PackageReleaseNotes>See changelog https://github.com/onizet/html2openxml/blob/master/CHANGELOG.md</PackageReleaseNotes>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -14,7 +14,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/onizet/html2openxml</PackageProjectUrl>
     <RepositoryUrl>https://github.com/onizet/html2openxml</RepositoryUrl>
-    <Description>A library to convert simple or advanced html to plain OpenXml document</Description>
+    <Description>Convert simple or advanced HTML into OpenXML Word content while reusing existing document styles, numbering, and templates.</Description>
     <Authors>Olivier Nizet</Authors>
     <RepositoryType>GIT</RepositoryType>
     <NoWarn>$(NoWarn);CS8981</NoWarn>

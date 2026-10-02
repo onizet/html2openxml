@@ -1,5 +1,5 @@
-![Latest version](https://img.shields.io/nuget/v/HtmlToOpenXml.dll.svg)
-![Download Counts](https://img.shields.io/nuget/dt/HtmlToOpenXml.dll.svg)
+![Latest version](https://img.shields.io/nuget/v/HtmlToOpenXml.svg)
+![Download Counts](https://img.shields.io/nuget/dt/HtmlToOpenXml.svg)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/onizet/html2openxml/blob/dev/LICENSE)
 
 # What is HtmlToOpenXml?
@@ -14,7 +14,7 @@ Supports **.Net Framework 4.6.2**, **.NET Standard 2.0**, **.NET 8** **.NET 10**
 
 Built on top of [DocumentFormat.OpenXml](https://www.nuget.org/packages/DocumentFormat.OpenXml/) and [AngleSharp](https://www.nuget.org/packages/AngleSharp).
 
--> [Official Nuget Package](https://www.nuget.org/packages/HtmlToOpenXml.dll)
+-> [Official Nuget Package](https://www.nuget.org/packages/HtmlToOpenXml)
 
 ## AI-Powered Productivity
 

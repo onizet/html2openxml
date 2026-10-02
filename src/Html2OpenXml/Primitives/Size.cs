@@ -19,9 +19,7 @@ namespace HtmlToOpenXml;
 /// Initializes a new instance of the <see cref='Size'/> class from
 /// the specified dimensions.
 /// </remarks>
-[NuSpec.AI.AiIgnore]
-[Obsolete("This class is for internal usage and will be removed from the public surface API")]
-public struct Size(int width, int height) : IEquatable<Size>
+struct Size(int width, int height) : IEquatable<Size>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref='Size'/> class.

@@ -1,9 +1,18 @@
 # Changelog
 
-## 3.5.1
+## 4.0.0
 
+- **New official NuGet feed**: Please update your bookmark to: [HtmlToOpenXml](https://www.nuget.org/packages/HtmlToOpenXml) (removing the .dll suffix)
+
+- **[BREAKING CHANGE]** We have introduced Styling Isolation for predictable, robust output for `table` tags.
+Consequently, direct styles (e.g., font color, size) applied to the container of the table will no longer automatically cascade into the converted table structure.
+- Remove the obsolete ParseAsync() public methods, marked 2 years ago
+- Prevent Table Elements Shading Style from Parent Styles Cascading - #241
 - Fix parsing css styles with encoded quote #239
+- Fixed XML corruption when converting border-styled paragraphs containing multiple runs, thanks to @AyUsH18102001
 - Integrate NuSpec.AI to generate an AI-context-optimized map of this library.
+- Improve the overall XML comment for the public API
+- Improve the technical documentation (replacing the wiki)
 - Bump AngleSharp to 1.8
 
 ## 3.5.0
