@@ -189,7 +189,7 @@ public partial class HtmlConverter
 
         var paragraphs = await ParseCoreAsync(html, headerPart, headerImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
-            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.HeaderStyle))
+            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.ParagraphHeaderStyle))
             .ConfigureAwait(false);
 
         headerPart.Header.Append(paragraphs);
@@ -219,7 +219,7 @@ public partial class HtmlConverter
 
         var paragraphs = await ParseCoreAsync(html, footerPart, footerImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
-            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.FooterStyle))
+            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.ParagraphFooterStyle))
             .ConfigureAwait(false);
 
         footerPart.Footer.Append(paragraphs);
@@ -251,7 +251,7 @@ public partial class HtmlConverter
         bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester, ImageProcessing);
         var paragraphs = await ParseCoreAsync(html, mainPart, bodyImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
-            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.Paragraph))
+            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.ParagraphBodyStyle))
             .ConfigureAwait(false);
 
         if (!paragraphs.Any())
