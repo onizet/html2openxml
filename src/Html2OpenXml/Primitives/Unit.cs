@@ -96,6 +96,29 @@ readonly struct Unit
         return new Unit(metric, value);
     }
 
+    internal static Unit[] ParseMultiple(ReadOnlySpan<char> span, UnitMetric defaultMetric = UnitMetric.Unitless)
+    {
+        span = span.Trim();
+        if (span.Length == 0)
+            return [];
+
+        var values = new List<Unit>();
+        int start = 0;
+        for (int i = 0; i <= span.Length; i++)
+        {
+            if (i == span.Length || char.IsWhiteSpace(span[i]))
+            {
+                if (i > start)
+                {
+                    var value = span.Slice(start, i - start);
+                    values.Add(Parse(value, defaultMetric));
+                }
+                start = i + 1;
+            }
+        }
+        return values.ToArray();
+    }
+
     /// <summary>
     /// Gets the value expressed in the English Metrics Units.
     /// </summary>

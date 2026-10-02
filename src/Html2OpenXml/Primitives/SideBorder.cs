@@ -89,7 +89,7 @@ readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
         Unit bu = Unit.Parse(borderWidth, UnitMetric.Pixel);
         if (bu.IsValid)
         {
-            if (bu.Value > 0 && bu.Metric == UnitMetric.Pixel)
+            if (bu.Value > 0) // parse all kinds of border-width unit i.e. pt (percent), px, etc 
                 return bu;
             return Unit.Empty;
         }
@@ -105,6 +105,33 @@ readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
                 _ => Unit.Empty,
             };
         }
+    }
+
+    /// <summary>
+    /// Parse the expanded border-width longhand property
+    /// </summary>
+    /// <param name="borderWidth"></param>
+    /// <returns>Unit[] of border longhand attribute</returns>
+    internal static Unit[] ParseMultipleWidth(ReadOnlySpan<char> borderWidth)
+    {
+        borderWidth = borderWidth.Trim();
+        if (borderWidth.Length == 0) return [];
+
+        var values = new List<Unit>();
+        int start = 0;
+        for (int i = 0; i <= borderWidth.Length; i++)
+        {
+            if (i == borderWidth.Length || char.IsWhiteSpace(borderWidth[i]))
+            {
+                if (i > start)
+                {
+                    var value = borderWidth.Slice(start, i - start);
+                    values.Add(ParseWidth(value));
+                }
+                start = i + 1;
+            }
+        }
+        return values.ToArray();
     }
 
     //____________________________________________________________________
