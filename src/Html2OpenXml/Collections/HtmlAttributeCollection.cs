@@ -215,7 +215,47 @@ readonly struct HtmlAttributeCollection
     /// <returns>If the attribute is misformed, the <see cref="HtmlBorder.IsEmpty"/> property is set to false.</returns>
     public HtmlBorder GetBorders()
     {
-        HtmlBorder border = new(GetSideBorder("border"));
+        HtmlBorder border = new(GetSideBorder("border")); // parses border shorthand property and longhand properties with single values
+
+        #region Parse Border Longhand properties with expanded values i.e top, right, bottom, left
+        if (attributes.TryGetValue("border-width", out Range borderWidthRange))
+        {
+            Unit[] widths = SideBorder.ParseMultipleWidth(rawValue.AsSpan().Slice(borderWidthRange));
+            if (widths.Length > 1)
+            {
+                Converter.ToParseExpandedProperty(widths, out Unit top, out Unit right, out Unit bottom, out Unit left);
+                border.Top = CreateBorderWithWidth(border.Top, top);
+                border.Right = CreateBorderWithWidth(border.Right, right);
+                border.Bottom = CreateBorderWithWidth(border.Bottom, bottom);
+                border.Left = CreateBorderWithWidth(border.Left, left);
+            }
+        }
+        if(attributes.TryGetValue("border-style", out Range borderStyleRange))
+        {
+            BorderValues[] styles = ParseMultipleBorderStyle(rawValue.AsSpan().Slice(borderStyleRange));
+            if (styles.Length > 1)
+            {
+                Converter.ToParseExpandedProperty(styles, out BorderValues top, out BorderValues right, out BorderValues bottom, out BorderValues left);
+                border.Top = CreateBorderWithStyle(border.Top, top);
+                border.Right = CreateBorderWithStyle(border.Right, right);
+                border.Bottom = CreateBorderWithStyle(border.Bottom, bottom);
+                border.Left = CreateBorderWithStyle(border.Left, left);
+            }
+        }
+        if (attributes.TryGetValue("border-color", out Range borderColorRange))
+        {
+            HtmlColor[] colors = HtmlColor.ParseMultipleColor(rawValue.AsSpan().Slice(borderColorRange));
+            if (colors.Length > 1)
+            {
+                Converter.ToParseExpandedProperty(colors, out HtmlColor top, out HtmlColor right, out HtmlColor bottom, out HtmlColor left);
+                border.Top = CreateBorderWithColor(border.Top, top);
+                border.Right = CreateBorderWithColor(border.Right, right);
+                border.Bottom = CreateBorderWithColor(border.Bottom, bottom);
+                border.Left = CreateBorderWithColor(border.Left, left);
+            }
+        }
+        #endregion
+
         SideBorder sb;
 
         sb = GetSideBorder("border-top");
@@ -228,6 +268,46 @@ readonly struct HtmlAttributeCollection
         if (sb.IsValid) border.Left = sb;
 
         return border;
+    }
+
+    private static SideBorder CreateBorderWithWidth(SideBorder border, Unit width) => new SideBorder(border.Style, border.Color, width);
+
+    private static SideBorder CreateBorderWithStyle(SideBorder border, BorderValues style)
+    {
+        if (style == BorderValues.Nil)
+            return border;
+
+        return new SideBorder(style, border.Color, border.Width);
+    }
+
+    private static SideBorder CreateBorderWithColor(SideBorder border, HtmlColor color)
+    {
+        if (color.IsEmpty)
+            return border;
+
+        return new SideBorder(border.Style, color, border.Width);
+    }
+
+    /// <summary>
+    /// Parse the expanded border-style longhand property
+    /// </summary>
+    /// <param name="borderStyle"></param>
+    /// <returns>BorderValues[] of border longhand attribute</returns>
+    private static BorderValues[] ParseMultipleBorderStyle(ReadOnlySpan<char> borderStyle)
+    {
+        borderStyle = borderStyle.Trim();
+        if (borderStyle.Length == 0)
+            return [];
+
+        Span<Range> tokens = stackalloc Range[4];
+        int count = borderStyle.Split(tokens, ' ');
+        var values = new BorderValues[count];
+
+        for (int i = 0; i < count; i++)
+        {
+            values[i] = Converter.ToBorderStyle(borderStyle.Slice(tokens[i]));
+        }
+        return values;
     }
 
     /// <summary>
@@ -248,7 +328,7 @@ readonly struct HtmlAttributeCollection
         if (attributes.TryGetValue(name + "-width", out range))
         {
             var w = SideBorder.ParseWidth(rawValue.AsSpan().Slice(range));
-            if (width.IsValid) width = w;
+            if (w.IsValid) width = w; // review required from author
         }
 
         var color = GetColor(name + "-color");

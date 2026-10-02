@@ -81,6 +81,27 @@ readonly partial struct HtmlColor : IEquatable<HtmlColor>
         return GetNamedColor(span);
     }
 
+    /// <summary>
+    /// Parse the expanded border-color longhand property
+    /// </summary>
+    /// <param name="borderColor"></param>
+    /// <returns>HtmlColor[] of border longhand attribute</returns>
+    internal static HtmlColor[] ParseMultipleColor(ReadOnlySpan<char> borderColor)
+    {
+        borderColor = borderColor.Trim();
+        if (borderColor.Length == 0) return [];
+
+        Span<Range> tokens = stackalloc Range[4];
+        int tokenCount = borderColor.Split(tokens, ' ');
+        var values = new HtmlColor[tokenCount];
+
+        for (int i = 0; i < tokenCount; i++)
+        {
+            values[i] = Parse(borderColor.Slice(tokens[i]));
+        }
+        return values;
+    }
+
     private static HtmlColor ParseHexa(ReadOnlySpan<char> span)
     {
         if (span.Length == 7)
