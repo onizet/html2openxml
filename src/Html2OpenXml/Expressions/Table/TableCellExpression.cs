@@ -83,6 +83,38 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : TableElementExpre
             };
         }
 
+        var padding = styleAttributes.GetMargin("padding");
+
+        var cellMargin = new TableCellMargin();
+        if (padding.Top.IsFixed)
+        {
+            cellMargin.TopMargin = new() {
+                Type = TableWidthUnitValues.Dxa, Width = padding.Top.ValueInDxa.ToString(CultureInfo.InvariantCulture),
+            };
+        }
+        if (padding.Left.IsFixed)
+        {
+            cellMargin.LeftMargin = new() {
+                Type = TableWidthUnitValues.Dxa, Width = padding.Left.ValueInDxa.ToString(CultureInfo.InvariantCulture)
+            };
+        }
+        if (padding.Bottom.IsFixed)
+        {
+            cellMargin.BottomMargin = new() { 
+                Type = TableWidthUnitValues.Dxa, Width = padding.Bottom.ValueInDxa.ToString(CultureInfo.InvariantCulture)
+            };
+        }
+        if (padding.Right.IsFixed)
+        {
+            cellMargin.RightMargin = new() {
+               Type = TableWidthUnitValues.Dxa, Width = padding.Right.ValueInDxa.ToString(CultureInfo.InvariantCulture),
+            };
+        }
+
+        if (cellMargin.HasChildren)
+            cellProperties.TableCellMargin = cellMargin;
+
+
         // Manage vertical text (only for table cell)
         var direction = styleAttributes["writing-mode"];
         if (!direction.IsEmpty)

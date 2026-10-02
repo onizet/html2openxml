@@ -6,7 +6,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <AssemblyName>HtmlToOpenXml</AssemblyName>
     <RootNamespace>HtmlToOpenXml</RootNamespace>
-    <PackageId>HtmlToOpenXml.dll</PackageId>
+    <PackageId>HtmlToOpenXml</PackageId>
     <PackageIcon>icon.png</PackageIcon>
     <PackageReleaseNotes>See changelog https://github.com/onizet/html2openxml/blob/master/CHANGELOG.md</PackageReleaseNotes>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -14,10 +14,11 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/onizet/html2openxml</PackageProjectUrl>
     <RepositoryUrl>https://github.com/onizet/html2openxml</RepositoryUrl>
-    <Description>A library to convert simple or advanced html to plain OpenXml document</Description>
+    <Description>Convert simple or advanced HTML into OpenXML Word content while reusing existing document styles, numbering, and templates.</Description>
     <Authors>Olivier Nizet</Authors>
     <RepositoryType>GIT</RepositoryType>
     <NoWarn>$(NoWarn);CS8981</NoWarn>
+    <NuSpecAiFormats>compact</NuSpecAiFormats>
   </PropertyGroup>
   <Import Project="..\..\build\SignAssembly.props" />
 
@@ -37,10 +38,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AngleSharp" Version="1.5.0" />
+    <PackageReference Include="AngleSharp" Version="1.8.0" />
     <PackageReference Include="DocumentFormat.OpenXml" Version="$(DocumentFormatOpenXmlPackageVersion)" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.300" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.401" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
+    <PackageReference Include="NuSpec.AI" Version="3.1.1" PrivateAssets="all" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">

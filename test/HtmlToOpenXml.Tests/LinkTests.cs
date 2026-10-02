@@ -119,6 +119,7 @@ namespace HtmlToOpenXml.Tests
             // this should generate a Run and not an Hyperlink
             elements = converter.Parse(@"<a href=""#_anchor3"">Anchor3</a>");
             Assert.That(elements[0].FirstChild, Is.TypeOf<Run>());
+            Assert.That(elements[0].FirstChild.InnerText, Is.EqualTo("Anchor3"));
         }
 
         [TestCase("h1", "id")]

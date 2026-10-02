@@ -19,11 +19,54 @@ using HtmlToOpenXml.IO;
 namespace HtmlToOpenXml;
 
 /// <summary>
-/// Helper class to convert some Html text to OpenXml elements.
+/// Primary entry point for converting HTML into OpenXml Word document.
+/// 
+/// The converter can be used with newly created documents as well as existing document templates.
+/// When a template is used, styles, themes, numbering definitions, bookmarks, and other Word settings
+/// are automatically reused.
+///
+/// <para>
+/// Supports both left-to-right (LTR) and right-to-left (LTR) content. Direction can be specified
+/// using the HTML <c>div</c> attribute (recommended) or inferred from the <c>lang</c> attribute.
+/// When not specified, the converter preserves the layout defined by the target Word document.
+/// </para>
+///
+/// <para>
+/// Supports advanced HTML table layouts including nested tables, combined row and column spanning,
+/// column definitions, vertical text, and automatic conversion of table widths.
+/// Table widths can be specified using auto, percentages, or fixed dimensions (px/pt).
+/// </para>
+///
+/// <para>
+/// Use <see cref="HtmlStyles"/> to customise styling and <see cref="IWebRequest"/> to customise
+/// external resource retrieval.
+/// </para>
+///
+/// <para>
+/// Typical usage:
+/// <list type="number">
+/// <item>Create an HtmlConverter from a MainDocumentPart obtained from a WordProcessingDocument.</item>
+/// <item>Call ParseBody() to append the converted content to the document body.</item>
+/// </list>
+/// </para>
+/// 
+/// Advanced scenarios can use ParseAsync() to control where the generated OpenXml elements are inserted.
 /// </summary>
+/// <example>
+/// Basic quick start:
+/// 
+/// <code>
+/// await using var generatedDocument = new MemoryStream();
+/// using var package = WordprocessingDocument.Create(generatedDocument, WordprocessingDocumentType.Document);
+/// var mainPart = package.AddMainDocumentPart();
+/// new Document(new Body()).Save(mainPart);
+/// HtmlConverter converter = new(mainPart);
+/// await converter.ParseBody(html);
+/// </code>
+/// </example>
 public partial class HtmlConverter
 {
-    private readonly MainDocumentPart mainPart;
+    internal readonly MainDocumentPart mainPart;
     // Cache all the ImagePart processed to avoid downloading the same image
     private IImageLoader? headerImageLoader, bodyImageLoader, footerImageLoader;
     private readonly WordDocumentStyle htmlStyles;
@@ -31,11 +74,16 @@ public partial class HtmlConverter
 
 
     /// <summary>
-    /// Constructor.
+    /// Create a converter bound to a Word document.
+    /// 
+    /// <para>
+    /// Reuse the same HtmlConverter instance for the lifetime of a document
+    /// to avoid reloading cached configuration such as styles and bookmarks.
+    /// </para>
+    /// Do not use the same converter instance with multiple documents.
     /// </summary>
-    /// <param name="mainPart">The mainDocumentPart of a document where to write the conversion to.</param>
-    /// <param name="webRequester">Factory to download the images.</param>
-    /// <remarks>We preload some configuration from inside the document such as style, bookmarks,...</remarks>
+    /// <param name="mainPart">The mainDocumentPart must be the document MainDocumentPart where converted content will be inserted.</param>
+    /// <param name="webRequester">Control retrieval of external resources such as images.</param>
     public HtmlConverter(MainDocumentPart mainPart, IWebRequest? webRequester = null)
     {
         this.mainPart = mainPart ?? throw new ArgumentNullException(nameof(mainPart));
@@ -44,10 +92,18 @@ public partial class HtmlConverter
     }
 
     /// <summary>
-    /// Parse some HTML content where the output is intended to be inserted in <see cref="MainDocumentPart"/>.
+    /// Convert HTML into OpenXml elements and return them to the caller.
+    /// 
+    /// <para>
+    /// Use this method when your HTML is simple and don't need to download any external
+    /// resources.
+    /// </para>
+    /// Parse() is equivalent to ParseAsync() and is retained for backward compatibility.
+    /// New code should prefer ParseBody(), ParseHeader() or ParseFooter() to make the target
+    /// document section explicit.
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
-    /// <returns>Returns a list of parsed paragraph.</returns>
+    /// <returns>Returns a collection of generated OpenXml elements.</returns>
     public IList<OpenXmlCompositeElement> Parse(string html)
     {
         bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester, ImageProcessing);
@@ -57,35 +113,37 @@ public partial class HtmlConverter
     }
 
     /// <summary>
-    /// Start the asynchronous parse processing where the output is intended to be inserted in <see cref="MainDocumentPart"/>.
+    /// Convert HTML into OpenXml elements and return them to the caller.
+    /// However, the conversion process itself may still update the underlying document
+    /// by creating styles, numbering definitions, image parts, bookmarks, or other resources
+    /// required by the generated content.
+    /// 
+    /// <para>
+    /// Use this method when you need full control over the insertion point or need
+    /// to inspect or modify the generated elements before adding them to the document.
+    /// </para>
+    /// For most scenarios, prefer ParseBody().
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>Returns a list of parsed paragraph.</returns>
-    [Obsolete("Use ParseAsync instead to respect naming convention")]
-    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    public Task<IEnumerable<OpenXmlCompositeElement>> Parse(string html, CancellationToken cancellationToken = default)
-    {
-        return ParseAsync(html, cancellationToken);
-    }
-
-    /// <summary>
-    /// Start the asynchronous parse processing where the output is intended to be inserted in <see cref="MainDocumentPart"/>.
-    /// </summary>
-    /// <param name="html">The HTML content to parse</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>Returns a list of parsed paragraph.</returns>
+    /// <returns>Returns a collection of generated OpenXml elements.</returns>
     public Task<IEnumerable<OpenXmlCompositeElement>> ParseAsync(string html, CancellationToken cancellationToken = default)
     {
         return ParseAsync(html, new ParallelOptions { CancellationToken = cancellationToken });
     }
 
     /// <summary>
-    /// Start the asynchronous parse processing where the output is intended to be inserted in <see cref="MainDocumentPart"/>.
+    /// Convert HTML into OpenXml elements and return them to the caller.
+    /// 
+    /// <para>
+    /// Use this method when you need full control over the insertion point or need
+    /// to inspect or modify the generated elements before adding them to the document.
+    /// </para>
+    /// For most scenarios, prefer ParseBody().
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
-    /// <param name="parallelOptions">The configuration of parallelism while downloading the remote resources.</param>
-    /// <returns>Returns a list of parsed paragraph.</returns>
+    /// <param name="parallelOptions">Control the parallelism when downloading the remote resources such as images.</param>
+    /// <returns>Returns a collection of generated OpenXml elements.</returns>
     public Task<IEnumerable<OpenXmlCompositeElement>> ParseAsync(string html, ParallelOptions parallelOptions)
     {
         bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester, ImageProcessing);
@@ -94,7 +152,12 @@ public partial class HtmlConverter
     }
 
     /// <summary>
-    /// Parse asynchronously the Html and append the output into the Header of the document.
+    /// Parse some HTML and append the genereated content to a Word header.
+    /// 
+    /// <para>
+    /// Typical uses include company logos, document titles, confidentiality notices,
+    /// report identifiers, and other recurring content displayed at the top of each page.
+    /// </para>
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <param name="headerType">Determines the page(s) on which the current header shall be displayed.
@@ -112,14 +175,19 @@ public partial class HtmlConverter
 
         var paragraphs = await ParseCoreAsync(html, headerPart, headerImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
-            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.HeaderStyle))
+            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.ParagraphHeaderStyle))
             .ConfigureAwait(false);
 
         headerPart.Header.Append(paragraphs);
     }
 
     /// <summary>
-    /// Parse asynchronously the Html and append the output into the Footer of the document.
+    /// Parse some HTML and append the generated content into a Word footer.
+    ///
+    /// <para>
+    /// Typical uses include legal disclaimers, contact information, page numbering, copyright notices,
+    /// and other recurring content displayed at the bottom of each page.
+    /// </para>
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <param name="footerType">Determines the page(s) on which the current footer shall be displayed.
@@ -137,14 +205,29 @@ public partial class HtmlConverter
 
         var paragraphs = await ParseCoreAsync(html, footerPart, footerImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
-            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.FooterStyle))
+            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.ParagraphFooterStyle))
             .ConfigureAwait(false);
 
         footerPart.Footer.Append(paragraphs);
     }
 
     /// <summary>
-    /// Parse asynchronously the Html and append the output into the Body of the document.
+    /// Parses some Html and appends the generated content to the document body.
+    /// This is the recommended method for most scenarios.
+    /// 
+    /// <para>
+    /// <c>Page Break</c> can be inserted using the CSS properties <c>page-break-before</c>
+    /// and <c>page-break-after</c> with the value "always".
+    /// Useful for reports, invoices, contracts, and other multi-page business documents.
+    /// </para>
+    /// 
+    /// <para>
+    /// <c>Page Orientation</c> can be changed through the non-standard <c>page-orientation</c>
+    /// attribute (supported values: portrait and landscape).
+    /// This is useful for wide tables, reports and other content that benefits
+    /// from a landscape layout.
+    /// Currently, the attribute is supported on the body element and applies to the main document.
+    /// </para>
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <param name="cancellationToken">The cancellation token.</param>
@@ -154,7 +237,7 @@ public partial class HtmlConverter
         bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester, ImageProcessing);
         var paragraphs = await ParseCoreAsync(html, mainPart, bodyImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
-            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.Paragraph))
+            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.ParagraphBodyStyle))
             .ConfigureAwait(false);
 
         if (!paragraphs.Any())
@@ -187,42 +270,18 @@ public partial class HtmlConverter
     }
 
     /// <summary>
-    /// Start the asynchronous parse processing. Use this overload if you want to control the downloading of images.
+    /// Reloads the style cache from the current Word document (<see cref="WordDocumentStyle"/>).
+    /// Call this method if styles are added after the HtmlConverter instance has been created.
     /// </summary>
-    /// <param name="html">The HTML content to parse</param>
-    /// <param name="parallelOptions">The configuration of parallelism while downloading the remote resources.</param>
-    /// <returns>Returns a list of parsed paragraph.</returns>
-    [Obsolete("Use ParseAsync instead to respect naming convention")]
-    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    public Task<IEnumerable<OpenXmlCompositeElement>> Parse(string html, ParallelOptions parallelOptions)
-    {
-        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester, ImageProcessing);
-
-        return ParseCoreAsync(html, mainPart, bodyImageLoader, parallelOptions);
-    }
-
-    /// <summary>
-    /// Start the asynchronous parse processing and append the output into the Body of the document.
-    /// </summary>
-    /// <param name="html">The HTML content to parse</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    [Obsolete("Use ParseBody instead for output clarification")]
-    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    public Task ParseHtml(string html, CancellationToken cancellationToken = default)
-    {
-        return ParseBody(html, cancellationToken);
-    }
-
-    /// <summary>
-    /// Refresh the cache of styles presents in the document.
-    /// </summary>
+    /// <remarks>You don't need to call this method if you register the missing style 
+    /// from <see cref="WordDocumentStyle.StyleMissing"/> event.</remarks>
     public void RefreshStyles()
     {
         htmlStyles.PrepareStyles(mainPart);
     }
 
     /// <summary>
-    /// Start the asynchronous parse processing. Use this overload if you want to control the downloading of images.
+    /// Core method to start the asynchronous parse processing.
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <param name="hostingPart">The OpenXml container where the content will be inserted into.</param>
@@ -263,6 +322,7 @@ public partial class HtmlConverter
 
     /// <summary>
     /// Walk through all the <c>img</c> tags and preload all the remote images.
+    /// We save the image chunks into the underlying WordProcessingDocument to keep memory low.
     /// </summary>
     private static async Task PreloadImages(AngleSharp.Dom.IDocument htmlDocument,
         IImageLoader imageLoader, ParallelOptions parallelOptions)
@@ -325,44 +385,44 @@ public partial class HtmlConverter
     // Configuration
 
     /// <summary>
-    /// Gets or sets where to render the acronym or abbreviation tag.
+    /// Defines the location where to add the acronym or abbreviation explanation tag.
+    /// Defaults to the end of the page (<see cref="AcronymPosition.PageEnd"/>).
     /// </summary>
     public AcronymPosition AcronymPosition { get; set; }
 
     /// <summary>
-    /// Gets or sets whether anchor links are included or not in the conversion
-    /// (defaults <see langword="true" />).
+    /// Defines whether internal anchor hyperlinks are converted to Word bookmarks.
+    /// 
+    /// <para>
+    /// Anchor links target another location within the document, such as
+    /// <c>#_top</c> or a bookmark reference (<c>#bookmarkReference</c>).
+    /// Bookmars can be created automatically from HTML anchors or explicitely
+    /// using the <c>data-bookmark</c> attribute.
+    /// </para>
+    /// <code>
+    /// &lt;h1 data-bookmark="chapter1"&gt;Introduction&lt;/h1&gt;
+    /// </code>
+    /// Anchor links are enabled by default. If the target cannot be resolved in the current Word
+    /// document, the content will be rendered as a simple text.
     /// </summary>
-    /// <remarks>An anchor is a term used to define a hyperlink destination inside a document.
-    /// <see href="http://www.w3schools.com/HTML/html_links.asp"/>.
-    /// <br/>
-    /// It exists some predefined anchors used by Word such as _top to refer to the top of the document.
-    /// The anchor <i>#_top</i> is always accepted regardless this property value.
-    /// For others anchors like refering to your own bookmark or a title, add a 
+    /// <remarks>
+    /// It exists some predefined anchors used by Word such as <c>#_top</c> to refer to the top of the document.
+    /// This built-in anchor is always accepted regardless this property value.
+    /// For others anchors like referring to your own bookmark or a title, add a 
     /// <see cref="DocumentFormat.OpenXml.Wordprocessing.BookmarkStart"/> and 
     /// <see cref="DocumentFormat.OpenXml.Wordprocessing.BookmarkEnd"/> elements
-    /// and set the value of href to <i><c>#name of your bookmark</c></i>.
+    /// and set the value of href to <c>#your_bookmark</c>.
     /// </remarks>
     public bool SupportsAnchorLinks { get; set; } = true;
 
     /// <summary>
-    /// Gets or sets whether anchor links are included or not in the conversion.
-    /// </summary>
-    /// <remarks>An anchor is a term used to define a hyperlink destination inside a document.
-    /// <see href="http://www.w3schools.com/HTML/html_links.asp"/>.
-    /// <br/>
-    /// It exists some predefined anchors used by Word such as _top to refer to the top of the document.
-    /// The anchor <i>#_top</i> is always accepted regardless this property value.
-    /// For others anchors like refering to your own bookmark or a title, add a 
-    /// <see cref="DocumentFormat.OpenXml.Wordprocessing.BookmarkStart"/> and 
-    /// <see cref="DocumentFormat.OpenXml.Wordprocessing.BookmarkEnd"/> elements
-    /// and set the value of href to <i><c>#name of your bookmark</c></i>.
-    /// </remarks>
-    [Obsolete("Use SupportsAnchorLink instead, if ExcludeLinkAnchor = true -> SupportsAnchorLink = false")]
-    public bool ExcludeLinkAnchor { get => !SupportsAnchorLinks; set => SupportsAnchorLinks = !value; }
-
-    /// <summary>
-    /// Gets the Html styles manager mapping to OpenXml style properties.
+    /// Gets the style manager for the current conversion.
+    /// 
+    /// <para>
+    /// HtmlStyles controls how HTML elements are translated into Word styles.
+    /// Through this object you can customize the default style mappings, add custom styles,
+    /// and react when a referenced style is missing from the document.
+    /// </para>
     /// </summary>
     public WordDocumentStyle HtmlStyles
     {
@@ -370,18 +430,34 @@ public partial class HtmlConverter
     }
 
     /// <summary>
-    /// Gets or sets where the Legend tag (<c>caption</c>) should be rendered (above or below the table).
+    /// Defines where the Legend tag (<c>caption</c>) should be rendered above or below the table.
+    /// Defaults above the table.
     /// </summary>
     public CaptionPositionValues TableCaptionPosition { get; set; }
 
     /// <summary>
-    /// Gets or sets whether the <c>pre</c> tag should be rendered as a table (defaults <see langword="false"/>).
-    /// </summary>
-    /// <remarks>The table will contains only one cell.</remarks>
+    /// Defines whether the preformatted blocks (<c>pre</c>) are rendered as tables.
+    /// 
+    /// <para>
+    /// When enabled, <c>pre</c> elements are converted to a single-cell table to preserve whitespace,
+    /// indentation and line breaks.
+    /// This is particularly useful for source code, console output, and technical blog posts.
+    /// </para>
+    /// When disabled, preformatted content is rendered using regular Word paragraphs.
+    /// Defaults to <see langword="false"/>.
+    ///  </summary>
     public bool RenderPreAsTable { get; set; }
 
     /// <summary>
-    /// Gets or sets how images should be processed during conversion.
+    /// Controls how images are handled during conversion.
+    /// 
+    /// <para>
+    /// Images are embedded in the generated document by default.
+    /// External resources are resolved through <see cref="IWebRequest"/>, which can be
+    /// customised to provide authentication, support additional formats such as WebP (see the wiki),
+    /// or resolve relative URLs.
+    /// </para>
+    /// Default: <see cref="ImageProcessingMode.Embed"/>.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -401,26 +477,28 @@ public partial class HtmlConverter
     public ImageProcessingMode ImageProcessing { get; set; } = ImageProcessingMode.Embed;
 
     /// <summary>
-    /// Defines whether ordered lists (<c>ol</c>) continue incrementing existing numbering
-    /// or restarts to 1 (defaults continues numbering).
+    /// Defines whether consecutive ordered lists continue the numbering sequence from previous lists.
+    /// 
+    /// <para>
+    /// By default, numbering continues across multiple <c>ol</c> elements.
+    /// Use the HTML <c>start</c> attribute to restart numbering or begin at a specific value.
+    /// </para>
+    /// When disabled, each ordered list starts a new numbering sequence.
     /// </summary>
     public bool ContinueNumbering { get; set; } = true;
 
     /// <summary>
-    /// Defines whether any headings (<c>h1-h6</c>) could be considered as multi-level numbering, such as
-    /// top-level headings (Heading 1) are numbered 1, 2, 3, for example, and second-level headings (Heading 2) are numbered 1.1, 1.2, 1.3.
+    /// Defines whether (<c>h1-h6</c>) elements are mapped to the corresponding Word heading style.
+    /// 
+    /// <para>
+    /// Missing heading styles are added automatically when required.
+    /// When heading text begins with a numbering pattern such as <c>"1.", "1.1.", or "1 "</c> or
+    /// when the heading uses the <c>`decimal-tiered`</c> CSS class, the converter
+    /// interprets it as a numbered heading.
+    /// 
+    /// Any associated heading numbering is then managed by Word through the Heading styles.
+    /// </para>
     /// This feature is enabled by default.
     /// </summary>
-    /// <remarks>The converter is detecting headings starting with a number (ie: <c>1.</c> or <c>1 </c>)
-    /// are considered as numbering.
-    /// </remarks>
     public bool SupportsHeadingNumbering { get; set; } = true;
-
-    /// <summary>
-    /// Gets the mainDocumentPart of the destination OpenXml document.
-    /// </summary>
-    internal MainDocumentPart MainPart
-    {
-        get => mainPart;
-    }
 }

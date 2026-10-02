@@ -768,5 +768,38 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(cells.Last().TableCellProperties?.TableCellWidth?.Width?.Value, Is.EqualTo("4346"));
             }
         }
+    
+        [Test]
+        public void CellPadding_ReturnsTableCellMargin()
+        {
+             var elements = converter.Parse(@"<table>
+                    <tr>
+                        <td style=""padding: 20px 5px 20px;"">Cell 1</td>
+                        <td style=""padding: 20%"">Cell 2</td>
+                    </tr>
+                </table>");
+
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Table>());
+
+            var cells = elements[0].GetFirstChild<TableRow>()?.Elements<TableCell>();
+            Assert.That(cells, Is.Not.Null);
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(cells.Count(), Is.EqualTo(2));
+                Assert.That(cells.First().TableCellProperties?.TableCellMargin, Is.Not.Null);
+                Assert.That(cells.Last().TableCellProperties?.TableCellMargin, Is.Null,
+                    "Only fixed unit are supported");
+            }
+
+            var cellMargin = cells.First().TableCellProperties?.TableCellMargin;
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(cellMargin.LeftMargin?.Width?.Value, Is.EqualTo("75"));
+                Assert.That(cellMargin.RightMargin?.Width?.Value, Is.EqualTo("75"));
+                Assert.That(cellMargin.TopMargin?.Width?.Value, Is.EqualTo("300"));
+                Assert.That(cellMargin.BottomMargin?.Width?.Value, Is.EqualTo("300"));
+            }
+        }
     }
 }

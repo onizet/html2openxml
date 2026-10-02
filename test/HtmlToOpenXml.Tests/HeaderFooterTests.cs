@@ -21,7 +21,7 @@ namespace HtmlToOpenXml.Tests
             var p = headerPart.Header.Elements<Paragraph>();
             Assert.That(p, Is.Not.Empty);
             Assert.That(p.Select(p => p.ParagraphProperties?.ParagraphStyleId?.Val?.Value), 
-                Has.All.EqualTo(converter.HtmlStyles.DefaultStyles.HeaderStyle));
+                Has.All.EqualTo(converter.HtmlStyles.DefaultStyles.ParagraphHeaderStyle));
 
             var sectionProperties = mainPart.Document!.Body!.Elements<SectionProperties>();
             Assert.That(sectionProperties, Is.Not.Empty);
@@ -128,7 +128,7 @@ namespace HtmlToOpenXml.Tests
             var paragraphs = header.Elements<Paragraph>();
             Assert.That(paragraphs.Count(), Is.EqualTo(3));
             Assert.That(paragraphs.First().ParagraphProperties?.ParagraphStyleId?.Val?.Value,
-                Is.EqualTo(converter.HtmlStyles.DefaultStyles.HeaderStyle));
+                Is.EqualTo(converter.HtmlStyles.DefaultStyles.ParagraphHeaderStyle));
             Assert.That(paragraphs.Skip(1).Select(p => p.ParagraphProperties?.ParagraphStyleId?.Val?.Value),
                 Has.All.EqualTo(converter.HtmlStyles.DefaultStyles.ListParagraphStyle));
         }
@@ -157,7 +157,7 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(paragraph.GetFirstChild<Hyperlink>()?.InnerText, Is.EqualTo("Copyrighted but you can use what's here as long as you credit me"));
                 Assert.That(paragraph.GetLastChild<Run>()?.InnerText, Is.EqualTo("© Copyright 2058, Company Inc."));
                 Assert.That(paragraphs.Select(p => p.ParagraphProperties?.ParagraphStyleId?.Val?.Value),
-                    Has.All.EqualTo(converter.HtmlStyles.DefaultStyles.FooterStyle));
+                    Has.All.EqualTo(converter.HtmlStyles.DefaultStyles.ParagraphFooterStyle));
             }
         }
     }

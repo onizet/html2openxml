@@ -123,7 +123,7 @@ background: red;
                 run = (Run?) run.NextSibling();
             }
 
-            var runProperties = run.GetFirstChild<RunProperties>();
+            var runProperties = run?.GetFirstChild<RunProperties>();
             Assert.That(runProperties, Is.Not.Null);
 
             var runStyle = runProperties.GetFirstChild<RunStyle>();

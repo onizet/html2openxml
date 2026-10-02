@@ -14,7 +14,11 @@ using System.Net;
 namespace HtmlToOpenXml.IO;
 
 /// <summary>
-/// Specifies what is stored when receiving data.
+/// Represents a download resource returned by <see cref="IWebRequest"/>.
+/// <para>
+/// HtmlToOpenXml takes ownership of instances returned by <see cref="IWebRequest"/>
+/// and will dispose them after processing.
+/// </para>
 /// </summary>
 public class Resource : IDisposable
 {
@@ -24,12 +28,16 @@ public class Resource : IDisposable
     public HttpStatusCode StatusCode { get; set; }
 
     /// <summary>
-    /// Gets the headers that have been send with the response.
+    /// Optional response Http headers.
+    /// 
+    /// Content-Type is used when the resource type cannot be determined from the URL.
     /// </summary>
     public IDictionary<string, string> Headers { get; } = new Dictionary<string, string>();
 
     /// <summary>
-    /// Gets the content that has been send with the response.
+    /// Gets the resource content stream.
+    /// The stream must be readable.Resource type detection may inspect the beginning
+    /// of the stream and reset its position afterwards, therefore the stream should support seeking.
     /// </summary>
     public Stream Content { get; set; } = Stream.Null;
 

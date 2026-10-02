@@ -18,7 +18,6 @@ namespace HtmlToOpenXml;
 /// <summary>
 /// Contains information that is global to the parsing.
 /// </summary>
-/// <remarks>The list of paragraphs that will be returned.</remarks>
 sealed class ParsingContext(HtmlConverter converter, OpenXmlPartContainer hostingPart, IO.IImageLoader imageLoader)
 {
     /// <summary>Shorthand for <see cref="Converter"/>.HtmlStyles</summary>
@@ -26,7 +25,7 @@ sealed class ParsingContext(HtmlConverter converter, OpenXmlPartContainer hostin
 
     public HtmlConverter Converter { get; } = converter;
 
-    public MainDocumentPart MainPart { get; } = converter.MainPart;
+    public MainDocumentPart MainPart { get; } = converter.mainPart;
 
     public OpenXmlPartContainer HostingPart { get; } = hostingPart;
 
@@ -51,6 +50,16 @@ sealed class ParsingContext(HtmlConverter converter, OpenXmlPartContainer hostin
         parentContext?.CascadeStyles(element);
     }
 
+    /// <summary>
+    /// Creates a new, nested parsing context (a child scope) by capturing the current global state. 
+    /// This allows the parser to process the contained expression while maintaining a clear path for subsequent state restoration.
+    /// </summary>
+    /// <param name="expression">The expression owning this child context.</param>
+    /// <param name="isStyleScoped">
+    /// If <see langword="true"/>, this element begins a style boundary. Styles encountered here 
+    /// are contained and will not propagate context changes upwards to parent nodes.
+    /// This is typically used when parsing complex blocks like tables or figures.
+    /// </param>
     public ParsingContext CreateChild(HtmlElementExpression expression, bool isStyleScoped = false)
     {
         var childContext = new ParsingContext(Converter, HostingPart, ImageLoader) {

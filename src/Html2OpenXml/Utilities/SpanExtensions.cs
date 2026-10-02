@@ -143,45 +143,60 @@ static class SpanExtensions
         if (destination.IsEmpty)
             return 0;
 
-        int matches = 0, startIndex = 0, offsetIndex = 0;
+        var originalSpan = span;
+        int matchCount = 0,
+            startMatchIndex = 0, // begin of match in originalSpan
+            contentOffset = 0,   // running count of decoded entity or enclosed content (pquote or in parenthesis) 
+            totalConsumedLength = 0; // count of input characters read from originalSpan
         bool isEscaping = false;
         char endEscapingChar = '\0';
-        ReadOnlySpan<char> searchValues = [separator, '(', '\'', '"'];
+        ReadOnlySpan<char> searchValues = [separator, '(', '\'', '"', '&'];
 
         while (span.Length > 0)
         {
-            bool isPositiveMatch = true;
+            bool isContentMatch = true;
 
-            // Remove the spaces that could appear inside a token.
-            // Eg: rgb(233, 233, 233) -> rgb(233,233,233)
+            // find the next potential token boundary
             int index = isEscaping?
-                span.IndexOf(endEscapingChar) :
+                span.IndexOfAny(endEscapingChar, '&') :
                 span.IndexOfAny(searchValues);
 
             if (index == -1)
             {
-                // process the last match
-                destination[matches] = new Range(startIndex, startIndex + offsetIndex + span.Length);
-                matches++;
+                // process the reminder match
+                destination[matchCount] = new Range(startMatchIndex, totalConsumedLength + span.Length);
+                matchCount++;
                 break;
             }
 
             // we find the beginning of an escaping sequence
             var ch = span[index];
+
+            // is this an encoded html entity?
+            if (ch == '&' && IsRecognizedEntity(span.Slice(index), out var result))
+            {
+                ch = result.DecodedChar;
+                if (index == 0) startMatchIndex += result.EncodedLength;
+                totalConsumedLength += result.EncodedLength;
+            }
+
+            totalConsumedLength += index + 1; // index is 0-based
+
+
             if (ch != separator && !isEscaping)
             {
                 if (ch == '(')
                 {
                     endEscapingChar = ')';
-                    offsetIndex += index + 1;
+                    contentOffset += index + 1; // include the parenthesis in the captured range
                 }
-                else
+                else // ' or "
                 {
-                    endEscapingChar = ch; // ' or "
-                    if (index == 0) startIndex++; // exclude the quote from the captured range
+                    endEscapingChar = ch;
+                    if (index == 0) startMatchIndex++; // exclude the quote from the captured range
                 }
                 isEscaping = true;
-                isPositiveMatch = false;
+                isContentMatch = false;
             }
             // end of escaping sequence
             else if (ch == endEscapingChar)
@@ -191,35 +206,75 @@ static class SpanExtensions
             }
             // this is a separator but maybe we will need to skip it
             // eg: "Arial, Verdana bold 1em" -> the space after the comma must be skipped
+            // eg: rgb(233, 233, 233) -> rgb(233,233,233)
             else if (ch == separator && index > 0 &&
                 skipSeparatorIfPrecededBy.HasValue && span[index -1] == skipSeparatorIfPrecededBy)
             {
-                index++;
-                offsetIndex += index + 1;
-                isPositiveMatch = false;
+                contentOffset += index;
+                isContentMatch = false;
             }
             else if (index == 0) // empty token
             {
-                startIndex++;
-                isPositiveMatch = false;
+                startMatchIndex++;
+                isContentMatch = false;
             }
 
             // index > 0 to exclude empty entries
-            if (!isEscaping && index > 0 && isPositiveMatch)
+            if (!isEscaping && index > 0 && isContentMatch)
             {
-                destination[matches] = new Range(startIndex, startIndex + offsetIndex + index);
-                matches++;
-                startIndex += index + offsetIndex + 1;
-                offsetIndex = 0;
+                var endRange = startMatchIndex + index + contentOffset;
+                destination[matchCount] = new Range(startMatchIndex, endRange);
+                startMatchIndex = totalConsumedLength;
+
+                // reset pointer for next match
+                contentOffset = 0;
+                matchCount++;
             }
 
-            if (matches >= destination.Length || span.Length <= index)
+            if (matchCount >= destination.Length || span.Length <= index)
                break;
 
-            // move to next token
-            span = span.Slice(index + 1);
+            // move to next token past what we just consumed
+            span = originalSpan.Slice(totalConsumedLength);
         }
 
-        return matches;
+        return matchCount;
     }
+
+    /// <summary>
+    /// Try to detect encoded html entities such as single or double quote.
+    /// </summary>
+    private static bool IsRecognizedEntity(ReadOnlySpan<char> span, out EntityMatchResult result)
+    {
+        // look for double quote
+        if (span.StartsWith("&quot;".AsSpan()))
+        {
+            result = new EntityMatchResult(5, '"');
+            return true;
+        }
+        if (span.StartsWith("&#34;".AsSpan()))
+        {
+            result = new EntityMatchResult(4, '"');
+            return true;
+        }
+
+        // look for single quote
+        if (span.StartsWith("&apos;".AsSpan()))
+        {
+            result = new EntityMatchResult(5, '\'');
+            return true;
+        }
+        if (span.StartsWith("&#39;".AsSpan()))
+        {
+            result = new EntityMatchResult(4, '\'');
+            return true;
+        }
+
+        result = new EntityMatchResult(0, '\0');
+        return false;
+    }
+
+    /// <param name="EncodedLength">The length of the encoded entity without the '&amp;'.</param>
+    /// <param name="DecodedChar">The decoded character.</param>
+    record struct EntityMatchResult(int EncodedLength, char DecodedChar);
 }
