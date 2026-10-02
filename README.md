@@ -26,7 +26,7 @@ To use this feature, simply include the `ai/package-map.compact.json` file from 
 
 When creating a blank document:
 
-```c#
+```csharp
 await using var generatedDocument = new MemoryStream();
 using var package = WordprocessingDocument.Create(generatedDocument, WordprocessingDocumentType.Document);
 
@@ -38,7 +38,7 @@ await converter.ParseBody(html);
 
 When inserting inside an existing document:
 
-```c#
+```csharp
 await using var generatedDocument = new MemoryStream();
 await fileStream.CopyToAsync(generatedDocument);
 using var package = WordprocessingDocument.Open(generatedDocument, true);
@@ -50,23 +50,6 @@ if (mainPart == null)
 }
 HtmlConverter converter = new(mainPart);
 await converter.ParseBody(html);
-```
-
-## Handling Image Retrieval: A Quick Decision Guide
-
-This library uses the `IWebRequest` abstraction to resolve any resources (images, styles) referenced in the input HTML. Select your required strategy below:
-
-| Scenario | Goal | Implementation Detail |
-| :--- | :--- | :--- |
-| Default Fetch | Simple conversion; images are inline or on a network. | Use `DefaultWebRequest`. This handles Base64 data URIs, HTTP(S), and file:/// protocols out of the box. |
-| Authenticated Fetch | Retrieving remote content requiring credentials. | Instantiate `DefaultWebRequest(myHttpClient)` and configure the client object to handle proxies, API keys, or JWT tokens. |
-| Local Mapping | Retrieving content from a known local path structure. | Set the `BaseImageUrl` property on the `DefaultWebRequest` to map relative paths (see code example below). |
-| Custom Protocol | Retrieving resources from non-standard sources (DB, API). | Implement your custom class against the `IWebRequest` interface to manage unique retrieval protocols. |
-
-```c#
-HtmlConverter converter = new(mainPart, new HtmlToOpenXml.IO.DefaultWebRequest(){
-     BaseImageUrl = new Uri(Path.Combine(Environment.CurrentDirectory, "images"))
-});
 ```
 
 ## See Also
