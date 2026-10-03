@@ -63,12 +63,14 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : TableElementExpre
         base.ComposeStyles(context);
 
         Unit width = styleAttributes.GetUnit("width");
-        if (!width.IsValid)
+        // Word-generated HTML may contain a legacy width attribute with an inline width of 0 (pt, px, %, etc)
+        // Prefer the legacy attribute in this case.
+        if (!width.IsValid || width.Value == 0)
         {
             var widthValue = cellNode.GetAttribute("width");
             if (!string.IsNullOrEmpty(widthValue))
             {
-                width = Unit.Parse(widthValue.AsSpan());
+                width = Unit.Parse(widthValue.AsSpan(), UnitMetric.Pixel);
             }
         }
 
