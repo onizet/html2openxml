@@ -115,14 +115,6 @@ public class DefaultStyles
     /// in the header section (<see cref="DocumentFormat.OpenXml.Packaging.HeaderPart"/> ).
     /// </summary>
     /// <value>Header</value>
-    [Obsolete("Use ParagraphHeaderStyle property for clarification")]
-    public string HeaderStyle { get; set; } = PredefinedStyles.Header;
-
-    /// <summary>
-    /// Default style for any paragraphs (<c>p</c>)
-    /// in the header section (<see cref="DocumentFormat.OpenXml.Packaging.HeaderPart"/> ).
-    /// </summary>
-    /// <value>Header</value>
     public string ParagraphHeaderStyle { get; set; } = PredefinedStyles.Header;
 
     /// <summary>
@@ -130,22 +122,7 @@ public class DefaultStyles
     /// in the footer section (<see cref="DocumentFormat.OpenXml.Packaging.FooterPart"/> ).
     /// </summary>
     /// <value>Footer</value>
-    [Obsolete("Use ParagraphFooterStyle property for clarification")]
-    public string FooterStyle { get; set; } = PredefinedStyles.Footer;
-
-    /// <summary>
-    /// Default style for any paragraphs (<c>p</c>)
-    /// in the footer section (<see cref="DocumentFormat.OpenXml.Packaging.FooterPart"/> ).
-    /// </summary>
-    /// <value>Footer</value>
     public string ParagraphFooterStyle { get; set; } = PredefinedStyles.Footer;
-
-    /// <summary>
-    /// Default style for body paragraph (<c>body</c> or any top level tag in HTML source).
-    /// </summary>
-    /// <value>Normal</value>
-    [Obsolete("Use ParagraphBodyStyle property for clarification")]
-    public string Paragraph { get => ParagraphBodyStyle; set => ParagraphBodyStyle = value; }
 
     /// <summary>
     /// Default style for paragraph (<c>p</c> or <c>body</c> or any top level tag in HTML source)

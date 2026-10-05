@@ -168,6 +168,11 @@ public sealed class WordDocumentStyle
 
     /// <summary>
     /// Adds a new style to the Word document and refreshes the converter's internal style cache.
+    /// 
+    /// <para>
+    /// Use this method in conjunction with the <see cref="StyleMissing"/> event to inject styles required
+    /// by a template that are absent from the source document.
+    /// </para>
     /// </summary>
     public void AddStyle(Style style)
     {
@@ -211,7 +216,7 @@ public sealed class WordDocumentStyle
     //
 
     /// <summary>
-    /// Contains the default styles for new OpenXml elements.
+    /// Contains the default styles for new OpenXml elements, created during the conversion process.
     /// </summary>
     public DefaultStyles DefaultStyles
     {
