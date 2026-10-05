@@ -801,5 +801,71 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(cellMargin.BottomMargin?.Width?.Value, Is.EqualTo("300"));
             }
         }
+
+        [Test]
+        public void CellWidth_UsesLegacyWidthAttributeWithoutUnit()
+        {
+            var elements = converter.Parse(@"<table>
+                    <tr>
+                        <td width=""10"">Cell 1</td>
+                        <td width=""90"">Cell 2</td>
+                    </tr>
+                </table>");
+
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Table>());
+
+            var cells = elements[0].GetFirstChild<TableRow>()?.Elements<TableCell>();
+            Assert.That(cells, Is.Not.Null);
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(cells.Count(), Is.EqualTo(2));
+                Assert.That(cells.First().TableCellProperties?.TableCellWidth, Is.Not.Null);
+                Assert.That(cells.Last().TableCellProperties?.TableCellWidth, Is.Not.Null);
+            }
+
+            var firstWidth = cells.First().TableCellProperties?.TableCellWidth;
+            var lastWidth = cells.Last().TableCellProperties?.TableCellWidth;
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(firstWidth?.Width?.Value, Is.EqualTo("150"));
+                Assert.That(lastWidth?.Width?.Value, Is.EqualTo("1350"));
+            }
+        }
+
+        [Test]
+        public void CellWidth_UsesLegacyWidthAttributeWithPercentage()
+        {
+            var elements = converter.Parse(@"<table>
+                    <tr>
+                        <td width=""10%"">Cell 1</td>
+                        <td width=""90%"">Cell 2</td>
+                    </tr>
+                </table>");
+
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Table>());
+
+            var cells = elements[0].GetFirstChild<TableRow>()?.Elements<TableCell>();
+            Assert.That(cells, Is.Not.Null);
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(cells.Count(), Is.EqualTo(2));
+                Assert.That(cells.First().TableCellProperties?.TableCellWidth, Is.Not.Null);
+                Assert.That(cells.Last().TableCellProperties?.TableCellWidth, Is.Not.Null);
+            }
+
+            var firstWidth = cells.First().TableCellProperties?.TableCellWidth;
+            var lastWidth = cells.Last().TableCellProperties?.TableCellWidth;
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(firstWidth?.Width?.Value, Is.EqualTo("500"));
+                Assert.That(lastWidth?.Width?.Value, Is.EqualTo("4500"));
+            }
+        }
     }
 }
