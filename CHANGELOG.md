@@ -18,7 +18,6 @@ Consequently, direct styles (e.g., font color, size) applied to the container of
 - Improve the overall XML comment for the public API
 - Improve the technical documentation (replacing the wiki)
 - Bump AngleSharp to 1.8
-- **[BREAKING CHANGE]**  FooterStyle
 
 ## 3.5.0
 
