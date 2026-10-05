@@ -23,6 +23,7 @@ const string htmlInput = @"
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using HtmlToOpenXml;
+...
 
 // 1. Create an in-memory stream to hold the resulting DOCX package data.
 using (var generatedDocumentStream = new MemoryStream())
@@ -55,7 +56,7 @@ using (var generatedDocumentStream = new MemoryStream())
 ```
 
 Store your input markup in a string or resource file. For this example, we will use the Properties.Resources.
-DemoHtml.html (or within resources):
+DemoHtml.html:
 
 ```html
 <!DOCTYPE html>
@@ -73,3 +74,7 @@ DemoHtml.html (or within resources):
 </body>
 </html>
 ```
+
+### Step 3: Visual generated output
+
+![Quickstart output in MS Word](../images/quickstart.png)

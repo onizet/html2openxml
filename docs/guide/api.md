@@ -16,6 +16,14 @@ The library has been designed for maximum compatibility, gracefully handling a w
 
 The library provides multiple methods to drive the conversion. Your choice depends on whether you are **building a document**, **populating a template**, or simply **translating content**.
 
+<llm-only>
+@c HtmlConverter "Primary entry point for converting HTML into OpenXml Word document. The converter can be used with newly created documents as well as existing document templates. When a template is used, styles, themes, numbering definitions, bookmarks, and other Word settings are automatically reused. Supports both left-to-right (LTR) and right-to-left (LTR) visual flow content.
+ .ctor (MainDocumentPart mainPart, IWebRequest? webRequester = null) "Create a converter bound to a Word document. Reuse the same HtmlConverter instance for the lifetime of a document to avoid reloading cached configuration such as styles and bookmarks. Do not use the same converter instance with multiple documents."
+ .m Parse:IList&lt;OpenXmlCompositeElement&gt;(string html) "Convert HTML into OpenXml elements and return them to the caller. Use this method when your HTML is simple and don't need to download any external resources. Parse() is equivalent to ParseAsync() and is retained for backward compatibility. New code should prefer ParseBody(), ParseHeader() or ParseFooter() to make the target document section explicit."
+ .m ParseAsync:Task&lt;IEnumerable&gt;OpenXmlCompositeElement&gt;&gt;(string html, CancellationToken cancellationToken = null) "Convert HTML into OpenXml elements and return them to the caller. However, the conversion process itself may still update the underlying document by creating styles, numbering definitions, image parts, bookmarks, or other resources required by the generated content. Use this method when you need full control over the insertion point or need to inspect or modify the generated elements before adding them to the document. For most scenarios, prefer ParseBody()."
+ .m ParseAsync:Task&lt;IEnumerable&gt;OpenXmlCompositeElement&gt;&gt;(string html, ParallelOptions parallelOptions) "Convert HTML into OpenXml elements and return them to the caller. Use this method when you need full control over the insertion point or need to inspect or modify the generated elements before adding them to the document. For most scenarios, prefer ParseBody()."
+</llm-only>
+
 ### `ParseBody()`
 
 * **Purpose:** Appends the converted HTML content into the document's main body part (`MainDocumentPart`). This is the most common use case.

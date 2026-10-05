@@ -1,6 +1,6 @@
 ---
 lang: en-US
-title: Right to Left (Rtl) and Left to Right
+title: Right to Left (Rtl)
 description: RTL layout support
 ---
 
@@ -18,7 +18,7 @@ If `lang` is set to a language known to be RTL (e.g., Arabic), the converter wil
 
 **Recommendation:** For definitive layout control, **always use the `dir` attribute.** The converter uses the specified `dir` value to apply the correct layout direction within the generated DOCX package.
 
-### Document Body Direction
+## Document Body Direction
 
 To inform the converter of the intended flow for the entire document, apply the `dir` attribute to the `body` tag. This sets the initial parsing context from which all subsequent content is generated.
 
@@ -34,7 +34,7 @@ To inform the converter of the intended flow for the entire document, apply the 
 
 > **Note on Existing Templates:** If you are appending content to an existing Word document or DOCX template, the converter respects and maintains the original document's innate layout direction unless explicitly overridden.
 
-### Paragraph/Text Direction
+## Paragraph/Text Direction
 
 For applying RTL specifically to a block of text, apply the `dir` attribute to the container element:
 
@@ -44,7 +44,7 @@ For applying RTL specifically to a block of text, apply the `dir` attribute to t
 </p>
 ```
 
-### Container Elements
+## Table/List Elements
 
 For collections of items, apply the `dir` attribute to the container tag:
 
@@ -65,8 +65,8 @@ For collections of items, apply the `dir` attribute to the container tag:
 </table>
 ```
 
-## Sample
+## Example of RTL-generated output
 
 You can see the converted HTML with some Arabic (RTL) layout:
 
-![Sample of RTL rendering in Word](./images/rtl.png)
+![Sample of RTL rendering in Word](../images/rtl.png)

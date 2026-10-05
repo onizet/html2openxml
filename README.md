@@ -4,7 +4,7 @@
 
 # What is HtmlToOpenXml?
 
-HtmlToOpenXml converts simple or advanced HTML into OpenXML elements that can be inserted into Microsoft Word documents.
+HtmlToOpenXml is a mature, high-fidelity converter that translates complex HTML structures into native OpenXML elements, ensuring your content renders exactly as intended across all Microsoft Word users.
 
 Originally created in 2009 to transform user-generated content into templated Word documents, it has evolved
 into a mature HTML-to-OpenXML converter supporting styles, numbering, images, bookmarks, page layout, tables,
@@ -14,13 +14,7 @@ Supports **.Net Framework 4.6.2**, **.NET Standard 2.0**, **.NET 8** **.NET 10**
 
 Built on top of [DocumentFormat.OpenXml](https://www.nuget.org/packages/DocumentFormat.OpenXml/) and [AngleSharp](https://www.nuget.org/packages/AngleSharp).
 
--> [Official Nuget Package](https://www.nuget.org/packages/HtmlToOpenXml)
-
-## AI-Powered Productivity
-
-Enhance your coding workflow by enabling seamless communication between your project and LLM. This library leverages [NuSpec.AI](https://www.nuget.org/packages/NuSpec.AI) to structure your API documentation into a contextually optimized format.
-
-To use this feature, simply include the `ai/package-map.compact.json` file from your NuGet package in your prompt, and let the AI handle the rest.
+-> [Official Nuget Package](https://www.nuget.org/packages/HtmlToOpenXml) (❗ Update your bookmark, suffix `.dll` removed)
 
 ## Quick Start
 
@@ -40,7 +34,7 @@ When inserting inside an existing document:
 
 ```csharp
 await using var generatedDocument = new MemoryStream();
-await fileStream.CopyToAsync(generatedDocument);
+await templateFileStream.CopyToAsync(generatedDocument);
 using var package = WordprocessingDocument.Open(generatedDocument, true);
 MainDocumentPart? mainPart = package.MainDocumentPart;
 if (mainPart == null)
@@ -52,21 +46,25 @@ HtmlConverter converter = new(mainPart);
 await converter.ParseBody(html);
 ```
 
-## See Also
+## Documentation
 
-* [Documentation](https://github.com/onizet/html2openxml/wiki)
-* [How to deliver a generated DOCX from server Asp.Net/SharePoint?](https://github.com/onizet/html2openxml/wiki/Serves-a-generated-docx-from-the-server)
-* [Prevent Document Edition](https://github.com/onizet/html2openxml/wiki/Prevent-Document-Edition)
-* [Convert dotx to docx](https://github.com/onizet/html2openxml/wiki/Convert-.dotx-to-.docx)
+[**Documentation**](https://onizet.github.io/html2openxml/) covers from the minimal code to advanced scenarios.
 
-# Performance and reliability
+### Guides & Tutorials
 
-Recent versions include several internal improvements designed for large-scale document generation:
+* [Getting Started Guide](https://onizet.github.io/html2openxml/guide/quickstart.md)
+* [LLM Guidance](https://onizet.github.io/html2openxml/llmdoc.md)
 
-* HTML parsing has been rewritten to use `Span<char>` in critical code paths, reducing allocations and
-improving parsing throughput by approximatively 25%.
-* All remaining regular expressions are executed with explicit timeouts to protect against
-catastrophic backtracking and potential denial-of-service scenarios when processing untrusted input.
+### API Reference
+
+* [API Contract](https://onizet.github.io/html2openxml/guide/api.md)
+
+### Technical Deep Dive
+
+* [Numbering List](https://onizet.github.io/html2openxml/numbering.md)
+* [Advanced Table Structures (Row/ColSpan, ColGroup)](https://onizet.github.io/html2openxml/guide/tables.md)
+* [Image Processing](https://onizet.github.io/html2openxml/guide/images.md)
+* [Performance notes and memory allocations](https://onizet.github.io/html2openxml/appendix/performance.md)
 
 ## How to implement or debug features
 

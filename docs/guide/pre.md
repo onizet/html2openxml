@@ -4,11 +4,9 @@ title: Preformated Text
 description: Preserve whitespaces inside a block
 ---
 
-## Overview
-
 The `<pre>` tag preserves all source formatting (whitespace, indentation, and line breaks) into the final DOCX document. This feature guarantees that your input text—such as code snippets, logs, or ASCII art—retains its exact visual structure.
 
-### Controlling Output Structure
+## Controlling Output Structure
 
 The `RenderPreAsTable` property determines how the preserved content is physically packaged within the Word document:
 
@@ -23,3 +21,5 @@ converter.RenderPreAsTable = true;
 // Alternative structure (pure paragraph block):
 converter.RenderPreAsTable = false; 
 ```
+
+![Text with preserved formatting](../images/pre.png)

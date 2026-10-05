@@ -38,7 +38,7 @@ The library supports three ways to provide image data: inline, relative path (lo
 
 The library natively supports the following formats within the OpenXML standard: `bmp`, `emf`, `gif`, `ico`, `jp2`, `jpe`, `jpeg`, `pcx`, `png`, `svg`, `tif`, and `tiff`. If your source image format is outside of this list (e.g., `.webp`), it must be converted to a supported format before or during the library's download process (see sample below).
 
-### 1. Inline Assets (Base64 Data URI)
+### Inline Assets (Base64 Data URI)
 
 For maximum performance and zero external dependency, images can be included directly in the HTML using a Data URI scheme.
 
@@ -47,11 +47,11 @@ For maximum performance and zero external dependency, images can be included dir
 <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA..." alt="Red dot" />
 ```
 
-### 2. External Downloads (Network/Disk)
+### External Downloads (Network/Disk)
 
 When the image path is external (`<img>` tag with `src="http://..."` or `/images/pic.gif`), the conversion process delegates retrieval to an `IWebRequest` implementation.
 
-#### Standard Approach
+### Standard Approach
 
 `DefaultWebRequest` provides native support for all standard protocols: `http`, `https`, and local file system paths (`file://`).
 
@@ -73,15 +73,6 @@ If you require specific behavior—such as authentication headers, proxy usage, 
 ```csharp
 // Dependency Injection of a custom downloader is the most flexible approach.
 HtmlConverter converter = new(mainPart, myCustomDownloader); 
-```
-
-### Logging
-
-For monitoring or advanced troubleshooting of I/O access during downloads, you may provide a custom `ILogger` implementation to the `DefaultWebRequest` constructor. This enables you to log connection status and resource retrieval attempts without modifying the core conversion logic:
-
-```csharp
-// Pass the logger for detailed I/O troubleshooting. The null indicates you are not providing a custom HttpClient.
-HtmlConverter converter = new(mainPart, new DefaultWebRequest(null, myLoggerInstance)); 
 ```
 
 ## Advanced Image Processing & Customization
@@ -131,6 +122,15 @@ await converter.ParseBody(@"<img src='https://www.gstatic.com/webp/gallery/1.web
 * **Captions/Legends:** Use the `<figure>` and `<figcaption>` HTML tags to include a legend that appears above or below the image in Word.
 
 * **SVG Detail:** When using `<svg>`, placing descriptions inside the `<title>` or `<desc>` tags ensures these metadata fields are accurately reflected in the resulting Word document properties.
+
+### Logging
+
+For monitoring or advanced troubleshooting of I/O access during downloads, you may provide a custom `ILogger` implementation to the `DefaultWebRequest` constructor. This enables you to log connection status and resource retrieval attempts without modifying the core conversion logic:
+
+```csharp
+// Pass the logger for detailed I/O troubleshooting. The null indicates you are not providing a custom HttpClient.
+HtmlConverter converter = new(mainPart, new DefaultWebRequest(null, myLoggerInstance)); 
+```
 
 ## Styling and Layout Support
 
