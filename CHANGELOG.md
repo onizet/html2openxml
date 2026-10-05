@@ -6,7 +6,11 @@
 
 - **[BREAKING CHANGE]** We have introduced Styling Isolation for predictable, robust output for `table` tags.
 Consequently, direct styles (e.g., font color, size) applied to the container of the table will no longer automatically cascade into the converted table structure.
-- Remove the obsolete ParseAsync() public methods, marked 2 years ago
+- **[BREAKING CHANGE]** Remove the obsolete ParseAsync() public methods, marked 2 years ago
+- **[BREAKING CHANGE]** Code clarification. Renaming of those properties:
+  - `DefaultStyles.FooterStyle` -> `ParagraphFooterStyle`
+  - `DefaultStyles.HeaderStyle` -> `ParagraphHeaderStyle`
+  - `DefaultStyles.Paragraph` -> `ParagraphBodyStyle`.
 - Prevent Table Elements Shading Style from Parent Styles Cascading - #241
 - Fix parsing css styles with encoded quote #239
 - Fixed XML corruption when converting border-styled paragraphs containing multiple runs, thanks to @AyUsH18102001
@@ -14,6 +18,7 @@ Consequently, direct styles (e.g., font color, size) applied to the container of
 - Improve the overall XML comment for the public API
 - Improve the technical documentation (replacing the wiki)
 - Bump AngleSharp to 1.8
+- **[BREAKING CHANGE]**  FooterStyle
 
 ## 3.5.0
 
