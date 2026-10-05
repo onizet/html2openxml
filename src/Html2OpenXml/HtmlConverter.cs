@@ -26,14 +26,14 @@ namespace HtmlToOpenXml;
 /// are automatically reused.
 ///
 /// <para>
-/// Supports both left-to-right (LTR) and right-to-left (LTR) content. Direction can be specified
-/// using the HTML <c>div</c> attribute (recommended) or inferred from the <c>lang</c> attribute.
+/// Supports both left-to-right (LTR) and right-to-left (LTR) visual flow content. Direction can be specified
+/// using the HTML <c>dir</c> attribute (recommended) or inferred from the <c>lang</c> attribute.
 /// When not specified, the converter preserves the layout defined by the target Word document.
 /// </para>
 ///
 /// <para>
-/// Supports advanced HTML table layouts including nested tables, combined row and column spanning,
-/// column definitions, vertical text, and automatic conversion of table widths.
+/// Supports full OpenXML table translation, including complex structural elements (nested tables, `colspan`/`rowspan`)
+/// and precise dimension mapping (`px`, `%`), column definitions, vertical text, and automatic conversion of table widths.
 /// Table widths can be specified using auto, percentages, or fixed dimensions (px/pt).
 /// </para>
 ///
@@ -394,10 +394,11 @@ public partial class HtmlConverter
     /// Defines whether internal anchor hyperlinks are converted to Word bookmarks.
     /// 
     /// <para>
-    /// Anchor links target another location within the document, such as
-    /// <c>#_top</c> or a bookmark reference (<c>#bookmarkReference</c>).
-    /// Bookmars can be created automatically from HTML anchors or explicitely
-    /// using the <c>data-bookmark</c> attribute.
+    /// Anchor links target another location within the document, such as <c>#_top</c> or
+    /// a bookmark reference (<c>#bookmarkReference</c>).
+    /// Bookmars can be created automatically from HTML anchors or explicitely using the <c>data-bookmark</c> attribute.
+    /// When <c>data-bookmark</c> is present, the library uses this target name to jump to an existing structural
+    /// element in the destination DOCX file rather than creating a new anchor.
     /// </para>
     /// <code>
     /// &lt;h1 data-bookmark="chapter1"&gt;Introduction&lt;/h1&gt;
