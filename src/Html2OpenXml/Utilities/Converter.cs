@@ -220,4 +220,21 @@ static class Converter
         }
         return null;
     }
+
+    /// <summary>
+    /// Expands a CSS shorthand property containing top, right, bottom and left, based on the provided value
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="values"></param>
+    /// <param name="top"></param>
+    /// <param name="right"></param>
+    /// <param name="bottom"></param>
+    /// <param name="left"></param>
+    public static void ToParseExpandedProperty<T>(T[] values, out T top, out T right, out T bottom, out T left)
+    {
+        top = values[0];
+        right = values.Length > 1 ? values[1] : top;
+        bottom = values.Length > 2 ? values[2] : top;
+        left = values.Length > 3 ? values[3] : right;
+    }
 }
