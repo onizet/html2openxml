@@ -28,17 +28,17 @@ private static void RestrictDocumentEdition(WordprocessingDocument document, str
     protection.Enforcement = OnOffValue.FromBoolean(true);
 
     // you can enforce the protection with a password
-    const uint spinCount = 10_000;
+    const uint spinCount = 100_000;
     var salt = RandomNumberGenerator.GetBytes(16);
-    var hash = SHA1.HashData(salt.Concat(Encoding.UTF8.GetBytes(password)).ToArray());
+    var hash = SHA512.HashData(salt.Concat(Encoding.UTF8.GetBytes(password)).ToArray());
     for (int i = 0; i < spinCount; i++)
     {
-        hash = SHA1.HashData(hash);
+        hash = SHA512.HashData(hash);
     }
     protection.CryptographicProviderType = CryptProviderValues.RsaFull;
     protection.CryptographicAlgorithmClass = CryptAlgorithmClassValues.Hash;
     protection.CryptographicAlgorithmType = CryptAlgorithmValues.TypeAny;
-    protection.CryptographicAlgorithmSid = 4; // SHA-1
+    protection.CryptographicAlgorithmSid = 14; // SHA-512
     protection.CryptographicSpinCount = spinCount;
     protection.Salt = Convert.ToBase64String(salt);
     protection.Hash = Convert.ToBase64String(hash);
