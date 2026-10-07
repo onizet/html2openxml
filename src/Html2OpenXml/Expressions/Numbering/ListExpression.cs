@@ -21,18 +21,8 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 {
-#if NET5_0_OR_GREATER
     readonly record struct ListContext(string Name, int AbsNumId, int InstanceId, int Level, DirectionMode? Dir);
-#else
-    readonly struct ListContext(string listName, int absNumId, int instanceId, int level, DirectionMode? dir)
-    {
-        public readonly string Name = listName;
-        public readonly int AbsNumId = absNumId;
-        public readonly int InstanceId = instanceId;
-        public readonly int Level = level;
-        public readonly DirectionMode? Dir = dir;
-    }
-#endif
+
 
     // https://www.w3schools.com/cssref/playdemo.php?filename=playcss_list-style-type
     // https://answers.microsoft.com/en-us/msoffice/forum/all/custom-list-number-style/21a54399-4404-4c37-8843-2ccaaf827485

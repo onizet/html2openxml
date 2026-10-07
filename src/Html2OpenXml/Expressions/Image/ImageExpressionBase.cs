@@ -23,6 +23,8 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 abstract class ImageExpressionBase(AngleSharp.Dom.IElement node)  : HtmlDomExpression
 {
+    protected readonly record struct GraphicObjectIds(uint ImageObjId, uint DrawingObjId);
+
     private readonly RunProperties runProperties = new();
     private readonly ParagraphProperties paraProperties = new();
     // some style attributes, such as borders, will convert this node to a framed container
@@ -96,7 +98,7 @@ abstract class ImageExpressionBase(AngleSharp.Dom.IElement node)  : HtmlDomExpre
     /// <summary>
     /// Resolve the next available <see cref="AbstractNum.AbstractNumberId"/> (they must be unique and ordered).
     /// </summary>
-    internal static (uint imageObjId, uint drawingObjId) IncrementDrawingObjId(ParsingContext context)
+    protected static GraphicObjectIds IncrementDrawingObjId(ParsingContext context)
     {
         var imageObjId = context.Properties<uint?>("imageObjId");
         var drawingObjId = context.Properties<uint?>("drawingObjId");
@@ -144,6 +146,6 @@ abstract class ImageExpressionBase(AngleSharp.Dom.IElement node)  : HtmlDomExpre
         drawingObjId++;
         context.Properties("drawingObjId", drawingObjId);
         context.Properties("imageObjId", imageObjId);
-        return (imageObjId.Value, drawingObjId.Value);
+        return new(imageObjId.Value, drawingObjId.Value);
     }
 }

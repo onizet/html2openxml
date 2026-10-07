@@ -93,19 +93,19 @@ struct Margin
         Span<Range> tokens = stackalloc Range[5];
         return span.SplitCompositeAttribute(tokens) switch
         {
-            1 => new Margin(Unit.Parse(span.Slice(tokens[0]), UnitMetric.Pixel)),
+            1 => new Margin(Unit.Parse(span[tokens[0]], UnitMetric.Pixel)),
             2 => new Margin(
-                Unit.Parse(span.Slice(tokens[0]), UnitMetric.Pixel),
-                Unit.Parse(span.Slice(tokens[1]), UnitMetric.Pixel)),
+                Unit.Parse(span[tokens[0]], UnitMetric.Pixel),
+                Unit.Parse(span[tokens[1]], UnitMetric.Pixel)),
             3 => new Margin(
-                Unit.Parse(span.Slice(tokens[0]), UnitMetric.Pixel),
-                Unit.Parse(span.Slice(tokens[1]), UnitMetric.Pixel),
-                Unit.Parse(span.Slice(tokens[2]), UnitMetric.Pixel)),
+                Unit.Parse(span[tokens[0]], UnitMetric.Pixel),
+                Unit.Parse(span[tokens[1]], UnitMetric.Pixel),
+                Unit.Parse(span[tokens[2]], UnitMetric.Pixel)),
             4 => new Margin(
-                Unit.Parse(span.Slice(tokens[0]), UnitMetric.Pixel),
-                Unit.Parse(span.Slice(tokens[1]), UnitMetric.Pixel),
-                Unit.Parse(span.Slice(tokens[2]), UnitMetric.Pixel),
-                Unit.Parse(span.Slice(tokens[3]), UnitMetric.Pixel)),
+                Unit.Parse(span[tokens[0]], UnitMetric.Pixel),
+                Unit.Parse(span[tokens[1]], UnitMetric.Pixel),
+                Unit.Parse(span[tokens[2]], UnitMetric.Pixel),
+                Unit.Parse(span[tokens[3]], UnitMetric.Pixel)),
             _ => Empty
         };
     }

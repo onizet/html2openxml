@@ -65,21 +65,6 @@ static class SpanExtensions
         return span.AsDouble();
     }
 
-    /// <summary>
-    /// Shim method to remain compliant with pre-NET 8 framework.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    [System.Diagnostics.DebuggerHidden]
-    public static ReadOnlySpan<T> Slice<T>(this ReadOnlySpan<T> span, Range range)
-    {
-#if NET5_0_OR_GREATER
-        return span[range];
-#else
-        var (start, length) = range.GetOffsetAndLength(span.Length);
-        return span.Slice(start, length);
-#endif
-    }
-
 #if !NET5_0_OR_GREATER
     /// <summary>
     /// Parses the source <see cref="ReadOnlySpan{T}"/> for the specified <paramref name="separator"/>, 

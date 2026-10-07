@@ -51,7 +51,7 @@ readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
         // handle border style
         for (int i = 0; i < tokenIndexes.Count; i++)
         {
-            borderStyle = Converter.ToBorderStyle(span.Slice(tokens[tokenIndexes[i]]));
+            borderStyle = Converter.ToBorderStyle(span[tokens[tokenIndexes[i]]]);
             if (borderStyle != BorderValues.Nil)
             {
                 tokenIndexes.RemoveAt(i); // no need to process this part anymore
@@ -61,7 +61,7 @@ readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
 
         for (int i = 0; i < tokenIndexes.Count; i++)
         {
-            borderWidth = ParseWidth(span.Slice(tokens[tokenIndexes[i]]));
+            borderWidth = ParseWidth(span[tokens[tokenIndexes[i]]]);
             if (borderWidth.IsValid)
             {
                 tokenIndexes.RemoveAt(i); // no need to process this part anymore
@@ -71,7 +71,7 @@ readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
 
         // find width
         if(tokenIndexes.Count > 0)
-            borderColor = HtmlColor.Parse(span.Slice(tokens[tokenIndexes[0]]));
+            borderColor = HtmlColor.Parse(span[tokens[tokenIndexes[0]]]);
 
         if (borderColor.IsEmpty && !borderWidth.IsValid && borderStyle == BorderValues.Nil)
             return Empty;

@@ -112,7 +112,7 @@ readonly struct HtmlAttributeCollection
         get 
         {
             if (attributes.TryGetValue(name, out var range))
-                return rawValue.AsSpan().Slice(range).Trim();
+                return rawValue.AsSpan()[range].Trim();
             return [];
         }
     }
@@ -124,7 +124,7 @@ readonly struct HtmlAttributeCollection
     {
         if (attributes.TryGetValue(name, out var range))
         {
-            value = rawValue.AsSpan().Slice(range).Trim();
+            value = rawValue.AsSpan()[range].Trim();
             return true;
         }
         value = default;
@@ -138,7 +138,7 @@ readonly struct HtmlAttributeCollection
     {
         if (attributes.TryGetValue(name, out var range))
         {
-            var span = rawValue.AsSpan().Slice(range).Trim();
+            var span = rawValue.AsSpan()[range].Trim();
             return span.Equals(value.AsSpan(), StringComparison.InvariantCultureIgnoreCase);
         }
         return false;
@@ -151,7 +151,7 @@ readonly struct HtmlAttributeCollection
     public HtmlColor GetColor(string name)
     {
         if (attributes.TryGetValue(name, out var range))
-            return HtmlColor.Parse(rawValue.AsSpan().Slice(range));
+            return HtmlColor.Parse(rawValue.AsSpan()[range]);
         return HtmlColor.Empty;
     }
 
@@ -162,7 +162,7 @@ readonly struct HtmlAttributeCollection
     public Unit GetUnit(string name, UnitMetric defaultMetric = UnitMetric.Unitless)
     {
         if (attributes.TryGetValue(name, out var range))
-            return Unit.Parse(rawValue.AsSpan().Slice(range), defaultMetric);
+            return Unit.Parse(rawValue.AsSpan()[range], defaultMetric);
         return Unit.Empty;
     }
 
@@ -180,15 +180,15 @@ readonly struct HtmlAttributeCollection
         Unit u;
 
         if (attributes.TryGetValue(name, out var range))
-            margin = Margin.Parse(rawValue.AsSpan().Slice(range));
+            margin = Margin.Parse(rawValue.AsSpan()[range]);
         if (attributes.TryGetValue(name + "-inline", out range))
         {
-            u = Unit.Parse(rawValue.AsSpan().Slice(range));
+            u = Unit.Parse(rawValue.AsSpan()[range]);
             if (u.IsValid) margin.Left = margin.Right = u;
         }
         if (attributes.TryGetValue(name + "-block", out range))
         {
-            u = Unit.Parse(rawValue.AsSpan().Slice(range));
+            u = Unit.Parse(rawValue.AsSpan()[range]);
             if (u.IsValid) margin.Top = margin.Bottom = u;
         }
 
@@ -241,13 +241,13 @@ readonly struct HtmlAttributeCollection
         if (IsEmpty) return border;
 
         if (attributes.TryGetValue(name, out Range range))
-            border = SideBorder.Parse(rawValue.AsSpan().Slice(range));
+            border = SideBorder.Parse(rawValue.AsSpan()[range]);
 
         // handle attributes specified individually.
         Unit width = border.Width;
         if (attributes.TryGetValue(name + "-width", out range))
         {
-            var w = SideBorder.ParseWidth(rawValue.AsSpan().Slice(range));
+            var w = SideBorder.ParseWidth(rawValue.AsSpan()[range]);
             if (width.IsValid) width = w;
         }
 
@@ -257,7 +257,7 @@ readonly struct HtmlAttributeCollection
         BorderValues style = border.Style;
         if (attributes.TryGetValue(name + "-style", out range))
         {
-            var s = Converter.ToBorderStyle(rawValue.AsSpan().Slice(range));
+            var s = Converter.ToBorderStyle(rawValue.AsSpan()[range]);
             if (s != BorderValues.Nil) style = s;
         }
 
@@ -273,7 +273,7 @@ readonly struct HtmlAttributeCollection
         if (IsEmpty) return font;
 
         if (attributes.TryGetValue(name, out Range range))
-            font = HtmlFont.Parse(rawValue.AsSpan().Slice(range));
+            font = HtmlFont.Parse(rawValue.AsSpan()[range]);
 
         FontStyle? fontStyle = font.Style;
         FontVariant? variant = font.Variant;
@@ -283,25 +283,25 @@ readonly struct HtmlAttributeCollection
 
         if (attributes.TryGetValue(name + "-style", out range))
         {
-            var s = Converter.ToFontStyle(rawValue.AsSpan().Slice(range));
+            var s = Converter.ToFontStyle(rawValue.AsSpan()[range]);
             if (s.HasValue) fontStyle = s;
         }
 
         if (attributes.TryGetValue(name + "-variant", out range))
         {
-            var v = Converter.ToFontVariant(rawValue.AsSpan().Slice(range));
+            var v = Converter.ToFontVariant(rawValue.AsSpan()[range]);
             if (v.HasValue) variant = v;
         }
 
         if (attributes.TryGetValue(name + "-weight", out range))
         {
-            var w = Converter.ToFontWeight(rawValue.AsSpan().Slice(range));
+            var w = Converter.ToFontWeight(rawValue.AsSpan()[range]);
             if (w.HasValue) weight = w;
         }
 
         if (attributes.TryGetValue(name + "-family", out range))
         {
-            var f = Converter.ToFontFamily(rawValue.AsSpan().Slice(range));
+            var f = Converter.ToFontFamily(rawValue.AsSpan()[range]);
             if (f != null) family = f;
         }
 
@@ -317,7 +317,7 @@ readonly struct HtmlAttributeCollection
     public IEnumerable<TextDecoration> GetTextDecorations(string name)
     {
         if (attributes.TryGetValue(name, out Range range))
-            return Converter.ToTextDecoration(rawValue.AsSpan().Slice(range));
+            return Converter.ToTextDecoration(rawValue.AsSpan()[range]);
         return [];
     }
 }
