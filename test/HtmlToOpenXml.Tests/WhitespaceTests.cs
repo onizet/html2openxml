@@ -1,4 +1,4 @@
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml.Tests
@@ -136,6 +136,33 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements, Is.All.TypeOf<Paragraph>());
             Assert.That(elements[0].InnerText, Is.EqualTo("Hello World"));
+        }
+
+        [Test]
+        public void Preserve_TrailingWhitespace_After_PhrasingContent()
+        {
+            var elements = converter.Parse("<p><strong><u><span>Hello</span></u></strong><span> World</span></p>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Is.All.TypeOf<Paragraph>());
+            Assert.That(elements[0].InnerText, Is.EqualTo("Hello World"));
+        }
+
+        [Test]
+        public void Preserve_TrailingWhitespace_Before_PhrasingContent()
+        {
+            var elements = converter.Parse("<p><strong><u><span>Hello </span></u></strong><span>World</span></p>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Is.All.TypeOf<Paragraph>());
+            Assert.That(elements[0].InnerText, Is.EqualTo("Hello World"));
+        }
+
+        [Test]
+        public void Preserve_OnlyOneSpace_WhenBoth_ConsecutivePhrasingElements_ContainWhitespace()
+        {
+            var elements = converter.Parse("<p>Hello <span> World</span></p>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Is.All.TypeOf<Paragraph>());
+            Assert.That(elements.Last().InnerText, Is.EqualTo("Hello World"));
         }
     }
 }
