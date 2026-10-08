@@ -1,4 +1,4 @@
-/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
  * 
  * This source is subject to the Microsoft Permissive License.
  * Please see the License.txt file for more information.
@@ -108,6 +108,12 @@ sealed class TextExpression(INode node) : HtmlDomExpression
             {
                 text = " " + text;
             }
+            // if no immediate previous sibling traverse nested phrasing content for the previous meaningful content
+            // if previous meaningful content has trailing space, in that case skip it.
+            else if (startsWithSpace && !isWhitespace && previousSibling is null && PreviousPhrasingContentNeedsLeadingSpace(node))
+            {
+                text = " " + text;
+            }
 
             if (endsWithSpace && !isWhitespace && (
                 // next run is not starting with a linebreak
@@ -115,7 +121,7 @@ sealed class TextExpression(INode node) : HtmlDomExpression
                     !nextSibling!.TextContent[0].IsLineBreak()) ||
                 // if there is no more text element or is empty, eat the trailing space
                 (preserveBorderSpaces && (nextSibling is not null
-                    || node.Parent.NextSibling is not null))))
+                    || HasFollowingPhrasingContent(node)))))
             {
                 text += " ";
             }
@@ -184,5 +190,105 @@ sealed class TextExpression(INode node) : HtmlDomExpression
 
         wasCR = false;
         return ch == Symbols.LineFeed;
+    }
+
+    private static bool PreviousPhrasingContentNeedsLeadingSpace(INode node)
+    {
+        INode? current = node;
+        while (current?.Parent is IHtmlElement parent)
+        {
+            var sibling = current.PreviousSibling;
+            while (sibling is not null)
+            {
+                // meaningful only if it contains non-whitespace content
+                // or content without trailing whitespacce.
+                if (sibling.NodeType == NodeType.Text)
+                {
+                    var text = sibling.TextContent;
+                    if (!string.IsNullOrWhiteSpace(sibling.TextContent))
+                        return false;
+
+                    return !text[text.Length - 1].IsWhiteSpaceCharacter();
+                }
+                // phrasing element may contain the actual preceding text.
+                if (sibling is IHtmlElement siblingElement && AllPhrasings.Contains(siblingElement.NodeName))
+                {
+                    if (ContainsMeaningfulText(siblingElement))
+                        return !EndsWithWhitespace(siblingElement);
+
+                    sibling = sibling.PreviousSibling;
+                    continue;
+                }
+
+                return false; // traversal must be containsed within block level element
+            }
+
+            if (!AllPhrasings.Contains(parent.NodeName))
+                return false;
+
+            current = parent;
+        }
+        return false;
+    }
+
+    private static bool HasFollowingPhrasingContent(INode node)
+    {
+        INode? current = node;
+        while (current?.Parent is IHtmlElement parent)
+        {
+            var sibling = current.NextSibling;
+            while (sibling is not null)
+            {
+                // meaningful only if it contains non-whitespace content.
+                if (sibling.NodeType == NodeType.Text)
+                {
+                    if (!string.IsNullOrWhiteSpace(sibling.TextContent))
+                        return true;
+
+                    sibling = sibling.NextSibling;
+                    continue;
+                }
+
+                if (AllPhrasings.Contains(sibling.NodeName))
+                {
+                    if (ContainsMeaningfulText(sibling))
+                        return true;
+
+                    sibling = sibling.NextSibling;
+                    continue;
+                }
+
+                return false; // traversal must be containsed within block level element
+            }
+
+            if (!AllPhrasings.Contains(parent.NodeName))
+                return false;
+
+            current = parent;
+        }
+        return false;
+    }
+
+    private static bool ContainsMeaningfulText(INode element)
+    {
+        foreach (var child in element.ChildNodes)
+        {
+            if (child.NodeType == NodeType.Text)
+            {
+                if (!string.IsNullOrWhiteSpace(child.TextContent))
+                    return true;
+                continue;
+            }
+
+            if (child is IHtmlElement childElement && AllPhrasings.Contains(childElement.NodeName) && ContainsMeaningfulText(childElement))
+                return true;
+        }
+        return false;
+    }
+
+    private static bool EndsWithWhitespace(IHtmlElement element)
+    {
+        var text = element.TextContent;
+        return text.Length > 0 && text[text.Length - 1].IsWhiteSpaceCharacter();
     }
 }
