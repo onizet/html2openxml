@@ -42,7 +42,7 @@ namespace HtmlToOpenXml.Tests
                      Has.All.EqualTo(inst.NumberID.Value),
                      "All paragraphs are linked to the same list instance");
                 Assert.That(paragraphs.First().ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value,
-                    Is.EqualTo(0),
+                    Is.Zero,
                     "First paragraph stands on level 0");
                 Assert.That(paragraphs.Skip(1).Select(e => 
                     e.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value),

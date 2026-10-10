@@ -29,11 +29,11 @@ namespace HtmlToOpenXml.Tests
             Assert.That(noteRef, Is.Not.Null);
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(noteRef.Id?.HasValue, Is.EqualTo(true));
+                Assert.That(noteRef.Id?.HasValue, Is.True);
                 Assert.That(mainPart.FootnotesPart, Is.Not.Null);
             }
 
-            Assert.That(mainPart.FootnotesPart.HyperlinkRelationships.Count(), Is.EqualTo(0));
+            Assert.That(mainPart.FootnotesPart.HyperlinkRelationships.Count(), Is.Zero);
 
             var fnotes = mainPart.FootnotesPart.Footnotes!.Elements<Footnote>().FirstOrDefault(f => f.Id?.Value == noteRef.Id.Value);
             Assert.That(fnotes, Is.Not.Null);
@@ -59,7 +59,7 @@ namespace HtmlToOpenXml.Tests
             Assert.That(noteRef, Is.Not.Null);
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(noteRef.Id?.HasValue, Is.EqualTo(true));
+                Assert.That(noteRef.Id?.HasValue, Is.True);
                 Assert.That(mainPart.FootnotesPart, Is.Not.Null);
             }
 
@@ -73,7 +73,7 @@ namespace HtmlToOpenXml.Tests
             Assert.That(extLink, Is.Not.Null);
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(extLink.IsExternal, Is.EqualTo(true));
+                Assert.That(extLink.IsExternal, Is.True);
                 Assert.That(extLink.Uri.AbsoluteUri, Is.EqualTo(expectedUri));
             }
         }
@@ -88,7 +88,7 @@ namespace HtmlToOpenXml.Tests
             Assert.That(noteRef, Is.Not.Null);
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(noteRef.Id?.HasValue, Is.EqualTo(true));
+                Assert.That(noteRef.Id?.HasValue, Is.True);
                 Assert.That(mainPart.EndnotesPart, Is.Not.Null);
             }
 
@@ -151,7 +151,7 @@ namespace HtmlToOpenXml.Tests
             }
 
             Assert.That(noteRef, Is.Not.Null);
-            Assert.That(noteRef.Id?.HasValue, Is.EqualTo(true));
+            Assert.That(noteRef.Id?.HasValue, Is.True);
 
             FootnoteEndnoteType? note;
             if (acronymPosition == AcronymPosition.PageEnd)

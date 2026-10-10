@@ -330,7 +330,7 @@ namespace HtmlToOpenXml.Tests
             Assert.That(externalRels.First().Uri.ToString(), Is.EqualTo("https://www.example.com/image.gif"));
 
             // Verify no image parts were created
-            Assert.That(mainPart.ImageParts.Count(), Is.EqualTo(0));
+            Assert.That(mainPart.ImageParts.Count(), Is.Zero);
         }
 
         [Test]
@@ -375,8 +375,8 @@ namespace HtmlToOpenXml.Tests
 
             var paragraphs = mainPart.Document!.Body!.Elements<Paragraph>();
             // Image should be skipped, so paragraph should be empty or not contain drawing
-            Assert.That(paragraphs.Count(), Is.EqualTo(0));
-            Assert.That(mainPart.ImageParts.Count(), Is.EqualTo(0));
+            Assert.That(paragraphs.Count(), Is.Zero);
+            Assert.That(mainPart.ImageParts.Count(), Is.Zero);
 
             mockMessageHandler.AssertNeverCalled();
         }

@@ -523,9 +523,9 @@ namespace HtmlToOpenXml.Tests
             {
                 // normally, Val should be null
                 if (runProperties.Bold.Val is not null)
-                    Assert.That(runProperties.Bold.Val, Is.EqualTo(true));
+                    Assert.That(runProperties.Bold.Val, Is.True);
                 if (runProperties.Italic.Val is not null)
-                    Assert.That(runProperties.Italic.Val, Is.EqualTo(true));
+                    Assert.That(runProperties.Italic.Val, Is.True);
             }
         }
 
