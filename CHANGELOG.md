@@ -17,7 +17,6 @@ Consequently, direct styles (e.g., font color, size) applied to the container of
 - Integrate NuSpec.AI to generate an AI-context-optimized map of this library.
 - Improve the overall XML comment for the public API
 - Improve the technical documentation (replacing the wiki)
-- Bump AngleSharp to 1.8
 
 ## 3.5.0
 
@@ -27,7 +26,7 @@ Consequently, direct styles (e.g., font color, size) applied to the container of
 ## 3.4.0
 
 - Numbering list now support `list-style-type: dash`
-- Add support for custom bullet symbols `list-style-type: '👍'` thanks to @AlexAbd1990
+- Add support for custom bullet symbols `list-style-type: '✅'` thanks to @AlexAbd1990
 - Minor internal optimisations
 
 ## 3.3.2

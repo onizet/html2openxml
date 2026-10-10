@@ -96,7 +96,9 @@ abstract class HtmlDomExpression
     public static HtmlDomExpression? CreateFromHtmlNode (INode node)
     {
         if (node.NodeType == NodeType.Text)
+        {
             return new TextExpression(node);
+        }
         else if (node.NodeType == NodeType.Element
             && !ignoreTags.Contains(node.NodeName))
         {
