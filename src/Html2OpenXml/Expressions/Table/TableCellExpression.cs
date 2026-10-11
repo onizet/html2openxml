@@ -145,7 +145,7 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : TableElementExpre
     {
         return new TableCell(new Paragraph()) {
             TableCellProperties = new TableCellProperties(cellProperties) {
-                TableCellWidth = new() { Width = "0" } }
+                TableCellWidth = new() { Type = TableWidthUnitValues.Auto, Width = "0" } }
         };
     }
 
