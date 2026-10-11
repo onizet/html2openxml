@@ -10,7 +10,7 @@ Originally created in 2009 to transform user-generated content into templated Wo
 into a mature HTML-to-OpenXML converter supporting styles, numbering, images, bookmarks, page layout, tables,
 document template, and custom resource resolution.
 
-![Logo](/docs/images/html2openxml.png)
+![Logo](https://raw.githubusercontent.com/onizet/html2openxml/master/docs/images/html2openxml.png)
 
 Supports **.Net Framework 4.6.2**, **.NET Standard 2.0**, **.NET 8** **.NET 10** which are all LTS.
 
