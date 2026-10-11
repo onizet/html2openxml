@@ -18,15 +18,8 @@ namespace HtmlToOpenXml;
 /// </summary>
 sealed class RowSpanCollection : IEnumerable<KeyValuePair<int, RowSpanCollection.CellSpan>>
 {
-#if NET5_0_OR_GREATER
     public readonly record struct CellSpan(int RowSpan, int Colspan);
-#else
-    public readonly struct CellSpan(int rowSpan, int colSpan)
-    {
-        public readonly int RowSpan = rowSpan;
-        public readonly int Colspan = colSpan;
-    }
-#endif
+
 
     /// <summary>Hold the remaining row span value per colum index</summary>
     private readonly SortedDictionary<int, CellSpan> spans = [];

@@ -62,9 +62,9 @@ readonly struct HtmlFont(Unit size, string? family, FontStyle? style,
         if (tokenCount == 2) // 2=the minimal set of required parameters
         {
             // should be the size and the family (in that order). Others are set to their default values
-            fontSize = Converter.ToFontSize(span.Slice(tokens[0]));
+            fontSize = Converter.ToFontSize(span[tokens[0]]);
             if (!fontSize.IsValid) return Empty;
-            fontFamily = Converter.ToFontFamily(span.Slice(tokens[1]));
+            fontFamily = Converter.ToFontFamily(span[tokens[1]]);
             return new HtmlFont(fontSize, fontFamily, style, variant, weight, lineHeight);
         }
         else if (tokenCount > 10)
@@ -76,7 +76,7 @@ readonly struct HtmlFont(Unit size, string? family, FontStyle? style,
         Span<char> loweredValue = stackalloc char[128];
         for (int i = 0; i < tokenCount; i++)
         {
-            var token = span.Slice(tokens[i]).Trim();
+            var token = span[tokens[i]].Trim();
             token.ToLowerInvariant(loweredValue);
 
             switch (loweredValue.Slice(0, token.Length))

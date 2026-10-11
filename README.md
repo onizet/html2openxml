@@ -1,54 +1,70 @@
-![Latest version](https://img.shields.io/nuget/v/HtmlToOpenXml.dll.svg)
-![Download Counts](https://img.shields.io/nuget/dt/HtmlToOpenXml.dll.svg)
+![Latest version](https://img.shields.io/nuget/v/HtmlToOpenXml.svg)
+![Download Counts](https://img.shields.io/nuget/dt/HtmlToOpenXml.svg)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/onizet/html2openxml/blob/dev/LICENSE)
 
 # What is HtmlToOpenXml?
 
-HtmlToOpenXml is a small .Net library that convert simple or advanced HTML to plain OpenXml components. This program has started in 2009, initially to convert user's comments into Word.
+HtmlToOpenXml is a mature, high-fidelity converter that translates complex HTML structures into native OpenXML elements, ensuring your content renders exactly as intended across all Microsoft Word users.
 
-This library supports both **.Net Framework 4.6.2**, **.NET Standard 2.0**, **.NET 8** **.NET 10** which are all LTS.
+Originally created in 2009 to transform user-generated content into templated Word documents, it has evolved
+into a mature HTML-to-OpenXML converter supporting styles, numbering, images, bookmarks, page layout, tables,
+document template, and custom resource resolution.
 
-Depends on [DocumentFormat.OpenXml](https://www.nuget.org/packages/DocumentFormat.OpenXml/) and [AngleSharp](https://www.nuget.org/packages/AngleSharp).
+Supports **.Net Framework 4.6.2**, **.NET Standard 2.0**, **.NET 8** **.NET 10** which are all LTS.
 
--> [Official Nuget Package](https://www.nuget.org/packages/HtmlToOpenXml.dll)
+Built on top of [DocumentFormat.OpenXml](https://www.nuget.org/packages/DocumentFormat.OpenXml/) and [AngleSharp](https://www.nuget.org/packages/AngleSharp).
 
-## See Also
+-> [Official Nuget Package](https://www.nuget.org/packages/HtmlToOpenXml) (❗ Update your bookmark, suffix `.dll` removed)
 
-* [Documentation](https://github.com/onizet/html2openxml/wiki)
-* [How to deliver a generated DOCX from server Asp.Net/SharePoint?](https://github.com/onizet/html2openxml/wiki/Serves-a-generated-docx-from-the-server)
-* [Prevent Document Edition](https://github.com/onizet/html2openxml/wiki/Prevent-Document-Edition)
-* [Convert dotx to docx](https://github.com/onizet/html2openxml/wiki/Convert-.dotx-to-.docx)
+## Quick Start
 
-## Supported Html tags
+When creating a blank document:
 
-Refer to [w3schools’ tag](http://www.w3schools.com/tags/default.asp) list to see their meaning
+```csharp
+await using var generatedDocument = new MemoryStream();
+using var package = WordprocessingDocument.Create(generatedDocument, WordprocessingDocumentType.Document);
 
-* `a`
-* `h1-h6`
-* `abbr` and `acronym`
-* `b`, `i`, `u`, `s`, `del`, `ins`, `em`, `strike`, `strong`
-* `br` and `hr`
-* `img`, `figcaption` and `svg`
-* `table`, `td`, `tr`, `th`, `tbody`, `thead`, `tfoot`, `caption` and `col`
-* `cite`
-* `div`, `span`, `time`, `font` and `p`
-* `pre`
-* `sub` and `sup`
-* `ul`, `ol` and `li`
-* `dd` and `dt`
-* `q`, `blockquote`, `dfn`
-* `article`, `aside`, `section` are considered like `div`
+var mainPart = package.AddMainDocumentPart();
+new Document(new Body()).Save(mainPart);
+HtmlConverter converter = new(mainPart);
+await converter.ParseBody(html);
+```
 
-Javascript (`script`), CSS `style`, `meta`, comments, buttons and input controls are ignored.
-Other tags are treated like `div`.
+When inserting inside an existing document:
 
-In v1 and v2, Javascript (`script`), CSS `style`, `meta`, comments and other not supported tags does not generate an error but are **ignored**.
+```csharp
+await using var generatedDocument = new MemoryStream();
+await templateFileStream.CopyToAsync(generatedDocument);
+using var package = WordprocessingDocument.Open(generatedDocument, true);
+MainDocumentPart? mainPart = package.MainDocumentPart;
+if (mainPart == null)
+{
+    mainPart = package.AddMainDocumentPart();
+    new Document(new Body()).Save(mainPart);
+}
+HtmlConverter converter = new(mainPart);
+await converter.ParseBody(html);
+```
 
-## Html Parser
+## Documentation
 
-In v3, the parsing of the Html relies on AngleSharp package, which follows the W3C specifications and actively supports Html5.
+[**Documentation**](https://onizet.github.io/html2openxml/) covers from the minimal code to advanced scenarios.
 
-In v1 and v2, the parsing of the Html was done using a custom Regex-based enumerator and was more flexible, but leaving a complex code, hard to maintain.
+### Guides & Tutorials
+
+* [Getting Started Guide](https://onizet.github.io/html2openxml/guide/quickstart.md)
+* [LLM Guidance](https://onizet.github.io/html2openxml/llmdoc.md)
+
+### API Reference
+
+* [API Contract](https://onizet.github.io/html2openxml/guide/api.md)
+
+### Technical Deep Dive
+
+* [Numbering List](https://onizet.github.io/html2openxml/numbering.md)
+* [Advanced Table Structures (Row/ColSpan, ColGroup)](https://onizet.github.io/html2openxml/guide/tables.md)
+* [Image Processing](https://onizet.github.io/html2openxml/guide/images.md)
+* [Performance notes and memory allocations](https://onizet.github.io/html2openxml/appendix/performance.md)
 
 ## How to implement or debug features
 
@@ -63,7 +79,7 @@ Open MS Word or Apple Pages and design your expected output. Save as a DOCX file
 
 ## Acknowledgements
 
-Thank you to all contributors that share their bug fixes (in no particular order): scwebgroup, ddforge, daviderapicavoli, worstenbrood, jodybullen, BenBurns, OleK, scarhand, imagremlin, antgraf, mdeclercq, pauldbentley, xjpmauricio, jairoXXX, giorand, bostjanKlemenc, AaronLS, taishmanov.
+Thank you to all contributors that share their bug fixes (in no particular order): scwebgroup, ddforge, daviderapicavoli, worstenbrood, jodybullen, BenBurns, OleK, scarhand, imagremlin, antgraf, mdeclercq, pauldbentley, xjpmauricio, jairoXXX, giorand, bostjanKlemenc, AaronLS, taishmanov, AyUsH18102001.
 And thanks to David Podhola for the Nuget package.
 
 Logo provided with the permission of [Enhanced Labs Design Studio](http://www.enhancedlabs.com).

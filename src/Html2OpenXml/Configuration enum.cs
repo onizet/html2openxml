@@ -13,22 +13,25 @@
 namespace HtmlToOpenXml;
 
 /// <summary>
-/// Specifies the position of an acronym or abbreviation in the resulting conversion.
+/// Controls where the definition of an acronym or abbreviation is rendered during conversion.
+/// 
+/// AcronymFor example, the definition assocaited with an HTML <c>abbr</c> element can be
+/// rendered at the end of the page or collected at the end of the document.
 /// </summary>
 public enum AcronymPosition
 {
     /// <summary>
-    /// Position at the end of the page.
+    /// Collect acronym definitions at the end of the current page.
     /// </summary>
     PageEnd = 0,
     /// <summary>
-    /// Position at the end of the document.
+    /// Collect acronym definitions at the end of the document.
     /// </summary>
     DocumentEnd = 1,
 }
 
 /// <summary>
-/// Predefined quote style as defined by the browser (used for the &lt;q&gt; tag).
+/// Predefined quote style as defined by the browser (used for the <c>q</c> HTML tag).
 /// </summary>
 /// <remarks>
 /// Initializes a new instance of <see cref="QuoteChars"/> class.
@@ -38,18 +41,19 @@ public enum AcronymPosition
 public readonly struct QuoteChars(string begin, string end)
 {
     /// <summary>Internet Explorer style: « abc » </summary>
-    public static readonly QuoteChars IE = new QuoteChars("« ", " »");
+    public static readonly QuoteChars IE = new("« ", " »");
     /// <summary>Firefox style: “abc”</summary>
-    public static readonly QuoteChars Gecko = new QuoteChars("“", "”");
+    public static readonly QuoteChars Gecko = new("“", "”");
     /// <summary>Chrome/Safari/Opera style: "abc"</summary>
-    public static readonly QuoteChars WebKit = new QuoteChars("\"", "\"");
+    public static readonly QuoteChars WebKit = new("\"", "\"");
 
     internal string Prefix { get; } = begin;
     internal string Suffix { get; } = end;
 }
 
 /// <summary>
-/// Specifies how images should be processed during HTML to OpenXML conversion.
+/// Controls whether images are embedded in the generated document
+/// or kept as external references.
 /// </summary>
 public enum ImageProcessingMode
 {

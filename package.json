@@ -1,0 +1,19 @@
+{
+  "name": "vuepress-starter",
+  "private": true,
+  "scripts": {
+    "docs:dev": "vuepress dev docs",
+    "docs:build": "vuepress build docs"
+  },
+  "devDependencies": {
+    "@iconify-json/mdi": "^1.2.3",
+    "@vuepress/bundler-vite": "next",
+    "@vuepress/plugin-icon": "2.0.0-rc.137",
+    "@vuepress/plugin-llms": "2.0.0-rc.137",
+    "@vuepress/theme-default": "next",
+    "iconify-icon": "^3.0.3",
+    "sass": "^1.82.0",
+    "vue": "^3.5.13",
+    "vuepress": "next"
+  }
+}

@@ -82,7 +82,7 @@ background: red;
             Assert.That(run.RunProperties.Italic, Is.Not.Null);
             // normally, Val should be null
             if (run.RunProperties.Italic.Val is not null)
-                Assert.That(run.RunProperties.Italic.Val, Is.EqualTo(true));
+                Assert.That(run.RunProperties.Italic.Val, Is.True);
         }
 
         [TestCase("<i style='font-style:normal'>Not italic</i>")]
@@ -94,11 +94,11 @@ background: red;
             Assert.That(elements, Is.Not.Empty);
             Assert.That(elements[0], Is.TypeOf<Paragraph>());
             Assert.That(elements[0].FirstChild, Is.TypeOf<Run>());
-            var run = elements[0].FirstChild as Run;
+            var run = (Run) elements[0].FirstChild;
 
             // italic should not be applied as we specify font-style=normal
             if (run?.RunProperties?.Italic is not null)
-                Assert.That(run.RunProperties.Italic.Val, Is.EqualTo(false));
+                Assert.That(run.RunProperties.Italic.Val?.Value, Is.False);
         }
 
         [TestCase(@"<q>Build a future where people live in harmony with nature.</q>", true)]
@@ -123,7 +123,7 @@ background: red;
                 run = (Run?) run.NextSibling();
             }
 
-            var runProperties = run.GetFirstChild<RunProperties>();
+            var runProperties = run?.GetFirstChild<RunProperties>();
             Assert.That(runProperties, Is.Not.Null);
 
             var runStyle = runProperties.GetFirstChild<RunStyle>();
@@ -259,7 +259,7 @@ background: red;
             var p = (Paragraph) elements[0];
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(p.ParagraphProperties?.BiDi?.Val?.Value, Is.EqualTo(false));
+                Assert.That(p.ParagraphProperties?.BiDi?.Val?.Value, Is.False);
                 Assert.That(p.ParagraphProperties?.ParagraphMarkRunProperties?
                     .GetFirstChild<Languages>()?.Val?.Value, Is.EqualTo("en"));
                 Assert.That(p.GetFirstChild<Run>()?.GetFirstChild<RunProperties>()?

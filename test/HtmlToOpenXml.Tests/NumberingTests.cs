@@ -117,9 +117,9 @@ namespace HtmlToOpenXml.Tests
                     e.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value),
                     Has.All.EqualTo(inst.NumberID.Value),
                     "All paragraphs are linked to the same list instance");
-                Assert.That(p1.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value, Is.EqualTo(0));
+                Assert.That(p1.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value, Is.Zero);
                 Assert.That(p1_1.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value, Is.EqualTo(1));
-                Assert.That(p2.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value, Is.EqualTo(0));
+                Assert.That(p2.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value, Is.Zero);
             }
             AssertThatOpenXmlDocumentIsValid();
         }

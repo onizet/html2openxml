@@ -10,6 +10,7 @@
  * PARTICULAR PURPOSE.
  */
 using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using AngleSharp.Text;
@@ -81,10 +82,7 @@ static class AngleSharpExtensions
     /// </summary>
     /// <remarks>Inline data in <see cref="IO.DataUri"/> would returns <see langword="false"/>.</remarks>
     public static bool TryParseUrl(string? uriString, UriKind uriKind,
-#if NET5_0_OR_GREATER
-    [System.Diagnostics.CodeAnalysis.NotNullWhen(true)]
-#endif
-    out Uri? result)
+        [NotNullWhen(true)] out Uri? result)
     {
         if (string.IsNullOrEmpty(uriString) || IO.DataUri.IsWellFormed(uriString!))
         {
