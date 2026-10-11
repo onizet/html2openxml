@@ -17,7 +17,7 @@ Consequently, direct styles (e.g., font color, size) applied to the container of
 - Integrate NuSpec.AI to generate an AI-context-optimized map of this library.
 - Improve the overall XML comment for the public API
 - Improve the technical documentation (replacing the wiki)
-- Fix whitespace-only sandwchiwed between two runs #240
+- Fix whitespace-only sandwichwed between two runs #240
 - Table border=0 now correctly suppresses outside borders #238
 
 Many thanks to @AyUsH18102001 for all his support and PRs.
