@@ -13,10 +13,14 @@ Consequently, direct styles (e.g., font color, size) applied to the container of
   - `DefaultStyles.Paragraph` -> `ParagraphBodyStyle`.
 - Prevent Table Elements Shading Style from Parent Styles Cascading - #241
 - Fix parsing css styles with encoded quote #239
-- Fixed XML corruption when converting border-styled paragraphs containing multiple runs, thanks to @AyUsH18102001
+- Fixed XML corruption when converting border-styled paragraphs containing multiple runs
 - Integrate NuSpec.AI to generate an AI-context-optimized map of this library.
 - Improve the overall XML comment for the public API
 - Improve the technical documentation (replacing the wiki)
+- Fix whitespace-only sandwchiwed between two runs #240
+- Table border=0 now correctly suppresses outside borders #238
+
+Many thanks to @AyUsH18102001 for all his support and PRs.
 
 ## 3.5.0
 
