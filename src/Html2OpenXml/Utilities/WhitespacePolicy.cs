@@ -166,10 +166,16 @@ static class WhitespacePolicy
     private static INode? FindPreviousMeaningfulNode(INode node)
     {
         INode? prev = node.PreviousSibling;
-        if (prev is null && IsPhrasing(node.Parent) && node.Parent!.PreviousSibling != null)
-            prev = node.Parent.PreviousSibling.NodeType == NodeType.Text? 
-                node.Parent.PreviousSibling : node.Parent.PreviousSibling?.LastChild;
-       
+        if (prev is null && IsPhrasing(node.Parent))
+        {
+            var parent = FindStructuralPhrasingAncestor(node);
+            if (parent?.PreviousSibling != null)
+            {
+                prev = parent.PreviousSibling.NodeType == NodeType.Text? 
+                    parent.PreviousSibling : parent.PreviousSibling.LastChild;
+            }
+        }
+
         while (prev != null)
         {
             // If we hit a dead end (non-phrasing/non-content), stop here.
@@ -185,9 +191,15 @@ static class WhitespacePolicy
     private static INode? FindNextMeaningfulNode(INode node)
     {
         INode? next = node.NextSibling;
-        if (next is null && IsPhrasing(node.Parent) && node.Parent!.NextSibling != null)
-            next = node.Parent.NextSibling.NodeType == NodeType.Text? 
-                node.Parent.NextSibling : node.Parent.NextSibling?.FirstChild;
+        if (next is null && IsPhrasing(node.Parent))
+        {
+            var parent = FindStructuralPhrasingAncestor(node);
+            if (parent?.NextSibling != null)
+            {
+                next = parent.NextSibling.NodeType == NodeType.Text? 
+                    parent.NextSibling : parent.NextSibling.FirstChild;
+            }
+        }
 
         while (next != null)
         {
@@ -198,6 +210,25 @@ static class WhitespacePolicy
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Climbs up the DOM hierarchy through transient containers until it reaches a node that defines 
+    /// the beginning of a logical, structural content block.
+    /// </summary>
+    private static INode? FindStructuralPhrasingAncestor(INode node)
+    {
+        var parent = node.Parent!;
+        while (parent != null)
+        {
+            // Stop when:
+            // 1. The grandparent is NOT a phrasing element (i.e., we hit a block-level container like <div>, <p>, etc.).
+            // OR 2. The grandparent HAS multiple children (i.e., it's a root container holding different structural components).
+            if (IsPhrasing(parent.Parent) == false || parent.Parent.ChildNodes.Length > 1)
+                break;
+            parent = parent.Parent;
+        }
+        return parent;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
