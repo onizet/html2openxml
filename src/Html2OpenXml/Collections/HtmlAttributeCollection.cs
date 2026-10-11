@@ -248,7 +248,7 @@ readonly struct HtmlAttributeCollection
         if (attributes.TryGetValue(name + "-width", out range))
         {
             var w = SideBorder.ParseWidth(rawValue.AsSpan()[range]);
-            if (width.IsValid) width = w;
+            if (w.IsValid) width = w;
         }
 
         var color = GetColor(name + "-color");
