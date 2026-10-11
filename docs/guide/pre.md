@@ -22,4 +22,4 @@ converter.RenderPreAsTable = true;
 converter.RenderPreAsTable = false; 
 ```
 
-![Text with preserved formatting](../images/pre.png)
+![Text with preserved formatting](/images/pre.png)

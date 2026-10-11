@@ -41,6 +41,10 @@ export default defineUserConfig({
         prefix: 'appendix/',
         children: ['content-type', 'template-to-docx', 'placeholder-replacement', 'restrict-edition'],
       },
+      {
+        text: 'Changelog',
+        link: 'https://github.com/onizet/html2openxml/blob/master/CHANGELOG.md'
+      }
     ]
   }),
 

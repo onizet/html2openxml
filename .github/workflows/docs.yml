@@ -4,6 +4,8 @@ on:
   # trigger deployment on every push to main branch
   push:
     branches: [master]
+    paths:
+      - 'docs/**' 
   # trigger deployment manually
   workflow_dispatch:
 
@@ -16,7 +18,7 @@ jobs:
         with:
           sparse-checkout: |
             .
-            docs
+            docs/
 
       - name: Setup Node.js
         uses: pnpm/setup@v1

@@ -69,4 +69,4 @@ For collections of items, apply the `dir` attribute to the container tag:
 
 You can see the converted HTML with some Arabic (RTL) layout:
 
-![Sample of RTL rendering in Word](../images/rtl.png)
+![Sample of RTL rendering in Word](/images/rtl.png)

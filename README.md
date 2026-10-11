@@ -10,11 +10,13 @@ Originally created in 2009 to transform user-generated content into templated Wo
 into a mature HTML-to-OpenXML converter supporting styles, numbering, images, bookmarks, page layout, tables,
 document template, and custom resource resolution.
 
+![Logo](/docs/images/html2openxml.png)
+
 Supports **.Net Framework 4.6.2**, **.NET Standard 2.0**, **.NET 8** **.NET 10** which are all LTS.
 
 Built on top of [DocumentFormat.OpenXml](https://www.nuget.org/packages/DocumentFormat.OpenXml/) and [AngleSharp](https://www.nuget.org/packages/AngleSharp).
 
--> [Official Nuget Package](https://www.nuget.org/packages/HtmlToOpenXml) (❗ Update your bookmark, suffix `.dll` removed)
+-> [Official Nuget Package](https://www.nuget.org/packages/HtmlToOpenXml) (❗ **Update your bookmark**, suffix `.dll` removed)
 
 ## Quick Start
 
@@ -61,7 +63,7 @@ await converter.ParseBody(html);
 
 ### Technical Deep Dive
 
-* [Numbering List](https://onizet.github.io/html2openxml/numbering.md)
+* [Numbering List](https://onizet.github.io/html2openxml/guide/numbering.md)
 * [Advanced Table Structures (Row/ColSpan, ColGroup)](https://onizet.github.io/html2openxml/guide/tables.md)
 * [Image Processing](https://onizet.github.io/html2openxml/guide/images.md)
 * [Performance notes and memory allocations](https://onizet.github.io/html2openxml/appendix/performance.md)

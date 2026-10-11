@@ -77,4 +77,4 @@ DemoHtml.html:
 
 ### Step 3: Visual generated output
 
-![Quickstart output in MS Word](../images/quickstart.png)
+![Quickstart output in MS Word](/images/quickstart.png)

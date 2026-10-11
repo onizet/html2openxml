@@ -16,7 +16,7 @@ The simplest usage involves using the `title` attribute on the HTML element:
 
 The converter renders the abbreviation inline with a small jump indicator, which displays the full definition upon hover or when accessed in the DOCX document.
 
-![footnote at end of document](../images/footnotes.png)
+![footnote at end of document](/images/footnotes.png)
 
 ## Page-End Definitions
 

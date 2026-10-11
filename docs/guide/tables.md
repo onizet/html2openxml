@@ -37,7 +37,7 @@ Those width are supported:
 </table>
 ```
 
-![Table with row span](../images/tables.rowspan.png)
+![Table with row span](/images/tables.rowspan.png)
 
 ```html
 <table width="100%" border="1">
@@ -53,7 +53,7 @@ Those width are supported:
 </table>
 ```
 
-![Table with col span](../images/tables.colspan.png)
+![Table with col span](/images/tables.colspan.png)
 
 ColSpan and RowSpan on the same cell
 
@@ -74,7 +74,7 @@ ColSpan and RowSpan on the same cell
 </table>
 ```
 
-![Table with a cell containing both row span and col span](../images/tables.col-rowspan.png)
+![Table with a cell containing both row span and col span](/images/tables.col-rowspan.png)
 
 ## Nested table
 
@@ -92,7 +92,7 @@ ColSpan and RowSpan on the same cell
 </table>
 ```
 
-![Nested table](../images/tables.nested.png)
+![Nested table](/images/tables.nested.png)
 
 ## Vertical text is supported
 
@@ -108,7 +108,7 @@ ColSpan and RowSpan on the same cell
 </table>
 ```
 
-![Table with vertical text](../images/tables.verticaltext.png)
+![Table with vertical text](/images/tables.verticaltext.png)
 
 ## Column Definition
 
@@ -126,7 +126,7 @@ The attribute `span` is supported to copy the styles on the next columns.
 </table>
 ```
 
-![Table colgroup](../images/tables.colstyles.png)
+![Table colgroup](/images/tables.colstyles.png)
 
 ## Logical Table Sections
 
@@ -140,4 +140,4 @@ Unlike the flexibility of HTML parsers, the converter enforces the logical flow 
 </table>
 ```
 
-![Reordered table sections](../images/tables.reorder.png)
+![Reordered table sections](/images/tables.reorder.png)
