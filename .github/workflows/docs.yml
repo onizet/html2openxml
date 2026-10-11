@@ -14,8 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          # fetch all commits to get last updated time or other git log info
-          fetch-depth: 0
+          path: docs
 
       - name: Setup Node.js
         uses: pnpm/setup@v1
