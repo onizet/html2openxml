@@ -129,10 +129,32 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements[0].InnerText, Is.EqualTo("HelloWorld"));
         }
 
-        [Test]
-        public void ConsecutiveSpans_WithSpaces_ReturnsOneParagraphWithNoSpace ()
+        [TestCase("<span>Hello</span>  <span>World</span>")]
+        [TestCase("Hello<b> </b>World")]
+        [TestCase("<span> Hello</span> <span> World</span>")]
+        [TestCase("<span>Hello </span> <b></b> <i> World</i>")]
+        [TestCase("Hello <span> World</span>")]
+        public void ConsecutiveSpans_WithSpaces_ReturnsOneParagraphWithOneSpace (string html)
         {
-            var elements = converter.Parse("<span>Hello</span>  <span>World</span>");
+            var elements = converter.Parse(html);
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Is.All.TypeOf<Paragraph>());
+            Assert.That(elements[0].InnerText, Is.EqualTo("Hello World"));
+        }
+
+        [Test]
+        public void Preserve_TrailingWhitespace_After_PhrasingContent()
+        {
+            var elements = converter.Parse("<strong><u><span>Hello</span></u></strong><span> World</span>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Is.All.TypeOf<Paragraph>());
+            Assert.That(elements[0].InnerText, Is.EqualTo("Hello World"));
+        }
+
+        [Test]
+        public void Preserve_TrailingWhitespace_Before_PhrasingContent()
+        {
+            var elements = converter.Parse("<strong><u><span>Hello </span></u></strong><span>World</span>");
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements, Is.All.TypeOf<Paragraph>());
             Assert.That(elements[0].InnerText, Is.EqualTo("Hello World"));

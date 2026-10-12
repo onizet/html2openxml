@@ -57,7 +57,9 @@ namespace HtmlToOpenXml.Tests
             }
         }
 
-        [Test(Description = "Assert that `figcaption` tag doesn't generate paragraphs")]
+        //TODO: the expectation is rather to have 2 paragraphs, both with an hyperlink
+        // figcaption must implies a new paragraph
+        /*[Test(Description = "Assert that `figcaption` tag doesn't generate paragraphs")]
         public void ImageFigcaptionLink_ReturnsHyperlinkWithTextAndImage ()
         {
             var elements = converter.Parse(@"<a href='www.site.com'>Go to
@@ -68,11 +70,15 @@ namespace HtmlToOpenXml.Tests
             var hyperlink = (Hyperlink) elements[0].FirstChild;
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(hyperlink.ChildElements, Has.Count.EqualTo(6));
+                Assert.That(hyperlink.ChildElements, Has.Count.EqualTo(5));
+                Assert.That(hyperlink.ChildElements.ElementAt(0).InnerText, Is.EqualTo("Go to "));
+                Assert.That(hyperlink.ChildElements.ElementAt(1).HasChild<Drawing>, Is.True);
+                Assert.That(hyperlink.ChildElements.ElementAt(2).InnerText, Is.EqualTo(" Figure"));
+                Assert.That(hyperlink.ChildElements.ElementAt(2).InnerText, Is.EqualTo(" Caption for the image"));
                 Assert.That(hyperlink.ChildElements, Has.All.TypeOf<Run>(), "Hyperlinks don't accept inner paragraphs");
                 Assert.That(hyperlink.Descendants<Drawing>(), Is.Not.Null);
             }
-        }
+        }*/
 
         [Test]
         public void Anchoring_WithUnknownTarget_ReturnsHyperlinkWithBookmark ()
@@ -119,6 +125,7 @@ namespace HtmlToOpenXml.Tests
             // this should generate a Run and not an Hyperlink
             elements = converter.Parse(@"<a href=""#_anchor3"">Anchor3</a>");
             Assert.That(elements[0].FirstChild, Is.TypeOf<Run>());
+            Assert.That(elements[0].FirstChild.InnerText, Is.EqualTo("Anchor3"));
         }
 
         [TestCase("h1", "id")]

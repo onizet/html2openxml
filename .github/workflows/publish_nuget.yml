@@ -69,7 +69,7 @@ jobs:
         run: |
           dotnet build src/Html2OpenXml/HtmlToOpenXml.csproj \
             --configuration Release /p:SourceRevisionId=${{ github.sha }} \
-            /p:ContinuousIntegrationBuild=true /p:Deterministic=true \
+            /p:ContinuousIntegrationBuild=true /p:Deterministic=true
 
       - name: Pack NuGet Package
         run: |

@@ -63,12 +63,14 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : TableElementExpre
         base.ComposeStyles(context);
 
         Unit width = styleAttributes.GetUnit("width");
-        if (!width.IsValid)
+        // Word-generated HTML may contain a legacy width attribute with an inline width of 0 (pt, px, %, etc)
+        // Prefer the legacy attribute in this case.
+        if (!width.IsValid || width.Value == 0)
         {
             var widthValue = cellNode.GetAttribute("width");
             if (!string.IsNullOrEmpty(widthValue))
             {
-                width = Unit.Parse(widthValue.AsSpan());
+                width = Unit.Parse(widthValue.AsSpan(), UnitMetric.Pixel);
             }
         }
 
@@ -82,6 +84,38 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : TableElementExpre
                     : width.ValueInDxa.ToString(CultureInfo.InvariantCulture)
             };
         }
+
+        var padding = styleAttributes.GetMargin("padding");
+
+        var cellMargin = new TableCellMargin();
+        if (padding.Top.IsFixed)
+        {
+            cellMargin.TopMargin = new() {
+                Type = TableWidthUnitValues.Dxa, Width = padding.Top.ValueInDxa.ToString(CultureInfo.InvariantCulture),
+            };
+        }
+        if (padding.Left.IsFixed)
+        {
+            cellMargin.LeftMargin = new() {
+                Type = TableWidthUnitValues.Dxa, Width = padding.Left.ValueInDxa.ToString(CultureInfo.InvariantCulture)
+            };
+        }
+        if (padding.Bottom.IsFixed)
+        {
+            cellMargin.BottomMargin = new() { 
+                Type = TableWidthUnitValues.Dxa, Width = padding.Bottom.ValueInDxa.ToString(CultureInfo.InvariantCulture)
+            };
+        }
+        if (padding.Right.IsFixed)
+        {
+            cellMargin.RightMargin = new() {
+               Type = TableWidthUnitValues.Dxa, Width = padding.Right.ValueInDxa.ToString(CultureInfo.InvariantCulture),
+            };
+        }
+
+        if (cellMargin.HasChildren)
+            cellProperties.TableCellMargin = cellMargin;
+
 
         // Manage vertical text (only for table cell)
         var direction = styleAttributes["writing-mode"];
@@ -111,7 +145,7 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : TableElementExpre
     {
         return new TableCell(new Paragraph()) {
             TableCellProperties = new TableCellProperties(cellProperties) {
-                TableCellWidth = new() { Width = "0" } }
+                TableCellWidth = new() { Type = TableWidthUnitValues.Auto, Width = "0" } }
         };
     }
 

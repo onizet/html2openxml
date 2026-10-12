@@ -116,18 +116,18 @@ readonly partial struct HtmlColor : IEquatable<HtmlColor>
         return span.Split(tokens, sep, StringSplitOptions.RemoveEmptyEntries) switch
         {
             3 => FromArgb(1.0,
-                span.Slice(tokens[0]).AsByte(NumberStyles.Integer),
-                span.Slice(tokens[1]).AsByte(NumberStyles.Integer),
-                span.Slice(tokens[2]).AsByte(NumberStyles.Integer)),
-            4 => FromArgb(span.Slice(tokens[3]).AsDouble(),
-                span.Slice(tokens[0]).AsByte(NumberStyles.Integer),
-                span.Slice(tokens[1]).AsByte(NumberStyles.Integer),
-                span.Slice(tokens[2]).AsByte(NumberStyles.Integer)),
+                span[tokens[0]].AsByte(NumberStyles.Integer),
+                span[tokens[1]].AsByte(NumberStyles.Integer),
+                span[tokens[2]].AsByte(NumberStyles.Integer)),
+            4 => FromArgb(span[tokens[3]].AsDouble(),
+                span[tokens[0]].AsByte(NumberStyles.Integer),
+                span[tokens[1]].AsByte(NumberStyles.Integer),
+                span[tokens[2]].AsByte(NumberStyles.Integer)),
             // r g b / a
-            5 => FromArgb(span.Slice(tokens[4]).AsDouble(),
-                span.Slice(tokens[0]).AsByte(NumberStyles.Integer),
-                span.Slice(tokens[1]).AsByte(NumberStyles.Integer),
-                span.Slice(tokens[2]).AsByte(NumberStyles.Integer)),
+            5 => FromArgb(span[tokens[4]].AsDouble(),
+                span[tokens[0]].AsByte(NumberStyles.Integer),
+                span[tokens[1]].AsByte(NumberStyles.Integer),
+                span[tokens[2]].AsByte(NumberStyles.Integer)),
             _ => Empty
         };
     }
@@ -144,13 +144,13 @@ readonly partial struct HtmlColor : IEquatable<HtmlColor>
         return span.Split(tokens, sep, StringSplitOptions.RemoveEmptyEntries) switch
         {
             3 => FromHsl(1.0,
-                span.Slice(tokens[0]).AsDouble(),
-                span.Slice(tokens[1]).AsPercent(),
-                span.Slice(tokens[2]).AsPercent()),
-            4 => FromHsl(span.Slice(tokens[3]).AsDouble(),
-                span.Slice(tokens[0]).AsDouble(),
-                span.Slice(tokens[1]).AsPercent(),
-                span.Slice(tokens[2]).AsPercent()),
+                span[tokens[0]].AsDouble(),
+                span[tokens[1]].AsPercent(),
+                span[tokens[2]].AsPercent()),
+            4 => FromHsl(span[tokens[3]].AsDouble(),
+                span[tokens[0]].AsDouble(),
+                span[tokens[1]].AsPercent(),
+                span[tokens[2]].AsPercent()),
             _ => Empty
         };
     }

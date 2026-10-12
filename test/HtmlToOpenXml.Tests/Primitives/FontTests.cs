@@ -51,10 +51,14 @@ namespace HtmlToOpenXml.Tests.Primitives
             }
         }
 
-        [Test(Description = "Font families with quotes must unescape the first one")]
-        public void WithQuotedFamily_ShouldSucceed ()
+        [TestCase("'Times New Roman', Times, Verdana, Arial bolder 1.2em", Description = "Font families with quotes must unescape the first one")]
+        [TestCase("&quot;Times New Roman&quot;, serif; bolder 1.2em", Description = "Issue #239")]
+        [TestCase("&#34;Times New Roman&quot;, serif; bolder 1.2em")]
+        [TestCase("&#34;Times New Roman\", serif; bolder 1.2em")]
+        [TestCase("'Times New Roman&apos;, serif; bolder 1.2em")]
+        public void WithQuotedFamily_ShouldSucceed (string fontStyle)
         {
-            var font = HtmlFont.Parse("'Times New Roman', Times, Verdana, Arial bolder 1.2em".AsSpan());
+            var font = HtmlFont.Parse(fontStyle.AsSpan());
             using (Assert.EnterMultipleScope())
             {
                 Assert.That(font.Style, Is.Null);

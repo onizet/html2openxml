@@ -41,13 +41,19 @@ namespace HtmlToOpenXml.Tests
 
             runProperties = elements[0].ChildElements[1].GetFirstChild<RunProperties>();
             Assert.That(runProperties, Is.Not.Null);
-            Assert.That(runProperties.HasChild<Italic>(), Is.EqualTo(true));
-            Assert.That(runProperties.HasChild<Bold>(), Is.EqualTo(false));
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(runProperties.HasChild<Italic>(), Is.True);
+                Assert.That(runProperties.HasChild<Bold>(), Is.False);
+            }
 
             runProperties = elements[0].ChildElements[2].GetFirstChild<RunProperties>();
             Assert.That(runProperties, Is.Not.Null);
-            Assert.That(runProperties.HasChild<Italic>(), Is.EqualTo(true));
-            Assert.That(runProperties.HasChild<Bold>(), Is.EqualTo(true));
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(runProperties.HasChild<Italic>(), Is.True);
+                Assert.That(runProperties.HasChild<Bold>(), Is.True);
+            }
         }
 
         [Test]
@@ -66,17 +72,17 @@ namespace HtmlToOpenXml.Tests
 
             runProperties = elements[0].GetLastChild<Run>()!.GetFirstChild<RunProperties>();
             Assert.That(runProperties, Is.Not.Null);
-            Assert.That(runProperties.HasChild<Italic>(), Is.EqualTo(true));
+            Assert.That(runProperties.HasChild<Italic>(), Is.True);
 
             runProperties = elements[1].FirstChild?.GetFirstChild<RunProperties>();
             Assert.That(runProperties, Is.Not.Null);
-            Assert.That(runProperties.HasChild<Italic>(), Is.EqualTo(true));
-            Assert.That(runProperties.HasChild<Bold>(), Is.EqualTo(false));
+            Assert.That(runProperties.HasChild<Italic>(), Is.True);
+            Assert.That(runProperties.HasChild<Bold>(), Is.False);
 
             runProperties = elements[1].GetLastChild<Run>()!.GetFirstChild<RunProperties>();
             Assert.That(runProperties, Is.Not.Null);
-            Assert.That(runProperties.HasChild<Italic>(), Is.EqualTo(true));
-            Assert.That(runProperties.HasChild<Bold>(), Is.EqualTo(true));
+            Assert.That(runProperties.HasChild<Italic>(), Is.True);
+            Assert.That(runProperties.HasChild<Bold>(), Is.True);
         }
 
         [Test]

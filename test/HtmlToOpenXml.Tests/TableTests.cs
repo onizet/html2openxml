@@ -1,4 +1,4 @@
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml.Tests
@@ -294,9 +294,13 @@ namespace HtmlToOpenXml.Tests
 
         static readonly object[] BorderWidthCases =
         [
+            // unset border <> border=0
+            new object[] { "", null!, null! },
             // Negative border should be considered as zero
-            new object[] { "border='-1'", null!, null! },
-            new object[] { "border='0'", null!, null! },
+            new object[] { "border='-1'", 
+                new string[] { "none", "none", "none", "none", "none", "none" }, null! },
+            new object[] { "border='0'", 
+                new string[] { "none", "none", "none", "none", "none", "none" }, null! },
             new object[] { "border='1'",
                 new string[] { "none", "none", "none", "none", "single", "single" }, 
                 new uint?[] { null, null, null, null, 14, 14 } },
@@ -463,6 +467,45 @@ namespace HtmlToOpenXml.Tests
             Assert.That(runProperties?.Shading, Is.Null);
         }
 
+        [Test(Description = "Ancestor block background-color must not paint table cell runs")]
+        public void ParentDivBackground_ShouldNotCascadeIntoCell()
+        {
+            var elements = converter.Parse(@"<div style='background:#ff0000;color:#0000ff;font-family:Arial'>
+                    <table><tr><td>Cell</td></tr></table>
+                </div>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Is.All.TypeOf<Table>());
+
+            var cell = elements[0].GetFirstChild<TableRow>()?.GetFirstChild<TableCell>();
+            Assert.That(cell, Is.Not.Null);
+            var runProperties = cell.GetFirstChild<Paragraph>()?.GetFirstChild<Run>()?.RunProperties;
+            Assert.That(runProperties, Is.Null);
+        }
+
+        [Test(Description = "Explicit span background inside a cell is kept even when a parent div has a fill")]
+        public void ParentDivBackground_SpanInCell_KeepsOwnShading()
+        {
+            var elements = converter.Parse(@"<div style='background:#ff0000'>
+                    <table><tr><td><span style='background:#ffff00'>Cell</span></td></tr></table>
+                </div>");
+
+            var cell = elements[0].GetFirstChild<TableRow>()?.GetFirstChild<TableCell>();
+            var runProperties = cell?.GetFirstChild<Paragraph>()?.GetFirstChild<Run>()?.RunProperties;
+            Assert.That(runProperties?.Shading?.Fill?.Value, Is.EqualTo("FFFF00"));
+        }
+
+        [Test(Description = "Background on a div inside a cell still applies to the run")]
+        public void InnerDivBackground_InsideCell_StillCascadesToRun()
+        {
+            var elements = converter.Parse(@"<table><tr><td>
+                    <div style='background:#00ff00'>Cell</div>
+                </td></tr></table>");
+
+            var cell = elements[0].GetFirstChild<TableRow>()?.GetFirstChild<TableCell>();
+            var runProperties = cell?.GetFirstChild<Paragraph>()?.GetFirstChild<Run>()?.RunProperties;
+            Assert.That(runProperties?.Shading?.Fill?.Value, Is.EqualTo("00FF00"));
+        }
+
         [Test]
         public void CellStyle_ReturnsRunWithCascadeStyle()
         {
@@ -484,9 +527,9 @@ namespace HtmlToOpenXml.Tests
             {
                 // normally, Val should be null
                 if (runProperties.Bold.Val is not null)
-                    Assert.That(runProperties.Bold.Val, Is.EqualTo(true));
+                    Assert.That(runProperties.Bold.Val, Is.True);
                 if (runProperties.Italic.Val is not null)
-                    Assert.That(runProperties.Italic.Val, Is.EqualTo(true));
+                    Assert.That(runProperties.Italic.Val, Is.True);
             }
         }
 
@@ -727,6 +770,105 @@ namespace HtmlToOpenXml.Tests
                 // width on cell are on 5000 basis
                 Assert.That(cells.First().TableCellProperties?.TableCellWidth?.Width?.Value, Is.EqualTo("659"));
                 Assert.That(cells.Last().TableCellProperties?.TableCellWidth?.Width?.Value, Is.EqualTo("4346"));
+            }
+        }
+    
+        [Test]
+        public void CellPadding_ReturnsTableCellMargin()
+        {
+             var elements = converter.Parse(@"<table>
+                    <tr>
+                        <td style=""padding: 20px 5px 20px;"">Cell 1</td>
+                        <td style=""padding: 20%"">Cell 2</td>
+                    </tr>
+                </table>");
+
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Table>());
+
+            var cells = elements[0].GetFirstChild<TableRow>()?.Elements<TableCell>();
+            Assert.That(cells, Is.Not.Null);
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(cells.Count(), Is.EqualTo(2));
+                Assert.That(cells.First().TableCellProperties?.TableCellMargin, Is.Not.Null);
+                Assert.That(cells.Last().TableCellProperties?.TableCellMargin, Is.Null,
+                    "Only fixed unit are supported");
+            }
+
+            var cellMargin = cells.First().TableCellProperties?.TableCellMargin;
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(cellMargin.LeftMargin?.Width?.Value, Is.EqualTo("75"));
+                Assert.That(cellMargin.RightMargin?.Width?.Value, Is.EqualTo("75"));
+                Assert.That(cellMargin.TopMargin?.Width?.Value, Is.EqualTo("300"));
+                Assert.That(cellMargin.BottomMargin?.Width?.Value, Is.EqualTo("300"));
+            }
+        }
+
+        [Test]
+        public void CellWidth_UsesLegacyWidthAttributeWithoutUnit()
+        {
+            var elements = converter.Parse(@"<table>
+                    <tr>
+                        <td width=""10"">Cell 1</td>
+                        <td width=""90"">Cell 2</td>
+                    </tr>
+                </table>");
+
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Table>());
+
+            var cells = elements[0].GetFirstChild<TableRow>()?.Elements<TableCell>();
+            Assert.That(cells, Is.Not.Null);
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(cells.Count(), Is.EqualTo(2));
+                Assert.That(cells.First().TableCellProperties?.TableCellWidth, Is.Not.Null);
+                Assert.That(cells.Last().TableCellProperties?.TableCellWidth, Is.Not.Null);
+            }
+
+            var firstWidth = cells.First().TableCellProperties?.TableCellWidth;
+            var lastWidth = cells.Last().TableCellProperties?.TableCellWidth;
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(firstWidth?.Width?.Value, Is.EqualTo("150"));
+                Assert.That(lastWidth?.Width?.Value, Is.EqualTo("1350"));
+            }
+        }
+
+        [Test]
+        public void CellWidth_UsesLegacyWidthAttributeWithPercentage()
+        {
+            var elements = converter.Parse(@"<table>
+                    <tr>
+                        <td width=""10%"">Cell 1</td>
+                        <td width=""90%"">Cell 2</td>
+                    </tr>
+                </table>");
+
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Table>());
+
+            var cells = elements[0].GetFirstChild<TableRow>()?.Elements<TableCell>();
+            Assert.That(cells, Is.Not.Null);
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(cells.Count(), Is.EqualTo(2));
+                Assert.That(cells.First().TableCellProperties?.TableCellWidth, Is.Not.Null);
+                Assert.That(cells.Last().TableCellProperties?.TableCellWidth, Is.Not.Null);
+            }
+
+            var firstWidth = cells.First().TableCellProperties?.TableCellWidth;
+            var lastWidth = cells.Last().TableCellProperties?.TableCellWidth;
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(firstWidth?.Width?.Value, Is.EqualTo("500"));
+                Assert.That(lastWidth?.Width?.Value, Is.EqualTo("4500"));
             }
         }
     }

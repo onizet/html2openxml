@@ -9,11 +9,7 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-#if NET5_0_OR_GREATER
-using System.Collections.Frozen;
-#endif
 using AngleSharp.Dom;
-using AngleSharp.Html.Dom;
 using AngleSharp.Text;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -25,111 +21,33 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 sealed class TextExpression(INode node) : HtmlDomExpression
 {
-    static readonly ISet<string> AllPhrasings = InitPhrasingSets();
     private readonly INode node = node;
 
-    private static ISet<string> InitPhrasingSets()
-    {
-        var sets = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase) {
-            TagNames.A, TagNames.Abbr, TagNames.B, TagNames.Big, TagNames.Cite, TagNames.Code,
-            TagNames.Del, TagNames.Dfn, TagNames.Em, TagNames.Font, TagNames.Hr, TagNames.I,
-            TagNames.Ins, TagNames.Kbd, TagNames.Mark, TagNames.NoBr, TagNames.Q,
-            TagNames.Rp, TagNames.Rt, TagNames.S, TagNames.Samp, TagNames.Small, TagNames.Span,
-            TagNames.Strike, TagNames.Strong, TagNames.Sub, TagNames.Sup, TagNames.Time,
-            TagNames.Tt, TagNames.U, TagNames.Var
-        };
-
-#if NET5_0_OR_GREATER
-        return sets.ToFrozenSet(StringComparer.InvariantCultureIgnoreCase);
-#else
-        return sets;
-#endif
-    }
 
     /// <inheritdoc/>
     public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
     {
-        string text = node.TextContent.Normalize();
+        var (gap, text) = WhitespacePolicy.AnalyzeGap(node, context);
 
-        if (text.Length == 0)
-            return [];
-
-        if (!context.PreserveLinebreaks)
+        if (gap == GapOutcome.Discard)
         {
-            text = text.CollapseLineBreaks();
-            if (text.Length == 0)
-                return [];
-        }
-
-        // https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model/Whitespace
-        // If there is a space between two phrasing elements, the user agent should collapse it to a single space character.
-        if (context.CollapseWhitespaces)
-        {
-            var previousSibling = node.PreviousSibling;
-            var nextSibling = node.NextSibling;
-            bool startsWithSpace = text[0].IsWhiteSpaceCharacter(),
-                endsWithSpace = text[text.Length - 1].IsWhiteSpaceCharacter(),
-                preserveBorderSpaces = AllPhrasings.Contains(node.Parent!.NodeName),
-                prevIsPhrasing = previousSibling is not null && 
-                    (previousSibling.NodeType == NodeType.Text || AllPhrasings.Contains(previousSibling.NodeName)),
-                nextIsPhrasing = nextSibling is not null && 
-                    (nextSibling.NodeType == NodeType.Text || AllPhrasings.Contains(nextSibling.NodeName));
-
-            text = text.CollapseAndStrip();
-
-            // keep a collapsed single space if it stands between 2 phrasings that respect.
-            // doesn't ends/starts with a whitespace
-            if (text.Length == 0 && prevIsPhrasing && nextIsPhrasing
-                && (endsWithSpace || startsWithSpace)
-                && !(previousSibling!.TextContent.Length == 0
-                    || nextSibling!.TextContent.Length == 0
-                    || previousSibling!.TextContent[previousSibling!.TextContent.Length - 1].IsWhiteSpaceCharacter()
-                    || nextSibling!.TextContent[0].IsWhiteSpaceCharacter()
-                ))
-            {
-                return [new Run(new Text(" ") { Space = SpaceProcessingModeValues.Preserve })];
-            }
-
-            // is this an inter-element whitespace btw 2 phrasings?
-            var isWhitespace = text.Length == 0;
-
-            // we strip out all whitespaces and we stand inside a div. Just skip this text content
-            if (isWhitespace && !(prevIsPhrasing && nextIsPhrasing) && !preserveBorderSpaces)
-            {
-                return [];
-            }
-
-            // if previous element is an image, append a space separator
-            if ((startsWithSpace && previousSibling is IHtmlImageElement)
-                // if this is a non-empty phrasing element, append a space separator
-                || (!isWhitespace && startsWithSpace && prevIsPhrasing
-                && previousSibling!.TextContent.Length > 0
-                && !previousSibling!.TextContent[previousSibling.TextContent.Length - 1].IsWhiteSpaceCharacter()))
-            {
-                text = " " + text;
-            }
-
-            if (endsWithSpace && !isWhitespace && (
-                // next run is not starting with a linebreak
-                (nextIsPhrasing && nextSibling!.TextContent.Length > 0 &&
-                    !nextSibling!.TextContent[0].IsLineBreak()) ||
-                // if there is no more text element or is empty, eat the trailing space
-                (preserveBorderSpaces && (nextSibling is not null
-                    || node.Parent.NextSibling is not null))))
-            {
-                text += " ";
-            }
-        }
-
-
-        if (text.Length == 0)
+             // No output, discard gap entirely.
             return [];
+        }
+        else if (gap == GapOutcome.PreserveSingleSpace)
+        {
+            return [new Run(new Text(" ") { Space = SpaceProcessingModeValues.Preserve })];
+        }
+        else // Most common case: keep the stripped content
+        {
+            if (context.PreserveLinebreaks)
+            {
+                Run run = EscapeNewlines(text!);
+                return [run];
+            }
 
-        if (!context.PreserveLinebreaks)
-            return [new Run(new Text(text) { Space = SpaceProcessingModeValues.Preserve })];
-
-        Run run = EscapeNewlines(text);
-        return [run];
+            return [new Run(new Text(text!) { Space = SpaceProcessingModeValues.Preserve })];
+        }
     }
 
     /// <summary>

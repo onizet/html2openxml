@@ -21,18 +21,8 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 {
-#if NET5_0_OR_GREATER
     readonly record struct ListContext(string Name, int AbsNumId, int InstanceId, int Level, DirectionMode? Dir);
-#else
-    readonly struct ListContext(string listName, int absNumId, int instanceId, int level, DirectionMode? dir)
-    {
-        public readonly string Name = listName;
-        public readonly int AbsNumId = absNumId;
-        public readonly int InstanceId = instanceId;
-        public readonly int Level = level;
-        public readonly DirectionMode? Dir = dir;
-    }
-#endif
+
 
     // https://www.w3schools.com/cssref/playdemo.php?filename=playcss_list-style-type
     // https://answers.microsoft.com/en-us/msoffice/forum/all/custom-list-number-style/21a54399-4404-4c37-8843-2ccaaf827485
@@ -217,10 +207,9 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         bool orderedList = listNode.NodeName.Equals("ol", StringComparison.OrdinalIgnoreCase);
         string? type = styleAttributes["list-style-type"].ToString();
 
-        if(orderedList && string.IsNullOrEmpty(type))
-        {
-            type = ListTypeToListStyleType(listNode.GetAttribute("type"));
-        }
+        // parse node "type" attribute, if inline style "list-style-type" attribute is null.
+        if (string.IsNullOrEmpty(type))
+            type = ListTypeToListStyleType(listNode.GetAttribute("type"), orderedList);
 
         if (string.IsNullOrEmpty(type) || !supportedListTypes.Contains(type!))
         {
@@ -243,18 +232,28 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 
     /// <summary>
     /// Map ordered list style attribute values to css list-style-type.
-    /// Valid types are "1|a|A|i|I": https://w3schools.com/tags/att_ol_type.asp
+    /// Ordered lists types are "1|a|A|i|I|α" (https://w3schools.com/tags/att_ol_type.asp).
+    /// Unordered lists types are "disc|circle|square" (https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/ul#type).
     /// </summary>
-    private static string? ListTypeToListStyleType(string? type) => type switch
+    private static string? ListTypeToListStyleType(string? type, bool orderedList)
     {
-        "1" => "decimal",
-        "a" => "lower-alpha",
-        "A" => "upper-alpha",
-        "i" => "lower-roman",
-        "I" => "upper-roman",
-        "lower-greek" or "upper-greek" => type,
-        _ => null
-    };
+        return (orderedList, type) switch
+        {
+            // un-ordered list marker style resolution
+            (false, string t) when t.Equals("disc", StringComparison.OrdinalIgnoreCase) => "disc",
+            (false, string t) when t.Equals("circle", StringComparison.OrdinalIgnoreCase) => "circle",
+            (false, string t) when t.Equals("square", StringComparison.OrdinalIgnoreCase)  => "square",
+
+            // ordered list marker style resolution
+            (true, "1") => "decimal",
+            (true, "a") => "lower-alpha",
+            (true, "A") => "upper-alpha",
+            (true, "i") => "lower-roman",
+            (true, "I") => "upper-roman",
+
+            _ => null
+        };
+    }
 
     /// <summary>
     /// Resolve the <see cref="ParagraphStyleId"/> of a list element node, 

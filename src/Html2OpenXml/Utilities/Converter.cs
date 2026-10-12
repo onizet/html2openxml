@@ -137,7 +137,7 @@ static class Converter
         Span<Range> tokens = stackalloc Range[1];
         return span.SplitCompositeAttribute(tokens, ',') switch
         {
-            1 => span.Slice(tokens[0]).Trim().ToString(),
+            1 => span[tokens[0]].Trim().ToString(),
             _ => null
         };
     }
@@ -178,7 +178,7 @@ static class Converter
         var tokenCount = span.Split(tokens, ' ', StringSplitOptions.RemoveEmptyEntries);
         for (int i = 0; i < tokenCount; i++)
         {
-            switch (span.Slice(tokens[i]).Trim())
+            switch (span[tokens[i]].Trim())
             {
                 case "underline": decorations.Add(TextDecoration.Underline); break;
                 case "line-through": decorations.Add(TextDecoration.LineThrough); break;
