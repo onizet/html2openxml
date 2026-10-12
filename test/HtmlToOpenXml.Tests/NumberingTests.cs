@@ -731,5 +731,130 @@ namespace HtmlToOpenXml.Tests
 
             AssertThatOpenXmlDocumentIsValid();
         }
+
+        /// <summary>Level-1 list indent plus 18pt ol margin-left.</summary>
+        private const string Level1ListIndent_AddedWith_18PtMargin_DXA_Value = "1080";
+
+        [Test(Description = "Sibling lists with different ol margin-left get different paragraph indents but share the same abstract numbering definition")]
+        public void ListContainerMarginLeft_SiblingOrderedLists_DifferentParagraphIndent()
+        {
+            var elements = converter.Parse(@"
+                <ol type='1' style='margin: 12pt 0 12pt 18pt;'><li>First</li></ol>
+                <ol type='1' style='margin: 12pt 0 12pt 0;'><li>Second</li></ol>");
+
+            Assert.That(elements, Has.Count.EqualTo(2));
+            var first = (Paragraph)elements[0];
+            var second = (Paragraph)elements[1];
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(first.ParagraphProperties?.NumberingProperties, Is.Not.Null);
+                Assert.That(second.ParagraphProperties?.NumberingProperties, Is.Not.Null);
+                Assert.That(first.ParagraphProperties?.Indentation?.Left?.Value, Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
+                Assert.That(second.ParagraphProperties?.Indentation?.Left?.Value, Is.Null);
+            }
+            AssertThatOpenXmlDocumentIsValid();
+        }
+
+        [Test(Description = "List container margin-left must not create a separate abstractNum for the same list-style-type")]
+        public void ListContainerMarginLeft_SharesAbstractNumAcrossDifferentMargins()
+        {
+            converter.Parse(@"
+                <ol type='1' style='margin-left: 18pt;'><li>First</li></ol>
+                <ol type='1' style='margin-left: 0;'><li>Second</li></ol>");
+
+            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
+            var decimalAbstractNums = numbering.Elements<AbstractNum>()
+                .Where(a => a.AbstractNumDefinitionName?.Val?.Value == "decimal")
+                .ToList();
+            Assert.That(decimalAbstractNums, Has.Count.EqualTo(1));
+
+            var abstractNumId = decimalAbstractNums[0].AbstractNumberId!.Value;
+            var instances = numbering.Elements<NumberingInstance>()
+                .Where(i => i.AbstractNumId?.Val == abstractNumId)
+                .ToList();
+            Assert.That(instances, Has.Count.GreaterThanOrEqualTo(2));
+        }
+
+        [Test(Description = "Without ol margin-left, list paragraphs rely on numbering.xml only (no extra w:ind)")]
+        public void ListContainerMarginLeft_Zero_DoesNotSetParagraphIndentation()
+        {
+            var elements = converter.Parse("<ol><li>Item</li></ol>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+
+            var p = (Paragraph)elements[0];
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(p.ParagraphProperties?.NumberingProperties, Is.Not.Null);
+                Assert.That(p.ParagraphProperties?.Indentation?.Left?.Value, Is.Null);
+            }
+        }
+
+        [Test(Description = "Nested ol margin-left stacks with numbering level indent on each list")]
+        public void ListContainerMarginLeft_NestedList_AppliesLevelAndMargin()
+        {
+            var elements = converter.Parse(@"
+                <ol style='margin-left: 18pt;'>
+                    <li>Outer
+                        <ol style='margin-left: 18pt;'><li>Inner</li></ol>
+                    </li>
+                </ol>");
+
+            var paragraphs = elements.OfType<Paragraph>().ToList();
+            Assert.That(paragraphs, Has.Count.EqualTo(2));
+
+            var outer = paragraphs.Single(p =>
+                p.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value == 0);
+            var inner = paragraphs.Single(p =>
+                p.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value == 1);
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(outer.ParagraphProperties?.Indentation?.Left?.Value, Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
+                Assert.That(inner.ParagraphProperties?.Indentation?.Left?.Value, Is.EqualTo("1800"));
+            }
+        }
+
+        [Test(Description = "ol margin-left and li margin-left both contribute to paragraph w:ind")]
+        public void ListContainerMarginLeft_AddsLiMarginToTotal()
+        {
+            var elements = converter.Parse(@"
+                <ol style='margin-left: 18pt;'>
+                    <li style='margin-left: 18pt;'>Text</li>
+                </ol>");
+
+            var p = (Paragraph)elements.Single();
+            // 720 (level 1) + 360 (ol 18pt left margin) + 360 (li 18pt left margin) = 1440
+            Assert.That(p.ParagraphProperties?.Indentation?.Left?.Value, Is.EqualTo("1440"));
+        }
+
+        [Test(Description = "Continuation paragraphs inside a margined list item align with the numbered line")]
+        public void ListContainerMarginLeft_MultiParagraphListItem_Aligned()
+        {
+            var elements = converter.Parse(@"
+                <ol style='margin-left: 18pt;'>
+                    <li><p>One</p><p>Two</p></li>
+                </ol>");
+
+            var paragraphs = elements.OfType<Paragraph>().ToList();
+            Assert.That(paragraphs, Has.Count.EqualTo(2));
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(paragraphs[0].ParagraphProperties?.NumberingProperties, Is.Not.Null);
+                Assert.That(paragraphs[0].ParagraphProperties?.Indentation?.Left?.Value, Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
+                Assert.That(paragraphs[1].ParagraphProperties?.NumberingProperties, Is.Null);
+                Assert.That(paragraphs[1].ParagraphProperties?.Indentation?.Left?.Value, Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
+            }
+        }
+
+        [Test(Description = "Unordered lists apply ol margin-left the same way as ordered lists")]
+        public void ListContainerMarginLeft_AppliesToUnorderedList()
+        {
+            var elements = converter.Parse(@"<ul style='margin-left: 18pt;'><li>Bullet</li></ul>");
+            var p = (Paragraph)elements.Single();
+            Assert.That(p.ParagraphProperties?.NumberingProperties, Is.Not.Null);
+            Assert.That(p.ParagraphProperties?.Indentation?.Left?.Value, Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
+        }
     }
 }

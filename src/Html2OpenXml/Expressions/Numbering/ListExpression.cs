@@ -13,6 +13,7 @@ using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
+using System.Globalization;
 
 namespace HtmlToOpenXml.Expressions;
 
@@ -73,6 +74,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 
         // +1 because index starts on 1 and not 0
         var level = Math.Min(listContext.Level, MaxLevel+1);
+        long listMarginLeft = GetListContainerMarginLeft(node);
         foreach (IHtmlElement liNode in liNodes.Cast<IHtmlElement>())
         {
             var expression = new BlockElementExpression(liNode);
@@ -115,6 +117,10 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
                         Val = OnOffValue.FromBoolean(listContext.Dir == DirectionMode.Rtl)
                     };
                 }
+                if (listMarginLeft > 0)
+                    // this indentation will apply to paragraph properties
+                    // overriding the indentation property from abstractNum/level instance
+                    SetListItemElementParagraphIndentationLeft(p.ParagraphProperties, level, listMarginLeft);
             }
 
             // any standalone paragraphs must be aligned (indented) along its current level
@@ -126,9 +132,12 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 
                 p.ParagraphProperties ??= new();
                 p.ParagraphProperties.ParagraphStyleId ??= (ParagraphStyleId?) listItemStyleId!.CloneNode(true);
-                p.ParagraphProperties.Indentation = new() {
-                    Left = (level * Indentation * 2).ToString()
-                };
+                if (listMarginLeft > 0)
+                    // this indentation will apply to paragraph properties
+                    // overriding the indentation property from abstractNum/level instance
+                    SetListItemElementParagraphIndentationLeft(p.ParagraphProperties, level, listMarginLeft);
+                else
+                    p.ParagraphProperties.Indentation = new() { Left = (level * Indentation * 2).ToString() };
             }
 
             foreach (var child in childElements)
@@ -272,5 +281,32 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
     private static bool IsCascadingStyle(string styleName)
     {
         return styleName == "decimal-tiered";
+    }
+
+    private static long GetListContainerMarginLeft(IHtmlElement listNode)
+    {
+        var styleAttributes = listNode.GetStyles();
+        var margin = styleAttributes.GetMargin("margin");
+        if (!margin.IsEmpty && margin.Left.IsFixed && margin.Left.Value > 0)
+            return margin.Left.ValueInDxa;
+
+        return 0;
+    }
+
+    private static void SetListItemElementParagraphIndentationLeft(ParagraphProperties pPr, int level, long listMarginLeftDxa)
+    {
+        long levelLeftDxa = level * Indentation * 2;
+        long liExtraDxa = ParseIndentationLeft(pPr); // parsed paragraph left indentation (if any)
+        long total = levelLeftDxa + listMarginLeftDxa + liExtraDxa;
+
+        pPr.Indentation ??= new Indentation();
+        pPr.Indentation.Left = total.ToString(CultureInfo.InvariantCulture);
+    }
+
+    private static long ParseIndentationLeft(ParagraphProperties? pPr)
+    {
+        if (pPr?.Indentation?.Left?.Value is { } left && long.TryParse(left, NumberStyles.Integer, CultureInfo.InvariantCulture, out var dxa))
+            return dxa;
+        return 0;
     }
 }
