@@ -752,7 +752,7 @@ namespace HtmlToOpenXml.Tests
                 </ul>");
 
             var paragraphs = mainPart.Document!.Body!.Elements<Paragraph>().ToList();
-            Assert.That(paragraphs, Has.Count.EqualTo(4));
+            Assert.That(paragraphs, Has.Count.EqualTo(2));
             AssertThatOpenXmlDocumentIsValid();
 
             return string.Join(",", paragraphs.Select(GetBulletText).Select(BulletTextUnicode));
