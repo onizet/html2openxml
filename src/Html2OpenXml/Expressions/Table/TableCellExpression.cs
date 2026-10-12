@@ -41,9 +41,9 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : TableElementExpre
             cellProperties.VerticalMerge = new() { Val = MergedCellValues.Restart };
         }
 
-        // Word requires at least one paragraph in a cell
-        // OpenXmlValidator does not catch this error
-        if (!childElements.Any(c => c is Paragraph))
+        // Word requires at least one paragraph in a cell and disallow the last element as a Table
+        // (OpenXmlValidator does not catch this error)
+        if (!childElements.Any(c => c is Paragraph) || childElements.Last() is Table)
         {
             childElements = childElements.Append(new Paragraph());
         }
