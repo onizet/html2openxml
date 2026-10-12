@@ -731,5 +731,51 @@ namespace HtmlToOpenXml.Tests
 
             AssertThatOpenXmlDocumentIsValid();
         }
+
+        [Test(Description = "A nested ul type attribute must use its own bullet, not the parent marker")]
+        public async Task NestedUnorderedList_TypeAttribute_UsesOwnBullet()
+        {
+            await converter.ParseBody(@"
+                <ul type='disc'>
+                    <li>Ingredients
+                        <ul type='square'>
+                            <li>Rice</li>
+                        </ul>
+                    </li>
+                </ul>
+                <ul type='disc'>
+                    <li>Preparation
+                        <ul type='square'>
+                            <li>Wash</li>
+                        </ul>
+                    </li>
+                </ul>");
+
+            var paragraphs = mainPart.Document!.Body!.Elements<Paragraph>().ToList();
+            Assert.That(paragraphs, Has.Count.EqualTo(4));
+            Assert.That(paragraphs.Select(GetBulletText), Is.EqualTo(new[] { "•", "▪", "•", "▪" }));
+            AssertThatOpenXmlDocumentIsValid();
+        }
+
+        [Test(Description = "CSS list-style-type takes precedence over the ul type attribute")]
+        public async Task UnorderedList_CssListStyleType_OverridesTypeAttribute()
+        {
+            await converter.ParseBody(@"<ul type='disc' style='list-style-type: circle'><li>Item</li></ul>");
+
+            var paragraph = mainPart.Document!.Body!.Elements<Paragraph>().Single();
+            Assert.That(GetBulletText(paragraph), Is.EqualTo("o"));
+            AssertThatOpenXmlDocumentIsValid();
+        }
+
+        private string? GetBulletText(Paragraph paragraph)
+        {
+            var numberingProperties = paragraph.ParagraphProperties?.NumberingProperties;
+            var numId = numberingProperties?.NumberingId?.Val?.Value;
+            var level = numberingProperties?.NumberingLevelReference?.Val?.Value;
+            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
+            var instance = numbering.Elements<NumberingInstance>().Single(i => i.NumberID?.Value == numId);
+            var abstractNum = numbering.Elements<AbstractNum>().Single(a => a.AbstractNumberId?.Value == instance.AbstractNumId!.Val!.Value);
+            return abstractNum.Elements<Level>().First(l => l.LevelIndex?.Value == level).LevelText?.Val?.Value;
+        }
     }
 }

@@ -207,10 +207,9 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         bool orderedList = listNode.NodeName.Equals("ol", StringComparison.OrdinalIgnoreCase);
         string? type = styleAttributes["list-style-type"].ToString();
 
-        if(orderedList && string.IsNullOrEmpty(type))
-        {
-            type = ListTypeToListStyleType(listNode.GetAttribute("type"));
-        }
+        // parse node "type" attribute, if inline style "list-style-type" attribute is null.
+        if (string.IsNullOrEmpty(type))
+            type = ListTypeToListStyleType(listNode.GetAttribute("type"), orderedList);
 
         if (string.IsNullOrEmpty(type) || !supportedListTypes.Contains(type!))
         {
@@ -233,18 +232,32 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 
     /// <summary>
     /// Map ordered list style attribute values to css list-style-type.
-    /// Valid types are "1|a|A|i|I": https://w3schools.com/tags/att_ol_type.asp
+    /// Ordered lists types are "1|a|A|i|I|α" (https://w3schools.com/tags/att_ol_type.asp).
+    /// Unordered lists types are "disc|circle|square" (https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/ul#type).
     /// </summary>
-    private static string? ListTypeToListStyleType(string? type) => type switch
+    private static string? ListTypeToListStyleType(string? type, bool orderedList)
     {
-        "1" => "decimal",
-        "a" => "lower-alpha",
-        "A" => "upper-alpha",
-        "i" => "lower-roman",
-        "I" => "upper-roman",
-        "lower-greek" or "upper-greek" => type,
-        _ => null
-    };
+        if (string.IsNullOrEmpty(type))
+            return null;
+
+        if (!orderedList)
+            return type!.ToLowerInvariant() switch
+            {
+                "disc" or "circle" or "square" => type.ToLowerInvariant(),
+                _ => null
+            };
+
+        return type switch
+        {
+            "1" => "decimal",
+            "a" => "lower-alpha",
+            "A" => "upper-alpha",
+            "i" => "lower-roman",
+            "I" => "upper-roman",
+            "lower-greek" or "upper-greek" => type,
+            _ => null
+        };
+    }
 
     /// <summary>
     /// Resolve the <see cref="ParagraphStyleId"/> of a list element node, 
