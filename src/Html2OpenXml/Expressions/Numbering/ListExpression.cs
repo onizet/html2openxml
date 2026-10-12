@@ -250,7 +250,6 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
             (true, "A") => "upper-alpha",
             (true, "i") => "lower-roman",
             (true, "I") => "upper-roman",
-            (true, "lower-greek" or "upper-greek") => type,
 
             _ => null
         };

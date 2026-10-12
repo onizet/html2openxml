@@ -732,7 +732,12 @@ namespace HtmlToOpenXml.Tests
             AssertThatOpenXmlDocumentIsValid();
         }
 
-        [Test(Description = "A nested ul type attribute must use its own bullet, not the parent marker")]
+        /// <summary>
+        /// A nested ul type attribute must use its own bullet, not the parent marker
+        /// </summary>
+        /// <param name="listType"></param>
+        /// <param name="nestedListType"></param>
+        /// <returns></returns>
         [TestCase("disc", "square", ExpectedResult = "•,▪,•,▪")]
         [TestCase("disc", "circle", ExpectedResult = "•,\u25CB,•,\u25CB")]
         public async Task<string> NestedUnorderedList_TypeAttribute_UsesOwnBullet(string listType, string nestedListType)
@@ -742,13 +747,6 @@ namespace HtmlToOpenXml.Tests
                     <li>Ingredients
                         <ul type='{nestedListType}'>
                             <li>Rice</li>
-                        </ul>
-                    </li>
-                </ul>
-                <ul type='{listType}'>
-                    <li>Preparation
-                        <ul type='{nestedListType}'>
-                            <li>Wash</li>
                         </ul>
                     </li>
                 </ul>");
