@@ -731,5 +731,61 @@ namespace HtmlToOpenXml.Tests
 
             AssertThatOpenXmlDocumentIsValid();
         }
+
+        /// <summary>
+        /// A nested ul type attribute must use its own bullet, not the parent marker
+        /// </summary>
+        /// <param name="listType"></param>
+        /// <param name="nestedListType"></param>
+        /// <returns></returns>
+        [TestCase("disc", "square", ExpectedResult = "•,▪")]
+        [TestCase("disc", "circle", ExpectedResult = "•,\u25CB")]
+        public async Task<string> NestedUnorderedList_TypeAttribute_UsesOwnBullet(string listType, string nestedListType)
+        {
+            await converter.ParseBody($@"
+                <ul type='{listType}'>
+                    <li>Ingredients
+                        <ul type='{nestedListType}'>
+                            <li>Rice</li>
+                        </ul>
+                    </li>
+                </ul>");
+
+            var paragraphs = mainPart.Document!.Body!.Elements<Paragraph>().ToList();
+            Assert.That(paragraphs, Has.Count.EqualTo(2));
+            AssertThatOpenXmlDocumentIsValid();
+
+            return string.Join(",", paragraphs.Select(GetBulletText).Select(BulletTextUnicode));
+        }
+
+        [Test(Description = "CSS list-style-type takes precedence over the ul type attribute")]
+        public async Task UnorderedList_CssListStyleType_OverridesTypeAttribute()
+        {
+            await converter.ParseBody(@"<ul type='disc' style='list-style-type: circle'><li>Item</li></ul>");
+
+            var paragraph = mainPart.Document!.Body!.Elements<Paragraph>().Single();
+            Assert.That(GetBulletText(paragraph), Is.EqualTo("o"));
+            AssertThatOpenXmlDocumentIsValid();
+        }
+
+        private string? GetBulletText(Paragraph paragraph)
+        {
+            var numberingProperties = paragraph.ParagraphProperties?.NumberingProperties;
+            var numId = numberingProperties?.NumberingId?.Val?.Value;
+            var level = numberingProperties?.NumberingLevelReference?.Val?.Value;
+            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
+            var instance = numbering.Elements<NumberingInstance>().Single(i => i.NumberID?.Value == numId);
+            var abstractNum = numbering.Elements<AbstractNum>().Single(a => a.AbstractNumberId?.Value == instance.AbstractNumId!.Val!.Value);
+            return abstractNum.Elements<Level>().First(l => l.LevelIndex?.Value == level).LevelText?.Val?.Value;
+        }
+
+        private string? BulletTextUnicode(string? bulletText)
+        {
+            return bulletText switch
+            {
+                "o" => "\u25CB",  // ○ circle
+                _ => bulletText
+            };
+        }
     }
 }
