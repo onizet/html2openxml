@@ -1,8 +1,4 @@
-![Latest version](https://img.shields.io/nuget/v/HtmlToOpenXml.svg)
-![Download Counts](https://img.shields.io/nuget/dt/HtmlToOpenXml.svg)
-[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/onizet/html2openxml/blob/dev/LICENSE)
-
-# What is HtmlToOpenXml?
+# HtmlToOpenXml&nbsp;[![Latest version](https://img.shields.io/nuget/v/HtmlToOpenXml.svg)](https://www.nuget.org/packages/HtmlToOpenXml/)&nbsp;[![Download Counts](https://img.shields.io/nuget/dt/HtmlToOpenXml.svg)](https://www.nuget.org/packages/HtmlToOpenXml/)&nbsp;[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/onizet/html2openxml/blob/dev/LICENSE)
 
 HtmlToOpenXml is a mature, high-fidelity converter that translates complex HTML structures into native OpenXML elements, ensuring your content renders exactly as intended across all Microsoft Word users.
 
