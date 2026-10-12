@@ -237,24 +237,21 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
     /// </summary>
     private static string? ListTypeToListStyleType(string? type, bool orderedList)
     {
-        if (string.IsNullOrEmpty(type))
-            return null;
-
-        if (!orderedList)
-            return type!.ToLowerInvariant() switch
-            {
-                "disc" or "circle" or "square" => type.ToLowerInvariant(),
-                _ => null
-            };
-
-        return type switch
+        return (orderedList, type) switch
         {
-            "1" => "decimal",
-            "a" => "lower-alpha",
-            "A" => "upper-alpha",
-            "i" => "lower-roman",
-            "I" => "upper-roman",
-            "lower-greek" or "upper-greek" => type,
+            // un-ordered list marker style resolution
+            (false, string t) when t.Equals("disc", StringComparison.OrdinalIgnoreCase) => "disc",
+            (false, string t) when t.Equals("circle", StringComparison.OrdinalIgnoreCase) => "circle",
+            (false, string t) when t.Equals("square", StringComparison.OrdinalIgnoreCase)  => "square",
+
+            // ordered list marker style resolution
+            (true, "1") => "decimal",
+            (true, "a") => "lower-alpha",
+            (true, "A") => "upper-alpha",
+            (true, "i") => "lower-roman",
+            (true, "I") => "upper-roman",
+            (true, "lower-greek" or "upper-greek") => type,
+
             _ => null
         };
     }

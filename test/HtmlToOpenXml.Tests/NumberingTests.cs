@@ -733,19 +733,21 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test(Description = "A nested ul type attribute must use its own bullet, not the parent marker")]
-        public async Task NestedUnorderedList_TypeAttribute_UsesOwnBullet()
+        [TestCase("disc", "square", ExpectedResult = "•,▪,•,▪")]
+        [TestCase("disc", "circle", ExpectedResult = "•,\u25CB,•,\u25CB")]
+        public async Task<string> NestedUnorderedList_TypeAttribute_UsesOwnBullet(string listType, string nestedListType)
         {
-            await converter.ParseBody(@"
-                <ul type='disc'>
+            await converter.ParseBody($@"
+                <ul type='{listType}'>
                     <li>Ingredients
-                        <ul type='square'>
+                        <ul type='{nestedListType}'>
                             <li>Rice</li>
                         </ul>
                     </li>
                 </ul>
-                <ul type='disc'>
+                <ul type='{listType}'>
                     <li>Preparation
-                        <ul type='square'>
+                        <ul type='{nestedListType}'>
                             <li>Wash</li>
                         </ul>
                     </li>
@@ -753,8 +755,9 @@ namespace HtmlToOpenXml.Tests
 
             var paragraphs = mainPart.Document!.Body!.Elements<Paragraph>().ToList();
             Assert.That(paragraphs, Has.Count.EqualTo(4));
-            Assert.That(paragraphs.Select(GetBulletText), Is.EqualTo(new[] { "•", "▪", "•", "▪" }));
             AssertThatOpenXmlDocumentIsValid();
+
+            return string.Join(",", paragraphs.Select(GetBulletText).Select(BulletTextUnicode));
         }
 
         [Test(Description = "CSS list-style-type takes precedence over the ul type attribute")]
@@ -776,6 +779,15 @@ namespace HtmlToOpenXml.Tests
             var instance = numbering.Elements<NumberingInstance>().Single(i => i.NumberID?.Value == numId);
             var abstractNum = numbering.Elements<AbstractNum>().Single(a => a.AbstractNumberId?.Value == instance.AbstractNumId!.Val!.Value);
             return abstractNum.Elements<Level>().First(l => l.LevelIndex?.Value == level).LevelText?.Val?.Value;
+        }
+
+        private string? BulletTextUnicode(string? bulletText)
+        {
+            return bulletText switch
+            {
+                "o" => "\u25CB",  // ○ circle
+                _ => bulletText
+            };
         }
     }
 }
