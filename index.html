@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="generator" content="VuePress 2.0.0-rc.31" />
+    <style>
+      :root {
+        --vp-c-bg: #fff;
+      }
+
+      [data-theme='dark'] {
+        --vp-c-bg: #1b1b1f;
+      }
+
+      html,
+      body {
+        background-color: var(--vp-c-bg);
+      }
+    </style>
+    <script>
+      const useChoice = localStorage.getItem('vuepress-color-scheme')
+      const systemStatus =
+        'matchMedia' in window
+          ? window.matchMedia('(prefers-color-scheme: dark)').matches
+          : false
+
+      if (useChoice === 'light') {
+        document.documentElement.dataset.theme = 'light'
+      } else if (useChoice === 'dark' || systemStatus) {
+        document.documentElement.dataset.theme = 'dark'
+      }
+    </script>
+    <title>Home | Html to OpenXml</title><meta name="description" content="Faithfully translates rich HTML markup into professional OpenXML DOCX files.">
+    <link rel="preload" href="/html2openxml/assets/style-D91VZ2jL.css" as="style"><link rel="stylesheet" href="/html2openxml/assets/style-D91VZ2jL.css">
+    <link rel="modulepreload" href="/html2openxml/assets/app-DMVIWQXQ.js"><link rel="modulepreload" href="/html2openxml/assets/README-BVYr0ld-.js">
+    
+  </head>
+  <body>
+    <div id="app"><!--[--><div class="vp-theme-container no-sidebar external-link-icon" vp-container><!--[--><header class="vp-navbar" vp-navbar><div class="vp-toggle-sidebar-button" title="toggle sidebar" aria-expanded="false" role="button" tabindex="0"><div class="icon" aria-hidden="true"><span></span><span></span><span></span></div></div><span><a class="route-link" href="/html2openxml/"><img class="vp-site-logo" src="/html2openxml/images/hero.png" alt="Html to OpenXml"><span class="vp-site-name vp-hide-mobile" aria-hidden="true">Html to OpenXml</span></a></span><div class="vp-navbar-items-wrapper" style=""><!--[--><!--]--><nav class="vp-navbar-items vp-hide-mobile" aria-label="site navigation"><!--[--><div class="vp-navbar-item"><a class="route-link route-link-active auto-link" href="/html2openxml/" aria-label="Home"><!--[--><!--[--><!--]--><!--]-->Home<!--[--><!--[--><!--]--><!--]--></a></div><div class="vp-navbar-item"><a class="route-link auto-link" href="/html2openxml/guide/api.html" aria-label="API Reference"><!--[--><!--[--><!--]--><!--]-->API Reference<!--[--><!--[--><!--]--><!--]--></a></div><div class="vp-navbar-item"><a class="route-link auto-link" href="/html2openxml/llmdoc.html" aria-label="LLM Docs Friendly"><!--[--><!--[--><!--]--><!--]-->LLM Docs Friendly<!--[--><!--[--><!--]--><!--]--></a></div><div class="vp-navbar-item"><a class="auto-link external-link" href="https://www.nuget.org/packages/HtmlToOpenXml" aria-label="NuGet" rel="noopener noreferrer" target="_blank"><!--[--><!--[--><!--]--><!--]-->NuGet<!--[--><!--[--><!--]--><!--]--></a></div><!--]--></nav><!--[--><!--[--><div class="vp-navbar-item"><a class="auto-link" href="https://github.com/onizet/html2openxml/" aria-label="GitHub" target="_blank" rel="noopener"><svg class="github-icn" fill="currentcolor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20"><path d="M10.226 17.284c-2.965-.36-5.054-2.493-5.054-5.256 0-1.123.404-2.336 1.078-3.144-.292-.741-.247-2.314.09-2.965.898-.112 2.111.36 2.83 1.01.853-.269 1.752-.404 2.853-.404 1.1 0 1.999.135 2.807.382.696-.629 1.932-1.1 2.83-.988.315.606.36 2.179.067 2.942.72.854 1.101 2 1.101 3.167 0 2.763-2.089 4.852-5.098 5.234.763.494 1.28 1.572 1.28 2.807v2.336c0 .674.561 1.056 1.235.786 4.066-1.55 7.255-5.615 7.255-10.646C23.5 6.188 18.334 1 11.978 1 5.62 1 .5 6.188.5 12.545c0 4.986 3.167 9.12 7.435 10.669.606.225 1.19-.18 1.19-.786V20.63a2.9 2.9 0 0 1-1.078.224c-1.483 0-2.359-.808-2.987-2.313-.247-.607-.517-.966-1.034-1.033-.27-.023-.359-.135-.359-.27 0-.27.45-.471.898-.471.652 0 1.213.404 1.797 1.235.45.651.921.943 1.483.943.561 0 .92-.202 1.437-.719.382-.381.674-.718.944-.943"></path></svg><span class="hideOnMobile"> GitHub</span></a></div><!--]--><!--]--><button type="button" class="vp-toggle-color-mode-button" title="toggle color mode"><svg class="light-icon" viewbox="0 0 32 32" style=""><path d="M16 12.005a4 4 0 1 1-4 4a4.005 4.005 0 0 1 4-4m0-2a6 6 0 1 0 6 6a6 6 0 0 0-6-6z" fill="currentColor"></path><path d="M5.394 6.813l1.414-1.415l3.506 3.506L8.9 10.318z" fill="currentColor"></path><path d="M2 15.005h5v2H2z" fill="currentColor"></path><path d="M5.394 25.197L8.9 21.691l1.414 1.415l-3.506 3.505z" fill="currentColor"></path><path d="M15 25.005h2v5h-2z" fill="currentColor"></path><path d="M21.687 23.106l1.414-1.415l3.506 3.506l-1.414 1.414z" fill="currentColor"></path><path d="M25 15.005h5v2h-5z" fill="currentColor"></path><path d="M21.687 8.904l3.506-3.506l1.414 1.415l-3.506 3.505z" fill="currentColor"></path><path d="M15 2.005h2v5h-2z" fill="currentColor"></path></svg><svg class="dark-icon" viewbox="0 0 32 32" style="display:none;"><path d="M13.502 5.414a15.075 15.075 0 0 0 11.594 18.194a11.113 11.113 0 0 1-7.975 3.39c-.138 0-.278.005-.418 0a11.094 11.094 0 0 1-3.2-21.584M14.98 3a1.002 1.002 0 0 0-.175.016a13.096 13.096 0 0 0 1.825 25.981c.164.006.328 0 .49 0a13.072 13.072 0 0 0 10.703-5.555a1.01 1.01 0 0 0-.783-1.565A13.08 13.08 0 0 1 15.89 4.38A1.015 1.015 0 0 0 14.98 3z" fill="currentColor"></path></svg></button><!----></div></header><!--]--><div class="vp-sidebar-mask"></div><!--[--><aside class="vp-sidebar" vp-sidebar><nav class="vp-navbar-items" aria-label="site navigation"><!--[--><div class="vp-navbar-item"><a class="route-link route-link-active auto-link" href="/html2openxml/" aria-label="Home"><!--[--><!--[--><!--]--><!--]-->Home<!--[--><!--[--><!--]--><!--]--></a></div><div class="vp-navbar-item"><a class="route-link auto-link" href="/html2openxml/guide/api.html" aria-label="API Reference"><!--[--><!--[--><!--]--><!--]-->API Reference<!--[--><!--[--><!--]--><!--]--></a></div><div class="vp-navbar-item"><a class="route-link auto-link" href="/html2openxml/llmdoc.html" aria-label="LLM Docs Friendly"><!--[--><!--[--><!--]--><!--]-->LLM Docs Friendly<!--[--><!--[--><!--]--><!--]--></a></div><div class="vp-navbar-item"><a class="auto-link external-link" href="https://www.nuget.org/packages/HtmlToOpenXml" aria-label="NuGet" rel="noopener noreferrer" target="_blank"><!--[--><!--[--><!--]--><!--]-->NuGet<!--[--><!--[--><!--]--><!--]--></a></div><!--]--></nav><!--[--><!--]--><!----><!--[--><!--]--></aside><!--]--><!--[--><main class="vp-home"><header class="vp-hero"><img class="vp-hero-image" src="/html2openxml/./images/hero.png" alt="Html to OpenXml" height="280"><h1 id="main-title">Html to OpenXml</h1><p class="vp-hero-description">Faithfully translates rich HTML markup into professional OpenXML DOCX files.</p><p class="vp-hero-actions"><!--[--><a class="route-link auto-link vp-hero-action-button primary" href="/html2openxml/guide/quickstart.html" aria-label="Get Started"><!--[--><!--[--><!--]--><!--]-->Get Started<!--[--><!--[--><!--]--><!--]--></a><a class="route-link auto-link vp-hero-action-button secondary" href="/html2openxml/guide/api.html" aria-label="Documentation"><!--[--><!--[--><!--]--><!--]-->Documentation<!--[--><!--[--><!--]--><!--]--></a><!--]--></p></header><div class="vp-features"><!--[--><div class="vp-feature"><h2>Wide Source Compatibility</h2><p>Accepts and parses both legacy (HTML 4) and modern web markup (HTML5).</p></div><div class="vp-feature"><h2>Deep Structural Fidelity</h2><p>Supports complex HTML structures, including nested tables, rowspan and colspan.</p></div><div class="vp-feature"><h2>Precise Layout Control</h2><p>Provides detailed control over text flow (LTR/RTL), list continuation, and numbering structure.</p></div><div class="vp-feature"><h2>Granular Style Mapping</h2><p>Translates granular HTML classes into specific Word styles, allowing deep visual customization.</p></div><div class="vp-feature"><h2>Robust Hyperlinking</h2><p>Supports internal anchors and external URIs, ensuring reliable cross-document linking.</p></div><div class="vp-feature"><h2>Flexible Resource Handling</h2><p>Seamlessly manages media embedding and linking, supporting local paths, network shares (\\server), and Data URIs.</p></div><!--]--></div><div vp-content><div></div></div><!--[--><div class="vp-footer" vp-footer>MIT Licensed | Copyright © 2019-present Olivier Nizet and contributors</div><!--]--></main><!--]--></div><!--[--><!----><!--]--><!--]--></div>
+    <script type="module" src="/html2openxml/assets/app-DMVIWQXQ.js" defer></script>
+  </body>
+</html>

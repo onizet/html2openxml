@@ -1,0 +1,884 @@
+---
+url: /html2openxml/appendix/content-type.md
+description: Advanced Usage and Deployment
+---
+# MIME Header
+
+When deploying the DOCX file via web server (ASP.NET, IIS, etc.), you must serve the correct MIME type to prevent browsers from defaulting to an incompatible legacy format (e.g., .doc).
+
+`application/vnd.openxmlformats-officedocument.wordprocessingml.document.`
+
+---
+
+---
+url: /html2openxml/guide/api.md
+description: Guide for selecting the relevant parsing method.
+---
+# Library Entry Points
+## Input Scope and Tag Compliance
+
+The library has been designed for maximum compatibility, gracefully handling a wide range of HTML constructs.
+
+* **Broad Support**: The library provides faithful conversion for a wide range of HTML constructs, including both legacy (e.g., `font`) and modern semantic tags (`article`).
+
+* **Ignored Elements**: For cleaner output, certain elements are intentionally ignored or passed through without action. This includes interactive form controls (`button`, `input`, `select`) and document metadata tags (`script`, `head`, `xml`).
+
+## API Entry Points
+
+The library provides multiple methods to drive the conversion. Your choice depends on whether you are **building a document**, **populating a template**, or simply **translating content**.
+
+### `ParseBody()`
+
+* **Purpose:** Appends the converted HTML content into the document's main body part (`MainDocumentPart`). This is the most common use case.
+
+* **Use Case:** Generating the primary flow of a document (e.g., reports, contracts).
+
+### `ParseHeader()` / `ParseFooter()`
+
+* **Purpose:** Inserts the converted HTML into the dedicated header or footer section. This content is used to create repeating elements like page numbers and chapter titles across the document body.
+
+* **Use Case:** Applying consistent branding or required metadata to every page.
+
+### `Parse()` / `ParseAsync()`
+
+Purpose: Converts HTML into a standalone, actionable collection of OpenXML elements. This output is not automatically attached to any document.
+
+* **Purpose:** Converts the HTML into a list of independent OpenXML elements. This output is ready to be inserted into any part of the DOCX package, offering you full control over its insertion point and allowing mid-conversion inspection or modification.
+
+* **Use Case:** You are building a custom element, merging snippets from multiple sources, or needing to inspect and modify the generated code before injecting it into a document.
+
+* **Note on Synchronicity**: Use `Parse()` for basic, non-resource-dependent conversions. Use `ParseAsync()` when the content requires external resource fetching (images, links) or longer processing time.
+
+---
+
+---
+url: /html2openxml/guide/footnotes.md
+description: Guide for usage of abbr and acronym tags.
+---
+# Defined Terms and Notes
+The `HtmlToOpenXml` converter supports the display of defined terms and glossaries using standard HTML tags (`<abbr>` or `<acronym>`). The parser treats these tags equivalently, generating the necessary linked targets in the final DOCX document.
+
+## Inline Definitions
+
+The simplest usage involves using the `title` attribute on the HTML element:
+
+```html
+<abbr title="World Health Organization">WHO</abbr> was founded in 1948.
+```
+
+The converter renders the abbreviation inline with a small jump indicator, which displays the full definition upon hover or when accessed in the DOCX document.
+
+![footnote at end of document](/images/footnotes.png)
+
+## Page-End Definitions
+
+For longer references, you can define a comprehensive list of terms at the bottom of the page. This is achieved by using the `AcronymPosition` property on the converter instance:
+
+```csharp
+converter.AcronymPosition = AcronymPosition.PageEnd;
+```
+
+The converter will then render the full glossary at the end of each page, which is the appropriate method for large documents or glossaries.
+
+## Supporting Hyperlinks and Resources
+
+The `title` attribute can hold a full URI or path. The converter faithfully translates this into the DOCX link target, whether it is:
+
+* `http://www.site.com` (Web URI)
+* `file:///path/to/document.html` (Local, FTP or UNC network path)
+* `mailto:contact@localhost` (Mail)
+
+This guarantees that the referenced link is embedded correctly in the target metadata.
+
+---
+
+---
+url: /html2openxml/guide/hyperlinks.md
+description: >-
+  Guide to linking external resources and navigating within the generated
+  document using anchors and bookmarks.
+---
+# Hyperlinks and Internal Navigation
+## External Hyperlinks
+
+The parser supports converting HTML links to valid targets in the generated DOCX file. Only fully qualified or relative URI schemes are processed.
+The converter renders all content inside the anchor tags faithfully. However, if the `href` URI is invalid or unresolvable, the text will appear, but no functional hyperlink object will be created.
+
+**Supported Schemes:**
+
+* `http://www.site.com` (Absolute URL)
+* `file:///../reference.docx` (Local URL)
+* `://www.site.com` (`http` scheme will be used)
+* `www.site.com` (`http` scheme will be used)
+
+**Ignored Schemes:**
+
+* `javascript:void(0)` or similar client-side scripts.
+
+## Internal Anchors and Bookmarks
+
+To create navigable links within the document (e.g., Table of Contents or cross-referencing), you must define targets using either explicit IDs (which the library maps to internal anchors) or the `data-bookmark` attribute.
+
+By default, **Anchor Link Support is enabled**. To disable this feature globally:
+
+```csharp
+converter.SupportsAnchorLinks = false; 
+```
+
+### Targeting Specific Anchors
+
+To allow a link to point directly to an element within the document, apply a unique `id` attribute. The library handles the low-level conversion to a searchable document anchor.
+
+```html
+<!-- Defining an Anchor Target -->
+<h1 id="chapter-one">Chapter 1: Introduction</h1>
+
+<!-- Linking to the Target -->
+<p>Read more in our next chapter on <a href="#chapter-one">Chapter 1</a>.</p>
+```
+
+### Explicit Bookmarking (`data-bookmark`)
+
+When appending content to an existing Word document or template, use `data-bookmark` to explicitly target structural elements that reside in the destination DOCX but are not part of your current input HTML.
+This functionality is critical when working with master templates or merging multiple conversion outputs.
+
+```html
+<!-- Using data-bookmark for any content type (H1, P, DIV, etc.) -->
+<h1 data-bookmark="my_topic">Detailed Analysis</h1>
+```
+
+### Built-In Document Targets
+
+The following targets are automatically recognized and supported by the library:
+
+* **`#_top`**: Links to the beginning of the document body. It is always respected and serves as a universal fallback target, even when `SupportsAnchorLinks` is set to `false`.
+* **`#top`**: An alias for `#_top`, provided for user convenience.
+
+## Embed an image inside an anchor
+
+Image can be clickable and redirecting to a link or anchor.
+
+```html
+<a href="http://www.wikipedia.org">
+   <img alt="Wikipedia, the Free Encyclopedia" src="wikipedia.png" />
+</a>
+```
+
+---
+
+---
+url: /html2openxml/guide/images.md
+description: Guide for image processing.
+---
+# Image and Asset Processing Guide
+This guide details how `HtmlToOpenXml` converts image references into native OpenXML resources within your target Word document. The library is designed to handle everything from inline Base64 strings to complex network downloads and dynamic format conversions.
+
+## Quick Decision Guide
+
+Before diving into the conversion code, determine your source type.
+
+| Scenario | Goal | Implementation Detail |
+| :--- | :--- | :--- |
+| Default Fetch | Simple conversion; images are inline or on a network. | Use `DefaultWebRequest`. This handles Base64 data URIs, HTTP(S), and file:/// protocols out of the box. |
+| Authenticated Fetch | Retrieving remote content requiring credentials. | Instantiate `DefaultWebRequest(myHttpClient)` and configure the client object to handle proxies, API keys, or JWT tokens. |
+| Local Mapping | Retrieving content from a known local path structure. | Set the `BaseImageUrl` property on the `DefaultWebRequest` to map relative paths (see code example below). |
+| Custom Protocol | Retrieving resources from non-standard sources (DB, API). | Implement your custom class against the `IWebRequest` interface to manage unique retrieval protocols. |
+
+* **Inline (Data URI)**: → Use Base64 string. Fastest, zero network dependencies, reliable for simple assets.
+* **Relative Path**: → Use `BaseImageUrl` on the converter. Simplest network retrieval.
+* **Absolute URI**
+* **Custom Format or Protocol**: → Requires implementing IWebRequest. Most robust, highest complexity.
+
+## Image Processing Modes
+
+The library's behavior regarding downloaded images is controlled by the `ImageProcessing` property on the `HtmlConverter`. This setting dictates whether a downloaded image is bundled into the document or merely linked to an external source.
+
+| ImageProcessingMode | Behavior | Use Case |
+| :--- | :--- | :--- |
+| `Embed` (default) | Downloads and embeds all referenced images into the package. Creates a self-contained, offline snapshot of the document. | Most use cases; ensures portability and reliability. |
+| `LinkExternal` | Downloads the image into the document but maintains an external link. The image is not bundled, making the final document size small, but it requires network access to view or print. | Internal Corporate documents. |
+| `EmbedDataUriOnly` | Skips all external network requests. Only inline Base64/Data URI images are processed and included. | Security or testing, or when you *only* want to use inline assets. |
+
+## Image Source and Retrieval Strategies
+
+The library supports three ways to provide image data: inline, relative path (local server), or absolute URI (remote server).
+
+The library natively supports the following formats within the OpenXML standard: `bmp`, `emf`, `gif`, `ico`, `jp2`, `jpe`, `jpeg`, `pcx`, `png`, `svg`, `tif`, and `tiff`. If your source image format is outside of this list (e.g., `.webp`), it must be converted to a supported format before or during the library's download process (see sample below).
+
+### Inline Assets (Base64 Data URI)
+
+For maximum performance and zero external dependency, images can be included directly in the HTML using a Data URI scheme.
+
+```html
+<!-- Example: Base64 encoded PNG data -->
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA..." alt="Red dot" />
+```
+
+### External Downloads (Network/Disk)
+
+When the image path is external (`<img>` tag with `src="http://..."` or `/images/pic.gif`), the conversion process delegates retrieval to an `IWebRequest` implementation.
+
+### Standard Approach
+
+`DefaultWebRequest` provides native support for all standard protocols: `http`, `https`, and local file system paths (`file://`).
+
+**Setting a Base URL:**
+
+If your HTML uses relative paths (e.g., `/_layouts/images/pic.gif`), you must provide a `BaseImageUrl` to resolve the paths correctly:
+
+```csharp
+// The converter will combine this base URL with the relative path.
+HtmlConverter converter = new(mainPart, new DefaultWebRequest() {
+    BaseImageUrl = "http://myserver:8080/"
+}); 
+```
+
+#### Customizing Downloads with `IWebRequest`
+
+If you require specific behavior—such as authentication headers, proxy usage, or monitoring the download status—you must implement `HtmlToOpenXml.IO.IWebRequest` and pass it to the converter constructor:
+
+```csharp
+// Dependency Injection of a custom downloader is the most flexible approach.
+HtmlConverter converter = new(mainPart, myCustomDownloader); 
+```
+
+## Advanced Image Processing & Customization
+
+The power of the library lies in its ability to intervene during the conversion pipeline.
+Use these advanced features when you need more than a simple download.
+
+### Dynamic Format Transformation (WebP Example)
+
+If the referenced image format is not natively supported by OpenXML (`.webp`, for example), you can use a custom `IWebRequest` implementation to download the file and convert its format into a supported stream (`png`, `jpg`) before passing it to the converter.
+
+This is a perfect use case for inheriting from `DefaultWebRequest`:
+
+```csharp
+class WebPWebRequest : DefaultWebRequest
+{
+    protected override async Task<Resource> DownloadHttpFile(Uri requestUri, CancellationToken cancellationToken)
+    {
+        var resource = await base.DownloadHttpFile(requestUri, cancellationToken);
+
+        if (resource.Content is not null && requestUri.OriginalString.EndsWith(".webp"))
+        {
+            // Load, convert to PNG stream, and replace the original resource content.
+            using var img = await Image.LoadAsync(resource.Content, cancellationToken); 
+            var convertedStream = new MemoryStream();
+            await img.SaveAsPngAsync(convertedStream, cancellationToken);
+            
+            // Clean up original resource and set the new PNG stream.
+            resource.Content.Dispose();
+            resource.Content = convertedStream; 
+        }
+        return resource;
+    }
+}
+
+// Usage: Pass the custom retriever to the converter.
+HtmlConverter converter = new HtmlConverter(mainPart, new WebPWebRequest());
+await converter.ParseBody(@"<img src='https://www.gstatic.com/webp/gallery/1.webp'>");
+```
+
+### Metadata and Sizing Controls
+
+* **`alt` attribute** The value provided in the alt attribute serves as a tooltip on hover and is crucial for screen readers, fulfilling accessibility requirements.
+
+* **Dimensions:** Specify `width` and `height` attributes in pixels (`px`) or percentages (`%`). The converter respects the aspect ratio if only one attribute is provided. If no dimension attributes are present, the library attempts auto-detection.
+
+* **Captions/Legends:** Use the `<figure>` and `<figcaption>` HTML tags to include a legend that appears above or below the image in Word.
+
+* **SVG Detail:** When using `<svg>`, placing descriptions inside the `<title>` or `<desc>` tags ensures these metadata fields are accurately reflected in the resulting Word document properties.
+
+### Logging
+
+For monitoring or advanced troubleshooting of I/O access during downloads, you may provide a custom `ILogger` implementation to the `DefaultWebRequest` constructor. This enables you to log connection status and resource retrieval attempts without modifying the core conversion logic:
+
+```csharp
+// Pass the logger for detailed I/O troubleshooting. The null indicates you are not providing a custom HttpClient.
+HtmlConverter converter = new(mainPart, new DefaultWebRequest(null, myLoggerInstance)); 
+```
+
+## Styling and Layout Support
+
+The library interprets several HTML attributes that control the visual rendering in Word:
+
+* **Borders:** Supported via `border`, `border-style`, `border-width`, and `border-color`.
+
+  * `border-style`: Supports `dotted`, `dashed`, `solid`, `double`, `inset`, `outset`, or `none`.
+  * `border-width`: Supports `px` units, or keywords like `medium`, `thick`, or `thin`.
+
+* **Scaling:** You can command an image to extend past the page boundaries using `width:100%` on a constrained layout.
+
+---
+
+---
+url: /html2openxml/guide/numbering.md
+description: Simple and advanced list support
+---
+# Numbering List
+The library supports deeply nested lists, translating up to the physical limit of MS Word's outlining structure at 8 levels.
+Lists can be defined using `<ol>` or `<ul>` tags.
+
+## Customise List Styles
+
+The visual style is controlled via the `list-style-type` CSS attribute or the `type` attribute (`<ol type="1|a|A|i|I">`).
+
+Supported values for `list-style-type` include:
+
+* `decimal`, `disc`, `square`, `circle`
+* `dash` (non standard, used for convenience)
+* `upper-alpha` / `lower-alpha`, `upper-roman` / `lower-roman`, `upper-greek` / `lower-greek`.
+* Custom values (e.g., `list-style-type: '+'`)
+
+Supported values for `type` attribute:
+
+* `1`: Decimal Numbers (1, 2, 3...)
+* `a`: Lowercase Alphabetical (`a`, `b`, `c`...)
+* `A`: Uppercase Alphabetical (`A`, `B`, `C`...)
+* `i`: Lowercase Roman Numerals (`i`, `ii`, `iii`...)
+* `I`: Uppercase Roman Numerals (`I`, `II`, `III`...)
+
+## Controlling Numbering Flow
+
+By default, the converter assumes continuity between sequential lists. Use these properties to define or override the flow:
+
+* **Continuation:** Force the list to reset a brand new sequence (e.g., to treat two separate lists as distinct), set `ContinueNumbering = false`.
+
+* **Initial Value:** Use the `start` attribute on `<ol>` tags to define an initial value for a list:
+
+  ```html
+  <!-- Starts at 50, not 1 -->
+  <ol start="50">...</ol>
+  ```
+
+## Heading Numbering Detection
+
+The library intelligently detects when a list acts as a chapter outline. If your list structure aligns with document hierarchies (e.g., `1.`, `1.1`, `1.2`), the library automatically maps this structure to a dedicated Word list style (`decimal-tiered`) and applies the appropriate heading numbering.
+
+To disable this automatic mapping and rely purely on HTML structure, set:
+
+```csharp
+converter.SupportsHeadingNumbering = false;
+```
+
+## Nested Tables for Alignment
+
+For complex layouts where a table must appear as part of a list item, use the following pattern. The converter automatically handles the necessary indentation to maintain visual hierarchy.
+
+```html
+<ol>
+   <li>Main Item</li>
+   <li>
+        <!-- The table is naturally indented as part of the list item -->
+        <table>...</table>
+   </li>
+</ol>
+```
+
+---
+
+---
+url: /html2openxml/guide/pagebreak.md
+description: Guide for advanced page layout.
+---
+# Page Layout
+To manage the visual flow and chapter structure of your generated Word document, use these CSS-like page layout attributes to control breaks and orientation.
+
+## Page Break
+
+Page breaks are controlled via the `page-break-before` or `page-break-after` attributes, which accept the value **always**.
+These directional controls apply to various block elements (`p`, `div`, `pre`, `span`) or the document body.
+
+```html
+<div style="page-break-after:always">
+    Lorem ipsum dolor sit amet,
+    consectetur adipiscing elit.
+</div>
+
+Duis dictum leo quis ipsum tempor nec ultrices sapien elementum.
+```
+
+## Page Orientation
+
+Since page orientation is not a standard HTML property, the library uses the non-standard `page-orientation` attribute.
+Currently, this controls the orientation of the entire document body (`body`).
+Future versions will expand support to control individual page sections via the `div` tag
+
+```html
+<body style="page-orientation: landscape">
+    Lorem ipsum dolor sit amet,
+    consectetur adipiscing elit.
+</body>
+```
+
+---
+
+---
+url: /html2openxml/guide/pre.md
+description: Preserve whitespaces inside a block
+---
+# Preformated Text
+The `<pre>` tag preserves all source formatting (whitespace, indentation, and line breaks) into the final DOCX document. This feature guarantees that your input text—such as code snippets, logs, or ASCII art—retains its exact visual structure.
+
+## Controlling Output Structure
+
+The `RenderPreAsTable` property determines how the preserved content is physically packaged within the Word document:
+
+* **Default (`true`):** The content is placed inside a single-cell table. This is generally recommended when preserving complex arrangements or maintaining strict column alignments is desired.
+
+* **Disabled (`false`):** The content is placed inside a standard paragraph block. Use this when the simpler OpenXml structure is preferred, but you still need reliable line break and whitespace preservation.
+
+```csharp
+// Default behavior (table embedding):
+converter.RenderPreAsTable = true;
+
+// Alternative structure (pure paragraph block):
+converter.RenderPreAsTable = false; 
+```
+
+![Text with preserved formatting](/images/pre.png)
+
+---
+
+---
+url: /html2openxml/guide/quickstart.md
+description: Getting started
+---
+# Quickstart
+## Prerequisites
+
+1. Create a new console application (.NET Core or .Net 6+ recommended).
+2. Add a reference this NuGet package `dotnet add package HtmlToOpenXml`.
+
+### Step 1: Define the source HTML
+
+```csharp
+const string htmlInput = @"
+     <h1>Hello World!</h1>
+     <p>This is the simplest example proving HtmlToOpenXml works.</p>";
+```
+
+### Step 2: The conversion process
+
+```csharp
+using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
+using HtmlToOpenXml;
+...
+
+// 1. Create an in-memory stream to hold the resulting DOCX package data.
+using (var generatedDocumentStream = new MemoryStream())
+{
+     // Initialize the DOCX package structure. This must happen before conversion.
+     using (WordprocessingDocument package = WordprocessingDocument.Create(generatedDocumentStream, WordprocessingDocumentType.Document))
+     {
+          MainDocumentPart mainPart = package.MainDocumentPart;
+
+          // Ensure the body is ready to receive content (optional, but robust).
+          if (mainPart?.Document == null)
+          {
+               mainPart = package.AddMainDocumentPart(); 
+               new Document(new Body()).Save(mainPart);
+          }
+
+          // Initialize the Converter, binding it to the target document part.
+          HtmlConverter converter = new HtmlConverter(mainPart);
+
+          // Perform the conversion into the document body.
+          await converter.ParseBody(htmlInput);
+     }
+
+     // The stream must be rewound before being written to a file.
+     generatedDocumentStream.Seek(0, SeekOrigin.Begin);
+     File.WriteAllBytes(outputFilename, generatedDocumentStream.ToArray());
+
+     Console.WriteLine($"Conversion successful. Output saved to: {outputFilename}");
+}
+```
+
+Store your input markup in a string or resource file. For this example, we will use the Properties.Resources.
+DemoHtml.html:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Report Title</title>
+</head>
+<body>
+    <h1>Project Synthesis Report</h1>
+    <p>This document details the conversion from HTML to Open XML using <b>HtmlToOpenXml</b>.</p>
+    <h2>Section 1: Introduction</h2>
+    <p>This paragraph demonstrates how heading styles are mapped and applied during the conversion process. The library handles complex elements like tables, lists, and images automatically.</p>
+    <hr/>
+</body>
+</html>
+```
+
+### Step 3: Visual generated output
+
+![Quickstart output in MS Word](/images/quickstart.png)
+
+---
+
+---
+url: /html2openxml/guide/rtl.md
+description: RTL layout support
+---
+# Right to Left (Rtl)
+## Control the Text Flow
+
+The converter supports applying both Left-to-Right (LTR) and Right-to-Left (RTL) layouts via two attributes: `dir` and `lang`.
+
+**Key Distinction:**
+
+* **`dir` Attribute:** Controls the **layout direction** (LTR or RTL). This dictates how characters flow and justifies margins.
+
+* **`lang` Attribute:** Specifies the language, which helps determine the natural reading order and culture.
+
+If `lang` is set to a language known to be RTL (e.g., Arabic), the converter will often infer rtl and apply it, but using `dir="rtl"` is always the most reliable method.
+
+**Recommendation:** For definitive layout control, **always use the `dir` attribute.** The converter uses the specified `dir` value to apply the correct layout direction within the generated DOCX package.
+
+## Document Body Direction
+
+To inform the converter of the intended flow for the entire document, apply the `dir` attribute to the `body` tag. This sets the initial parsing context from which all subsequent content is generated.
+
+```html
+<!-- Sets the entire document body to flow Right-to-Left -->
+<body dir="rtl">
+   <h1>Document Title</h1>
+</body>
+
+<!-- OR use the lang attribute if the language dictates the direction -->
+<body lang="ar"> 
+```
+
+> **Note on Existing Templates:** If you are appending content to an existing Word document or DOCX template, the converter respects and maintains the original document's innate layout direction unless explicitly overridden.
+
+## Paragraph/Text Direction
+
+For applying RTL specifically to a block of text, apply the `dir` attribute to the container element:
+
+```html
+<p dir="rtl" style="font-family: 'Arabic Font';">
+    تجربه إضافة نص... (RTL Text)
+</p>
+```
+
+## Table/List Elements
+
+For collections of items, apply the `dir` attribute to the container tag:
+
+**Lists:**
+
+```html
+<ol dir="rtl">
+   <li>Item 1</li>
+   <li>Item 2</li>
+</ol>
+```
+
+**Tables:**
+
+```html
+<table dir="rtl">
+    <!-- Table content here -->
+</table>
+```
+
+## Example of RTL-generated output
+
+You can see the converted HTML with some Arabic (RTL) layout:
+
+![Sample of RTL rendering in Word](/images/rtl.png)
+
+---
+
+---
+url: /html2openxml/guide/styling.md
+---
+# Styling
+The `HtmlToOpenXml` converter serves as the bridge between the flexible structure of HTML and the rigorous object model of DOCX. The resulting fidelity depends on how you leverage the built-in style detection and mapping capabilities of the converter.
+
+* **`style` attribute**: Used for applying specific, single-use formatting.
+* **`class` attribute**: Used to apply reusable, named styles from the DOCX template.
+
+## Style Detection and Reuse
+
+The library automatically scans the target `WordprocessingDocument` document (especially when using a template) to detect and read existing styles. This allows the converter to intelligently reuse the document's established formatting, including themes.
+
+## Auto-Mapping (Default Behavior)
+
+For maximum efficiency, the converter recognizes common semantic tags (`<h1>`, `<table>`, `<p>`) and automatically applies default Word styles (e.g., `<h1>` → `Heading 1`). This is ideal when starting with a clean document.
+
+**Predefined Styles Include:**
+
+* Heading Levels (1–6)
+* Caption, Footnote/Endnote, Quote Styles
+* Hyperlink Styles
+* Table Structure (e.g., TableGrid)
+
+## Overriding Default Styles
+
+You can override the default mapping for any tag by setting a specific style name via `converter.HtmlStyles.DefaultStyles`.
+
+```csharp
+// Example: Forcing all H1 tags to use a custom style instead of the default Heading 1.
+converter.HtmlStyles.HeadingStyle = converter.HtmlStyles.GetStyle("CustomChapterTitle");
+```
+
+## Custom Mapping via Class Attribute
+
+To override the default behavior or apply a unique style, use the `class` attribute. The converter uses this class name as the identifier it searches for in the target DOCX style definitions.
+
+```html
+<table class="Standard_Table TableWhite">...</table>
+```
+
+*The converter attempts to locate and apply styles matching the class names (`Standard_Table`, `TableWhite`).*
+
+## OpenXml style mapping
+
+You can assign an OpenXml style for all the paragraphs met during the conversion. Style attributes on the tag are still applied over the specified default style.
+
+### Predefined Styles
+
+When the converter encounters some tags (as `a` and `h1`) and the styles are missing from the Word document, the text is displayed in raw format, which doesn't give a nice visual feedback.
+To circumvent this behavior, the converter will automatically insert the missing styles if needed.
+
+* Caption
+* Heading 1 to 6
+* HyperLink
+* TableGrid
+* Footnote and Endnote
+* Quote
+
+You can override the predefined styles by specifying yourself the style name in `converter.HtmlStyles.DefaultStyles`.
+In this example, the **Intense Quote** style is used.
+![Predefined IntenseQuote sample](https://github.com/onizet/html2openxml/blob/dev/docs/images/MissingStyles_defaultstyle.png)
+
+```csharp
+converter.HtmlStyles.DefaultStyle = converter.HtmlStyles.GetStyle("Intense Quote");
+```
+
+```html
+<h1>A title</h1>
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+Duis dictum leo quis ipsum tempor nec ultrices sapien elementum.
+```
+
+### CSS Class
+
+If you wish to apply a specific style on an Html tag, you can use the native html `class` attribute.
+Each time the converter encounters the `class` attribute, it looks for a Style in the Word document with the same name (case insensitive).
+If it is not found, you can provide your own OpenXml style definition.
+
+```html
+<table class="Standard_Table TableWhite" cellspacing="0" cellpadding="0">
+<thead>
+    <tr>
+    <td>Column 1</td>
+    <td>Column 2</td>
+</tr>
+</table>
+```
+
+In this sample, the converter will try to find a style with the name **Standard_Table** and if not found, **TableWhite**.
+
+### Provision your style
+
+If you add this line of code in the startup example and run it again, you will not see the "Heading 1" style applied.
+
+```html
+ <h1>First steps</h1>
+```
+
+In fact, the "Heading 1" style is well applied but this style does not exists in the document ; when you create a new document, no styles are defined : it's up to you. HtmlToOpenXml handles automatically the hyperlink style for you but it does not deal with every styles.
+You can subscribe to the StyleMissing event to be warned and add them yourself.
+
+Generally, you will load in memory an existing document template and append the Html conversion inside it. MS Word 2007 embeds a lot of informations (like styles, themes, document properties, ...) that you don't really want to bother with.
+
+## Dynamic Style Provisioning
+
+For scenarios where the required style does not exist in the target document, you can dynamically create and register it. This is crucial for building a robust converter that works seamlessly with any template.
+
+The `StyleMissing` event provides the hook to handle this scenario:
+
+```csharp
+converter.HtmlStyles.StyleMissing += delegate(object sender, StyleEventArgs args)
+{
+    if (args.Name == "custom-style")
+    {
+        converter.HtmlStyles.AddStyle(new Style() {
+            StyleId = "custom-style",
+            Type = args.Type,
+            BasedOn = new BasedOn { Val = "Normal" },
+            StyleRunProperties = new() {
+                Color = new() { Val = HtmlColorTranslator.FromHtml("red").ToHexString() }
+            }
+        });
+    }
+};
+```
+
+## Note on External CSS
+
+The converter does not process external stylesheets (`<link rel="stylesheet">`) or `<style>` block content by default. To ensure visual fidelity, you must use a pre-processing tool (like [PreMailer.Net](https://www.nuget.org/packages/PreMailer.Net)) to inline the CSS into the HTML tags before passing it to the converter.
+
+```csharp
+string html = ResourceHelper.GetString("Resources.CompleteRunTest.html");
+string css = ResourceHelper.GetString("Resources.style.css");
+var result = PreMailer.Net.PreMailer.MoveCssInline(html, css: css);
+html = result.Html;
+
+HtmlConverter converter = new HtmlConverter(mainPart);
+await converter.ParseHtml(html);
+```
+
+---
+
+---
+url: /html2openxml/guide/tables.md
+description: Simple and advanced table layout
+---
+# Tables
+## Styles
+
+Styles defined in the `<table>` tag are applied inside the table’s elements.
+Defined width attributes in table is applied in the open xml document.
+No border attribute or a `border="0"` will hide the border on the word document.
+
+## Table Widths
+
+Those width are supported:
+
+| HTML Attribute | Converter Action | Meaning in DOCX |
+| :--- | :--- | :--- |
+| `auto` | Auto-Fit Content | Dynamically adjusts column widths to fit content. |
+| `100%` or (no width) | Page-Width Default | Span the full printable page width. |
+| `[value]%` | Percentage Width | Applies a percentage of the available page width. |
+| `px` or `pt` | Fixed Dimension | Locks the column/cell to a specific physical size. |
+
+**Disclaimer**: The output DOCX file is fully compliant with Open XML. Compatibility with third-party viewers (e.g., MacOS Pages) may vary when rendering complex structural elements like merged cells.
+
+## Row Span and Column Span
+
+```html
+<table width="50%" align="center" border="1">
+    <tr>
+        <td rowspan="2">Row Header</td>
+        <td>Row 1</td>
+    </tr>
+    <tr>
+        <td>Row 2</td>
+    </tr>
+</table>
+```
+
+![Table with row span](/images/tables.rowspan.png)
+
+```html
+<table width="100%" border="1">
+    <tr>
+        <td>Header 1</td>
+        <td colspan="2">Header 2</td>
+    </tr>
+    <tr>
+        <td>Cell 1.1</td>
+        <td>cell 1.2</td>
+        <td>cell 1.3</td>
+    </tr>
+</table>
+```
+
+![Table with col span](/images/tables.colspan.png)
+
+ColSpan and RowSpan on the same cell
+
+```html
+<table border="1">
+    <tr>
+        <th>Cell 1</th>
+        <th colspan="2" rowspan="2">Value 1</th>
+    </tr>
+    <tr>
+        <td>Cell 1</td>
+    </tr>
+    <tr>
+        <td>Cell 2</td>
+        <td>Value 2</td>
+        <td>Value 3</td>
+    </tr>
+</table>
+```
+
+![Table with a cell containing both row span and col span](/images/tables.col-rowspan.png)
+
+## Nested table
+
+```html
+<table width="100%" border="1">
+<tr>
+    <td><b>Parent table</b>
+        <table border="1">
+            <tr>
+                <td>Nested table</td>
+            </tr>
+        </table>
+    </td>
+</tr>
+</table>
+```
+
+![Nested table](/images/tables.nested.png)
+
+## Vertical text is supported
+
+```html
+<table width="50%" align="center" border="1">
+    <tr>
+        <td rowspan="2" style="writing-mode: tb-lr;">Vertical Row Header</td>
+        <td>Row 1</td>
+    </tr>
+    <tr>
+        <td>Row 2</td>
+    </tr>
+</table>
+```
+
+![Table with vertical text](/images/tables.verticaltext.png)
+
+## Column Definition
+
+`col` tag describing the styles of columns across the whole table. You may or may not place those tags inside a `colgroup` tag.
+
+The attribute `span` is supported to copy the styles on the next columns.
+
+```html
+<table>
+<col />
+<col style='text-align:center' span='2' />
+<tr>
+    <td>Cell 1.1</td><td>Cell 1.2</td><td>Cell 1.3</td>
+</tr>
+</table>
+```
+
+![Table colgroup](/images/tables.colstyles.png)
+
+## Logical Table Sections
+
+Unlike the flexibility of HTML parsers, the converter enforces the logical flow required by Open XML. Therefore, regardless of the order in which you input the `<thead>`, `<tbody>`, and `<tfoot>` tags, they will always be correctly ordered in the final document body (Header → Body → Footer).
+
+```html
+<table>
+    <tbody><tr><td>Body</td></tr><tbody>
+    <thead><tr><td>Header</td></tr><thead>
+    <tfoot><tr><td>Footer</td></tr><tfoot>
+</table>
+```
+
+![Reordered table sections](/images/tables.reorder.png)
