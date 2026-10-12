@@ -18,7 +18,11 @@ Supported values for `list-style-type` include:
 * `upper-alpha` / `lower-alpha`, `upper-roman` / `lower-roman`, `upper-greek` / `lower-greek`.
 * Custom values (e.g., `list-style-type: '+'`)
 
-Supported values for `type` attribute:
+Supported values for the legacy `type` attribute:
+
+Unordered list: `disc`, `square`, `circle`.
+
+Ordered list:
 
 * `1`: Decimal Numbers (1, 2, 3...)
 * `a`: Lowercase Alphabetical (`a`, `b`, `c`...)
