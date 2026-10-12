@@ -855,6 +855,8 @@ namespace HtmlToOpenXml.Tests
             var p = (Paragraph)elements.Single();
             Assert.That(p.ParagraphProperties?.NumberingProperties, Is.Not.Null);
             Assert.That(p.ParagraphProperties?.Indentation?.Left?.Value, Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
+        }
+
         /// <summary>
         /// A nested ul type attribute must use its own bullet, not the parent marker
         /// </summary>
