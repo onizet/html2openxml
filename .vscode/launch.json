@@ -5,7 +5,7 @@
             "name": ".NET Core Launch (console)",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "",
+            "preLaunchTask": "build",
             "program": "${workspaceRoot}/examples/Demo/bin/Debug/net10.0/Demo.dll",
             "args": [],
             "cwd": "${workspaceRoot}/examples/Demo/",
