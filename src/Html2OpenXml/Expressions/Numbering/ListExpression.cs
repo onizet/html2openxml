@@ -119,13 +119,6 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
                         Val = OnOffValue.FromBoolean(listContext.Dir == DirectionMode.Rtl)
                     };
                 }
-                if (listMarginLeft > 0)
-                {
-                    if (listMarginOnNumberingInstance)
-                        ApplyLiMarginOnParagraphOnly(p.ParagraphProperties);
-                    else
-                        SetListItemElementParagraphIndentationLeft(p.ParagraphProperties, level, listMarginLeft);
-                }
             }
 
             // any standalone paragraphs must be aligned (indented) along its current level

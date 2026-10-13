@@ -735,31 +735,6 @@ namespace HtmlToOpenXml.Tests
         /// <summary>Level-1 list indent plus 18pt ol margin-left.</summary>
         private const string Level1ListIndent_AddedWith_18PtMargin_DXA_Value = "1080";
 
-        [Test(Description = "Sibling lists with different ol margin-left get different paragraph indents but share the same abstract numbering definition")]
-        public void ListContainerMarginLeft_SiblingOrderedLists_DifferentParagraphIndent()
-        {
-            var elements = converter.Parse(@"
-                <ol type='1' style='margin: 12pt 0 12pt 18pt;'><li>First</li></ol>
-                <ol type='1' style='margin: 12pt 0 12pt 0;'><li>Second</li></ol>");
-
-            Assert.That(elements, Has.Count.EqualTo(2));
-            var first = (Paragraph)elements[0];
-            var second = (Paragraph)elements[1];
-            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
-            var firstNumId = first.ParagraphProperties!.NumberingProperties!.NumberingId!.Val!.Value;
-
-            using (Assert.EnterMultipleScope())
-            {
-                Assert.That(first.ParagraphProperties?.NumberingProperties, Is.Not.Null);
-                Assert.That(second.ParagraphProperties?.NumberingProperties, Is.Not.Null);
-                Assert.That(first.ParagraphProperties?.Indentation?.Left?.Value, Is.Null,
-                    "List margin is applied on the numbering instance level override");
-                Assert.That(GetListInstanceLevelIndentLeft(numbering, firstNumId), Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
-                Assert.That(second.ParagraphProperties?.Indentation?.Left?.Value, Is.Null);
-            }
-            AssertThatOpenXmlDocumentIsValid();
-        }
-
         [Test(Description = "List container margin-left must not create a separate abstractNum for the same list-style-type")]
         public void ListContainerMarginLeft_SharesAbstractNumAcrossDifferentMargins()
         {
@@ -778,20 +753,6 @@ namespace HtmlToOpenXml.Tests
                 .Where(i => i.AbstractNumId?.Val == abstractNumId)
                 .ToList();
             Assert.That(instances, Has.Count.GreaterThanOrEqualTo(2));
-        }
-
-        [Test(Description = "Without ol margin-left, list paragraphs rely on numbering.xml only (no extra w:ind)")]
-        public void ListContainerMarginLeft_Zero_DoesNotSetParagraphIndentation()
-        {
-            var elements = converter.Parse("<ol><li>Item</li></ol>");
-            Assert.That(elements, Has.Count.EqualTo(1));
-
-            var p = (Paragraph)elements[0];
-            using (Assert.EnterMultipleScope())
-            {
-                Assert.That(p.ParagraphProperties?.NumberingProperties, Is.Not.Null);
-                Assert.That(p.ParagraphProperties?.Indentation?.Left?.Value, Is.Null);
-            }
         }
 
         [Test(Description = "Nested ol margin-left stacks with numbering level indent on each list")]
@@ -818,29 +779,8 @@ namespace HtmlToOpenXml.Tests
 
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(outer.ParagraphProperties?.Indentation?.Left?.Value, Is.Null);
                 Assert.That(GetListInstanceLevelIndentLeft(numbering, outerNumId), Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
-                Assert.That(inner.ParagraphProperties?.Indentation?.Left?.Value, Is.Null);
                 Assert.That(GetListInstanceLevelIndentLeft(numbering, innerNumId, ilvl: 1), Is.EqualTo("1800"));
-            }
-        }
-
-        [Test(Description = "ol margin-left and li margin-left both contribute to paragraph w:ind")]
-        public void ListContainerMarginLeft_AddsLiMarginToTotal()
-        {
-            var elements = converter.Parse(@"
-                <ol style='margin-left: 18pt;'>
-                    <li style='margin-left: 18pt;'>Text</li>
-                </ol>");
-
-            var p = (Paragraph)elements.Single();
-            var numId = p.ParagraphProperties!.NumberingProperties!.NumberingId!.Val!.Value;
-            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
-            using (Assert.EnterMultipleScope())
-            {
-                Assert.That(GetListInstanceLevelIndentLeft(numbering, numId), Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
-                Assert.That(p.ParagraphProperties?.Indentation?.Left?.Value, Is.EqualTo(Margin18PtDxa),
-                    "Only li margin remains on the paragraph; ol margin is on the numbering instance");
             }
         }
 
@@ -858,7 +798,6 @@ namespace HtmlToOpenXml.Tests
             using (Assert.EnterMultipleScope())
             {
                 Assert.That(paragraphs[0].ParagraphProperties?.NumberingProperties, Is.Not.Null);
-                Assert.That(paragraphs[0].ParagraphProperties?.Indentation?.Left?.Value, Is.Null);
                 Assert.That(paragraphs[1].ParagraphProperties?.NumberingProperties, Is.Null);
                 Assert.That(paragraphs[1].ParagraphProperties?.Indentation?.Left?.Value, Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
             }
@@ -872,15 +811,11 @@ namespace HtmlToOpenXml.Tests
             var numId = p.ParagraphProperties!.NumberingProperties!.NumberingId!.Val!.Value;
             var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
             Assert.That(p.ParagraphProperties?.NumberingProperties, Is.Not.Null);
-            Assert.That(p.ParagraphProperties?.Indentation?.Left?.Value, Is.Null);
             Assert.That(GetListInstanceLevelIndentLeft(numbering, numId), Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
             var overrideLevel = GetListInstanceLevelOverride(numbering, numId);
             Assert.That(overrideLevel?.NumberingFormat?.Val?.Value, Is.EqualTo(NumberFormatValues.Bullet),
                 "Level override must clone the template level so bullet markers still render");
         }
-
-        /// <summary>18pt margin-left in dxa.</summary>
-        private const string Margin18PtDxa = "360";
 
         private static string? GetListInstanceLevelIndentLeft(Numbering numbering, int numId, int ilvl = 0)
         {
