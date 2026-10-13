@@ -157,15 +157,16 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 
         // be sure to restart to 1 any nested ordered list
         if (currentLevel > 0 && isOrderedTag)
-        { 
+        {
             instanceId = IncrementInstanceId(context, abstractNumId, isReusable: false);
             overrideLevelIndex = currentLevel;
             listContext = new ListContext(listStyle, abstractNumId, instanceId.Value, currentLevel + 1, dir);
         }
-        else if (!instanceId.HasValue || !context.Converter.ContinueNumbering)
+        else if (!instanceId.HasValue || !context.Converter.ContinueNumbering || listMarginLeft > 0)
         {
             // create a new instance of that list template
-            instanceId = IncrementInstanceId(context, abstractNumId, isReusable: context.Converter.ContinueNumbering);
+            bool isReusable = context.Converter.ContinueNumbering && listMarginLeft <= 0;
+            instanceId = IncrementInstanceId(context, abstractNumId, isReusable: isReusable);
             listContext = new ListContext(listStyle, abstractNumId, instanceId.Value, currentLevel + 1, dir);
         }
         else
