@@ -17,8 +17,11 @@ export default defineUserConfig({
     docsDir: 'docs',
     logo: 'images/hero.png',
 
-    navbar: ['/', 
-      { text: 'API Reference', link: '/guide/api' },
+    navbar: ['/',
+      { text: 'API Reference', link: '/guide/api',
+        prefix: 'guide/',
+        children: ['api', 'hyperlinks', 'images', 'styling', 'tables', 'numbering', 'pre', 'footnotes', 'pagebreak', 'rtl']
+      },
       { text: 'LLM Docs Friendly', link: '/llmdoc' },
       { text: 'NuGet', link: 'https://www.nuget.org/packages/HtmlToOpenXml', ariaLabel: 'NuGet', target: '_blank' }
     ],

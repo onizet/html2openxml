@@ -25,5 +25,5 @@ features:
   - title: Flexible Resource Handling
     details: Seamlessly manages media embedding and linking, supporting local paths, network shares (\\server), and Data URIs.
 
-footer: MIT Licensed | Copyright © 2019-present Olivier Nizet and contributors
+footer: MIT Licensed | Copyright © 2009-present Olivier Nizet and contributors
 ---

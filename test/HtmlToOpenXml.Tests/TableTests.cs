@@ -546,8 +546,12 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements[0].GetFirstChild<TableGrid>()?.Elements<GridColumn>().Count(), Is.EqualTo(1));
             var cell = elements[0].GetFirstChild<TableRow>()?.GetFirstChild<TableCell>();
             Assert.That(cell, Is.Not.Null);
-            Assert.That(cell.HasChild<Table>(), Is.True);
-            Assert.That(cell.HasChild<Paragraph>(), Is.True, "Word requires at least a paragraph");
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(cell.HasChild<Table>(), Is.True);
+                Assert.That(cell.HasChild<Paragraph>(), Is.True, "Word requires at least a paragraph");
+                Assert.That(cell.LastChild, Is.TypeOf<Paragraph>(), "Word disallow to ends a cell with a Table");
+            }
         }
 
         [Test]
