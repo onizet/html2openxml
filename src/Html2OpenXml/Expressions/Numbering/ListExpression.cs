@@ -23,6 +23,7 @@ namespace HtmlToOpenXml.Expressions;
 sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 {
     readonly record struct ListContext(string Name, int AbsNumId, int InstanceId, int Level, DirectionMode? Dir);
+    private long _listIndentationOffset;
 
 
     // https://www.w3schools.com/cssref/playdemo.php?filename=playcss_list-style-type
@@ -39,6 +40,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 
     public override IEnumerable<OpenXmlElement> Interpret(ParsingContext context)
     {
+        ComposeStyles(context);
         var liNodes = node.Children.Where(n => n.LocalName.Equals("li", StringComparison.OrdinalIgnoreCase));
         if (!liNodes.Any()) yield break;
 
@@ -56,15 +58,14 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         var listContext = context.Properties<ListContext>("listContext");
         var parentContext = listContext;
         var listStyle = GetListName(node, listContext.Name);
-        long listMarginLeft = GetListContainerMarginLeft(node);
         bool listMarginOnNumberingInstance = false;
-        if (listContext.InstanceId == 0 || listContext.Name != listStyle || listMarginLeft > 0)
+        if (listContext.InstanceId == 0 || listContext.Name != listStyle || _listIndentationOffset > 0)
         {
             var abstractNumId = GetOrCreateListTemplate(context, listStyle);
-            listContext = ConcretiseInstance(context, abstractNumId, listStyle, listContext.Level, listMarginLeft);
+            listContext = ConcretiseInstance(context, abstractNumId, listStyle, listContext.Level, _listIndentationOffset);
 
             listParagraphStyleId = GetStyleIdForListItem(context.DocumentStyle, node, defaultIfEmpty: false);
-            listMarginOnNumberingInstance = listMarginLeft > 0;
+            listMarginOnNumberingInstance = _listIndentationOffset > 0;
         }
         else
         {
@@ -130,8 +131,8 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 
                 p.ParagraphProperties ??= new();
                 p.ParagraphProperties.ParagraphStyleId ??= (ParagraphStyleId?) listItemStyleId!.CloneNode(true);
-                if (listMarginLeft > 0)
-                    SetListItemElementParagraphIndentationLeft(p.ParagraphProperties, level, listMarginLeft);
+                if (_listIndentationOffset > 0)
+                    SetListItemElementParagraphIndentationLeft(p.ParagraphProperties, level, _listIndentationOffset);
                 else
                     p.ParagraphProperties.Indentation = new() { Left = (level * Indentation * 2).ToString() };
             }
@@ -315,14 +316,12 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         return styleName == "decimal-tiered";
     }
 
-    private static long GetListContainerMarginLeft(IHtmlElement listNode)
+    protected override void ComposeStyles(ParsingContext context)
     {
-        var styleAttributes = listNode.GetStyles();
+        base.ComposeStyles(context); 
         var margin = styleAttributes.GetMargin("margin");
         if (!margin.IsEmpty && margin.Left.IsFixed && margin.Left.Value > 0)
-            return margin.Left.ValueInDxa;
-
-        return 0;
+            _listIndentationOffset = margin.Left.ValueInDxa;
     }
 
     /// <summary>
@@ -336,19 +335,6 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 
         pPr.Indentation ??= new Indentation();
         pPr.Indentation.Left = total.ToString(CultureInfo.InvariantCulture);
-    }
-
-    /// <summary>
-    /// Keeps listnode margin on numbered lines; list container margin lives on the numbering instance override.
-    /// </summary>
-    private static void ApplyLiMarginOnParagraphOnly(ParagraphProperties pPr)
-    {
-        long liExtraDxa = ParseIndentationLeft(pPr);
-        if (liExtraDxa <= 0)
-            return;
-
-        pPr.Indentation ??= new Indentation();
-        pPr.Indentation.Left = liExtraDxa.ToString(CultureInfo.InvariantCulture);
     }
 
     private static long ParseIndentationLeft(ParagraphProperties? pPr)
