@@ -745,12 +745,16 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements, Has.Count.EqualTo(2));
             var first = (Paragraph)elements[0];
             var second = (Paragraph)elements[1];
+            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
+            var firstNumId = first.ParagraphProperties!.NumberingProperties!.NumberingId!.Val!.Value;
 
             using (Assert.EnterMultipleScope())
             {
                 Assert.That(first.ParagraphProperties?.NumberingProperties, Is.Not.Null);
                 Assert.That(second.ParagraphProperties?.NumberingProperties, Is.Not.Null);
-                Assert.That(first.ParagraphProperties?.Indentation?.Left?.Value, Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
+                Assert.That(first.ParagraphProperties?.Indentation?.Left?.Value, Is.Null,
+                    "List margin is applied on the numbering instance level override");
+                Assert.That(GetListInstanceLevelIndentLeft(numbering, firstNumId), Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
                 Assert.That(second.ParagraphProperties?.Indentation?.Left?.Value, Is.Null);
             }
             AssertThatOpenXmlDocumentIsValid();
@@ -808,10 +812,16 @@ namespace HtmlToOpenXml.Tests
             var inner = paragraphs.Single(p =>
                 p.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value == 1);
 
+            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
+            var outerNumId = outer.ParagraphProperties!.NumberingProperties!.NumberingId!.Val!.Value;
+            var innerNumId = inner.ParagraphProperties!.NumberingProperties!.NumberingId!.Val!.Value;
+
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(outer.ParagraphProperties?.Indentation?.Left?.Value, Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
-                Assert.That(inner.ParagraphProperties?.Indentation?.Left?.Value, Is.EqualTo("1800"));
+                Assert.That(outer.ParagraphProperties?.Indentation?.Left?.Value, Is.Null);
+                Assert.That(GetListInstanceLevelIndentLeft(numbering, outerNumId), Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
+                Assert.That(inner.ParagraphProperties?.Indentation?.Left?.Value, Is.Null);
+                Assert.That(GetListInstanceLevelIndentLeft(numbering, innerNumId, ilvl: 1), Is.EqualTo("1800"));
             }
         }
 
@@ -824,8 +834,14 @@ namespace HtmlToOpenXml.Tests
                 </ol>");
 
             var p = (Paragraph)elements.Single();
-            // 720 (level 1) + 360 (ol 18pt left margin) + 360 (li 18pt left margin) = 1440
-            Assert.That(p.ParagraphProperties?.Indentation?.Left?.Value, Is.EqualTo("1440"));
+            var numId = p.ParagraphProperties!.NumberingProperties!.NumberingId!.Val!.Value;
+            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(GetListInstanceLevelIndentLeft(numbering, numId), Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
+                Assert.That(p.ParagraphProperties?.Indentation?.Left?.Value, Is.EqualTo(Margin18PtDxa),
+                    "Only li margin remains on the paragraph; ol margin is on the numbering instance");
+            }
         }
 
         [Test(Description = "Continuation paragraphs inside a margined list item align with the numbered line")]
@@ -842,7 +858,7 @@ namespace HtmlToOpenXml.Tests
             using (Assert.EnterMultipleScope())
             {
                 Assert.That(paragraphs[0].ParagraphProperties?.NumberingProperties, Is.Not.Null);
-                Assert.That(paragraphs[0].ParagraphProperties?.Indentation?.Left?.Value, Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
+                Assert.That(paragraphs[0].ParagraphProperties?.Indentation?.Left?.Value, Is.Null);
                 Assert.That(paragraphs[1].ParagraphProperties?.NumberingProperties, Is.Null);
                 Assert.That(paragraphs[1].ParagraphProperties?.Indentation?.Left?.Value, Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
             }
@@ -853,8 +869,36 @@ namespace HtmlToOpenXml.Tests
         {
             var elements = converter.Parse(@"<ul style='margin-left: 18pt;'><li>Bullet</li></ul>");
             var p = (Paragraph)elements.Single();
+            var numId = p.ParagraphProperties!.NumberingProperties!.NumberingId!.Val!.Value;
+            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
             Assert.That(p.ParagraphProperties?.NumberingProperties, Is.Not.Null);
-            Assert.That(p.ParagraphProperties?.Indentation?.Left?.Value, Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
+            Assert.That(p.ParagraphProperties?.Indentation?.Left?.Value, Is.Null);
+            Assert.That(GetListInstanceLevelIndentLeft(numbering, numId), Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
+            var overrideLevel = GetListInstanceLevelOverride(numbering, numId);
+            Assert.That(overrideLevel?.NumberingFormat?.Val?.Value, Is.EqualTo(NumberFormatValues.Bullet),
+                "Level override must clone the template level so bullet markers still render");
+        }
+
+        /// <summary>18pt margin-left in dxa.</summary>
+        private const string Margin18PtDxa = "360";
+
+        private static string? GetListInstanceLevelIndentLeft(Numbering numbering, int numId, int ilvl = 0)
+        {
+            return GetListInstanceLevelOverride(numbering, numId, ilvl)?.PreviousParagraphProperties?.Indentation?.Left?.Value;
+        }
+
+        private static Level? GetListInstanceLevelOverride(Numbering numbering, int numId, int ilvl = 0)
+        {
+            var instance = numbering.Elements<NumberingInstance>().Single(i => i.NumberID!.Value == numId);
+            foreach (var levelOverride in instance.Elements<LevelOverride>())
+            {
+                foreach (var level in levelOverride.Elements<Level>())
+                {
+                    if (level.LevelIndex?.Value == ilvl)
+                        return level;
+                }
+            }
+            return null;
         }
 
         /// <summary>

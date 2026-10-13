@@ -56,12 +56,15 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         var listContext = context.Properties<ListContext>("listContext");
         var parentContext = listContext;
         var listStyle = GetListName(node, listContext.Name);
-        if (listContext.InstanceId == 0 || listContext.Name != listStyle)
+        long listMarginLeft = GetListContainerMarginLeft(node);
+        bool listMarginOnNumberingInstance = false;
+        if (listContext.InstanceId == 0 || listContext.Name != listStyle || listMarginLeft > 0)
         {
             var abstractNumId = GetOrCreateListTemplate(context, listStyle);
-            listContext = ConcretiseInstance(context, abstractNumId, listStyle, listContext.Level);
+            listContext = ConcretiseInstance(context, abstractNumId, listStyle, listContext.Level, listMarginLeft);
 
             listParagraphStyleId = GetStyleIdForListItem(context.DocumentStyle, node, defaultIfEmpty: false);
+            listMarginOnNumberingInstance = listMarginLeft > 0;
         }
         else
         {
@@ -74,7 +77,6 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 
         // +1 because index starts on 1 and not 0
         var level = Math.Min(listContext.Level, MaxLevel+1);
-        long listMarginLeft = GetListContainerMarginLeft(node);
         foreach (IHtmlElement liNode in liNodes.Cast<IHtmlElement>())
         {
             var expression = new BlockElementExpression(liNode);
@@ -118,9 +120,12 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
                     };
                 }
                 if (listMarginLeft > 0)
-                    // this indentation will apply to paragraph properties
-                    // overriding the indentation property from abstractNum/level instance
-                    SetListItemElementParagraphIndentationLeft(p.ParagraphProperties, level, listMarginLeft);
+                {
+                    if (listMarginOnNumberingInstance)
+                        ApplyLiMarginOnParagraphOnly(p.ParagraphProperties);
+                    else
+                        SetListItemElementParagraphIndentationLeft(p.ParagraphProperties, level, listMarginLeft);
+                }
             }
 
             // any standalone paragraphs must be aligned (indented) along its current level
@@ -133,8 +138,6 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
                 p.ParagraphProperties ??= new();
                 p.ParagraphProperties.ParagraphStyleId ??= (ParagraphStyleId?) listItemStyleId!.CloneNode(true);
                 if (listMarginLeft > 0)
-                    // this indentation will apply to paragraph properties
-                    // overriding the indentation property from abstractNum/level instance
                     SetListItemElementParagraphIndentationLeft(p.ParagraphProperties, level, listMarginLeft);
                 else
                     p.ParagraphProperties.Indentation = new() { Left = (level * Indentation * 2).ToString() };
@@ -150,7 +153,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
     /// <summary>
     /// Create a new instance of a list template.
     /// </summary>
-    private ListContext ConcretiseInstance(ParsingContext context, int abstractNumId, string listStyle, int currentLevel)
+    private ListContext ConcretiseInstance(ParsingContext context, int abstractNumId, string listStyle, int currentLevel, long listMarginLeft)
     {
         ListContext listContext;
 
@@ -161,7 +164,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 
         // be sure to restart to 1 any nested ordered list
         if (currentLevel > 0 && isOrderedTag)
-        {
+        { 
             instanceId = IncrementInstanceId(context, abstractNumId, isReusable: false);
             overrideLevelIndex = currentLevel;
             listContext = new ListContext(listStyle, abstractNumId, instanceId.Value, currentLevel + 1, dir);
@@ -195,16 +198,42 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         }
 
         var numbering = context.MainPart.NumberingDefinitionsPart!.Numbering!;
+        var levelOverride = CreateLevelOverride(numbering, abstractNumId, listContext.Level, startValue, listMarginLeft);
         numbering.Append(
             new NumberingInstance(
                 new AbstractNumId() { Val = abstractNumId },
-                new LevelOverride(
-                    new StartOverrideNumberingValue() { Val = startValue }
-                ) { LevelIndex = overrideLevelIndex }
+                levelOverride
             )
             { NumberID = instanceId.Value });
 
         return listContext;
+    }
+
+    /// <summary>
+    /// Builds the list instance level-override (start value and optional indent from list margin-left).
+    /// </summary>
+    private static LevelOverride CreateLevelOverride(Numbering numbering, int abstractNumId, int listLevel, int startValue, long listMarginLeftDxa)
+    {
+        int ilvl = Math.Max(0, Math.Min(listLevel, MaxLevel + 1) - 1);
+        var levelOverride = new LevelOverride(
+            new StartOverrideNumberingValue() { Val = startValue }
+        ) { LevelIndex = ilvl };
+
+        if (listMarginLeftDxa <= 0)
+            return levelOverride;
+
+        long leftDxa = listLevel * Indentation * 2L + listMarginLeftDxa;
+        var abstractNum = numbering.Elements<AbstractNum>().First(a => a.AbstractNumberId!.Value == abstractNumId);
+        var templateLevel = abstractNum.Elements<Level>().First(l => l.LevelIndex!.Value == ilvl);
+        var overrideLevel = (Level)templateLevel.CloneNode(true);
+        overrideLevel.PreviousParagraphProperties ??= new PreviousParagraphProperties();
+        overrideLevel.PreviousParagraphProperties.Indentation = new Indentation {
+            Left = leftDxa.ToString(CultureInfo.InvariantCulture),
+            Hanging = Indentation.ToString()
+        };
+        levelOverride.Append(overrideLevel);
+
+        return levelOverride;
     }
 
     /// <summary>
@@ -302,6 +331,9 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         return 0;
     }
 
+    /// <summary>
+    /// Align non-numbered paragraphs with the listnode (level + list margin + li margin).
+    /// </summary>
     private static void SetListItemElementParagraphIndentationLeft(ParagraphProperties pPr, int level, long listMarginLeftDxa)
     {
         long levelLeftDxa = level * Indentation * 2;
@@ -310,6 +342,19 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 
         pPr.Indentation ??= new Indentation();
         pPr.Indentation.Left = total.ToString(CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// Keeps listnode margin on numbered lines; list container margin lives on the numbering instance override.
+    /// </summary>
+    private static void ApplyLiMarginOnParagraphOnly(ParagraphProperties pPr)
+    {
+        long liExtraDxa = ParseIndentationLeft(pPr);
+        if (liExtraDxa <= 0)
+            return;
+
+        pPr.Indentation ??= new Indentation();
+        pPr.Indentation.Left = liExtraDxa.ToString(CultureInfo.InvariantCulture);
     }
 
     private static long ParseIndentationLeft(ParagraphProperties? pPr)
