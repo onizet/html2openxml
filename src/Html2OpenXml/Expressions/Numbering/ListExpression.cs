@@ -131,10 +131,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 
                 p.ParagraphProperties ??= new();
                 p.ParagraphProperties.ParagraphStyleId ??= (ParagraphStyleId?) listItemStyleId!.CloneNode(true);
-                if (_listIndentationOffset > 0)
-                    SetListItemElementParagraphIndentationLeft(p.ParagraphProperties, level, _listIndentationOffset);
-                else
-                    p.ParagraphProperties.Indentation = new() { Left = (level * Indentation * 2).ToString() };
+                SetListItemElementParagraphIndentationLeft(p.ParagraphProperties, level, _listIndentationOffset);
             }
 
             foreach (var child in childElements)
