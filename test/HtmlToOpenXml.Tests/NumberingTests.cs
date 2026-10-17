@@ -732,6 +732,110 @@ namespace HtmlToOpenXml.Tests
             AssertThatOpenXmlDocumentIsValid();
         }
 
+        /// <summary>Level-1 list indent plus 18pt ol margin-left.</summary>
+        private const string Level1ListIndent_AddedWith_18PtMargin_DXA_Value = "1080";
+
+        [Test(Description = "List container margin-left must not create a separate abstractNum for the same list-style-type")]
+        public void ListContainerMarginLeft_SharesAbstractNumAcrossDifferentMargins()
+        {
+            converter.Parse(@"
+                <ol type='1' style='margin-left: 18pt;'><li>First</li></ol>
+                <ol type='1' style='margin-left: 0;'><li>Second</li></ol>");
+
+            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
+            var decimalAbstractNums = numbering.Elements<AbstractNum>()
+                .Where(a => a.AbstractNumDefinitionName?.Val?.Value == "decimal")
+                .ToList();
+            Assert.That(decimalAbstractNums, Has.Count.EqualTo(1));
+
+            var abstractNumId = decimalAbstractNums[0].AbstractNumberId!.Value;
+            var instances = numbering.Elements<NumberingInstance>()
+                .Where(i => i.AbstractNumId?.Val == abstractNumId)
+                .ToList();
+            Assert.That(instances, Has.Count.GreaterThanOrEqualTo(2));
+        }
+
+        [Test(Description = "Nested ol margin-left stacks with numbering level indent on each list")]
+        public void ListContainerMarginLeft_NestedList_AppliesLevelAndMargin()
+        {
+            var elements = converter.Parse(@"
+                <ol style='margin-left: 18pt;'>
+                    <li>Outer
+                        <ol style='margin-left: 18pt;'><li>Inner</li></ol>
+                    </li>
+                </ol>");
+
+            var paragraphs = elements.OfType<Paragraph>().ToList();
+            Assert.That(paragraphs, Has.Count.EqualTo(2));
+
+            var outer = paragraphs.Single(p =>
+                p.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value == 0);
+            var inner = paragraphs.Single(p =>
+                p.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value == 1);
+
+            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
+            var outerNumId = outer.ParagraphProperties!.NumberingProperties!.NumberingId!.Val!.Value;
+            var innerNumId = inner.ParagraphProperties!.NumberingProperties!.NumberingId!.Val!.Value;
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(GetListInstanceLevelIndentLeft(numbering, outerNumId), Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
+                Assert.That(GetListInstanceLevelIndentLeft(numbering, innerNumId, ilvl: 1), Is.EqualTo("1800"));
+            }
+        }
+
+        [Test(Description = "Continuation paragraphs inside a margined list item align with the numbered line")]
+        public void ListContainerMarginLeft_MultiParagraphListItem_Aligned()
+        {
+            var elements = converter.Parse(@"
+                <ol style='margin-left: 18pt;'>
+                    <li><p>One</p><p>Two</p></li>
+                </ol>");
+
+            var paragraphs = elements.OfType<Paragraph>().ToList();
+            Assert.That(paragraphs, Has.Count.EqualTo(2));
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(paragraphs[0].ParagraphProperties?.NumberingProperties, Is.Not.Null);
+                Assert.That(paragraphs[1].ParagraphProperties?.NumberingProperties, Is.Null);
+                Assert.That(paragraphs[1].ParagraphProperties?.Indentation?.Left?.Value, Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
+            }
+        }
+
+        [Test(Description = "Unordered lists apply ol margin-left the same way as ordered lists")]
+        public void ListContainerMarginLeft_AppliesToUnorderedList()
+        {
+            var elements = converter.Parse(@"<ul style='margin-left: 18pt;'><li>Bullet</li></ul>");
+            var p = (Paragraph)elements.Single();
+            var numId = p.ParagraphProperties!.NumberingProperties!.NumberingId!.Val!.Value;
+            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
+            Assert.That(p.ParagraphProperties?.NumberingProperties, Is.Not.Null);
+            Assert.That(GetListInstanceLevelIndentLeft(numbering, numId), Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
+            var overrideLevel = GetListInstanceLevelOverride(numbering, numId);
+            Assert.That(overrideLevel?.NumberingFormat?.Val?.Value, Is.EqualTo(NumberFormatValues.Bullet),
+                "Level override must clone the template level so bullet markers still render");
+        }
+
+        private static string? GetListInstanceLevelIndentLeft(Numbering numbering, int numId, int ilvl = 0)
+        {
+            return GetListInstanceLevelOverride(numbering, numId, ilvl)?.PreviousParagraphProperties?.Indentation?.Left?.Value;
+        }
+
+        private static Level? GetListInstanceLevelOverride(Numbering numbering, int numId, int ilvl = 0)
+        {
+            var instance = numbering.Elements<NumberingInstance>().Single(i => i.NumberID!.Value == numId);
+            foreach (var levelOverride in instance.Elements<LevelOverride>())
+            {
+                foreach (var level in levelOverride.Elements<Level>())
+                {
+                    if (level.LevelIndex?.Value == ilvl)
+                        return level;
+                }
+            }
+            return null;
+        }
+
         /// <summary>
         /// A nested ul type attribute must use its own bullet, not the parent marker
         /// </summary>
