@@ -63,7 +63,7 @@ sealed class ImagePrefetcher<T> : ImagePrefetcherBase, IImageLoader
         if (prefetchedImages.TryGetValue(imageUri, out var iinfo))
             return iinfo;
 
-        if (DataUri.IsWellFormed(imageUri)) // data inline, encoded in base64
+        if (DataUri.IsDataUri(imageUri)) // data inline, encoded in base64
         {
             iinfo = ReadDataUri(imageUri);
         }
@@ -169,7 +169,7 @@ sealed class ImagePrefetcher<T> : ImagePrefetcherBase, IImageLoader
     /// </summary>
     private HtmlImageInfo? ReadDataUri(string src)
     {
-        if (DataUri.TryCreate(src, out var dataUri))
+        if (DataUri.TryCreate(src, out var dataUri) && dataUri.Data != null)
         {
             TryInspectMimeType(dataUri!.Mime, out PartTypeInfo type);
 

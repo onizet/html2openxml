@@ -9,8 +9,7 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System.Text;
-using System.Text.RegularExpressions;
+using System.Diagnostics.CodeAnalysis;
 
 namespace HtmlToOpenXml.IO;
 
@@ -24,16 +23,9 @@ namespace HtmlToOpenXml.IO;
 [System.Diagnostics.DebuggerDisplay("{Mime,nq}")]
 public sealed class DataUri
 {
-    // mime-type can be: svg+xml, x-png
-    private readonly static Regex dataUriRegex = new(
-            @"data\:(?<mime>\w+/[\w\-\+\.]+)?(?:;charset=(?<charset>[a-zA-Z_0-9-]+))?(?<base64>;base64)?,(?<data>.*)",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled,
-            TimeSpan.FromMilliseconds(200));
-
-    private DataUri(string mime, byte[] data)
+    private DataUri(string mimeType)
     {
-        Mime = mime;
-        Data = data;
+        Mime = mimeType;
     }
 
     /// <summary>
@@ -44,7 +36,7 @@ public sealed class DataUri
     /// from <paramref name="uri"/>. This parameter is passed uninitialized.</param>
     /// <returns>A <see cref="Boolean"/> value that is true if the DataUri was 
     /// successfully created; otherwise, false.</returns>
-    public static bool TryCreate(string uri, out DataUri? result)
+    public static bool TryCreate(string uri, [NotNullWhen(true)] out DataUri? result)
     {
         // expected format: data:[<MIME-type>][;charset=<encoding>][;base64],<data>
         // The encoding is indicated by ;base64. If it's present the data is encoded as base64. Without it the data (as a sequence of octets)
@@ -55,54 +47,73 @@ public sealed class DataUri
         // while Internet Explorer requires that the charset's specification must precede the base64 token.
         // http://en.wikipedia.org/wiki/Data_URI_scheme
 
-        Match match;
         result = null;
-        try
-        {
-            match = dataUriRegex.Match(uri);
-            if (!match.Success) return false;
-        }
-        catch (RegexMatchTimeoutException)
-        {
-            return false;
-        }
 
-        byte[] rawData;
-        string mime;
-        Encoding charSet = Encoding.ASCII;
+        if (uri.Length < 5)
+            return false;
+
+        var uriSpan = uri.AsSpan();
+        int commaIndex = uriSpan.IndexOf(',');
+
+        // 6 is minimal valid data URI: `data:,`
+        // 128 to avoid allocating too much memory
+        if (commaIndex < 5 || commaIndex > 128)
+            return false;
+
+        Span<char> loweredValue = stackalloc char[commaIndex];
+        uriSpan.Slice(0, commaIndex).ToLowerInvariant(loweredValue);
+
+        // must starts with `data:`
+        if (!loweredValue.StartsWith("data:"))
+            return false;
 
         // if mime is omitted, set default value as it stands in the norm
-        if (match.Groups["mime"].Length == 0)
-            mime = "text/plain";
-        else
-            mime = match.Groups["mime"].Value;
+        string mime = "text/plain";
+        string charSet = "ascii";
+        bool isBase64 = false;
 
-        if (match.Groups["charset"].Length > 0)
+        Span<Range> tokens = stackalloc Range[5];
+        var tokenCount = loweredValue.Split(tokens, ';', StringSplitOptions.RemoveEmptyEntries);
+        for (var i = 0; i < tokenCount; i++)
         {
-            try
+            var token = loweredValue[tokens[i]];
+            if (token is "base64") isBase64 = true;
+            else if (token.StartsWith("data:") && token.Length > 6)
             {
-                charSet = Encoding.GetEncoding(match.Groups["charset"].Value);
+                mime = token.Slice(5).Trim().ToString();
             }
-            catch (ArgumentException)
+            else if (token.StartsWith("charset="))
             {
-                // charSet was not recognized
-                return false;
+                try
+                {
+                    charSet = System.Text.Encoding.GetEncoding(token.Slice(8 /* 'charset=' */).ToString()).WebName;
+                }
+                catch (ArgumentException)
+                {
+                    // charSet was not recognized
+                    return false;
+                }
             }
+
+            // else ignore, arbitrary value not needed in this context
         }
 
-        // is it encoded in base64?
-        if (match.Groups["base64"].Length > 0)
+        var data = uriSpan.Slice(commaIndex + 1).Trim();
+        if (data.IsEmpty)
+        {
+            result = new(mime);
+            return true; // this is still a valid data URI
+        }
+
+        if (isBase64)
         {
             // be careful that the raw data is encoded for url (standard %xx hex encoding)
-#if NET5_0_OR_GREATER
-            string base64 = System.Web.HttpUtility.HtmlDecode(match.Groups["data"].Value);
-#else 
-            string base64 = HttpUtility.HtmlDecode(match.Groups["data"].Value);
-#endif
+            string base64 = HttpUtility.HtmlDecode(data);
 
             try
             {
-                rawData = Convert.FromBase64String(base64);
+                result = new(mime) { Data = Convert.FromBase64String(base64) };
+                return true;
             }
             catch (FormatException)
             {
@@ -110,26 +121,18 @@ public sealed class DataUri
                 return false;
             }
         }
-        else
-        {
-            // the <data> represents some text (like html snippet) and must be decoded.
-            string? raw = HttpUtility.UrlDecode(match.Groups["data"].Value)!;
-            if (string.IsNullOrEmpty(raw))
-                return false;
-            // we convert back to UTF-8 for easier processing later and to have a "referential" encoding
-            rawData = Encoding.Convert(charSet, Encoding.UTF8, charSet.GetBytes(raw));
-        }
 
-        result = new DataUri(mime, rawData);
+        // the <data> represents some text (like html snippet) and must be decoded.
+        result = new(mime) { Encoding = charSet, Content = HttpUtility.UrlDecode(data) };
         return true;
     }
 
     /// <summary>
-    /// Indicates whether the string is well-formed by attempting to construct a DataUri with the string.
+    /// Determines whether the uri looks like a Data Uri.
     /// </summary>
-    public static bool IsWellFormed(string uri)
+    public static bool IsDataUri(string uri)
     {
-        return dataUriRegex.IsMatch(uri);
+        return uri.StartsWith("data:", StringComparison.OrdinalIgnoreCase);
     }
 
     //____________________________________________________________________
@@ -138,10 +141,20 @@ public sealed class DataUri
     /// <summary>
     /// Gets the MIME type declared by the Data URI, such as image/png or image/jpeg.
     /// </summary>
-    public string Mime { get; private set; }
+    public string Mime { get; }
 
     /// <summary>
-    /// Gets the decoded binary content extracted from the Data URI.
+    /// Gets the decoded binary content.
     /// </summary>
-    public byte[] Data { get; private set; }
+    public byte[]? Data { get; init; }
+
+    /// <summary>
+    /// Gets the encoding of the content when the data is text (e.g., UTF-8).
+    /// </summary>
+    public string? Encoding { get; init; }
+
+    /// <summary>
+    /// Gets the decoded human-readable content.
+    /// </summary>
+    public string? Content { get; init; }
 }

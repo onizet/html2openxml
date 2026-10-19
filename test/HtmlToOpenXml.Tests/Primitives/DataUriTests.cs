@@ -9,13 +9,19 @@ namespace HtmlToOpenXml.Tests.Primitives
     [TestFixture]
     public class DataUriTests
     {
-        [TestCase("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==", Description = "red dot")]
-        [TestCase("data:text/html,%3Ch1%3EHello%2C%20World%21%3C%2Fh1%3E")]
-        [TestCase("data:text/plain;charset=UTF-8,the%20data:1234,5678")]
-        public void InlineData_ShouldSucceed(string uri)
+        [TestCase("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==", "image/png", null, true, Description = "red dot")]
+        [TestCase("data:text/html,%3Ch1%3EHello%2C%20World%21%3C%2Fh1%3E", "text/html", "ascii", false)]
+        [TestCase("data:text/plain;charset=UTF-8,the%20data:1234,5678", "text/plain", "utf-8", false)]
+        [TestCase("data:,foo", "text/plain", "ascii", false)]
+        [TestCase("data:,", "text/plain", null, false)]
+        [TestCase("data: image/png;base64, iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==", "image/png", null, true)]
+        public void InlineData_ShouldSucceed(string uri, string expectedMimeType, string? expectedEncoding, bool expectedData)
         {
             DataUri.TryCreate(uri, out DataUri? result);
             Assert.That(result, Is.Not.Null);
+            Assert.That(result.Mime, Is.EqualTo(expectedMimeType));
+            Assert.That(result.Encoding, Is.EqualTo(expectedEncoding));
+            Assert.That(result.Data, expectedData? Is.Not.Null : Is.Null);
         }
 
         [Test]
@@ -69,6 +75,7 @@ Wilba3ihB6iNAufyoltLaZw8tvFIw6FkBNSgADA4FLRRRRRRRX//2Q==
 
         [TestCase("data:text/plain;charset=utf-123,the%20data:1234,5678")]
         [TestCase("data:image/png;base64,abc")]
+        [TestCase("data,")]
         public void InvalidData_ShouldFail(string uri)
         {
             DataUri.TryCreate(uri, out DataUri ?result);

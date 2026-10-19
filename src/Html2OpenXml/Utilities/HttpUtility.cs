@@ -9,172 +9,172 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System.Text;
+using System.Buffers;
 using System.Globalization;
 
 namespace HtmlToOpenXml;
 
 /// <summary>
-/// Helper class that can be found in System.Web.HttpUtility. This class allows us to avoid a reference to System.Web.
+/// Custom utility providing compatible encoding and decoding functionality.
+/// This implementation embraces the modern API <c>Span&lt;char&gt;</c> for maximum efficiency.
+/// 
+/// <para>
+/// For .Net 462 and .Net Standard 2.0, this implementation avoid reliance on the legacy <c>System.Web</c> library.
+/// </para>
 /// </summary>
-static class HttpUtility
+static partial class HttpUtility
 {
-#if !NET5_0_OR_GREATER
-    private static readonly char[] entityEndingChars = [';', '&'];
-
-    static class HtmlEntities
-    {
-        private static readonly string[] entitiesList = [ 
-            "\"-quot", "&-amp", "<-lt", ">-gt", "\x00a0-nbsp", "\x00a1-iexcl", "\x00a2-cent", "\x00a3-pound", "\x00a4-curren", "\x00a5-yen", "\x00a6-brvbar", "\x00a7-sect", "\x00a8-uml", "\x00a9-copy", "\x00aa-ordf", "\x00ab-laquo", 
-            "\x00ac-not", "\x00ad-shy", "\x00ae-reg", "\x00af-macr", "\x00b0-deg", "\x00b1-plusmn", "\x00b2-sup2", "\x00b3-sup3", "\x00b4-acute", "\x00b5-micro", "\x00b6-para", "\x00b7-middot", "\x00b8-cedil", "\x00b9-sup1", "\x00ba-ordm", "\x00bb-raquo", 
-            "\x00bc-frac14", "\x00bd-frac12", "\x00be-frac34", "\x00bf-iquest", "\x00c0-Agrave", "\x00c1-Aacute", "\x00c2-Acirc", "\x00c3-Atilde", "\x00c4-Auml", "\x00c5-Aring", "\x00c6-AElig", "\x00c7-Ccedil", "\x00c8-Egrave", "\x00c9-Eacute", "\x00ca-Ecirc", "\x00cb-Euml", 
-            "\x00cc-Igrave", "\x00cd-Iacute", "\x00ce-Icirc", "\x00cf-Iuml", "\x00d0-ETH", "\x00d1-Ntilde", "\x00d2-Ograve", "\x00d3-Oacute", "\x00d4-Ocirc", "\x00d5-Otilde", "\x00d6-Ouml", "\x00d7-times", "\x00d8-Oslash", "\x00d9-Ugrave", "\x00da-Uacute", "\x00db-Ucirc", 
-            "\x00dc-Uuml", "\x00dd-Yacute", "\x00de-THORN", "\x00df-szlig", "\x00e0-agrave", "\x00e1-aacute", "\x00e2-acirc", "\x00e3-atilde", "\x00e4-auml", "\x00e5-aring", "\x00e6-aelig", "\x00e7-ccedil", "\x00e8-egrave", "\x00e9-eacute", "\x00ea-ecirc", "\x00eb-euml", 
-            "\x00ec-igrave", "\x00ed-iacute", "\x00ee-icirc", "\x00ef-iuml", "\x00f0-eth", "\x00f1-ntilde", "\x00f2-ograve", "\x00f3-oacute", "\x00f4-ocirc", "\x00f5-otilde", "\x00f6-ouml", "\x00f7-divide", "\x00f8-oslash", "\x00f9-ugrave", "\x00fa-uacute", "\x00fb-ucirc", 
-            "\x00fc-uuml", "\x00fd-yacute", "\x00fe-thorn", "\x00ff-yuml", "Œ-OElig", "œ-oelig", "Š-Scaron", "š-scaron", "Ÿ-Yuml", "ƒ-fnof", "ˆ-circ", "˜-tilde", "Α-Alpha", "Β-Beta", "Γ-Gamma", "Δ-Delta", 
-            "Ε-Epsilon", "Ζ-Zeta", "Η-Eta", "Θ-Theta", "Ι-Iota", "Κ-Kappa", "Λ-Lambda", "Μ-Mu", "Ν-Nu", "Ξ-Xi", "Ο-Omicron", "Π-Pi", "Ρ-Rho", "Σ-Sigma", "Τ-Tau", "Υ-Upsilon", 
-            "Φ-Phi", "Χ-Chi", "Ψ-Psi", "Ω-Omega", "α-alpha", "β-beta", "γ-gamma", "δ-delta", "ε-epsilon", "ζ-zeta", "η-eta", "θ-theta", "ι-iota", "κ-kappa", "λ-lambda", "μ-mu", 
-            "ν-nu", "ξ-xi", "ο-omicron", "π-pi", "ρ-rho", "ς-sigmaf", "σ-sigma", "τ-tau", "υ-upsilon", "φ-phi", "χ-chi", "ψ-psi", "ω-omega", "ϑ-thetasym", "ϒ-upsih", "ϖ-piv", 
-            " -ensp", " -emsp", " -thinsp", "‌-zwnj", "‍-zwj", "‎-lrm", "‏-rlm", "–-ndash", "—-mdash", "‘-lsquo", "’-rsquo", "‚-sbquo", "“-ldquo", "”-rdquo", "„-bdquo", "†-dagger", 
-            "‡-Dagger", "•-bull", "…-hellip", "‰-permil", "′-prime", "″-Prime", "‹-lsaquo", "›-rsaquo", "‾-oline", "⁄-frasl", "€-euro", "ℑ-image", "℘-weierp", "ℜ-real", "™-trade", "ℵ-alefsym", 
-            "←-larr", "↑-uarr", "→-rarr", "↓-darr", "↔-harr", "↵-crarr", "⇐-lArr", "⇑-uArr", "⇒-rArr", "⇓-dArr", "⇔-hArr", "∀-forall", "∂-part", "∃-exist", "∅-empty", "∇-nabla", 
-            "∈-isin", "∉-notin", "∋-ni", "∏-prod", "∑-sum", "−-minus", "∗-lowast", "√-radic", "∝-prop", "∞-infin", "∠-ang", "∧-and", "∨-or", "∩-cap", "∪-cup", "∫-int", 
-            "∴-there4", "∼-sim", "≅-cong", "≈-asymp", "≠-ne", "≡-equiv", "≤-le", "≥-ge", "⊂-sub", "⊃-sup", "⊄-nsub", "⊆-sube", "⊇-supe", "⊕-oplus", "⊗-otimes", "⊥-perp", 
-            "⋅-sdot", "⌈-lceil", "⌉-rceil", "⌊-lfloor", "⌋-rfloor", "〈-lang", "〉-rang", "◊-loz", "♠-spades", "♣-clubs", "♥-hearts", "♦-diams"
-            ];
-        private static Dictionary<string, char>? entitiesLookupTable;
-        private static readonly object SyncObject = new();
-
-        internal static char Lookup(string entity)
-        {
-            if (entitiesLookupTable == null)
-            {
-                lock (SyncObject)
-                {
-                    if (entitiesLookupTable == null)
-                    {
-                        var hashtable = new Dictionary<string, char>(entitiesList.Length);
-                        foreach (string str in entitiesList)
-                            hashtable[str.Substring(2)] = str[0];
-
-                        entitiesLookupTable = hashtable;
-                    }
-                }
-            }
-
-            if (!entitiesLookupTable.TryGetValue(entity, out char ch)) return '\0';
-            return ch;
-        }
-    }
-
     /// <summary>
     /// Converts a string that has been HTML-encoded for HTTP transmission into a decoded string.
     /// </summary>
-    public static string HtmlDecode(string? s)
+    public static string HtmlDecode(ReadOnlySpan<char> span)
     {
-        if (s == null) return string.Empty;
+        if (span.IsEmpty)
+            return string.Empty;
 
-        if (s.IndexOf('&') < 0) return s;
+        if (span.IndexOf('&') < 0)
+            return span.ToString();
 
-        StringBuilder sb = new StringBuilder();
-        StringWriter output = new StringWriter(sb, CultureInfo.InvariantCulture);
-        HtmlDecode(s, output);
-        return sb.ToString();
-    }
+        var buffer = ArrayPool<char>.Shared.Rent(span.Length);
+        var length = 0;
 
-    /// <summary>
-    /// Converts a string that has been HTML-encoded into a decoded string, and sends
-    /// the decoded string to a <see cref="TextWriter"/> output stream.
-    /// </summary>
-    private static void HtmlDecode(string? s, TextWriter output)
-    {
-        if (s == null) return;
-        if (s.IndexOf('&') < 0) output.Write(s);
-
-        int length = s.Length;
-        for (int i = 0; i < length; i++)
+        while (!span.IsEmpty)
         {
-            char ch = s[i];
-            if (ch != '&')
+            int ampIndex = span.IndexOf('&'),
+                endIndex;
+
+            if (ampIndex == -1 || ((endIndex = span.Slice(ampIndex+1).IndexOfAny(';', '&')) == -1))
             {
-                output.Write(ch);
+                // Dangling '&' at EOF or sequence end. Treat it literally.
+                span.CopyTo(buffer.AsSpan(length));
+                length += span.Length;
+                break;
+            }
+
+            endIndex += ampIndex + 1;
+
+            // have we found another '&' while expecting ';'? If so, this is not an entity
+            // but this new ampersan might be
+            if (span[endIndex] == '&')
+            {
+                span.Slice(0, endIndex).CopyTo(buffer.AsSpan(length));
+                length += endIndex;
+                span = span.Slice(endIndex);
                 continue;
             }
 
+            span.Slice(0, ampIndex).CopyTo(buffer.AsSpan(length));
+            length += ampIndex;
 
-            int endIndex = s.IndexOfAny(entityEndingChars, i + 1);
-            if (endIndex > 0 && s[endIndex] == ';')
+            var entity = span.Slice(ampIndex + 1, endIndex - ampIndex - 1);
+            if (entity.Length > 0 && entity[0] == '#')
             {
-                string entity = s.Substring(i + 1, endIndex - i - 1);
-                if (entity.Length > 0 && entity[0] == '#')
+                if (TryDecodeNumericEntity(entity, out uint codePoint))
                 {
-                    bool success;
-                    int result;
-                    if (entity[1] == 'x' || entity[1] == 'X')
+                    if (System.Text.Rune.IsValid(codePoint))
                     {
-                        success = int.TryParse(entity.Substring(2), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out result);
-                    }
-                    else
-                    {
-                        success = int.TryParse(entity.Substring(1), out result);
+                        length += new System.Text.Rune(codePoint)
+                            .EncodeToUtf16(buffer.AsSpan(length));
                     }
 
-                    if (success)
-                    {
-                        if (IsLegalXmlChar(result)) output.Write((char) result);
-                        i = endIndex;
-                    }
-                    else
-                    {
-                        i++;
-                    }
+                    span = span.Slice(entity.Length + 1);
+                    continue;
                 }
-                else
-                {
-                    i = endIndex;
-                    ch = HtmlEntities.Lookup(entity);
-                    if (ch != '\0') output.Write(ch);
-                    else
-                    {
-                        output.Write('&');
-                        output.Write(entity);
-                        output.Write(';');
-                    }
-                }
+
+                buffer[length++] = '&';
+                span = span.Slice(1);
+                continue;
             }
+
+            if (IsKnownEntities(entity, out var ch))
+                buffer[length++] = ch;
+            else
+                span.Slice(endIndex).CopyTo(buffer);
+
+            // move to next token
+            span = span.Slice(endIndex + 1);
         }
+
+        var result = new String(buffer, 0, length);
+
+        ArrayPool<char>.Shared.Return(buffer);
+        return result;
     }
+
+    /// <summary>
+    /// Try to parse an HTML nnumeric entity and returns its Unicode code point.
+    /// </summary>
+    /// <param name="entity">The entity text without the surrounding <c>&amp;</c> and <c>;</c>.</param>
+    /// <param name="codePoint">The Unicode point representing that entity.</param>
+    private static bool TryDecodeNumericEntity(ReadOnlySpan<char> entity, out uint codePoint)
+    {
+        if (entity.Length < 2 || entity[0] != '#')
+        {
+            codePoint = 0;
+            return false;
+        }
+
+        NumberStyles numberStyles = NumberStyles.Integer;
+        if (entity[1] is 'x' or 'X')
+        {
+            numberStyles = NumberStyles.AllowHexSpecifier;
+            entity = entity.Slice(2);
+        }
+        else
+        {
+            entity = entity.Slice(1);
+        }
+
+        return uint.TryParse(
+#if NET5_0_OR_GREATER
+            entity,
+#else
+            entity.ToString(),
 #endif
+            numberStyles, CultureInfo.InvariantCulture, out codePoint);
+    }
+
+    private static bool IsKnownEntities(ReadOnlySpan<char> entity, out char ch)
+    {
+        // avoid to allocate a new string for most common entities
+        // and this is faster to use this pattern matching
+        ch = entity switch {
+            "amp" => '&',
+            "lt"  => '<',
+            "gt"  => '>',
+            "quot" => '"',
+            "apos" => '\'',
+            "nbsp" => '\x00a0',
+            "copy" => '©',
+            "reg" => '®',
+            "trade" => '™',
+            _ => '\0'
+        };
+
+        if (ch != '\0')
+            return true;
+
+        // fallback on the hard-coded list
+        return HtmlEntities.Lookup(entity, out ch);
+    }
 
     /// <summary>
     /// Converts a string that represents an Html-encoded URL to a decoded string.
     /// </summary>
-    public static string? UrlDecode(string? text)
+    public static string UrlDecode(ReadOnlySpan<char> text)
     {
+        if (text.IsEmpty) return string.Empty;
+
         // pre-process for + sign space formatting since System.Uri doesn't handle it
         // plus literals are encoded as %2b normally so this should be safe
         // http://www.west-wind.com/weblog/posts/2009/Feb/05/Html-and-Uri-String-Encoding-without-SystemWeb
-        if (string.IsNullOrEmpty(text)) return string.Empty;
-        text = text!.Replace("+", " ");
+        if (text.IndexOf('+') > 0)
+            return Uri.UnescapeDataString(text.ToString().Replace("+", " "));
+
+#if NET9_0_OR_GREATER
         return Uri.UnescapeDataString(text);
-    }
-
-    // Utilities methods
-
-    /// <summary>
-    /// Gets whether a given character is allowed by XML 1.0.
-    /// </summary>
-    private static bool IsLegalXmlChar(int character)
-    {
-        // http://seattlesoftware.wordpress.com/2008/09/11/hexadecimal-value-0-is-an-invalid-character/
-
-        return (
-                character == 0x9 /* == '\t' == 9   */       ||
-                character == 0xA /* == '\n' == 10  */       ||
-                character == 0xD /* == '\r' == 13  */       ||
-            (character >= 0x20 && character <= 0xD7FF) ||
-            (character >= 0xE000 && character <= 0xFFFD) ||
-            (character >= 0x10000 && character <= 0x10FFFF)
-        );
+#else
+        return Uri.UnescapeDataString(text.ToString());
+#endif
     }
 }

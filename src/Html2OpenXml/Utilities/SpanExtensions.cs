@@ -34,6 +34,20 @@ static class SpanExtensions
     }
 
     /// <summary>
+    /// Shim method to convert <see cref="string"/> to <see cref="int"/>.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [System.Diagnostics.DebuggerHidden]
+    public static int AsInt32(this ReadOnlySpan<char> span, NumberStyles style)
+    {
+#if NET5_0_OR_GREATER
+        return int.Parse(span, style, CultureInfo.InvariantCulture);
+#else
+        return int.Parse(span.ToString(), style, CultureInfo.InvariantCulture);
+#endif
+    }
+
+    /// <summary>
     /// Shim method to convert <see cref="string"/> to <see cref="double"/>.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
