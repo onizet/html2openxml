@@ -7,11 +7,11 @@ namespace HtmlToOpenXml;
 
 static partial class HttpUtility
 {
-    // This code comes from the .Net API; For .Net462, this avoid to add a reference to System.Web
-    // https://github.com/dotnet/dotnet/blob/main/src/runtime/src/libraries/System.Private.CoreLib/src/System/Net/WebUtility.cs
+    // Copies from WebUtility.HtmlEntities implementation.
+    // Source: https://github.com/dotnet/dotnet/blob/main/src/runtime/src/libraries/System.Private.CoreLib/src/System/Net/WebUtility.cs
     static class HtmlEntities
     {
-        private static readonly Lazy<IReadOnlyDictionary<ulong, char>> lookupTable = new(() => InitializeLookupTable());
+        private static readonly IReadOnlyDictionary<ulong, char> lookupTable = InitializeLookupTable();
 
         // The list is from http://www.w3.org/TR/REC-html40/sgml/entities.html, except for &apos;, which
         // is defined in http://www.w3.org/TR/2008/REC-xml-20081126/#sec-predefined-ent.
@@ -295,7 +295,7 @@ static partial class HttpUtility
             // Since all entity strings comprise 8 characters or less and are ASCII-only, they "fit" into an ulong (8 bytes).
             if (entity.Length <= 8)
             {
-                return lookupTable.Value.TryGetValue(ToUInt64Key(entity), out result);
+                return lookupTable.TryGetValue(ToUInt64Key(entity), out result);
             }
 
             // Currently, there are no entities that are longer than 8 characters.

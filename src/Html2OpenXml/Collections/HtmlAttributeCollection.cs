@@ -60,33 +60,19 @@ readonly struct HtmlAttributeCollection
             }
 
             var separator = span[index];
-            if (separator == ';' && foundKey)
-            {
-                if (index > 0)
-                    collection.attributes[key!] = new Range(startIndex, startIndex + index);
-                foundKey = false;
-                index++;
-            }
-            else if (separator == ';' && !foundKey)
-            {
-                // unexpected semicolon (ie, key with no value) -> ignore this style
-                index++;
-            }
-            else if (separator == ':' && !foundKey)
-            {
-                key = span.Slice(0, index).Trim().ToString().ToLowerInvariant();
-                foundKey = true;
-                index++;
-            }
-            // html-encoded semicolon
-            else if (foundKey && IsSemiColon(span.Slice(index), out var charsConsumed))
+            if (foundKey && HttpUtility.IsSemiColonEntity(span.Slice(index), out var charsConsumed))
             {
                 if (index > 0)
                     collection.attributes[key!] = new Range(startIndex, startIndex + index);
                 foundKey = false;
                 index += charsConsumed;
             }
-            else if (!foundKey && IsColon(span.Slice(index), out charsConsumed))
+            else if (separator == ';' && !foundKey)
+            {
+                // unexpected semicolon (ie, key with no value) -> ignore this style
+                index++;
+            }
+            else if (!foundKey && HttpUtility.IsColonEntity(span.Slice(index), out charsConsumed))
             {
                 key = span.Slice(0, index).Trim().ToString().ToLowerInvariant();
                 foundKey = true;
@@ -103,42 +89,6 @@ readonly struct HtmlAttributeCollection
         }
 
         return collection;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool IsSemiColon(ReadOnlySpan<char> span, out int charsConsumed)
-    {
-        if (span.StartsWith(['&','#','5','9',';']))
-        {
-            charsConsumed = 5;
-            return true;
-        }
-        if (span.StartsWith(['&','s','e','m','i',';']))
-        {
-           charsConsumed = 6;
-            return true;
-        }
-
-        charsConsumed = 0;
-        return false;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool IsColon(ReadOnlySpan<char> span, out int charsConsumed)
-    {
-        if (span.StartsWith(['&','#','5','8',';']))
-        {
-            charsConsumed = 5;
-            return true;
-        }
-        if (span.StartsWith(['&','c','o','l','o','n',';']))
-        {
-           charsConsumed = 7;
-            return true;
-        }
-
-        charsConsumed = 0;
-        return false;
     }
 
     /// <summary>

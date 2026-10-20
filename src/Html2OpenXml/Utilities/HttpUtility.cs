@@ -11,6 +11,7 @@
  */
 using System.Buffers;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace HtmlToOpenXml;
 
@@ -24,6 +25,62 @@ namespace HtmlToOpenXml;
 /// </summary>
 static partial class HttpUtility
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool IsSemiColonEntity(ReadOnlySpan<char> span, out int charsConsumed)
+    {
+        if (span[0] == ';')
+        {
+            charsConsumed = 1;
+            return true;
+        }
+        if (span.StartsWith(['&','#','5','9',';']))
+        {
+            charsConsumed = 5;
+            return true;
+        }
+        else if (span.StartsWith("&#x3B;", StringComparison.OrdinalIgnoreCase))
+        {
+            charsConsumed = 6;
+            return true;
+        }
+        else if (span.StartsWith("&semi;", StringComparison.OrdinalIgnoreCase))
+        {
+           charsConsumed = 6;
+            return true;
+        }
+
+        charsConsumed = 0;
+        return false;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool IsColonEntity(ReadOnlySpan<char> span, out int charsConsumed)
+    {
+        if (span[0] == ':')
+        {
+            charsConsumed = 1;
+            return true;
+        }
+        else if (span.StartsWith(['&','#','5','8',';']))
+        {
+            charsConsumed = 5;
+            return true;
+        }
+       else if (span.StartsWith("&#x3A;", StringComparison.OrdinalIgnoreCase))
+        {
+            charsConsumed = 6;
+            return true;
+        }
+        else if (span.StartsWith("&colon;", StringComparison.OrdinalIgnoreCase))
+        {
+           charsConsumed = 7;
+            return true;
+        }
+
+        charsConsumed = 0;
+        return false;
+    }
+
     /// <summary>
     /// Converts a string that has been HTML-encoded for HTTP transmission into a decoded string.
     /// </summary>
@@ -36,6 +93,21 @@ static partial class HttpUtility
             return span.ToString();
 
         var buffer = ArrayPool<char>.Shared.Rent(span.Length);
+        string result;
+        try
+        {
+            var length = HtmlDecode(span, buffer);
+            result = new String(buffer, 0, length);
+        }
+        finally
+        {
+            ArrayPool<char>.Shared.Return(buffer);
+        }
+        return result;
+    }
+
+    private static int HtmlDecode(ReadOnlySpan<char> span, char[] buffer)
+    {
         var length = 0;
 
         while (!span.IsEmpty)
@@ -86,19 +158,19 @@ static partial class HttpUtility
                 continue;
             }
 
-            if (IsKnownEntities(entity, out var ch))
+            if (TryDecodeNamedEntity(entity, out var ch))
                 buffer[length++] = ch;
             else
-                span.Slice(endIndex).CopyTo(buffer);
+            {
+                span.Slice(endIndex).CopyTo(buffer.AsSpan(length));
+                length += endIndex;
+            }
 
             // move to next token
             span = span.Slice(endIndex + 1);
         }
 
-        var result = new String(buffer, 0, length);
-
-        ArrayPool<char>.Shared.Return(buffer);
-        return result;
+        return length;
     }
 
     /// <summary>
@@ -134,7 +206,13 @@ static partial class HttpUtility
             numberStyles, CultureInfo.InvariantCulture, out codePoint);
     }
 
-    private static bool IsKnownEntities(ReadOnlySpan<char> entity, out char ch)
+    /// <summary>
+    /// Try to parse UTF8
+    /// </summary>
+    /// <param name="entity"></param>
+    /// <param name="ch"></param>
+    /// <returns></returns>
+    private static bool TryDecodeNamedEntity(ReadOnlySpan<char> entity, out char ch)
     {
         // avoid to allocate a new string for most common entities
         // and this is faster to use this pattern matching
@@ -145,6 +223,8 @@ static partial class HttpUtility
             "quot" => '"',
             "apos" => '\'',
             "nbsp" => '\x00a0',
+            "colon" => ':',
+            "semi"  => ';',
             "copy" => '©',
             "reg" => '®',
             "trade" => '™',
@@ -156,25 +236,5 @@ static partial class HttpUtility
 
         // fallback on the hard-coded list
         return HtmlEntities.Lookup(entity, out ch);
-    }
-
-    /// <summary>
-    /// Converts a string that represents an Html-encoded URL to a decoded string.
-    /// </summary>
-    public static string UrlDecode(ReadOnlySpan<char> text)
-    {
-        if (text.IsEmpty) return string.Empty;
-
-        // pre-process for + sign space formatting since System.Uri doesn't handle it
-        // plus literals are encoded as %2b normally so this should be safe
-        // http://www.west-wind.com/weblog/posts/2009/Feb/05/Html-and-Uri-String-Encoding-without-SystemWeb
-        if (text.IndexOf('+') > 0)
-            return Uri.UnescapeDataString(text.ToString().Replace("+", " "));
-
-#if NET9_0_OR_GREATER
-        return Uri.UnescapeDataString(text);
-#else
-        return Uri.UnescapeDataString(text.ToString());
-#endif
     }
 }
