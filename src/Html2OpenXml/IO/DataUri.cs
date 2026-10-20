@@ -10,6 +10,7 @@
  * PARTICULAR PURPOSE.
  */
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 namespace HtmlToOpenXml.IO;
 
@@ -20,12 +21,26 @@ namespace HtmlToOpenXml.IO;
 /// Data URIs are commonly used to embed images in HTML without referencing an external
 /// resource, for example: <c>data:image/png;base64,...</c>
 /// </summary>
-[System.Diagnostics.DebuggerDisplay("{Mime,nq}")]
-public sealed class DataUri
+/// <param name="MimeType">The MIME type declared by the Data URI, such as image/png or image/jpeg.</param>
+/// <param name="Charset">The encoding of the content when the data is text (e.g., UTF-8).</param>
+/// <param name="Data">The decoded binary content.</param>
+/// <param name="Content">The decoded human-readable content.</param>
+readonly record struct DataUri(string MimeType, string? Charset = null, byte[]? Data = null, string? Content = null)
 {
-    private DataUri(string mimeType)
+    public static readonly DataUri Invalid = new(null!);
+
+    /// <summary>
+    /// Try to parse an instance of the Data URI scheme but stop if it detects it's not an embedded images.
+    /// This method avoid excessive memory allocations, as the purpose of this library is reading base64 images.
+    /// </summary>
+    /// <param name="uri">The inline Data URI to parse.</param>
+    /// <param name="result">When this method returns, contains a DataUri constructed
+    /// from <paramref name="uri"/>. This parameter is passed uninitialized.</param>
+    /// <returns>Returns <see langword="true"/> if the DataUri was successfully created;
+    /// otherwise, <see langword="false"/>.</returns>
+    public static bool TryCreateImage(string uri, [NotNullWhen(true)] out DataUri result)
     {
-        Mime = mimeType;
+        return TryCreate(uri, breakIfNotImage: true, out result);
     }
 
     /// <summary>
@@ -34,9 +49,14 @@ public sealed class DataUri
     /// <param name="uri">The inline Data URI to parse.</param>
     /// <param name="result">When this method returns, contains a DataUri constructed
     /// from <paramref name="uri"/>. This parameter is passed uninitialized.</param>
-    /// <returns>A <see cref="Boolean"/> value that is true if the DataUri was 
-    /// successfully created; otherwise, false.</returns>
-    public static bool TryCreate(string uri, [NotNullWhen(true)] out DataUri? result)
+    /// <returns>Returns <see langword="true"/> if the DataUri was successfully created;
+    /// otherwise, <see langword="false"/>.</returns>
+    public static bool TryCreate(string uri, [NotNullWhen(true)] out DataUri result)
+    {
+        return TryCreate(uri, breakIfNotImage: false, out result);
+    }
+
+    private static bool TryCreate(string uri, bool breakIfNotImage, [NotNullWhen(true)] out DataUri result)
     {
         // expected format: data:[<MIME-type>][;charset=<encoding>][;base64],<data>
         // The encoding is indicated by ;base64. If it's present the data is encoded as base64. Without it the data (as a sequence of octets)
@@ -47,7 +67,7 @@ public sealed class DataUri
         // while Internet Explorer requires that the charset's specification must precede the base64 token.
         // http://en.wikipedia.org/wiki/Data_URI_scheme
 
-        result = null;
+        result = Invalid;
 
         if (uri.Length < 5)
             return false;
@@ -69,7 +89,8 @@ public sealed class DataUri
 
         // if mime is omitted, set default value as it stands in the norm
         string mime = "text/plain";
-        string charSet = "ascii";
+        string charset = "ascii";
+        System.Text.Encoding encoding = System.Text.Encoding.ASCII;
         bool isBase64 = false;
 
         Span<Range> tokens = stackalloc Range[5];
@@ -86,7 +107,8 @@ public sealed class DataUri
             {
                 try
                 {
-                    charSet = System.Text.Encoding.GetEncoding(token.Slice(8 /* 'charset=' */).ToString()).WebName;
+                    charset = token.Slice(8 /* 'charset=' */).ToString();
+                    encoding = System.Text.Encoding.GetEncoding(charset);
                 }
                 catch (ArgumentException)
                 {
@@ -101,30 +123,83 @@ public sealed class DataUri
         var data = uriSpan.Slice(commaIndex + 1).Trim();
         if (data.IsEmpty)
         {
-            result = new(mime);
+            result = new(mime, charset);
             return true; // this is still a valid data URI
         }
 
         if (isBase64)
         {
-            // be careful that the raw data is encoded for url (standard %xx hex encoding)
-            string base64 = HttpUtility.HtmlDecode(data);
-
+            byte[] dataBinary;
+            var base64 = data;
+#if NET5_0_OR_GREATER
+            int maxDecodedLength = (base64.Length * 3 + 3) / 4;
+            dataBinary = GC.AllocateUninitializedArray<byte>(maxDecodedLength);
+            if (!Convert.TryFromBase64Chars(base64, dataBinary, out int bytesWritten))
+                return false;
+            Array.Resize(ref dataBinary, bytesWritten);
+#else
             try
             {
-                result = new(mime) { Data = Convert.FromBase64String(base64) };
-                return true;
+                dataBinary = Convert.FromBase64String(base64.ToString());
             }
             catch (FormatException)
             {
                 // Base64 data is invalid
                 return false;
             }
+#endif
+            result = new(mime, Data: dataBinary);
+            return true;
         }
 
-        // the <data> represents some text (like html snippet) and must be decoded.
-        result = new(mime) { Encoding = charSet, Content = HttpUtility.UrlDecode(data) };
+        if (breakIfNotImage)
+            return false;
+
+        // the <data> represents some text (like html snippet)
+        // and must be decoded respecting the provided charset.
+        var bytes = UnescapePercentEncodedBytes(data);
+        result = new(mime, charset, Content: encoding.GetString(bytes));
         return true;
+    }
+
+    private static byte[] UnescapePercentEncodedBytes(ReadOnlySpan<char> span)
+    {
+        if (span.IsEmpty)
+            return [];
+
+#if NET5_0_OR_GREATER
+        byte[] buffer = GC.AllocateUninitializedArray<byte>(span.Length);
+#else
+        byte[] buffer = new byte[span.Length];
+#endif
+        int bytesWritten = 0;
+
+        for (int i = 0; i < span.Length; i++)
+        {
+            if (span[i] == '%' && i + 2 < span.Length &&
+                byte.TryParse(
+#if NET5_0_OR_GREATER
+                    span.Slice(i + 1, 2),
+#else
+                    span.Slice(i + 1, 2).ToString(),
+#endif
+                    NumberStyles.HexNumber,
+                    CultureInfo.InvariantCulture, out var b))
+            {
+                buffer[bytesWritten++] = b;
+                i += 2;
+            }
+            else
+            {
+                if (span[i] > 0xFF)
+                    throw new InvalidOperationException("Invalid percent-encoded data.");
+
+                buffer[bytesWritten++] = (byte) span[i];
+            }
+        }
+
+        return bytesWritten == span.Length? buffer :
+            buffer.AsSpan(0, bytesWritten).ToArray();
     }
 
     /// <summary>
@@ -134,27 +209,4 @@ public sealed class DataUri
     {
         return uri.StartsWith("data:", StringComparison.OrdinalIgnoreCase);
     }
-
-    //____________________________________________________________________
-    //
-
-    /// <summary>
-    /// Gets the MIME type declared by the Data URI, such as image/png or image/jpeg.
-    /// </summary>
-    public string Mime { get; }
-
-    /// <summary>
-    /// Gets the decoded binary content.
-    /// </summary>
-    public byte[]? Data { get; init; }
-
-    /// <summary>
-    /// Gets the encoding of the content when the data is text (e.g., UTF-8).
-    /// </summary>
-    public string? Encoding { get; init; }
-
-    /// <summary>
-    /// Gets the decoded human-readable content.
-    /// </summary>
-    public string? Content { get; init; }
 }
