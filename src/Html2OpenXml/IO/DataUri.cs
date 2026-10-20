@@ -93,7 +93,7 @@ readonly record struct DataUri(string MimeType, string? Charset = null, byte[]? 
         System.Text.Encoding encoding = System.Text.Encoding.ASCII;
         bool isBase64 = false;
 
-        Span<Range> tokens = stackalloc Range[5];
+        Span<Range> tokens = stackalloc Range[8];
         var tokenCount = loweredValue.Split(tokens, ';', StringSplitOptions.RemoveEmptyEntries);
         for (var i = 0; i < tokenCount; i++)
         {
@@ -156,16 +156,19 @@ readonly record struct DataUri(string MimeType, string? Charset = null, byte[]? 
     private static byte[] TryDecodeBase64(ReadOnlySpan<char> value)
     {
 #if NET5_0_OR_GREATER
-        int decodedLength = (value.Length / 4) + 3;
-        if (value.EndsWith("=="))
-            decodedLength -= 2;
-        else if (value[^1] == '=')
-            decodedLength -= 1;
+        int decodedLength = (value.Length * 3 + 3) / 4;
+        if (value[^1] == '=')
+        {
+            decodedLength -= value[^2] == '='? 2 : 1;
+        }
 
         var buffer = GC.AllocateUninitializedArray<byte>(decodedLength);
         if (!Convert.TryFromBase64Chars(value, buffer, out int bytesWritten))
             return [];
 
+        // mainly for multiline data URI where we waste bytes
+        if (buffer.Length != bytesWritten)
+            Array.Resize(ref buffer, bytesWritten);
         return buffer;
 #else
         try

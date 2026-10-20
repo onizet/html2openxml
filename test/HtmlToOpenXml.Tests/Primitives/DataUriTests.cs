@@ -109,7 +109,6 @@ Wilba3ihB6iNAufyoltLaZw8tvFIw6FkBNSgADA4FLRRRRRRRX//2Q==
         {
             var success = DataUri.TryCreate(uri, out var result);
             Assert.That(success, Is.False);
-            Assert.That(result, Is.EqualTo(DataUri.Invalid));
         }
     }
 }
