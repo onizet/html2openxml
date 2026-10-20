@@ -30,7 +30,7 @@ readonly record struct DataUri(string MimeType, string? Charset = null, byte[]? 
     public static readonly DataUri Invalid = new(null!);
 
     /// <summary>
-    /// Try to parse an instance of the Data URI scheme but stop if it detects it's not an embedded images.
+    /// Try to parse an instance of the Data URI scheme but stop if it detects that the URI does not contain an embedded image.
     /// This method avoid excessive memory allocations, as the purpose of this library is reading base64 images.
     /// </summary>
     /// <param name="uri">The inline Data URI to parse.</param>
@@ -120,6 +120,7 @@ readonly record struct DataUri(string MimeType, string? Charset = null, byte[]? 
             // else ignore, arbitrary value not needed in this context
         }
 
+        // use the uriSpan to preserve the casing
         var data = uriSpan.Slice(commaIndex + 1).Trim();
         if (data.IsEmpty)
         {
@@ -129,59 +130,80 @@ readonly record struct DataUri(string MimeType, string? Charset = null, byte[]? 
 
         if (isBase64)
         {
-            byte[] dataBinary;
-            var base64 = data;
-#if NET5_0_OR_GREATER
-            int maxDecodedLength = (base64.Length * 3 + 3) / 4;
-            dataBinary = GC.AllocateUninitializedArray<byte>(maxDecodedLength);
-            if (!Convert.TryFromBase64Chars(base64, dataBinary, out int bytesWritten))
-                return false;
-            Array.Resize(ref dataBinary, bytesWritten);
-#else
-            try
-            {
-                dataBinary = Convert.FromBase64String(base64.ToString());
-            }
-            catch (FormatException)
-            {
-                // Base64 data is invalid
-                return false;
-            }
-#endif
+            byte[] dataBinary = TryDecodeBase64(data);
             result = new(mime, Data: dataBinary);
-            return true;
+            return dataBinary.Length > 0;
         }
 
-        if (breakIfNotImage)
+        // ignoreCase is not needed as this span was lowered
+        if (breakIfNotImage && !mime.StartsWith("image/", StringComparison.Ordinal))
             return false;
 
         // the <data> represents some text (like html snippet)
         // and must be decoded respecting the provided charset.
-        var bytes = UnescapePercentEncodedBytes(data);
-        result = new(mime, charset, Content: encoding.GetString(bytes));
+        try
+        {
+            var bytes = UnescapePercentEncodedBytes(data);
+            result = new(mime, charset, Content: encoding.GetString(bytes));
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
         return true;
     }
 
-    private static byte[] UnescapePercentEncodedBytes(ReadOnlySpan<char> span)
+    private static byte[] TryDecodeBase64(ReadOnlySpan<char> value)
     {
-        if (span.IsEmpty)
+#if NET5_0_OR_GREATER
+        int decodedLength = (value.Length / 4) + 3;
+        if (value.EndsWith("=="))
+            decodedLength -= 2;
+        else if (value[^1] == '=')
+            decodedLength -= 1;
+
+        var buffer = GC.AllocateUninitializedArray<byte>(decodedLength);
+        if (!Convert.TryFromBase64Chars(value, buffer, out int bytesWritten))
+            return [];
+
+        return buffer;
+#else
+        try
+        {
+            return Convert.FromBase64String(value.ToString());
+        }
+        catch (FormatException)
+        {
+            // Base64 data is invalid
+            return [];
+        }
+#endif
+    }
+
+    /// <summary>
+    /// Convert the data portion of a non-base64 Data URI from percent-encoded form (%xx)
+    /// back into its original byte.
+    /// </summary>
+    private static byte[] UnescapePercentEncodedBytes(ReadOnlySpan<char> value)
+    {
+        if (value.IsEmpty)
             return [];
 
 #if NET5_0_OR_GREATER
-        byte[] buffer = GC.AllocateUninitializedArray<byte>(span.Length);
+        byte[] buffer = GC.AllocateUninitializedArray<byte>(value.Length);
 #else
-        byte[] buffer = new byte[span.Length];
+        byte[] buffer = new byte[value.Length];
 #endif
         int bytesWritten = 0;
 
-        for (int i = 0; i < span.Length; i++)
+        for (int i = 0; i < value.Length; i++)
         {
-            if (span[i] == '%' && i + 2 < span.Length &&
+            if (value[i] == '%' && i + 2 < value.Length &&
                 byte.TryParse(
 #if NET5_0_OR_GREATER
-                    span.Slice(i + 1, 2),
+                    value.Slice(i + 1, 2),
 #else
-                    span.Slice(i + 1, 2).ToString(),
+                    value.Slice(i + 1, 2).ToString(),
 #endif
                     NumberStyles.HexNumber,
                     CultureInfo.InvariantCulture, out var b))
@@ -191,14 +213,14 @@ readonly record struct DataUri(string MimeType, string? Charset = null, byte[]? 
             }
             else
             {
-                if (span[i] > 0xFF)
-                    throw new InvalidOperationException("Invalid percent-encoded data.");
+                if (value[i] > 0xFF)
+                    throw new FormatException("Invalid percent-encoded data.");
 
-                buffer[bytesWritten++] = (byte) span[i];
+                buffer[bytesWritten++] = (byte) value[i];
             }
         }
 
-        return bytesWritten == span.Length? buffer :
+        return bytesWritten == value.Length? buffer :
             buffer.AsSpan(0, bytesWritten).ToArray();
     }
 

@@ -169,11 +169,11 @@ sealed class ImagePrefetcher<T> : ImagePrefetcherBase, IImageLoader
     /// </summary>
     private HtmlImageInfo? ReadDataUri(string src)
     {
-        if (DataUri.TryCreateImage(src, out var dataUri))
+        if (DataUri.TryCreateImage(src, out var dataUri) && dataUri.Data != null)
         {
             TryInspectMimeType(dataUri.MimeType, out PartTypeInfo type);
 
-            return SaveImageAssert(type, stream => stream.Write(dataUri.Data, 0, dataUri.Data!.Length));
+            return SaveImageAssert(type, stream => stream.Write(dataUri.Data, 0, dataUri.Data.Length));
         }
 
         return null;
