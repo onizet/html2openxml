@@ -10,6 +10,7 @@ namespace HtmlToOpenXml.Tests.Primitives
     {
         [TestCase("text-decoration:underline; color: red ")]
         [TestCase("text-decoration &#58; underline &#59;color :red")]
+        [TestCase("text-decoration &colon; underline &semi;color :red")]
         public void ParseStyle_ShouldSucceed(string htmlStyle)
         {
             var styles = HtmlAttributeCollection.ParseStyle(htmlStyle);

@@ -9,6 +9,7 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
+using System.Runtime.CompilerServices;
 using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml;
@@ -78,18 +79,18 @@ readonly struct HtmlAttributeCollection
                 index++;
             }
             // html-encoded semicolon
-            else if (foundKey && span.Slice(index).StartsWith(['&','#','5','9',';']))
+            else if (foundKey && IsSemiColon(span.Slice(index), out var charsConsumed))
             {
                 if (index > 0)
                     collection.attributes[key!] = new Range(startIndex, startIndex + index);
                 foundKey = false;
-                index += 5; // length of "&#58;"
+                index += charsConsumed;
             }
-            else if (!foundKey && span.Slice(index).StartsWith(['&','#','5','8',';']))
+            else if (!foundKey && IsColon(span.Slice(index), out charsConsumed))
             {
                 key = span.Slice(0, index).Trim().ToString().ToLowerInvariant();
                 foundKey = true;
-                index += 5; // length of "&#58;"
+                index += charsConsumed;
             }
             else
             {
@@ -102,6 +103,42 @@ readonly struct HtmlAttributeCollection
         }
 
         return collection;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool IsSemiColon(ReadOnlySpan<char> span, out int charsConsumed)
+    {
+        if (span.StartsWith(['&','#','5','9',';']))
+        {
+            charsConsumed = 5;
+            return true;
+        }
+        if (span.StartsWith(['&','s','e','m','i',';']))
+        {
+           charsConsumed = 6;
+            return true;
+        }
+
+        charsConsumed = 0;
+        return false;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool IsColon(ReadOnlySpan<char> span, out int charsConsumed)
+    {
+        if (span.StartsWith(['&','#','5','8',';']))
+        {
+            charsConsumed = 5;
+            return true;
+        }
+        if (span.StartsWith(['&','c','o','l','o','n',';']))
+        {
+           charsConsumed = 7;
+            return true;
+        }
+
+        charsConsumed = 0;
+        return false;
     }
 
     /// <summary>
