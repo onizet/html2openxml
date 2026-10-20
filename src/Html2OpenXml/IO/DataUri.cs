@@ -31,7 +31,7 @@ readonly record struct DataUri(string MimeType, string? Charset = null, byte[]? 
 
     /// <summary>
     /// Try to parse an instance of the Data URI scheme but stop if it detects that the URI does not contain an embedded image.
-    /// This method avoid excessive memory allocations, as the purpose of this library is reading base64 images.
+    /// This method avoids excessive memory allocations, as the purpose of this library is reading base64 images.
     /// </summary>
     /// <param name="uri">The inline Data URI to parse.</param>
     /// <param name="result">When this method returns, contains a DataUri constructed
@@ -120,7 +120,11 @@ readonly record struct DataUri(string MimeType, string? Charset = null, byte[]? 
             // else ignore, arbitrary value not needed in this context
         }
 
-        // use the uriSpan to preserve the casing
+        // ignoreCase is not needed as this span was lowered
+        if (breakIfNotImage && !mime.StartsWith("image/", StringComparison.Ordinal))
+            return false;
+
+        // use the uriSpan to preserve the casing for the data segment
         var data = uriSpan.Slice(commaIndex + 1).Trim();
         if (data.IsEmpty)
         {
@@ -130,14 +134,10 @@ readonly record struct DataUri(string MimeType, string? Charset = null, byte[]? 
 
         if (isBase64)
         {
-            byte[] dataBinary = TryDecodeBase64(data);
+            byte[] dataBinary = DecodeBase64(data);
             result = new(mime, Data: dataBinary);
             return dataBinary.Length > 0;
         }
-
-        // ignoreCase is not needed as this span was lowered
-        if (breakIfNotImage && !mime.StartsWith("image/", StringComparison.Ordinal))
-            return false;
 
         // the <data> represents some text (like html snippet)
         // and must be decoded respecting the provided charset.
@@ -153,8 +153,12 @@ readonly record struct DataUri(string MimeType, string? Charset = null, byte[]? 
         return true;
     }
 
-    private static byte[] TryDecodeBase64(ReadOnlySpan<char> value)
+    private static byte[] DecodeBase64(ReadOnlySpan<char> value)
     {
+        // 4 is the minimal length for a base64 string
+        if (value.Length < 4)
+            return [];
+
 #if NET5_0_OR_GREATER
         int decodedLength = (value.Length * 3 + 3) / 4;
         if (value[^1] == '=')
@@ -184,8 +188,7 @@ readonly record struct DataUri(string MimeType, string? Charset = null, byte[]? 
     }
 
     /// <summary>
-    /// Convert the data portion of a non-base64 Data URI from percent-encoded form (%xx)
-    /// back into its original byte.
+    /// Convert the data portion of a non-base64 Data URI from percent-encoded form (%xx) back into its original bytes.
     /// </summary>
     private static byte[] UnescapePercentEncodedBytes(ReadOnlySpan<char> value)
     {
