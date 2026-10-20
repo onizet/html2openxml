@@ -9,7 +9,6 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System.Runtime.CompilerServices;
 using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml;
@@ -20,7 +19,7 @@ namespace HtmlToOpenXml;
 readonly struct HtmlAttributeCollection
 {
     // Style key associated with a pointer to rawValue.
-    private readonly Dictionary<string, Range> attributes = [];
+    private readonly Dictionary<string, Range> attributes = [with(comparer: StringComparer.OrdinalIgnoreCase)];
     private readonly string rawValue;
 
 
@@ -74,7 +73,7 @@ readonly struct HtmlAttributeCollection
             }
             else if (!foundKey && HttpUtility.IsColonEntity(span.Slice(index), out charsConsumed))
             {
-                key = span.Slice(0, index).Trim().ToString().ToLowerInvariant();
+                key = span.Slice(0, index).Trim().ToString();
                 foundKey = true;
                 index += charsConsumed;
             }
