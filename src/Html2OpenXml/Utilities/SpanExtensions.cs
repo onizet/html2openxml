@@ -34,20 +34,6 @@ static partial class SpanExtensions
     }
 
     /// <summary>
-    /// Shim method to convert <see cref="string"/> to <see cref="int"/>.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    [System.Diagnostics.DebuggerHidden]
-    public static int AsInt32(this ReadOnlySpan<char> span, NumberStyles style)
-    {
-#if NET5_0_OR_GREATER
-        return int.Parse(span, style, CultureInfo.InvariantCulture);
-#else
-        return int.Parse(span.ToString(), style, CultureInfo.InvariantCulture);
-#endif
-    }
-
-    /// <summary>
     /// Shim method to convert <see cref="string"/> to <see cref="double"/>.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -205,9 +191,14 @@ static partial class SpanExtensions
             result = new EntityMatchResult(5, '"');
             return true;
         }
-        if (span.StartsWith("&#34;".AsSpan()))
+        else if (span.StartsWith("&#34;".AsSpan()))
         {
             result = new EntityMatchResult(4, '"');
+            return true;
+        }
+        else if (span.StartsWith("&#x22".AsSpan(), StringComparison.OrdinalIgnoreCase))
+        {
+            result = new EntityMatchResult(5, '"');
             return true;
         }
 
@@ -217,9 +208,14 @@ static partial class SpanExtensions
             result = new EntityMatchResult(5, '\'');
             return true;
         }
-        if (span.StartsWith("&#39;".AsSpan()))
+        else if (span.StartsWith("&#39;".AsSpan()))
         {
             result = new EntityMatchResult(4, '\'');
+            return true;
+        }
+        else if (span.StartsWith("&#x27".AsSpan(), StringComparison.OrdinalIgnoreCase))
+        {
+            result = new EntityMatchResult(5, '\'');
             return true;
         }
 
