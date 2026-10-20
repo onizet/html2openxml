@@ -42,6 +42,14 @@ namespace HtmlToOpenXml.Tests.Primitives
         }
 
         [Test]
+        public void WithUnknownEntity_ContinueOnNextKey()
+        {
+            var styles = HtmlAttributeCollection.ParseStyle("color:red&green;text-decoration:underline");
+            Assert.That(styles.IsEmpty, Is.False);
+            Assert.That(styles.HasKeyEqualsTo("text-decoration", "underline"), Is.True);
+        }
+
+        [Test]
         public void WithMultipleTextDecoration_ReturnsAllValues()
         {
             var styles = HtmlAttributeCollection.ParseStyle("text-decoration:underline dotted wavy");

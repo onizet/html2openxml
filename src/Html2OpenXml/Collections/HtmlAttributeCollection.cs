@@ -80,6 +80,7 @@ readonly struct HtmlAttributeCollection
             else
             {
                 span = span.Slice(index + 1);
+                startIndex += index + 1;
                 continue;
             }
 
