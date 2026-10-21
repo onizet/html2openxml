@@ -39,7 +39,7 @@ readonly struct HtmlAttributeCollection
         if (string.IsNullOrWhiteSpace(htmlStyles)) return collection;
 
         var span = htmlStyles.AsSpan();
-        int startIndex = 0;
+        int startIndex = 0, charsConsumed;
         bool foundKey = false;
         string? key = null;
 
@@ -59,7 +59,7 @@ readonly struct HtmlAttributeCollection
             }
 
             var separator = span[index];
-            if (foundKey && HttpUtility.IsSemiColonEntity(span.Slice(index), out var charsConsumed))
+            if (foundKey && (charsConsumed = HtmlEntities.IsSemiColon(span.Slice(index))) > 0)
             {
                 if (index > 0)
                     collection.attributes[key!] = new Range(startIndex, startIndex + index);
@@ -71,7 +71,7 @@ readonly struct HtmlAttributeCollection
                 // unexpected semicolon (ie, key with no value) -> ignore this style
                 index++;
             }
-            else if (!foundKey && HttpUtility.IsColonEntity(span.Slice(index), out charsConsumed))
+            else if (!foundKey && (charsConsumed = HtmlEntities.IsColon(span.Slice(index))) > 0)
             {
                 key = span.Slice(0, index).Trim().ToString();
                 foundKey = true;

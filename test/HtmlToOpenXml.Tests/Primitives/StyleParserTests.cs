@@ -56,5 +56,21 @@ namespace HtmlToOpenXml.Tests.Primitives
             var decorations = styles.GetTextDecorations("text-decoration");
             Assert.That(decorations, Is.EquivalentTo([TextDecoration.Underline, TextDecoration.Dotted, TextDecoration.Wave]));
         }
+
+        [Test(Description = "Encoded ':' and ';' characters are valid")]
+        public void EncodedStyle_ShouldSucceed()
+        {
+            var styleAttributes = HtmlAttributeCollection.ParseStyle("text-decoration&#58;underline&#59;color:red");
+            Assert.That(styleAttributes["text-decoration"].ToString(), Is.EqualTo("underline"));
+            Assert.That(styleAttributes["color"].ToString(), Is.EqualTo("red"));
+        }
+
+        [Test(Description = "Key style with no value should be ignored")]
+        public void EmptyStyle_ShouldBeIgnored()
+        {
+            var styleAttributes = HtmlAttributeCollection.ParseStyle("text-decoration;color:red");
+            Assert.That(styleAttributes.TryGetValue("text-decoration", out var _), Is.False);
+            Assert.That(styleAttributes["color"].ToString(), Is.EqualTo("red"));
+        }
     }
 }

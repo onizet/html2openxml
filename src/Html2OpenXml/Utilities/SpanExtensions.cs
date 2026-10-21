@@ -115,8 +115,8 @@ static partial class SpanExtensions
             if (ch == '&' && IsRecognizedEntity(span.Slice(index), out var result))
             {
                 ch = result.DecodedChar;
-                if (index == 0) startMatchIndex += result.EncodedLength;
-                totalConsumedLength += result.EncodedLength;
+                if (index == 0) startMatchIndex += result.EncodedLength - 1;
+                totalConsumedLength += result.EncodedLength - 1;
             }
 
             totalConsumedLength += index + 1; // index is 0-based
@@ -185,37 +185,17 @@ static partial class SpanExtensions
     /// </summary>
     private static bool IsRecognizedEntity(ReadOnlySpan<char> span, out EntityMatchResult result)
     {
-        // look for double quote
-        if (span.StartsWith("&quot;".AsSpan()))
+        int charsConsumed = HtmlEntities.IsDoubleQuote(span);
+        if (charsConsumed > 0)
         {
-            result = new EntityMatchResult(5, '"');
-            return true;
-        }
-        else if (span.StartsWith("&#34;".AsSpan()))
-        {
-            result = new EntityMatchResult(4, '"');
-            return true;
-        }
-        else if (span.StartsWith("&#x22".AsSpan(), StringComparison.OrdinalIgnoreCase))
-        {
-            result = new EntityMatchResult(5, '"');
+            result = new EntityMatchResult(charsConsumed, '"');
             return true;
         }
 
-        // look for single quote
-        if (span.StartsWith("&apos;".AsSpan()))
+        charsConsumed = HtmlEntities.IsSingleQuote(span);
+        if (charsConsumed > 0)
         {
-            result = new EntityMatchResult(5, '\'');
-            return true;
-        }
-        else if (span.StartsWith("&#39;".AsSpan()))
-        {
-            result = new EntityMatchResult(4, '\'');
-            return true;
-        }
-        else if (span.StartsWith("&#x27".AsSpan(), StringComparison.OrdinalIgnoreCase))
-        {
-            result = new EntityMatchResult(5, '\'');
+            result = new EntityMatchResult(charsConsumed, '\'');
             return true;
         }
 
