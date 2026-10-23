@@ -46,7 +46,7 @@ readonly struct HtmlFont(Unit size, string? family, FontStyle? style,
 
         if (span.IsEmpty || span.Length < 2) return Empty;
 
-        Span<Range> tokens = stackalloc Range[6];
+        Span<Range> tokens = stackalloc Range[10];
         var tokenCount = span.SplitCompositeAttribute(tokens, ' ', skipSeparatorIfPrecededBy: ',');
         if (tokenCount == 0)
             return Empty;

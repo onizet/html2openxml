@@ -84,7 +84,7 @@ static class AngleSharpExtensions
     public static bool TryParseUrl(string? uriString, UriKind uriKind,
         [NotNullWhen(true)] out Uri? result)
     {
-        if (string.IsNullOrEmpty(uriString) || IO.DataUri.IsWellFormed(uriString!))
+        if (string.IsNullOrEmpty(uriString) || IO.DataUri.IsDataUri(uriString!))
         {
             result = null;
             return false;

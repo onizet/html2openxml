@@ -91,7 +91,7 @@ struct Margin
             return Empty;
 
         Span<Range> tokens = stackalloc Range[5];
-        return span.SplitCompositeAttribute(tokens) switch
+        return span.SplitCompositeAttribute(tokens, separator: ' ') switch
         {
             1 => new Margin(Unit.Parse(span[tokens[0]], UnitMetric.Pixel)),
             2 => new Margin(

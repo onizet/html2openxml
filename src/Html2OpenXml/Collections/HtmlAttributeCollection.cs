@@ -19,7 +19,7 @@ namespace HtmlToOpenXml;
 readonly struct HtmlAttributeCollection
 {
     // Style key associated with a pointer to rawValue.
-    private readonly Dictionary<string, Range> attributes = [];
+    private readonly Dictionary<string, Range> attributes = [with(comparer: StringComparer.OrdinalIgnoreCase)];
     private readonly string rawValue;
 
 
@@ -38,67 +38,35 @@ readonly struct HtmlAttributeCollection
         var collection = new HtmlAttributeCollection(htmlStyles!);
         if (string.IsNullOrWhiteSpace(htmlStyles)) return collection;
 
-        var span = htmlStyles.AsSpan();
-        int startIndex = 0;
-        bool foundKey = false;
-        string? key = null;
+        var stylesSpan = htmlStyles.AsSpan();
 
-        while (span.Length > 0)
+        Span<Range> tokens = stackalloc Range[20];
+        var tokenCount = stylesSpan.SplitCompositeAttribute(tokens, ';');
+        if (tokenCount == 0)
+            return collection;
+
+        for (int i = 0; i < tokenCount; i++)
         {
             // Encoded ':' and ';' characters are valid for browser
             // <span style="text-decoration&#58;underline&#59;color:red">
-            int index = span.IndexOfAny(';', '&', ':');
+            var segmentSpan = stylesSpan[tokens[i]];
+            int index = segmentSpan.IndexOfAny('&', ':');
+            int charsConsumed = 0;
+
             if (index == -1)
-            {
-                if (foundKey)
-                {
-                    // process the last value
-                    collection.attributes[key!] = new Range(startIndex, startIndex + span.Length);
-                }
-                break;
-            }
+                continue; // no key:value -> ignore this style
 
-            var separator = span[index];
-            if (separator == ';' && foundKey)
+            if ((charsConsumed = HtmlEntities.IsColon(segmentSpan.Slice(index))) > 0)
             {
-                if (index > 0)
-                    collection.attributes[key!] = new Range(startIndex, startIndex + index);
-                foundKey = false;
-                index++;
-            }
-            else if (separator == ';' && !foundKey)
-            {
-                // unexpected semicolon (ie, key with no value) -> ignore this style
-                index++;
-            }
-            else if (separator == ':' && !foundKey)
-            {
-                key = span.Slice(0, index).Trim().ToString().ToLowerInvariant();
-                foundKey = true;
-                index++;
-            }
-            // html-encoded semicolon
-            else if (foundKey && span.Slice(index).StartsWith(['&','#','5','9',';']))
-            {
-                if (index > 0)
-                    collection.attributes[key!] = new Range(startIndex, startIndex + index);
-                foundKey = false;
-                index += 5; // length of "&#58;"
-            }
-            else if (!foundKey && span.Slice(index).StartsWith(['&','#','5','8',';']))
-            {
-                key = span.Slice(0, index).Trim().ToString().ToLowerInvariant();
-                foundKey = true;
-                index += 5; // length of "&#58;"
-            }
-            else
-            {
-                span = span.Slice(index + 1);
-                continue;
-            }
+                var key = segmentSpan.Slice(0, index).Trim();
+                var startIndex = index + charsConsumed;
 
-            span = span.Slice(index);
-            startIndex += index;
+                if (key.Length == 0) continue; // empty key
+                if (segmentSpan.Length <= startIndex + 1) continue; // empty value
+
+                var rng = new Range(tokens[i].Start.Value + startIndex, tokens[i].End);
+                collection.attributes[key.ToString()] = rng;
+            }
         }
 
         return collection;

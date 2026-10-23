@@ -335,9 +335,13 @@ public partial class HtmlConverter
         if (!imageUris.Any())
             return;
 
+#if NET5_0_OR_GREATER
+        await Parallel.ForEachAsync(imageUris,
+#else
         await imageUris.ForEachAsync(
-            async (img, cts) => await imageLoader.Download(img, cts),
-            parallelOptions).ConfigureAwait(false);
+#endif
+            parallelOptions,
+            async (img, cts) => await imageLoader.Download(img, cts)).ConfigureAwait(false);
     }
 
     /// <summary>

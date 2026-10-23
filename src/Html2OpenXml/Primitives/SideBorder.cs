@@ -36,7 +36,7 @@ readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
             return Empty;
 
         Span<Range> tokens = stackalloc Range[6];
-        var tokenCount = span.SplitCompositeAttribute(tokens);
+        var tokenCount = span.SplitCompositeAttribute(tokens, separator: ' ');
         if (tokenCount == 0)
             return Empty;
 
