@@ -57,6 +57,19 @@ namespace HtmlToOpenXml.Tests.Primitives
             Assert.That(decorations, Is.EquivalentTo([TextDecoration.Underline, TextDecoration.Dotted, TextDecoration.Wave]));
         }
 
+        [Test]
+        public void WithEmbedSemicolons_ReturnsLegitimateUrl()
+        {
+            var styles = HtmlAttributeCollection.ParseStyle("background:url(data:image/svg+xml;base64;iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==)");
+            var exist = styles.TryGetValue("background", out var imageUrl);
+            Assert.That(exist, Is.True);
+            if (exist)
+            {
+                var success = IO.DataUri.TryCreateImage(imageUrl.ToString(), out var _);
+                Assert.That(success, Is.True);
+            }
+        }
+
         [Test(Description = "Encoded ':' and ';' characters are valid")]
         public void EncodedStyle_ShouldSucceed()
         {

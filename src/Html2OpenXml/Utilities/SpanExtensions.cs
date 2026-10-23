@@ -110,19 +110,22 @@ static partial class SpanExtensions
 
             // we find the beginning of an escaping sequence
             var ch = span[index];
+            HtmlEntities.EntityMatchResult entityMatch = HtmlEntities.EntityMatchResult.Nil;
 
             // is this an encoded html entity?
-            if (ch == '&' && IsRecognizedEntity(span.Slice(index), out var result))
+            if (ch == '&' && HtmlEntities.IsRecognizedEntity(span.Slice(index), out entityMatch))
             {
-                ch = result.DecodedChar;
-                if (index == 0) startMatchIndex += result.EncodedLength - 1;
-                totalConsumedLength += result.EncodedLength - 1;
+                ch = entityMatch.DecodedChar;
+                if (index == 0) startMatchIndex += entityMatch.EncodedLength - 1 /* compensate for the decoded char that must be excluded from the captured range */;
+                totalConsumedLength += entityMatch.EncodedLength - 1 /* -1 to compensate with +1 on line 122 */;
             }
 
             totalConsumedLength += index + 1; // index is 0-based
 
 
-            if (ch != separator && !isEscaping)
+            // are we going into escape mode, e.g., matches the separator but enclosed inside boundary
+            // such as quote or parenthesis
+            if (ch != separator && !isEscaping && IsEscapable(ch))
             {
                 if (ch == '(')
                 {
@@ -150,6 +153,11 @@ static partial class SpanExtensions
                 skipSeparatorIfPrecededBy.HasValue && span[index -1] == skipSeparatorIfPrecededBy)
             {
                 contentOffset += index;
+                isContentMatch = false;
+            }
+            else if (ch != separator && span[index] == '&')
+            {
+                contentOffset += entityMatch.EncodedLength;
                 isContentMatch = false;
             }
             else if (index == 0) // empty token
@@ -180,30 +188,6 @@ static partial class SpanExtensions
         return matchCount;
     }
 
-    /// <summary>
-    /// Try to detect encoded html entities such as single or double quote.
-    /// </summary>
-    private static bool IsRecognizedEntity(ReadOnlySpan<char> span, out EntityMatchResult result)
-    {
-        int charsConsumed = HtmlEntities.IsDoubleQuote(span);
-        if (charsConsumed > 0)
-        {
-            result = new EntityMatchResult(charsConsumed, '"');
-            return true;
-        }
-
-        charsConsumed = HtmlEntities.IsSingleQuote(span);
-        if (charsConsumed > 0)
-        {
-            result = new EntityMatchResult(charsConsumed, '\'');
-            return true;
-        }
-
-        result = new EntityMatchResult(0, '\0');
-        return false;
-    }
-
-    /// <param name="EncodedLength">The length of the encoded entity without the '&amp;'.</param>
-    /// <param name="DecodedChar">The decoded character.</param>
-    record struct EntityMatchResult(int EncodedLength, char DecodedChar);
+    private static bool IsEscapable(char c)
+        => c is '(' or '"' or '\''; 
 }

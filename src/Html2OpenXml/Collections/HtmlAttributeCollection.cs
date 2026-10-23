@@ -38,54 +38,38 @@ readonly struct HtmlAttributeCollection
         var collection = new HtmlAttributeCollection(htmlStyles!);
         if (string.IsNullOrWhiteSpace(htmlStyles)) return collection;
 
-        var span = htmlStyles.AsSpan();
-        int startIndex = 0, charsConsumed;
-        bool foundKey = false;
-        string? key = null;
+        int startIndex = 0;
+        var stylesSpan = htmlStyles.AsSpan();
 
-        while (span.Length > 0)
+        Span<Range> tokens = stackalloc Range[20];
+        var tokenCount = stylesSpan.SplitCompositeAttribute(tokens, ';');
+        if (tokenCount == 0)
+            return collection;
+
+        for (int i = 0; i < tokenCount; i++)
         {
             // Encoded ':' and ';' characters are valid for browser
             // <span style="text-decoration&#58;underline&#59;color:red">
-            int index = span.IndexOfAny(';', '&', ':');
+            var segmentSpan = stylesSpan[tokens[i]];
+            int index = segmentSpan.IndexOfAny('&', ':');
+            int charsConsumed = 0;
+
             if (index == -1)
-            {
-                if (foundKey)
-                {
-                    // process the last value
-                    collection.attributes[key!] = new Range(startIndex, startIndex + span.Length);
-                }
-                break;
-            }
+                continue; // no key:value -> ignore this style
 
-            var separator = span[index];
-            if (foundKey && (charsConsumed = HtmlEntities.IsSemiColon(span.Slice(index))) > 0)
+            if ((charsConsumed = HtmlEntities.IsColon(segmentSpan.Slice(index))) > 0)
             {
-                if (index > 0)
-                    collection.attributes[key!] = new Range(startIndex, startIndex + index);
-                foundKey = false;
-                index += charsConsumed;
-            }
-            else if (separator == ';' && !foundKey)
-            {
-                // unexpected semicolon (ie, key with no value) -> ignore this style
-                index++;
-            }
-            else if (!foundKey && (charsConsumed = HtmlEntities.IsColon(span.Slice(index))) > 0)
-            {
-                key = span.Slice(0, index).Trim().ToString();
-                foundKey = true;
-                index += charsConsumed;
-            }
-            else
-            {
-                span = span.Slice(index + 1);
-                startIndex += index + 1;
-                continue;
-            }
+                var key = segmentSpan.Slice(0, index).Trim();
+                startIndex = index + charsConsumed;
 
-            span = span.Slice(index);
-            startIndex += index;
+                if (key.Length == 0) continue; // empty key
+
+                var rng = new Range(tokens[i].Start.Value + startIndex, tokens[i].End);
+                if (rng.Start.Value == rng.End.Value) continue; // empty value
+
+                var value = stylesSpan[rng].ToString();
+                collection.attributes[key.ToString()] = rng;
+            }
         }
 
         return collection;
