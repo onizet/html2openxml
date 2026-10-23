@@ -38,7 +38,6 @@ readonly struct HtmlAttributeCollection
         var collection = new HtmlAttributeCollection(htmlStyles!);
         if (string.IsNullOrWhiteSpace(htmlStyles)) return collection;
 
-        int startIndex = 0;
         var stylesSpan = htmlStyles.AsSpan();
 
         Span<Range> tokens = stackalloc Range[20];
@@ -60,14 +59,12 @@ readonly struct HtmlAttributeCollection
             if ((charsConsumed = HtmlEntities.IsColon(segmentSpan.Slice(index))) > 0)
             {
                 var key = segmentSpan.Slice(0, index).Trim();
-                startIndex = index + charsConsumed;
+                var startIndex = index + charsConsumed;
 
                 if (key.Length == 0) continue; // empty key
+                if (segmentSpan.Length <= startIndex + 1) continue; // empty value
 
                 var rng = new Range(tokens[i].Start.Value + startIndex, tokens[i].End);
-                if (rng.Start.Value == rng.End.Value) continue; // empty value
-
-                var value = stylesSpan[rng].ToString();
                 collection.attributes[key.ToString()] = rng;
             }
         }

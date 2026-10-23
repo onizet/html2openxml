@@ -137,7 +137,7 @@ static class Converter
         Span<Range> tokens = stackalloc Range[1];
         return span.SplitCompositeAttribute(tokens, ',') switch
         {
-            1 => span[tokens[0]].Trim().ToString(),
+            1 => span[tokens[0]].Unquote().Trim().ToString(),
             _ => null
         };
     }

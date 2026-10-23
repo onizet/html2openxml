@@ -18,6 +18,7 @@ namespace HtmlToOpenXml.Tests.Primitives
             var styles = HtmlAttributeCollection.ParseStyle(htmlStyle);
             using (Assert.EnterMultipleScope())
             {
+                Assert.That(styles["text-decoration"].ToString(), Is.EqualTo("underline"));
                 Assert.That(styles.HasKeyEqualsTo("text-decoration", "underline"), Is.True);
                 Assert.That(styles.HasKeyEqualsTo("color", "red"), Is.True);
                 Assert.That(styles["color"].ToString(), Is.EqualTo("red"));
@@ -60,12 +61,15 @@ namespace HtmlToOpenXml.Tests.Primitives
         [Test]
         public void WithEmbedSemicolons_ReturnsLegitimateUrl()
         {
-            var styles = HtmlAttributeCollection.ParseStyle("background:url(data:image/svg+xml;base64;iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==)");
+            var styles = HtmlAttributeCollection.ParseStyle("background:url(data:image/svg+xml;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==)");
             var exist = styles.TryGetValue("background", out var imageUrl);
             Assert.That(exist, Is.True);
             if (exist)
             {
-                var success = IO.DataUri.TryCreateImage(imageUrl.ToString(), out var _);
+                Assert.That(imageUrl.ToString(), Does.StartWith("url("));
+                Assert.That(imageUrl.ToString(), Does.EndWith(")"));
+                var dataUri = imageUrl.Slice(4, imageUrl.Length - 4 - 1).ToString();
+                var success = IO.DataUri.TryCreateImage(dataUri, out var _);
                 Assert.That(success, Is.True);
             }
         }

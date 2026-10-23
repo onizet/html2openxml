@@ -76,118 +76,115 @@ static partial class SpanExtensions
     /// <param name="skipSeparatorIfPrecededBy">If <paramref name="separator"/> is preceded by this character, the separator will be treated as a normal character.</param>
     /// <returns>The number of ranges written into <paramref name="destination"/>.</returns>
     public static int SplitCompositeAttribute(this ReadOnlySpan<char> span, Span<Range> destination,
-        char separator = ' ', char? skipSeparatorIfPrecededBy = null)
+        char separator, char? skipSeparatorIfPrecededBy = null)
     {
         // If the destination is empty, there's nothing to do.
-        if (destination.IsEmpty)
+        if (span.IsEmpty || destination.IsEmpty)
             return 0;
 
-        var originalSpan = span;
-        int matchCount = 0,
-            startMatchIndex = 0, // begin of match in originalSpan
-            contentOffset = 0,   // running count of decoded entity or enclosed content (pquote or in parenthesis) 
-            totalConsumedLength = 0; // count of input characters read from originalSpan
+        int matchCount = 0, tokenStart = 0;
         bool isEscaping = false;
         char endEscapingChar = '\0';
-        ReadOnlySpan<char> searchValues = [separator, '(', '\'', '"', '&'];
 
-        while (span.Length > 0)
+        for (int i = 0; i < span.Length; )
         {
-            bool isContentMatch = true;
-
-            // find the next potential token boundary
-            int index = isEscaping?
-                span.IndexOfAny(endEscapingChar, '&') :
-                span.IndexOfAny(searchValues);
-
-            if (index == -1)
-            {
-                // process the reminder match
-                destination[matchCount] = new Range(startMatchIndex, totalConsumedLength + span.Length);
-                matchCount++;
-                break;
-            }
-
-            // we find the beginning of an escaping sequence
-            var ch = span[index];
-            HtmlEntities.EntityMatchResult entityMatch = HtmlEntities.EntityMatchResult.Nil;
+            char ch = span[i];
+            int consumed = 1;
 
             // is this an encoded html entity?
-            if (ch == '&' && HtmlEntities.IsRecognizedEntity(span.Slice(index), out entityMatch))
+            if (ch == '&' && HtmlEntities.IsRecognizedEntity(span.Slice(i), out var entity))
             {
-                ch = entityMatch.DecodedChar;
-                if (index == 0) startMatchIndex += entityMatch.EncodedLength - 1 /* compensate for the decoded char that must be excluded from the captured range */;
-                totalConsumedLength += entityMatch.EncodedLength - 1 /* -1 to compensate with +1 on line 122 */;
+                ch = entity.DecodedChar;
+                consumed = entity.EncodedLength;
             }
-
-            totalConsumedLength += index + 1; // index is 0-based
-
 
             // are we going into escape mode, e.g., matches the separator but enclosed inside boundary
             // such as quote or parenthesis
-            if (ch != separator && !isEscaping && IsEscapable(ch))
+            if (!isEscaping && IsEscapable(ch))
             {
-                if (ch == '(')
-                {
-                    endEscapingChar = ')';
-                    contentOffset += index + 1; // include the parenthesis in the captured range
-                }
-                else // ' or "
-                {
-                    endEscapingChar = ch;
-                    if (index == 0) startMatchIndex++; // exclude the quote from the captured range
-                }
+                endEscapingChar = ch is '('? ')' : ch;
                 isEscaping = true;
-                isContentMatch = false;
-            }
-            // end of escaping sequence
-            else if (ch == endEscapingChar)
-            {
-                if (ch == ')') index++; // include that closing parenthesis in the range
-                isEscaping = false;
             }
             // this is a separator but maybe we will need to skip it
             // eg: "Arial, Verdana bold 1em" -> the space after the comma must be skipped
             // eg: rgb(233, 233, 233) -> rgb(233,233,233)
-            else if (ch == separator && index > 0 &&
-                skipSeparatorIfPrecededBy.HasValue && span[index -1] == skipSeparatorIfPrecededBy)
+            else if (!isEscaping && ch == separator &&
+                (!skipSeparatorIfPrecededBy.HasValue || (i > 0 && span[i - 1] != skipSeparatorIfPrecededBy.Value)))
             {
-                contentOffset += index;
-                isContentMatch = false;
+                if (i  > tokenStart)
+                {
+                    destination[matchCount++] = new Range(tokenStart, i);
+                    if (matchCount >= destination.Length)
+                        return matchCount;
+                }
+                tokenStart = i + consumed;
             }
-            else if (ch != separator && span[index] == '&')
+            // end of escaping sequence
+            else if (ch == endEscapingChar)
             {
-                contentOffset += entityMatch.EncodedLength;
-                isContentMatch = false;
-            }
-            else if (index == 0) // empty token
-            {
-                startMatchIndex++;
-                isContentMatch = false;
-            }
-
-            // index > 0 to exclude empty entries
-            if (!isEscaping && index > 0 && isContentMatch)
-            {
-                var endRange = startMatchIndex + index + contentOffset;
-                destination[matchCount] = new Range(startMatchIndex, endRange);
-                startMatchIndex = totalConsumedLength;
-
-                // reset pointer for next match
-                contentOffset = 0;
-                matchCount++;
+                isEscaping = false;
             }
 
-            if (matchCount >= destination.Length || span.Length <= index)
-               break;
+            i += consumed;
+        }
 
-            // move to next token past what we just consumed
-            span = originalSpan.Slice(totalConsumedLength);
+        // process the reminder match
+        if (tokenStart < span.Length && matchCount < destination.Length)
+        {
+            destination[matchCount++] = new Range(tokenStart, span.Length);
         }
 
         return matchCount;
     }
 
+    /// <summary>
+    /// Trim the (single or double) quote around text.
+    /// Supports also the html-encoded quote entity.
+    /// </summary>
+    public static ReadOnlySpan<char> Unquote(this ReadOnlySpan<char> span)
+    {
+        int start = 0;
+        while (start < span.Length)
+        {
+            var ch = span[start];
+            int consumed = 1;
+            if (ch is '&' && HtmlEntities.IsRecognizedEntity(span.Slice(start), out var entity))
+            {
+                ch = entity.DecodedChar;
+                consumed = entity.EncodedLength;
+            }
+
+            if (!IsQuote(ch))
+                break;
+
+            start += consumed;
+        }
+
+        int end = span.Length - 1;
+        while (end >= start)
+        {
+            var ch = span[end];
+            int consumed = 1, ampIndex;
+            if (ch is ';' &&
+                (ampIndex = span.Slice(0, end + 1).LastIndexOf('&')) > -1 &&
+                HtmlEntities.IsRecognizedEntity(span.Slice(ampIndex), out var entity))
+            {
+                ch = entity.DecodedChar;
+                consumed = entity.EncodedLength;
+            }
+
+            if (!IsQuote(ch))
+                break;
+
+            end -= consumed;
+        }
+
+        return span.Slice(start, end - start + 1);
+    }
+
+    private static bool IsQuote(char c)
+        => c is '"' or '\'';
+
     private static bool IsEscapable(char c)
-        => c is '(' or '"' or '\''; 
+        => c is '(' or '"' or '\'';
 }
