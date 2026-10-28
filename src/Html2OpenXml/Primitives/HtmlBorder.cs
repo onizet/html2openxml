@@ -19,6 +19,8 @@ struct HtmlBorder
 {
     private SideBorder[]? sides;
 
+    public static readonly HtmlBorder Empty = new();
+
 
     public HtmlBorder(SideBorder all)
     {
@@ -29,6 +31,21 @@ struct HtmlBorder
     private void EnsureSides()
     {
         if(this.sides == null) sides = new SideBorder[4];
+    }
+
+    /// <summary>
+    /// Parse the border style attribute.
+    /// </summary>
+    public static HtmlBorder Parse(ReadOnlySpan<char> span)
+    {
+        if (span.IsEmpty || span.Length < 2) return new(SideBorder.Empty);
+
+        Span<Range> tokens = stackalloc Range[10];
+        var tokenCount = span.SplitCompositeAttribute(tokens, ' ', skipSeparatorIfPrecededBy: ',');
+        if (tokenCount == 0)
+            return new(SideBorder.Empty);
+
+        return new();
     }
 
     //____________________________________________________________________

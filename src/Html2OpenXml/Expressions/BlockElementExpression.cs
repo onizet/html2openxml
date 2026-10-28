@@ -214,7 +214,7 @@ class BlockElementExpression: PhrasingElementExpression
             }
         }
 
-        var margin = styleAttributes.GetMargin("margin");
+        var margin = styleAttributes.GetMargin();
         Indentation? indentation = null;
         if (!margin.IsEmpty)
         {
@@ -244,7 +244,7 @@ class BlockElementExpression: PhrasingElementExpression
         }
 
         // support left and right padding
-        var padding = styleAttributes.GetMargin("padding");
+        var padding = styleAttributes.GetPadding();
         if (!padding.IsEmpty && (padding.Left.IsFixed || padding.Right.IsFixed))
         {
             indentation ??= new Indentation();
@@ -256,7 +256,7 @@ class BlockElementExpression: PhrasingElementExpression
 
         var lineHeight = styleAttributes.GetUnit("line-height");
         if (!lineHeight.IsValid 
-            && styleAttributes.HasKeyEqualsTo("line-height", "normal"))
+            && styleAttributes.HasStyleEqualsTo("line-height", "normal"))
         {
             // if `normal` is specified, reset any values
             lineHeight = new Unit(UnitMetric.Unitless, 1);

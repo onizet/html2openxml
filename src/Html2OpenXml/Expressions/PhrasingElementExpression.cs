@@ -103,13 +103,13 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
         }
 
         // OpenXml limits the border to 4-side of the same color and style.
-        SideBorder border = styleAttributes.GetSideBorder("border");
-        if (border.IsValid)
+        var borders = styleAttributes.GetBorders();
+        if (borders.Top.IsValid)
         {
             runProperties.Border = new Border() {
-                Val = border.Style,
-                Color = border.Color.ToHexString(),
-                Size = (uint) border.Width.ValueInPx * 4,
+                Val = borders.Top.Style,
+                Color = borders.Top.Color.ToHexString(),
+                Size = (uint) borders.Top.Width.ValueInPx * 4,
                 Space = 1U
             };
         }
@@ -128,7 +128,7 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
             runProperties.Shading = new Shading { Val = ShadingPatternValues.Clear, Fill = bgcolor.ToHexString() };
         }
 
-        foreach (var decoration in styleAttributes.GetTextDecorations("text-decoration"))
+        foreach (var decoration in styleAttributes.GetTextDecorations())
         {
             switch (decoration)
             {
@@ -162,7 +162,7 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
             }
         }
 
-        HtmlFont font = styleAttributes.GetFont("font");
+        HtmlFont font = styleAttributes.GetFont();
 
         if (font.Style == FontStyle.Italic)
             runProperties.Italic = new Italic();

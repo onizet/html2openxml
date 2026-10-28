@@ -21,9 +21,7 @@ readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
     /// <summary>Represents an empty border (not defined).</summary>
     public static readonly SideBorder Empty = new(BorderValues.Nil, HtmlColor.Empty, Unit.Empty);
 
-    private readonly BorderValues style = style;
-    private readonly HtmlColor color = color;
-    private readonly Unit size = size;
+
 
     public static SideBorder Parse(ReadOnlySpan<char> span)
     {
@@ -107,32 +105,32 @@ readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
         }
     }
 
+    public SideBorder Apply(Unit size)
+        => this with { Width = size };
+
+    public SideBorder Apply(HtmlColor color)
+        => this with { Color = color };
+
+    public SideBorder Apply(BorderValues style)
+        => this with { Style = style };
+
     //____________________________________________________________________
     //
 
     /// <summary>
     /// Gets or sets the type of border (solid, dashed, dotted, ...)
     /// </summary>
-    public BorderValues Style
-    {
-        get { return style; }
-    }
+    public BorderValues Style { get; init; } = style;
 
     /// <summary>
     /// Gets or sets the color of the border.
     /// </summary>
-    public HtmlColor Color
-    {
-        get { return color; }
-    }
+    public HtmlColor Color { get; init; } = color;
 
     /// <summary>
     /// Gets or sets the size of the border expressed with its unit.
     /// </summary>
-    public Unit Width
-    {
-        get { return size; }
-    }
+    public Unit Width { get; init; } = size;
 
     /// <summary>
     /// Gets whether the border is well formed and not empty.

@@ -19,8 +19,6 @@ namespace HtmlToOpenXml.Tests.Primitives
             using (Assert.EnterMultipleScope())
             {
                 Assert.That(styles["text-decoration"].ToString(), Is.EqualTo("underline"));
-                Assert.That(styles.HasKeyEqualsTo("text-decoration", "underline"), Is.True);
-                Assert.That(styles.HasKeyEqualsTo("color", "red"), Is.True);
                 Assert.That(styles["color"].ToString(), Is.EqualTo("red"));
             }
         }
@@ -29,7 +27,7 @@ namespace HtmlToOpenXml.Tests.Primitives
         public void DuplicateStyle_ReturnsLatter()
         {
             var styleAttributes = HtmlAttributeCollection.ParseStyle("color:red;color:BLUE");
-            Assert.That(styleAttributes.HasKeyEqualsTo("color", "blue"), Is.True);
+            Assert.That(styleAttributes["color"].ToString(), Is.EqualTo("BLUE"));
         }
 
         [TestCase("color;color;")]
@@ -47,14 +45,14 @@ namespace HtmlToOpenXml.Tests.Primitives
         {
             var styles = HtmlAttributeCollection.ParseStyle("color:red&green;text-decoration:underline");
             Assert.That(styles.IsEmpty, Is.False);
-            Assert.That(styles.HasKeyEqualsTo("text-decoration", "underline"), Is.True);
+            Assert.That(styles["text-decoration"].ToString(), Is.EqualTo("underline"));
         }
 
         [Test]
         public void WithMultipleTextDecoration_ReturnsAllValues()
         {
             var styles = HtmlAttributeCollection.ParseStyle("text-decoration:underline dotted wavy");
-            var decorations = styles.GetTextDecorations("text-decoration");
+            var decorations = styles.GetTextDecorations();
             Assert.That(decorations, Is.EquivalentTo([TextDecoration.Underline, TextDecoration.Dotted, TextDecoration.Wave]));
         }
 

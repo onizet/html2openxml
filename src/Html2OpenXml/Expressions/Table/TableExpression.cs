@@ -285,7 +285,7 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
             ?? Converter.ToParagraphAlign(styleAttributes["justify-self"]);
         if (!align.HasValue)
         {
-            var margin = styleAttributes.GetMargin("margin");
+            var margin = styleAttributes.GetMargin();
             if (margin.Left.Metric == UnitMetric.Auto)
             {
                 align = margin.Right.Metric == UnitMetric.Auto?
