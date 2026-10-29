@@ -17,74 +17,127 @@ namespace HtmlToOpenXml;
 /// </summary>
 struct HtmlBorder
 {
-    private SideBorder[]? sides;
-
     public static readonly HtmlBorder Empty = new();
 
+    private SideBorder top;
+    private SideBorder right;
+    private SideBorder bottom;
+    private SideBorder left;
 
+
+    /// <summary>Apply to all four sides.</summary>
     public HtmlBorder(SideBorder all)
     {
-        if (!all.IsValid) sides = null;
-        else this.sides = [all, all, all, all];
+        this.top = all;
+        this.right = all;
+        this.bottom = all;
+        this.left = all;
     }
 
-    private void EnsureSides()
+    public void ParseWidths(ReadOnlySpan<char> span)
     {
-        if(this.sides == null) sides = new SideBorder[4];
+        var widths = BoxThickness.Parse(span);
+        if (!widths.IsValid) return;
+
+        Top = Top.Apply(widths.Top);
+        Left = Left.Apply(widths.Left);
+        Right = Right.Apply(widths.Right);
+        Bottom = Bottom.Apply(widths.Bottom);
     }
 
-    /// <summary>
-    /// Parse the border style attribute.
-    /// </summary>
-    public static HtmlBorder Parse(ReadOnlySpan<char> span)
+    public void ParseColors(ReadOnlySpan<char> span)
     {
-        if (span.IsEmpty || span.Length < 2) return new(SideBorder.Empty);
+        if (span.IsEmpty || span.IsWhiteSpace())
+            return;
 
-        Span<Range> tokens = stackalloc Range[10];
-        var tokenCount = span.SplitCompositeAttribute(tokens, ' ', skipSeparatorIfPrecededBy: ',');
-        if (tokenCount == 0)
-            return new(SideBorder.Empty);
+        Span<Range> tokens = stackalloc Range[4];
+        HtmlColor[] colors;
+        var tokenCount = span.SplitCompositeAttribute(tokens, separator: ' ');
+        if (tokenCount < 1 || tokenCount > 4)
+            return;
 
-        return new();
+        if (tokenCount == 1)
+        {
+            var c = HtmlColor.Parse(span[tokens[0]]);
+            if (c.IsEmpty) return;
+            colors = [c, c, c, c];
+        }
+        else if (tokenCount == 2)
+        {
+            var c1 = HtmlColor.Parse(span[tokens[0]]);
+            var c2 = HtmlColor.Parse(span[tokens[1]]);
+            if (c1.IsEmpty || c2.IsEmpty) return;
+
+            colors = [c1, c2, c1, c2];
+        }
+        else if (tokenCount == 3)
+        {
+            var c1 = HtmlColor.Parse(span[tokens[0]]);
+            var c2 = HtmlColor.Parse(span[tokens[1]]);
+            var c3 = HtmlColor.Parse(span[tokens[2]]);
+            if (c1.IsEmpty || c2.IsEmpty || c3.IsEmpty) return;
+
+            colors = [c1, c2, c3, c2];
+        }
+        else
+        {
+            var c1 = HtmlColor.Parse(span[tokens[0]]);
+            var c2 = HtmlColor.Parse(span[tokens[1]]);
+            var c3 = HtmlColor.Parse(span[tokens[2]]);
+            var c4 = HtmlColor.Parse(span[tokens[2]]);
+            if (c1.IsEmpty || c2.IsEmpty || c3.IsEmpty || c4.IsEmpty) return;
+
+            colors = [c1, c2, c3, c4];
+        }
+
+        top = top.Apply(colors[0]);
+        right = right.Apply(colors[1]);
+        bottom = bottom.Apply(colors[2]);
+        left = left.Apply(colors[3]);
+    }
+
+    public void ParseStyles(ReadOnlySpan<char> span)
+    {
+        
     }
 
     //____________________________________________________________________
     //
 
     /// <summary>
-    /// Gets or sets the border of the bottom side.
+    /// Gets or sets the unit of the bottom side.
     /// </summary>
     public SideBorder Bottom
     {
-        readonly get { return sides == null ? SideBorder.Empty : sides[2]; }
-        set { EnsureSides(); sides![2] = value; }
+        readonly get => bottom;
+        set => bottom = value;
     }
 
     /// <summary>
-    /// Gets or sets the border of the left side.
+    /// Gets or sets the unit of the left side.
     /// </summary>
     public SideBorder Left
     {
-        readonly get { return sides == null ? SideBorder.Empty : sides[3]; }
-        set { EnsureSides(); sides![3] = value; }
+        readonly get => left;
+        set => left = value;
     }
 
     /// <summary>
-    /// Gets or sets the border of the top side.
+    /// Gets or sets the unit of the top side.
     /// </summary>
     public SideBorder Top
     {
-        readonly get { return sides == null ? SideBorder.Empty : sides[0]; }
-        set { EnsureSides(); sides![0] = value; }
+        readonly get => top;
+        set => top = value;
     }
 
     /// <summary>
-    /// Gets or sets the border of the right side.
+    /// Gets or sets the unit of the right side.
     /// </summary>
     public SideBorder Right
     {
-        readonly get { return sides == null ? SideBorder.Empty : sides[1]; }
-        set { EnsureSides(); sides![1] = value; }
+        readonly get => right;
+        set => right = value;
     }
 
     /// <summary>
@@ -92,6 +145,6 @@ struct HtmlBorder
     /// </summary>
     public readonly bool IsEmpty
     {
-        get => sides == null || !(Left.IsValid || Right.IsValid || Bottom.IsValid || Top.IsValid);
+        get => !(Left.IsValid || Right.IsValid || Bottom.IsValid || Top.IsValid);
     }
 }

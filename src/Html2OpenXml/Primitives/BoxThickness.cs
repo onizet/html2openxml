@@ -90,7 +90,7 @@ struct BoxThickness
         if (span.IsEmpty || span.IsWhiteSpace())
             return Empty;
 
-        Span<Range> tokens = stackalloc Range[5];
+        Span<Range> tokens = stackalloc Range[4];
         return span.SplitCompositeAttribute(tokens, separator: ' ') switch
         {
             1 => new BoxThickness(Unit.Parse(span[tokens[0]], UnitMetric.Pixel)),

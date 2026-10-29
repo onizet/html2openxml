@@ -61,26 +61,25 @@ namespace HtmlToOpenXml.Tests.Primitives
             Assert.That(border.Width.ValueInEighthPoint, Is.EqualTo(18));
         }
 
-        /*[TestCase("1pt", new[] { 1d })]
-        [TestCase("1pt 2pt", new[] { 1d, 2d })]
-        [TestCase("1pt 2pt 3pt", new[] { 1d, 2d, 3d })]
-        [TestCase("1pt 2pt 3pt 4pt", new[] { 1d, 2d, 3d, 4d })]
-        public void ParseMultipleWidth_ShouldParseCssWidthValues(string value, double[] expected)
+        [TestCase("border-width: 1pt", 1d, 1d, 1d, 1d)]
+        [TestCase("border-width: 1pt 2pt", 1d, 2d, 1d, 2d)]
+        [TestCase("border-width: 1pt 2pt 3pt", 1d, 2d, 3d, 2d)]
+        [TestCase("border-width: 1pt 2pt 3pt 4pt", 1d, 2d, 3d, 4d)]
+        public void ParseMultipleWidth_ShouldParseCssWidthValues(string html, double top, double right, double bottom, double left)
         {
-            var widths = HtmlBorder.ParseMultipleWidth(value.AsSpan());
-
-            Assert.That(widths, Has.Length.EqualTo(expected.Length));
+            var styleAttributes = HtmlAttributeCollection.ParseStyle(html);
+            var borders = styleAttributes.GetBorders();
 
             using (Assert.EnterMultipleScope())
             {
-                for (int i = 0; i < expected.Length; i++)
-                {
-                    Assert.That(widths[i].ValueInPoint, Is.EqualTo(expected[i]).Within(0.01));
-                }
+                Assert.That(borders.Top.Width.ValueInPoint, Is.EqualTo(top));
+                Assert.That(borders.Right.Width.ValueInPoint, Is.EqualTo(right));
+                Assert.That(borders.Bottom.Width.ValueInPoint, Is.EqualTo(bottom));
+                Assert.That(borders.Left.Width.ValueInPoint, Is.EqualTo(left));
             }
-        }*/
+        }
 
-        /*[TestCase("border-width: 1pt; border-style: solid;", 1, 1, 1, 1)]
+        [TestCase("border-width: 1pt; border-style: solid;", 1, 1, 1, 1)]
         [TestCase("border-width: 1pt 2pt; border-style: solid;", 1, 2, 1, 2)]
         [TestCase("border-width: 1pt 2pt 3pt; border-style: solid;", 1, 2, 3, 2)]
         [TestCase("border-width: 1pt 2pt 3pt 4pt; border-style: solid;", 1, 2, 3, 4)]
@@ -95,6 +94,8 @@ namespace HtmlToOpenXml.Tests.Primitives
                 Assert.That(border.Bottom.Width.ValueInPoint, Is.EqualTo(bottom));
                 Assert.That(border.Left.Width.ValueInPoint, Is.EqualTo(left));
             }
+            //TODO: look to fix Empty.ISEmpty
+            var emptyOne = HtmlBorder.Empty;
         }
 
         [TestCase("border-color: red; border-style: solid;", "red", "red", "red", "red")]
@@ -130,6 +131,6 @@ namespace HtmlToOpenXml.Tests.Primitives
                 Assert.That(((IEnumValue)border.Bottom.Style).Value, Is.EqualTo(bottom));
                 Assert.That(((IEnumValue)border.Left.Style).Value, Is.EqualTo(left));
             }
-        }*/
+        }
     }
 }

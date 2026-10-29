@@ -287,6 +287,19 @@ readonly struct HtmlAttributeCollection
             {
                 borders.Bottom = GetSideBorder(borders.Bottom, stringSuffix.Slice("-block-end".Length), decl);
             }
+            // shorthand properties
+            else if (stringSuffix.Equals("-width", StringComparison.Ordinal))
+            {
+                borders.ParseWidths(rawValue.AsSpan()[decl.Range]);
+            }
+            else if (stringSuffix.Equals("-color", StringComparison.Ordinal))
+            {
+                borders.ParseColors(rawValue.AsSpan()[decl.Range]);
+            }
+            else if (stringSuffix.Equals("-style", StringComparison.Ordinal))
+            {
+                borders.ParseStyles(rawValue.AsSpan()[decl.Range]);
+            }
         }
 
         return borders;
