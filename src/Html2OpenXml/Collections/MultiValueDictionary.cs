@@ -49,7 +49,7 @@ sealed class MultiValueDictionary<TKey, TValue>
     /// <summary>
     /// Retrieves the most recently added value associated with the specified key.
     /// </summary>
-    public bool TryGetSingleValue(TKey key, [MaybeNullWhen(false)] out TValue value)
+    public bool TryGetLastValue(TKey key, [MaybeNullWhen(false)] out TValue value)
     {
         var success = dictionary.TryGetValue(key, out var collection);
         if (success) value = collection![^1];
