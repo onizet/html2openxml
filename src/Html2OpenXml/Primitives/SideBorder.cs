@@ -137,6 +137,6 @@ readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
     /// </summary>
     public bool IsValid
     {
-        get { return !BorderValues.Nil.Equals(Style); }
+        get { return !BorderValues.Nil.Equals(Style) && Width.IsValid; }
     }
 }

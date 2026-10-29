@@ -16,12 +16,14 @@ namespace HtmlToOpenXml;
 /// <summary>
 /// Represents the collection of attributes present in the current html tag.
 /// </summary>
-readonly struct HtmlAttributeCollection
+struct HtmlAttributeCollection
 {
-    record struct StyleAttribute(string Name, Range Range);
+    // we use Range to avoid string allocation
+    record struct StyleAttribute(Range Name, Range Range);
 
     // Style key associated with a pointer to rawValue.
     private readonly MultiValueDictionary<string, StyleAttribute> attributes;
+    private HtmlBorder? htmlBorder;
     private readonly string rawValue;
 
 
@@ -64,15 +66,25 @@ readonly struct HtmlAttributeCollection
 
             if ((charsConsumed = HtmlEntities.IsColon(segmentSpan.Slice(index))) > 0)
             {
-                var key = segmentSpan.Slice(0, index).Trim();
-                var startIndex = index + charsConsumed;
+                // trim() the key but keeep note of the new range
+                var key = segmentSpan.Slice(0, index);
+                int startTrim = 0, endTrim = index;
+                while (startTrim < key.Length && char.IsWhiteSpace(key[startTrim]))
+                    startTrim++;
+                while (endTrim > startTrim && char.IsWhiteSpace(key[endTrim - 1]))
+                    endTrim--;
+
+                key = segmentSpan.Slice(startTrim, endTrim - startTrim);
 
                 if (key.Length == 0) continue; // empty key
+
+                var startIndex = index + charsConsumed;
                 if (segmentSpan.Length <= startIndex + 1) continue; // empty value
 
                 var familyKey = GetStyleFamily(key);
-                var rng = new Range(tokens[i].Start.Value + startIndex, tokens[i].End);
-                collection.attributes.AddWithValue(familyKey.ToString(), new(key.ToString(), rng));
+                var keyRng = new Range(tokens[i].Start.Value + startTrim, tokens[i].Start.Value + endTrim);
+                var valueRng = new Range(tokens[i].Start.Value + startIndex, tokens[i].End);
+                collection.attributes.AddWithValue(familyKey, new(keyRng, valueRng));
             }
         }
 
@@ -86,19 +98,18 @@ readonly struct HtmlAttributeCollection
     /// when only <c>margin-top</c> was originally specified).
     /// </para>
     /// </summary>
-    private static ReadOnlySpan<char> GetStyleFamily(ReadOnlySpan<char> attributeName)
+    private static string GetStyleFamily(ReadOnlySpan<char> attributeName)
     {
-        if (attributeName.Length < 8) return attributeName;
+        if (attributeName.StartsWith("font", StringComparison.OrdinalIgnoreCase))
+            return "font";
+        if (attributeName.StartsWith("padding", StringComparison.OrdinalIgnoreCase))
+            return "padding";
+        if (attributeName.StartsWith("margin", StringComparison.OrdinalIgnoreCase))
+            return "margin";
+        if (attributeName.StartsWith("border", StringComparison.OrdinalIgnoreCase))
+            return "border";
 
-        int hyphenIndex = attributeName.IndexOf('-');
-        return hyphenIndex switch {
-            4 => attributeName.StartsWith("font", StringComparison.OrdinalIgnoreCase)? "font" : attributeName,
-            5 => attributeName.StartsWith("padding", StringComparison.OrdinalIgnoreCase)? "padding" : attributeName,
-            6 => 
-                attributeName.StartsWith("margin", StringComparison.OrdinalIgnoreCase)? "margin" :
-                attributeName.StartsWith("border", StringComparison.OrdinalIgnoreCase)? "border" : attributeName,
-            _ => attributeName
-        };
+        return attributeName.ToString();
     }
 
     /// <summary>
@@ -130,7 +141,7 @@ readonly struct HtmlAttributeCollection
     {
         if (TryGetValue(name, out var span))
         {
-            return span.Equals(value, StringComparison.InvariantCultureIgnoreCase);
+            return span.Equals(value, StringComparison.OrdinalIgnoreCase);
         }
         return false;
     }
@@ -178,7 +189,7 @@ readonly struct HtmlAttributeCollection
         int suffixStart = name.Length;
         foreach (var decl in declarations)
         {
-            var stringSuffix = decl.Name.AsSpan(suffixStart);
+            var stringSuffix = rawValue.AsSpan()[decl.Name].Slice(suffixStart);
             if (stringSuffix.IsEmpty) // the name itself, e.g., `padding`
             {
                  var m = BoxThickness.Parse(rawValue.AsSpan()[decl.Range]);
@@ -189,31 +200,31 @@ readonly struct HtmlAttributeCollection
                 u = Unit.Parse(rawValue.AsSpan()[decl.Range], UnitMetric.Pixel);
                 if (u.IsValid) margin.Top = margin.Bottom = u;
             }
-            else if (stringSuffix.Equals("-inline", StringComparison.Ordinal))
+            else if (stringSuffix.Equals("-inline", StringComparison.OrdinalIgnoreCase))
             { 
                 u = Unit.Parse(rawValue.AsSpan()[decl.Range], UnitMetric.Pixel);
                 if (u.IsValid) margin.Left = margin.Right = u;
             }
-            else if (stringSuffix.Equals("-top", StringComparison.Ordinal)
-                || stringSuffix.Equals("-block-start", StringComparison.Ordinal))
+            else if (stringSuffix.Equals("-top", StringComparison.OrdinalIgnoreCase)
+                || stringSuffix.Equals("-block-start", StringComparison.OrdinalIgnoreCase))
             {
                 u = Unit.Parse(rawValue.AsSpan()[decl.Range], UnitMetric.Pixel);
                 if (u.IsValid) margin.Top = u;
             }
-            else if (stringSuffix.Equals("-left", StringComparison.Ordinal)
-                || stringSuffix.Equals("-inline-start", StringComparison.Ordinal))
+            else if (stringSuffix.Equals("-left", StringComparison.OrdinalIgnoreCase)
+                || stringSuffix.Equals("-inline-start", StringComparison.OrdinalIgnoreCase))
             {
                 u = Unit.Parse(rawValue.AsSpan()[decl.Range], UnitMetric.Pixel);
                 if (u.IsValid) margin.Left = u;
             }
-            else if (stringSuffix.Equals("-right", StringComparison.Ordinal)
-                || stringSuffix.Equals("-inline-end", StringComparison.Ordinal))
+            else if (stringSuffix.Equals("-right", StringComparison.OrdinalIgnoreCase)
+                || stringSuffix.Equals("-inline-end", StringComparison.OrdinalIgnoreCase))
             {
                 u = Unit.Parse(rawValue.AsSpan()[decl.Range], UnitMetric.Pixel);
                 if (u.IsValid) margin.Right = u;
             }
-            else if (stringSuffix.Equals("-bottom", StringComparison.Ordinal)
-                || stringSuffix.Equals("-block-end", StringComparison.Ordinal))
+            else if (stringSuffix.Equals("-bottom", StringComparison.OrdinalIgnoreCase)
+                || stringSuffix.Equals("-block-end", StringComparison.OrdinalIgnoreCase))
             {
                 u = Unit.Parse(rawValue.AsSpan()[decl.Range], UnitMetric.Pixel);
                 if (u.IsValid) margin.Bottom = u;
@@ -230,16 +241,19 @@ readonly struct HtmlAttributeCollection
     /// <returns>If the attribute is misformed, the <see cref="HtmlBorder.IsEmpty"/> property is set to false.</returns>
     public HtmlBorder GetBorders()
     {
+        if (htmlBorder.HasValue)
+            return htmlBorder.Value;
+
         // shortcut to avoid resolving each individual side when we know this collection is empty
         if (IsEmpty || !attributes.TryGetValue("border", out var declarations))
-            return HtmlBorder.Empty;
+            return (htmlBorder = HtmlBorder.Empty).Value;
 
         HtmlBorder borders = new();
         SideBorder sb;
 
         foreach (var decl in declarations)
         {
-            var stringSuffix = decl.Name.AsSpan(6 /* border */);
+            var stringSuffix = rawValue.AsSpan()[decl.Name].Slice(6 /* border */);
             if (stringSuffix.IsEmpty) // the name itself, e.g., `border`
             {
                 var b = SideBorder.Parse(rawValue.AsSpan()[decl.Range]);
@@ -255,53 +269,54 @@ readonly struct HtmlAttributeCollection
                 sb = SideBorder.Parse(rawValue.AsSpan()[decl.Range]);
                 if (sb.IsValid) borders.Left = borders.Right = sb;
             }
-            else if (stringSuffix.StartsWith("-top", StringComparison.Ordinal))
+            else if (stringSuffix.StartsWith("-top", StringComparison.OrdinalIgnoreCase))
             {
-                borders.Top = GetSideBorder(borders.Top, stringSuffix.Slice("top".Length), decl);
+                borders.Top = GetSideBorder(borders.Top, stringSuffix.Slice("-top".Length), decl);
             }
-            else if (stringSuffix.StartsWith("-block-start", StringComparison.Ordinal))
+            else if (stringSuffix.StartsWith("-block-start", StringComparison.OrdinalIgnoreCase))
             {
                 borders.Top = GetSideBorder(borders.Top, stringSuffix.Slice("-block-start".Length), decl);
             }
-            else if (stringSuffix.StartsWith("-left", StringComparison.Ordinal))
+            else if (stringSuffix.StartsWith("-left", StringComparison.OrdinalIgnoreCase))
             {
-                borders.Left = GetSideBorder(borders.Left, stringSuffix.Slice("left".Length), decl);
+                borders.Left = GetSideBorder(borders.Left, stringSuffix.Slice("-left".Length), decl);
             }
-            else if (stringSuffix.StartsWith("-inline-start", StringComparison.Ordinal))
+            else if (stringSuffix.StartsWith("-inline-start", StringComparison.OrdinalIgnoreCase))
             {
                 borders.Left = GetSideBorder(borders.Left, stringSuffix.Slice("-inline-start".Length), decl);
             }
-            else if (stringSuffix.StartsWith("-right", StringComparison.Ordinal))
+            else if (stringSuffix.StartsWith("-right", StringComparison.OrdinalIgnoreCase))
             {
                 borders.Right = GetSideBorder(borders.Right, stringSuffix.Slice("-right".Length), decl);
             }
-            else if (stringSuffix.StartsWith("-inline-end", StringComparison.Ordinal))
+            else if (stringSuffix.StartsWith("-inline-end", StringComparison.OrdinalIgnoreCase))
             {
                 borders.Right = GetSideBorder(borders.Right, stringSuffix.Slice("-inline-end".Length), decl);
             }
-            else if (stringSuffix.StartsWith("-bottom", StringComparison.Ordinal))
+            else if (stringSuffix.StartsWith("-bottom", StringComparison.OrdinalIgnoreCase))
             {
                 borders.Bottom = GetSideBorder(borders.Bottom, stringSuffix.Slice("-bottom".Length), decl);
             }
-            else if (stringSuffix.StartsWith("-block-end", StringComparison.Ordinal))
+            else if (stringSuffix.StartsWith("-block-end", StringComparison.OrdinalIgnoreCase))
             {
                 borders.Bottom = GetSideBorder(borders.Bottom, stringSuffix.Slice("-block-end".Length), decl);
             }
             // shorthand properties
-            else if (stringSuffix.Equals("-width", StringComparison.Ordinal))
+            else if (stringSuffix.Equals("-width", StringComparison.OrdinalIgnoreCase))
             {
                 borders.ParseWidths(rawValue.AsSpan()[decl.Range]);
             }
-            else if (stringSuffix.Equals("-color", StringComparison.Ordinal))
+            else if (stringSuffix.Equals("-color", StringComparison.OrdinalIgnoreCase))
             {
                 borders.ParseColors(rawValue.AsSpan()[decl.Range]);
             }
-            else if (stringSuffix.Equals("-style", StringComparison.Ordinal))
+            else if (stringSuffix.Equals("-style", StringComparison.OrdinalIgnoreCase))
             {
                 borders.ParseStyles(rawValue.AsSpan()[decl.Range]);
             }
         }
 
+        htmlBorder = borders;
         return borders;
     }
 
@@ -317,17 +332,17 @@ readonly struct HtmlAttributeCollection
             var sb = SideBorder.Parse(rawValue.AsSpan()[decl.Range]);
             if (sb.IsValid) return sb;
         }
-        else if (name.Equals("-width", StringComparison.Ordinal))
+        else if (name.Equals("-width", StringComparison.OrdinalIgnoreCase))
         {
             var u = Unit.Parse(rawValue.AsSpan()[decl.Range], UnitMetric.Unitless);
             if (u.IsFixed) return border.Apply(u);
         }
-        else if (name.Equals("-color", StringComparison.Ordinal))
+        else if (name.Equals("-color", StringComparison.OrdinalIgnoreCase))
         {
             var c = HtmlColor.Parse(rawValue.AsSpan()[decl.Range]);
             if (!c.IsEmpty) return border.Apply(c);
         }
-        else if (name.Equals("-style", StringComparison.Ordinal))
+        else if (name.Equals("-style", StringComparison.OrdinalIgnoreCase))
         {
             var s = Converter.ToBorderStyle(rawValue.AsSpan()[decl.Range]);
             if (s != BorderValues.Nil) return border.Apply(s);
@@ -355,7 +370,7 @@ readonly struct HtmlAttributeCollection
 
         foreach (var decl in declarations)
         {
-            var stringSuffix = decl.Name.AsSpan(4 /* 'font' */);
+            var stringSuffix = rawValue.AsSpan()[decl.Name].Slice(4 /* font */);
             if (stringSuffix.IsEmpty)
             {
                 font =  HtmlFont.Parse(rawValue.AsSpan()[decl.Range]);
@@ -400,10 +415,10 @@ readonly struct HtmlAttributeCollection
     /// <summary>
     /// Gets the composite <c>text-decoration</c> style.
     /// </summary>
-    public IEnumerable<TextDecoration> GetTextDecorations()
+    public TextDecoration GetTextDecorations()
     {
         if (TryGetValue("text-decoration", out var span))
             return Converter.ToTextDecoration(span);
-        return [];
+        return TextDecoration.None;
     }
 }

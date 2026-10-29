@@ -1,14 +1,6 @@
-/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
- * 
- * This source is subject to the Microsoft Permissive License.
- * Please see the License.txt file for more information.
- * All other rights reserved.
- * 
- * THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY 
- * KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
- * PARTICULAR PURPOSE.
- */
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 
@@ -67,7 +59,8 @@ sealed class MultiValueDictionary<TKey, TValue>
     }
 
     /// <summary>
-    /// Determines if the given key exists and has at least one value associated with it.
+    /// Determines if the given key exists and has
+    /// at least one value associated with it.
     /// </summary>
     public bool ContainsKey(TKey key)
     {

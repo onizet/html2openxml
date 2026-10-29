@@ -128,24 +128,20 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
             runProperties.Shading = new Shading { Val = ShadingPatternValues.Clear, Fill = bgcolor.ToHexString() };
         }
 
-        foreach (var decoration in styleAttributes.GetTextDecorations())
-        {
-            switch (decoration)
-            {
-                case TextDecoration.Underline:
-                    runProperties.Underline = new Underline { Val = UnderlineValues.Single }; break;
-                case TextDecoration.Dotted:
-                    runProperties.Underline = new Underline { Val = UnderlineValues.Dotted }; break;
-                case TextDecoration.Dashed:
-                    runProperties.Underline = new Underline { Val = UnderlineValues.Dash }; break;
-                case TextDecoration.Wave:
-                    runProperties.Underline = new Underline { Val = UnderlineValues.Wave }; break;
-                case TextDecoration.Double:
-                    runProperties.DoubleStrike = new DoubleStrike(); break;
-                case TextDecoration.LineThrough:
-                    runProperties.Strike = new Strike(); break;
-            }
-        }
+        var decorations = styleAttributes.GetTextDecorations();
+
+        if (decorations.HasFlag(TextDecoration.Underline))
+            runProperties.Underline = new Underline { Val = UnderlineValues.Single };
+        if (decorations.HasFlag(TextDecoration.Dotted))
+            runProperties.Underline = new Underline { Val = UnderlineValues.Dotted };
+        if (decorations.HasFlag(TextDecoration.Dashed))
+            runProperties.Underline = new Underline { Val = UnderlineValues.Dash };
+        if (decorations.HasFlag(TextDecoration.Wave))
+            runProperties.Underline = new Underline { Val = UnderlineValues.Wave };
+        if (decorations.HasFlag(TextDecoration.Double))
+            runProperties.DoubleStrike = new DoubleStrike();
+        if (decorations.HasFlag(TextDecoration.LineThrough))
+            runProperties.Strike = new Strike();
 
         // these style cannot be defined at the same time
         if (runProperties.DoubleStrike != null)

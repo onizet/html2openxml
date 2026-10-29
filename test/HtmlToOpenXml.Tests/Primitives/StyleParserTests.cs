@@ -53,7 +53,7 @@ namespace HtmlToOpenXml.Tests.Primitives
         {
             var styles = HtmlAttributeCollection.ParseStyle("text-decoration:underline dotted wavy");
             var decorations = styles.GetTextDecorations();
-            Assert.That(decorations, Is.EquivalentTo([TextDecoration.Underline, TextDecoration.Dotted, TextDecoration.Wave]));
+            Assert.That(decorations, Is.EqualTo(TextDecoration.Underline| TextDecoration.Dotted| TextDecoration.Wave));
         }
 
         [Test]

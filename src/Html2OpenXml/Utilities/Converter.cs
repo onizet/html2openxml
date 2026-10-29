@@ -162,12 +162,12 @@ static class Converter
         };
     }
 
-    public static ICollection<TextDecoration> ToTextDecoration(ReadOnlySpan<char> values)
+    public static TextDecoration ToTextDecoration(ReadOnlySpan<char> values)
     {
         // this style could take multiple values separated by a space
         // ex: text-decoration: blink underline;
 
-        var decorations = new List<TextDecoration>();
+        var decorations = TextDecoration.None;
         if (values.IsEmpty) return decorations;
 
         Span<char> loweredValue = values.Length <= 128 ? stackalloc char[values.Length] : new char[values.Length];
@@ -180,12 +180,12 @@ static class Converter
         {
             switch (span[tokens[i]].Trim())
             {
-                case "underline": decorations.Add(TextDecoration.Underline); break;
-                case "line-through": decorations.Add(TextDecoration.LineThrough); break;
-                case "double": decorations.Add(TextDecoration.Double); break;
-                case "dotted": decorations.Add(TextDecoration.Dotted); break;
-                case "dashed": decorations.Add(TextDecoration.Dashed); break;
-                case "wavy": decorations.Add(TextDecoration.Wave); break;
+                case "underline": decorations |= TextDecoration.Underline; break;
+                case "line-through": decorations |= TextDecoration.LineThrough; break;
+                case "double": decorations |= TextDecoration.Double; break;
+                case "dotted": decorations |= TextDecoration.Dotted; break;
+                case "dashed": decorations |= TextDecoration.Dashed; break;
+                case "wavy": decorations |= TextDecoration.Wave; break;
                 default: break; // blink and overline are not supported
             }
         }
@@ -219,5 +219,20 @@ static class Converter
             // lang not valid, ignore it
         }
         return null;
+    }
+
+    /// <summary>
+    /// Expands a CSS shorthand property containing top, right, bottom and left, based on the provided value.
+    /// </summary>
+    public static (T top, T right, T bottom, T left) ToShorthand<T>(params T[] values)
+    {
+        return values.Length switch
+        {
+            1 => new(values[0], values[0], values[0], values[0]),
+            2 => new(values[0], values[1], values[0], values[1]),
+            3 => new(values[0], values[1], values[2], values[1]),
+            4 => new(values[0], values[1], values[2], values[3]),
+            _ => throw new NotSupportedException("Expando contains more than 4 values")
+        };
     }
 }
