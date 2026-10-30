@@ -45,34 +45,33 @@ readonly struct Unit
             return new Unit(defaultMetric, span[0] - '0');
         }
 
-        Span<char> loweredValue = span.Length <= 128 ? stackalloc char[span.Length] : new char[span.Length];
-        span.ToLowerInvariant(loweredValue);
+        if (span.Equals("auto", StringComparison.OrdinalIgnoreCase))
+            return Auto;
 
         // guess the unit first than use the native Double parsing
         UnitMetric metric;
         int metricSize = 2;
-        if (span[span.Length - 1] == '%')
+        if (span[^1] == '%')
         {
             metric = UnitMetric.Percent;
             metricSize = 1;
         }
         else
         {
-            var metricSpan = loweredValue.Slice(loweredValue.Length - 2, 2);
-            metric = metricSpan switch {
-                "in" => UnitMetric.Inch,
-                "cm" => UnitMetric.Centimeter,
-                "mm" => UnitMetric.Millimeter,
-                "em" => UnitMetric.EM,
-                "ex" => UnitMetric.Ex,
-                "pt" => UnitMetric.Point,
-                "pc" => UnitMetric.Pica,
-                "px" => UnitMetric.Pixel,
+            metric = (char.ToLowerInvariant(span[^2]), char.ToLowerInvariant(span[^1])) switch {
+                ('i', 'n') => UnitMetric.Inch,
+                ('c', 'm') => UnitMetric.Centimeter,
+                ('m', 'm') => UnitMetric.Millimeter,
+                ('e', 'm') => UnitMetric.EM,
+                ('e', 'x') => UnitMetric.Ex,
+                ('p', 't') => UnitMetric.Point,
+                ('p', 'c') => UnitMetric.Pica,
+                ('p', 'x') => UnitMetric.Pixel,
                 _ =>  UnitMetric.Unknown,
             };
 
             // not recognised but maybe this is unitless (only digits) 
-            if (metric == UnitMetric.Unknown && (char.IsDigit(metricSpan[0]) || metricSpan[0] == '.'))
+            if (metric == UnitMetric.Unknown && (char.IsDigit(span[0]) || span[0] == '.'))
             {
                 metric = defaultMetric;
                 metricSize = 0;
@@ -90,7 +89,7 @@ readonly struct Unit
         catch (Exception)
         {
             // No digits, we ignore this style
-            return loweredValue is "auto"? Auto : Empty;
+            return Empty;
         }
 
         return new Unit(metric, value);

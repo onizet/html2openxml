@@ -24,16 +24,16 @@ static class Converter
     /// </summary>
     public static JustificationValues? ToParagraphAlign(ReadOnlySpan<char> span)
     {
-        Span<char> loweredValue = span.Length <= 128 ? stackalloc char[span.Length] : new char[span.Length];
-        span.ToLowerInvariant(loweredValue);
-        return loweredValue.Trim() switch
-        {
-            "left" => JustificationValues.Left,
-            "right" => JustificationValues.Right,
-            "center" => JustificationValues.Center,
-            "justify" => JustificationValues.Both,
-            _ => null,
-        };
+        if (span.Equals("left", StringComparison.OrdinalIgnoreCase))
+            return JustificationValues.Left;
+        if (span.Equals("right", StringComparison.OrdinalIgnoreCase))
+            return JustificationValues.Right;
+        if (span.Equals("center", StringComparison.OrdinalIgnoreCase))
+            return JustificationValues.Center;
+        if (span.Equals("justify", StringComparison.OrdinalIgnoreCase))
+            return JustificationValues.Both;
+
+        return null;
     }
 
     /// <summary>
@@ -41,15 +41,14 @@ static class Converter
     /// </summary>
     public static TableVerticalAlignmentValues? ToVAlign(ReadOnlySpan<char> span)
     {
-        Span<char> loweredValue = span.Length <= 128 ? stackalloc char[span.Length] : new char[span.Length];
-        span.ToLowerInvariant(loweredValue);
-        return loweredValue.Trim() switch
-        {
-            "top" => TableVerticalAlignmentValues.Top,
-            "middle" => TableVerticalAlignmentValues.Center,
-            "bottom" => TableVerticalAlignmentValues.Bottom,
-            _ => null,
-        };
+        if (span.Equals("top", StringComparison.OrdinalIgnoreCase))
+            return TableVerticalAlignmentValues.Top;
+        if (span.Equals("middle", StringComparison.OrdinalIgnoreCase))
+            return TableVerticalAlignmentValues.Center;
+        if (span.Equals("bottom", StringComparison.OrdinalIgnoreCase))
+            return TableVerticalAlignmentValues.Bottom;
+
+        return null;
     }
 
     /// <summary>
@@ -59,30 +58,36 @@ static class Converter
     {
         if (span.IsEmpty) return Unit.Empty;
 
-        Span<char> loweredValue = span.Length <= 128 ? stackalloc char[span.Length] : new char[span.Length];
-        span.ToLowerInvariant(loweredValue);
-        var unit = loweredValue.Trim() switch
-        {
-            "1" or "xx-small" => new Unit(UnitMetric.Point, 10),
-            "2" or "x-small" => new Unit(UnitMetric.Point, 15),
-            "3" or "small" => new Unit(UnitMetric.Point, 20),
-            "4" or "medium" => new Unit(UnitMetric.Point, 27),
-            "5" or "large" => new Unit(UnitMetric.Point, 36),
-            "6" or "x-large" => new Unit(UnitMetric.Point, 48),
-            "7" or "xx-large" => new Unit(UnitMetric.Point, 72),
-            _ => Unit.Empty
-        };
+        if (span.Equals("1", StringComparison.OrdinalIgnoreCase)
+            || span.Equals("xx-small", StringComparison.OrdinalIgnoreCase))
+            return new Unit(UnitMetric.Point, 10);
+        if (span.Equals("2", StringComparison.OrdinalIgnoreCase)
+            || span.Equals("x-small", StringComparison.OrdinalIgnoreCase))
+            return new Unit(UnitMetric.Point, 15);
+        if (span.Equals("3", StringComparison.OrdinalIgnoreCase)
+            || span.Equals("small", StringComparison.OrdinalIgnoreCase))
+            return new Unit(UnitMetric.Point, 20);
+        if (span.Equals("4", StringComparison.OrdinalIgnoreCase)
+            || span.Equals("medium", StringComparison.OrdinalIgnoreCase))
+            return new Unit(UnitMetric.Point, 27);
+        if (span.Equals("5", StringComparison.OrdinalIgnoreCase)
+            || span.Equals("large", StringComparison.OrdinalIgnoreCase))
+            return new Unit(UnitMetric.Point, 36);
+        if (span.Equals("6", StringComparison.OrdinalIgnoreCase)
+            || span.Equals("x-large", StringComparison.OrdinalIgnoreCase))
+            return new Unit(UnitMetric.Point, 48);
+        if (span.Equals("7", StringComparison.OrdinalIgnoreCase)
+            || span.Equals("xx-large", StringComparison.OrdinalIgnoreCase))
+            return new Unit(UnitMetric.Point, 72);
 
-        if (!unit.IsValid)
-        {
-            // the font-size is specified in positive half-points
-            unit = Unit.Parse(loweredValue, UnitMetric.Pixel);
-            if (!unit.IsValid || unit.Value <= 0)
-                return Unit.Empty;
+        // the font-size is specified in positive half-points
+        var unit = Unit.Parse(span, UnitMetric.Pixel);
+        if (!unit.IsValid || unit.Value <= 0)
+            return Unit.Empty;
 
-            // this is a rough conversion to support some percent size, considering 100% = 11 pt
-            if (unit.Metric == UnitMetric.Percent) unit = new Unit(UnitMetric.Point, unit.Value * 0.11);
-        }
+        // this is a rough conversion to support some percent size, considering 100% = 11 pt
+        if (unit.Metric == UnitMetric.Percent)
+            unit = new Unit(UnitMetric.Point, unit.Value * 0.11);
         return unit;
     }
 
@@ -90,43 +95,41 @@ static class Converter
     {
         if (span.IsEmpty) return null;
 
-        Span<char> loweredValue = span.Length <= 128 ? stackalloc char[span.Length] : new char[span.Length];
-        span.ToLowerInvariant(loweredValue);
-        return loweredValue.Trim() switch
-        {
-            "small-caps" => FontVariant.SmallCaps,
-            "normal" => FontVariant.Normal,
-            _ => null,
-        };
+        if (span.Equals("small-caps", StringComparison.OrdinalIgnoreCase))
+            return FontVariant.SmallCaps;
+        if (span.Equals("normal", StringComparison.OrdinalIgnoreCase))
+            return FontVariant.Normal;
+
+        return null;
     }
 
     public static FontStyle? ToFontStyle(ReadOnlySpan<char> span)
     {
         if (span.IsEmpty) return null;
 
-        Span<char> loweredValue = span.Length <= 128 ? stackalloc char[span.Length] : new char[span.Length];
-        span.ToLowerInvariant(loweredValue);
-        return loweredValue.Trim() switch
-        {
-            "italic" or "oblique" => FontStyle.Italic,
-            "normal" => FontStyle.Normal,
-            _ => null,
-        };
+        if (span.Equals("italic", StringComparison.OrdinalIgnoreCase)
+            || span.Equals("oblique", StringComparison.OrdinalIgnoreCase))
+            return FontStyle.Italic;
+        if (span.Equals("normal", StringComparison.OrdinalIgnoreCase))
+            return FontStyle.Normal;
+
+        return null;
     }
 
     public static FontWeight? ToFontWeight(ReadOnlySpan<char> span)
     {
         if (span.IsEmpty) return null;
 
-        Span<char> loweredValue = span.Length <= 128 ? stackalloc char[span.Length] : new char[span.Length];
-        span.ToLowerInvariant(loweredValue);
-        return loweredValue.Trim() switch
-        {
-            "700" or "bold" => FontWeight.Bold,
-            "bolder" => FontWeight.Bolder,
-            "400" or "normal" => FontWeight.Normal,
-            _ => null,
-        };
+        if (span.Equals("700", StringComparison.OrdinalIgnoreCase)
+            || span.Equals("bold", StringComparison.OrdinalIgnoreCase))
+            return FontWeight.Bold;
+        if (span.Equals("bolder", StringComparison.OrdinalIgnoreCase))
+            return FontWeight.Bolder;
+        if (span.Equals("400", StringComparison.OrdinalIgnoreCase)
+            || span.Equals("normal", StringComparison.OrdinalIgnoreCase))
+            return FontWeight.Normal;
+
+        return null;
     }
 
     public static string? ToFontFamily(ReadOnlySpan<char> span)
@@ -147,47 +150,50 @@ static class Converter
         if (span.IsEmpty)
             return BorderValues.Nil;
 
-        Span<char> loweredValue = span.Length <= 128 ? stackalloc char[span.Length] : new char[span.Length];
-        span.ToLowerInvariant(loweredValue);
-        return loweredValue.Trim() switch
-        {
-            "dotted" => BorderValues.Dotted,
-            "dashed" => BorderValues.Dashed,
-            "solid" => BorderValues.Single,
-            "double" => BorderValues.Double,
-            "inset" => BorderValues.Inset,
-            "outset" => BorderValues.Outset,
-            "none" => BorderValues.None,
-            _ => BorderValues.Nil,
-        };
+        if (span.Equals("dotted", StringComparison.OrdinalIgnoreCase))
+            return BorderValues.Dotted;
+        if (span.Equals("dashed", StringComparison.OrdinalIgnoreCase))
+            return BorderValues.Dashed;
+        if (span.Equals("solid", StringComparison.OrdinalIgnoreCase))
+            return BorderValues.Single;
+        if (span.Equals("double", StringComparison.OrdinalIgnoreCase))
+            return BorderValues.Double;
+        if (span.Equals("inset", StringComparison.OrdinalIgnoreCase))
+            return BorderValues.Inset;
+        if (span.Equals("outset", StringComparison.OrdinalIgnoreCase))
+            return BorderValues.Outset;
+        if (span.Equals("none", StringComparison.OrdinalIgnoreCase))
+            return BorderValues.None;
+
+        return BorderValues.Nil;
     }
 
-    public static TextDecoration ToTextDecoration(ReadOnlySpan<char> values)
+    public static TextDecoration ToTextDecoration(ReadOnlySpan<char> span)
     {
         // this style could take multiple values separated by a space
         // ex: text-decoration: blink underline;
 
         var decorations = TextDecoration.None;
-        if (values.IsEmpty) return decorations;
-
-        Span<char> loweredValue = values.Length <= 128 ? stackalloc char[values.Length] : new char[values.Length];
-        values.ToLowerInvariant(loweredValue);
+        if (span.IsEmpty) return decorations;
 
         Span<Range> tokens = stackalloc Range[5];
-        ReadOnlySpan<char> span = loweredValue;
         var tokenCount = span.Split(tokens, ' ', StringSplitOptions.RemoveEmptyEntries);
         for (int i = 0; i < tokenCount; i++)
         {
-            switch (span[tokens[i]].Trim())
-            {
-                case "underline": decorations |= TextDecoration.Underline; break;
-                case "line-through": decorations |= TextDecoration.LineThrough; break;
-                case "double": decorations |= TextDecoration.Double; break;
-                case "dotted": decorations |= TextDecoration.Dotted; break;
-                case "dashed": decorations |= TextDecoration.Dashed; break;
-                case "wavy": decorations |= TextDecoration.Wave; break;
-                default: break; // blink and overline are not supported
-            }
+            var token = span[tokens[i]];
+            if (token.Equals("underline", StringComparison.OrdinalIgnoreCase))
+                decorations |= TextDecoration.Underline;
+            else if (token.Equals("line-through", StringComparison.OrdinalIgnoreCase))
+                decorations |= TextDecoration.LineThrough;
+            else if (token.Equals("double", StringComparison.OrdinalIgnoreCase))
+                decorations |= TextDecoration.Double;
+            else if (token.Equals("dotted", StringComparison.OrdinalIgnoreCase))
+                decorations |= TextDecoration.Dotted;
+            else if (token.Equals("dashed", StringComparison.OrdinalIgnoreCase))
+                decorations |= TextDecoration.Dashed;
+            else if (token.Equals("wavy", StringComparison.OrdinalIgnoreCase))
+                decorations |= TextDecoration.Wave;
+            // blink and overline are not supported
         }
         return decorations;
     }

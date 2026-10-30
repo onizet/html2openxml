@@ -400,12 +400,12 @@ sealed class HtmlAttributeCollection
             }
             else if (stringSuffix.Equals("-style", StringComparison.OrdinalIgnoreCase))
             {
-                var s = Converter.ToFontStyle(rawValue.AsSpan()[decl.Value]);
+                var s = Converter.ToFontStyle(rawValue.AsSpan()[decl.Value].Trim());
                 if (s.HasValue) fontStyle = s;
             }
             else if (stringSuffix.Equals("-variant", StringComparison.OrdinalIgnoreCase))
             {
-                var v = Converter.ToFontVariant(rawValue.AsSpan()[decl.Value]);
+                var v = Converter.ToFontVariant(rawValue.AsSpan()[decl.Value].Trim());
                 if (v.HasValue) variant = v;
             }
             else if (stringSuffix.Equals("-weight", StringComparison.OrdinalIgnoreCase))
@@ -415,7 +415,7 @@ sealed class HtmlAttributeCollection
             }
             else if (stringSuffix.Equals("-family", StringComparison.OrdinalIgnoreCase))
             {
-                var f = Converter.ToFontFamily(rawValue.AsSpan()[decl.Value]);
+                var f = Converter.ToFontFamily(rawValue.AsSpan()[decl.Value].Trim());
                 if (f != null) family = f;
             }
             else if (stringSuffix.Equals("-size", StringComparison.OrdinalIgnoreCase))

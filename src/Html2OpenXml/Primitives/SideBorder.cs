@@ -89,20 +89,18 @@ readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
         {
             if (bu.Value > 0 && bu.Metric == UnitMetric.Pixel)
                 return bu;
-            return Unit.Empty;
         }
         else
         {
-            Span<char> loweredValue = borderWidth.Length <= 128 ? stackalloc char[borderWidth.Length] : new char[borderWidth.Length];
-            borderWidth.ToLowerInvariant(loweredValue);
-
-            return loweredValue switch {
-               "thin" => new Unit(UnitMetric.Pixel, 1),
-                "medium" => new Unit(UnitMetric.Pixel, 3),
-                "thick" => new Unit(UnitMetric.Pixel, 5),
-                _ => Unit.Empty,
-            };
+            if (borderWidth.Equals("thin", StringComparison.OrdinalIgnoreCase))
+                return new Unit(UnitMetric.Pixel, 1);
+            if (borderWidth.Equals("medium", StringComparison.OrdinalIgnoreCase))
+                return new Unit(UnitMetric.Pixel, 3);
+            if (borderWidth.Equals("thick", StringComparison.OrdinalIgnoreCase))
+                return new Unit(UnitMetric.Pixel, 5);
         }
+
+        return Unit.Empty;
     }
 
     public SideBorder Apply(Unit size)
