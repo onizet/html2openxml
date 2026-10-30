@@ -9,7 +9,6 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml;
 
@@ -153,8 +152,16 @@ sealed class HtmlAttributeCollection
     /// </summary>
     public HtmlColor GetColor(string name)
     {
-        if (TryGetValue(name, out var span))
-            return HtmlColor.Parse(span);
+        if (!attributes.TryGetValue(name, out var declarations))
+            return HtmlColor.Empty;
+
+        for (int i = declarations.Count - 1; i >= 0; i--)
+        {
+            var color = HtmlColor.Parse(rawValue.AsSpan()[declarations[i].Value]);
+            if (!color.IsEmpty)
+                return color;
+        }
+
         return HtmlColor.Empty;
     }
 
@@ -396,24 +403,27 @@ sealed class HtmlAttributeCollection
             }
             else if (stringSuffix.Is("-style"))
             {
-                Converter.TryParseFontStyle(rawValue.AsSpan()[decl.Value].Trim(), out fontStyle);
+                if (Converter.TryParseFontStyle(rawValue.AsSpan()[decl.Value].Trim(), out var s))
+                    fontStyle = s;
             }
             else if (stringSuffix.Is("-variant"))
             {
-                Converter.TryParseFontVariant(rawValue.AsSpan()[decl.Value].Trim(), out variant);
+                if (Converter.TryParseFontVariant(rawValue.AsSpan()[decl.Value].Trim(), out var v))
+                    variant = v;
             }
             else if (stringSuffix.Is("-weight"))
             {
-                Converter.TryParseFontWeight(rawValue.AsSpan()[decl.Value], out weight);
+                if (Converter.TryParseFontWeight(rawValue.AsSpan()[decl.Value], out var w))
+                    weight = w;
             }
             else if (stringSuffix.Is("-family"))
             {
-                Converter.TryParseFontFamily(rawValue.AsSpan()[decl.Value].Trim(), out family);
+                _ = Converter.TryParseFontFamily(rawValue.AsSpan()[decl.Value].Trim(), out family);
             }
             else if (stringSuffix.Is("-size"))
             {
-                Unit u = Unit.Parse(rawValue.AsSpan()[decl.Value], UnitMetric.Unitless);
-                if (u.IsValid) fontSize = u;
+                if (Converter.TryParseFontSize(rawValue.AsSpan()[decl.Value], out var u))
+                    fontSize = u;
             }
         }
 

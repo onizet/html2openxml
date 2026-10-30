@@ -85,25 +85,19 @@ readonly struct HtmlFont(Unit size, string? family, FontStyle? style,
             }
 
             if (!weight.HasValue && Converter.TryParseFontWeight(token, out weight))
-            {
                 continue;
-            }
+
             if (!style.HasValue && Converter.TryParseFontStyle(token, out style))
-            {
                 continue;
-            }
+
             if (!variant.HasValue && Converter.TryParseFontVariant(token, out variant))
-            {
                 continue;
-            }
+
             if (!fontSize.IsValid && TryParseFontSize(token, out fontSize, out lineHeight))
-            {
                 continue;
-            }
-            else if (fontFamily is null)
-            {
-                Converter.TryParseFontFamily(token, out fontFamily);
-            }
+
+            if (fontFamily is null && Converter.TryParseFontFamily(token, out fontFamily))
+                continue;
         }
 
         return new HtmlFont(fontSize, fontFamily, style, variant, weight, lineHeight);

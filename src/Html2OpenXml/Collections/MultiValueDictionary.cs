@@ -11,14 +11,14 @@ using System.Diagnostics.CodeAnalysis;
 /// </summary>
 sealed class MultiValueDictionary<TKey, TValue>
     (IEqualityComparer<TKey> comparer)
-        : IReadOnlyDictionary<TKey, IReadOnlyCollection<TValue>>
+        : IReadOnlyDictionary<TKey, IReadOnlyList<TValue>>
           where TKey: notnull
 {
     private readonly Dictionary<TKey, List<TValue>> dictionary = new(comparer);
 
     public IEnumerable<TKey> Keys => dictionary.Keys;
 
-    public IEnumerable<IReadOnlyCollection<TValue>> Values => dictionary.Values;
+    public IEnumerable<IReadOnlyList<TValue>> Values => dictionary.Values;
 
     public int Count => dictionary.Count;
 
@@ -39,7 +39,7 @@ sealed class MultiValueDictionary<TKey, TValue>
     /// <summary>
     /// Attempts to retrieve the collection of values associated with the specified key.
     /// </summary>
-    public bool TryGetValue(TKey key, [NotNullWhen(true)] out IReadOnlyCollection<TValue> value)
+    public bool TryGetValue(TKey key, [NotNullWhen(true)] out IReadOnlyList<TValue> value)
     {
         var success = dictionary.TryGetValue(key, out var collection);
         value = collection!;
@@ -67,7 +67,7 @@ sealed class MultiValueDictionary<TKey, TValue>
         return dictionary.ContainsKey(key);
     }
 
-    public IReadOnlyCollection<TValue> this[TKey key] 
+    public IReadOnlyList<TValue> this[TKey key] 
     {
         get
         {
@@ -81,8 +81,8 @@ sealed class MultiValueDictionary<TKey, TValue>
         }
     }
 
-    public IEnumerator<KeyValuePair<TKey, IReadOnlyCollection<TValue>>> GetEnumerator()
-        => ((IReadOnlyDictionary<TKey, IReadOnlyCollection<TValue>>) dictionary).GetEnumerator();
+    public IEnumerator<KeyValuePair<TKey, IReadOnlyList<TValue>>> GetEnumerator()
+        => ((IReadOnlyDictionary<TKey, IReadOnlyList<TValue>>) dictionary).GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator()
         => dictionary.GetEnumerator();

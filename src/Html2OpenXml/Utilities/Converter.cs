@@ -61,8 +61,7 @@ static class Converter
     /// <summary>
     /// Convert Html regular <c>font-size</c> CSS attribute to OpenXml font value (expressed in point).
     /// </summary>
-    public static bool TryParseFontSize(ReadOnlySpan<char> span,
-        [NotNullWhen(true)] out Unit unit)
+    public static bool TryParseFontSize(ReadOnlySpan<char> span, out Unit unit)
     {
         int ptValue = span switch
         {
@@ -73,7 +72,7 @@ static class Converter
             _ when span.Is("4") || span.Is("medium") => 27,
             _ when span.Is("5") || span.Is("large") => 36,
             _ when span.Is("6") || span.Is("x-large") => 48,
-            _ when span.Is("7") || span.Is("x-large") => 72,
+            _ when span.Is("7") || span.Is("xx-large") => 72,
             _ => -1
         };
 
@@ -143,13 +142,14 @@ static class Converter
     {
         // return the first font name
         Span<Range> tokens = stackalloc Range[1];
-        family = span.SplitCompositeAttribute(tokens, ',') switch
+        if (span.SplitCompositeAttribute(tokens, ',') == 1)
         {
-            1 => span[tokens[0]].Unquote().Trim().ToString(),
-            _ => null
-        };
+            family = span[tokens[0]].Unquote().Trim().ToString();
+            return true;
+        }
 
-        return family is not null;
+        family = null;
+        return false;
     }
 
     public static bool TryParseBorderStyle(ReadOnlySpan<char> span,
