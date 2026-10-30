@@ -220,19 +220,4 @@ static class Converter
         }
         return null;
     }
-
-    /// <summary>
-    /// Expands a CSS shorthand property containing top, right, bottom and left, based on the provided value.
-    /// </summary>
-    public static (T top, T right, T bottom, T left) ToShorthand<T>(params T[] values)
-    {
-        return values.Length switch
-        {
-            1 => new(values[0], values[0], values[0], values[0]),
-            2 => new(values[0], values[1], values[0], values[1]),
-            3 => new(values[0], values[1], values[2], values[1]),
-            4 => new(values[0], values[1], values[2], values[3]),
-            _ => throw new NotSupportedException("Expando contains more than 4 values")
-        };
-    }
 }

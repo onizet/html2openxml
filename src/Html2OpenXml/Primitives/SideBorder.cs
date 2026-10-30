@@ -82,7 +82,7 @@ readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
             borderWidth.IsFixed? borderWidth : new Unit(UnitMetric.Pixel, 4));
     }
 
-    internal static Unit ParseWidth(ReadOnlySpan<char> borderWidth)
+    static Unit ParseWidth(ReadOnlySpan<char> borderWidth)
     {
         Unit bu = Unit.Parse(borderWidth, UnitMetric.Pixel);
         if (bu.IsValid)

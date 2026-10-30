@@ -17,24 +17,13 @@ namespace HtmlToOpenXml;
 /// <summary>
 /// Represents a Html Border with the 4 sides.
 /// </summary>
-struct HtmlBorder
+/// <remarks>Apply to all four sides.</remarks>
+struct HtmlBorder(SideBorder all)
 {
     public static readonly HtmlBorder Empty = new();
 
-    private SideBorder top;
-    private SideBorder right;
-    private SideBorder bottom;
-    private SideBorder left;
+    private SideBorder top = all, right = all, bottom = all, left = all;
 
-
-    /// <summary>Apply to all four sides.</summary>
-    public HtmlBorder(SideBorder all)
-    {
-        this.top = all;
-        this.right = all;
-        this.bottom = all;
-        this.left = all;
-    }
 
     public void ParseWidths(ReadOnlySpan<char> span)
     {
@@ -52,52 +41,16 @@ struct HtmlBorder
         if (span.IsEmpty || span.IsWhiteSpace())
             return;
 
-        Span<Range> tokens = stackalloc Range[4];
-        HtmlColor top, right, bottom, left;
-        var tokenCount = span.SplitCompositeAttribute(tokens, 
-            separator: ' ', skipSeparatorIfPrecededBy: ',');
-        if (tokenCount < 1 || tokenCount > 4)
+        if (!CssShorthand.TryParse(span,
+            s => HtmlColor.Parse(s), c => !c.IsEmpty, out var sides))
+        {
             return;
-
-        if (tokenCount == 1)
-        {
-            var c = HtmlColor.Parse(span[tokens[0]]);
-            if (c.IsEmpty) return;
-
-            (top, right, bottom, left) = Converter.ToShorthand(c);
-        }
-        else if (tokenCount == 2)
-        {
-            var c1 = HtmlColor.Parse(span[tokens[0]]);
-            var c2 = HtmlColor.Parse(span[tokens[1]]);
-            if (c1.IsEmpty || c2.IsEmpty) return;
-
-            (top, right, bottom, left) = Converter.ToShorthand(c1, c2);
-        }
-        else if (tokenCount == 3)
-        {
-            var c1 = HtmlColor.Parse(span[tokens[0]]);
-            var c2 = HtmlColor.Parse(span[tokens[1]]);
-            var c3 = HtmlColor.Parse(span[tokens[2]]);
-            if (c1.IsEmpty || c2.IsEmpty || c3.IsEmpty) return;
-
-            (top, right, bottom, left) = Converter.ToShorthand(c1, c2, c3);
-        }
-        else
-        {
-            var c1 = HtmlColor.Parse(span[tokens[0]]);
-            var c2 = HtmlColor.Parse(span[tokens[1]]);
-            var c3 = HtmlColor.Parse(span[tokens[2]]);
-            var c4 = HtmlColor.Parse(span[tokens[3]]);
-            if (c1.IsEmpty || c2.IsEmpty || c3.IsEmpty || c4.IsEmpty) return;
-
-            (top, right, bottom, left) = Converter.ToShorthand(c1, c2, c3, c4);
         }
 
-        this.top = this.top.Apply(top);
-        this.right = this.right.Apply(right);
-        this.bottom = this.bottom.Apply(bottom);
-        this.left = this.left.Apply(left);
+        top = top.Apply(sides.Top);
+        right = right.Apply(sides.Right);
+        bottom = bottom.Apply(sides.Bottom);
+        left = left.Apply(sides.Left);
     }
 
     public void ParseStyles(ReadOnlySpan<char> span)
@@ -105,52 +58,16 @@ struct HtmlBorder
         if (span.IsEmpty || span.IsWhiteSpace())
             return;
 
-        Span<Range> tokens = stackalloc Range[4];
-        BorderValues top, right, bottom, left;
-        var tokenCount = span.SplitCompositeAttribute(tokens, separator: ' ');
-        if (tokenCount < 1 || tokenCount > 4)
+        if (!CssShorthand.TryParse(span,
+            s => Converter.ToBorderStyle(s), s => s != BorderValues.Nil, out var sides))
+        {
             return;
-
-        if (tokenCount == 1)
-        {
-            var s1 = Converter.ToBorderStyle(span[tokens[0]]);
-            if (s1 == BorderValues.Nil) return;
-
-            (top, right, bottom, left) = Converter.ToShorthand(s1);
-        }
-        else if (tokenCount == 2)
-        {
-            var s1 = Converter.ToBorderStyle(span[tokens[0]]);
-            var s2 = Converter.ToBorderStyle(span[tokens[1]]);
-            if (s1 == BorderValues.Nil || s2 == BorderValues.Nil) return;
-
-            (top, right, bottom, left) = Converter.ToShorthand(s1, s2);
-        }
-        else if (tokenCount == 3)
-        {
-            var s1 = Converter.ToBorderStyle(span[tokens[0]]);
-            var s2 = Converter.ToBorderStyle(span[tokens[1]]);
-            var s3 = Converter.ToBorderStyle(span[tokens[2]]);
-            if (s1 == BorderValues.Nil || s2 == BorderValues.Nil || s3 == BorderValues.Nil) return;
-
-            (top, right, bottom, left) = Converter.ToShorthand(s1, s2, s3);
-        }
-        else
-        {
-            var s1 = Converter.ToBorderStyle(span[tokens[0]]);
-            var s2 = Converter.ToBorderStyle(span[tokens[1]]);
-            var s3 = Converter.ToBorderStyle(span[tokens[2]]);
-            var s4 = Converter.ToBorderStyle(span[tokens[3]]);
-            if (s1 == BorderValues.Nil || s2 == BorderValues.Nil ||
-                s3 == BorderValues.Nil || s4 == BorderValues.Nil) return;
-
-            (top, right, bottom, left) = Converter.ToShorthand(s1, s2, s3, s4);
         }
 
-        this.top = this.top.Apply(top);
-        this.right = this.right.Apply(right);
-        this.bottom = this.bottom.Apply(bottom);
-        this.left = this.left.Apply(left);
+        top = top.Apply(sides.Top);
+        right = right.Apply(sides.Right);
+        bottom = bottom.Apply(sides.Bottom);
+        left = left.Apply(sides.Left);
     }
 
     //____________________________________________________________________

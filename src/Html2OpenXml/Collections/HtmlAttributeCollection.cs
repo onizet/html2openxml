@@ -24,7 +24,7 @@ sealed class HtmlAttributeCollection
     // Style key associated with a pointer to rawValue.
     private readonly MultiValueDictionary<string, StyleAttribute> attributes;
     private HtmlBorder? cachedBorders;
-    private BoxThickness? cachedMargin;
+    private BoxThickness? cachedMargin, cachedPadding;
     private readonly string rawValue;
 
 
@@ -169,7 +169,12 @@ sealed class HtmlAttributeCollection
         return Unit.Empty;
     }
 
-    public BoxThickness GetPadding() => GetBoxSpacing("padding");
+    public BoxThickness GetPadding()
+    {
+        if (cachedPadding.HasValue)
+            return cachedPadding.Value;
+        return (cachedPadding = GetBoxSpacing("padding")).Value;
+    }
 
     public BoxThickness GetMargin()
     {

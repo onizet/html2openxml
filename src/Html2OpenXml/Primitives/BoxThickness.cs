@@ -20,38 +20,8 @@ struct BoxThickness
     /// <summary>Represents an empty box model (not defined).</summary>
     public static readonly BoxThickness Empty = new();
 
-    private Unit top;
-    private Unit right;
-    private Unit bottom;
-    private Unit left;
+    private Unit top, right, bottom, left;
 
-
-    /// <summary>Apply to all four sides.</summary>
-    public BoxThickness(Unit all)
-    {
-        this.top = all;
-        this.right = all;
-        this.bottom = all;
-        this.left = all;
-    }
-
-    /// <summary>Top and bottom | left and right.</summary>
-    public BoxThickness(Unit topAndBottom, Unit leftAndRight)
-    {
-        this.top = topAndBottom;
-        this.bottom = topAndBottom;
-        this.left = leftAndRight;
-        this.right = leftAndRight;
-    }
-
-    /// <summary>Top | left and right | bottom.</summary>
-    public BoxThickness(Unit top, Unit leftAndRight, Unit bottom)
-    {
-        this.top = top;
-        this.right = leftAndRight;
-        this.bottom = bottom;
-        this.left = leftAndRight;
-    }
 
     /// <summary>Top | right | bottom | left.</summary>
     public BoxThickness(Unit top, Unit right, Unit bottom, Unit left)
@@ -90,24 +60,14 @@ struct BoxThickness
         if (span.IsEmpty || span.IsWhiteSpace())
             return Empty;
 
-        Span<Range> tokens = stackalloc Range[4];
-        return span.SplitCompositeAttribute(tokens, separator: ' ') switch
+
+        if (!CssShorthand.TryParse(span,
+            s => Unit.Parse(s, UnitMetric.Pixel), c => c.IsValid, out var sides))
         {
-            1 => new BoxThickness(Unit.Parse(span[tokens[0]], UnitMetric.Pixel)),
-            2 => new BoxThickness(
-                Unit.Parse(span[tokens[0]], UnitMetric.Pixel),
-                Unit.Parse(span[tokens[1]], UnitMetric.Pixel)),
-            3 => new BoxThickness(
-                Unit.Parse(span[tokens[0]], UnitMetric.Pixel),
-                Unit.Parse(span[tokens[1]], UnitMetric.Pixel),
-                Unit.Parse(span[tokens[2]], UnitMetric.Pixel)),
-            4 => new BoxThickness(
-                Unit.Parse(span[tokens[0]], UnitMetric.Pixel),
-                Unit.Parse(span[tokens[1]], UnitMetric.Pixel),
-                Unit.Parse(span[tokens[2]], UnitMetric.Pixel),
-                Unit.Parse(span[tokens[3]], UnitMetric.Pixel)),
-            _ => Empty
-        };
+            return Empty;
+        }
+
+        return new(sides.Top, sides.Right, sides.Bottom, sides.Left);
     }
 
     //____________________________________________________________________
