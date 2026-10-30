@@ -750,7 +750,7 @@ namespace HtmlToOpenXml.Tests
 
             var abstractNumId = decimalAbstractNums[0].AbstractNumberId!.Value;
             var instances = numbering.Elements<NumberingInstance>()
-                .Where(i => i.AbstractNumId?.Val == abstractNumId)
+                .Where(i => i.AbstractNumId?.Val?.Value == abstractNumId)
                 .ToList();
             Assert.That(instances, Has.Count.GreaterThanOrEqualTo(2));
         }
