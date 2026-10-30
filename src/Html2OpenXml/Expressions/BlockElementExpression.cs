@@ -186,10 +186,9 @@ class BlockElementExpression: PhrasingElementExpression
             };
         }
 
-        JustificationValues? align = Converter.ToParagraphAlign(styleAttributes["text-align"]);
-        if (!align.HasValue) align = Converter.ToParagraphAlign(node.GetAttribute("align").AsSpan());
-        if (!align.HasValue) align = Converter.ToParagraphAlign(styleAttributes["justify-content"]);
-        if (align.HasValue)
+        if (Converter.TryParseHAlign(styleAttributes["text-align"], out var align)
+            || Converter.TryParseHAlign(node.GetAttribute("align").AsSpan(), out align)
+            || Converter.TryParseHAlign(styleAttributes["justify-content"], out align))
         {
             paraProperties.Justification = new() { Val = align };
             tableProperties ??= new();

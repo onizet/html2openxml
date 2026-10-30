@@ -9,6 +9,7 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using DocumentFormat.OpenXml.Wordprocessing;
 
@@ -20,152 +21,154 @@ namespace HtmlToOpenXml;
 static class Converter
 {
     /// <summary>
-    /// Convert the Html text align attribute (horizontal alignement) to its corresponding OpenXml value.
+    /// Convert the Html <c>text-align</c> CSS attribute (horizontal alignement)
+    /// to its corresponding OpenXml value.
     /// </summary>
-    public static JustificationValues? ToParagraphAlign(ReadOnlySpan<char> span)
+    public static bool TryParseHAlign(ReadOnlySpan<char> span,
+        [NotNullWhen(true)] out JustificationValues? justification)
     {
-        if (span.Equals("left", StringComparison.OrdinalIgnoreCase))
-            return JustificationValues.Left;
-        if (span.Equals("right", StringComparison.OrdinalIgnoreCase))
-            return JustificationValues.Right;
-        if (span.Equals("center", StringComparison.OrdinalIgnoreCase))
-            return JustificationValues.Center;
-        if (span.Equals("justify", StringComparison.OrdinalIgnoreCase))
-            return JustificationValues.Both;
+        justification = span switch
+        {
+            _ when span.IsEmpty => null,
+            _ when span.Is("top") => JustificationValues.Left,
+            _ when span.Is("right") => JustificationValues.Right,
+            _ when span.Is("center") => JustificationValues.Center,
+            _ when span.Is("justify") => JustificationValues.Both,
+            _ => null
+        };
 
-        return null;
+        return justification is not null;
     }
 
     /// <summary>
-    /// Convert the Html vertical-align attribute to its corresponding OpenXml value.
+    /// Convert the Html <c>vertical-align</c> CSS attribute to its corresponding OpenXml value.
     /// </summary>
-    public static TableVerticalAlignmentValues? ToVAlign(ReadOnlySpan<char> span)
+    public static bool TryParseVAlign(ReadOnlySpan<char> span,
+        [NotNullWhen(true)] out TableVerticalAlignmentValues? vAlign)
     {
-        if (span.Equals("top", StringComparison.OrdinalIgnoreCase))
-            return TableVerticalAlignmentValues.Top;
-        if (span.Equals("middle", StringComparison.OrdinalIgnoreCase))
-            return TableVerticalAlignmentValues.Center;
-        if (span.Equals("bottom", StringComparison.OrdinalIgnoreCase))
-            return TableVerticalAlignmentValues.Bottom;
+        vAlign = span switch
+        {
+            _ when span.IsEmpty => null,
+            _ when span.Is("top") => TableVerticalAlignmentValues.Top,
+            _ when span.Is("middle") => TableVerticalAlignmentValues.Center,
+            _ when span.Is("bottom") => TableVerticalAlignmentValues.Bottom,
+            _ => null
+        };
 
-        return null;
+        return vAlign is not null;
     }
 
     /// <summary>
-    /// Convert Html regular font-size to OpenXml font value (expressed in point).
+    /// Convert Html regular <c>font-size</c> CSS attribute to OpenXml font value (expressed in point).
     /// </summary>
-    public static Unit ToFontSize(ReadOnlySpan<char> span)
+    public static bool TryParseFontSize(ReadOnlySpan<char> span,
+        [NotNullWhen(true)] out Unit unit)
     {
-        if (span.IsEmpty) return Unit.Empty;
+        int ptValue = span switch
+        {
+            _ when span.IsEmpty => -1,
+            _ when span.Is("1") || span.Is("xx-small") => 10,
+            _ when span.Is("2") || span.Is("x-small") => 15,
+            _ when span.Is("3") || span.Is("small") => 20,
+            _ when span.Is("4") || span.Is("medium") => 27,
+            _ when span.Is("5") || span.Is("large") => 36,
+            _ when span.Is("6") || span.Is("x-large") => 48,
+            _ when span.Is("7") || span.Is("x-large") => 72,
+            _ => -1
+        };
 
-        if (span.Equals("1", StringComparison.OrdinalIgnoreCase)
-            || span.Equals("xx-small", StringComparison.OrdinalIgnoreCase))
-            return new Unit(UnitMetric.Point, 10);
-        if (span.Equals("2", StringComparison.OrdinalIgnoreCase)
-            || span.Equals("x-small", StringComparison.OrdinalIgnoreCase))
-            return new Unit(UnitMetric.Point, 15);
-        if (span.Equals("3", StringComparison.OrdinalIgnoreCase)
-            || span.Equals("small", StringComparison.OrdinalIgnoreCase))
-            return new Unit(UnitMetric.Point, 20);
-        if (span.Equals("4", StringComparison.OrdinalIgnoreCase)
-            || span.Equals("medium", StringComparison.OrdinalIgnoreCase))
-            return new Unit(UnitMetric.Point, 27);
-        if (span.Equals("5", StringComparison.OrdinalIgnoreCase)
-            || span.Equals("large", StringComparison.OrdinalIgnoreCase))
-            return new Unit(UnitMetric.Point, 36);
-        if (span.Equals("6", StringComparison.OrdinalIgnoreCase)
-            || span.Equals("x-large", StringComparison.OrdinalIgnoreCase))
-            return new Unit(UnitMetric.Point, 48);
-        if (span.Equals("7", StringComparison.OrdinalIgnoreCase)
-            || span.Equals("xx-large", StringComparison.OrdinalIgnoreCase))
-            return new Unit(UnitMetric.Point, 72);
+        if (ptValue > -1)
+        {
+            unit = new Unit(UnitMetric.Point, ptValue);
+            return true;
+        }
 
         // the font-size is specified in positive half-points
-        var unit = Unit.Parse(span, UnitMetric.Pixel);
+        unit = Unit.Parse(span, UnitMetric.Pixel);
         if (!unit.IsValid || unit.Value <= 0)
-            return Unit.Empty;
+            return false;
 
         // this is a rough conversion to support some percent size, considering 100% = 11 pt
         if (unit.Metric == UnitMetric.Percent)
             unit = new Unit(UnitMetric.Point, unit.Value * 0.11);
-        return unit;
+ 
+        return true;
     }
 
-    public static FontVariant? ToFontVariant(ReadOnlySpan<char> span)
+    public static bool TryParseFontVariant(ReadOnlySpan<char> span,
+        [NotNullWhen(true)] out FontVariant? variant)
     {
-        if (span.IsEmpty) return null;
+        variant = span switch
+        {
+            _ when span.IsEmpty => null,
+            _ when span.Is("small-caps") => FontVariant.SmallCaps,
+            _ when span.Is("normal") => FontVariant.Normal,
+            _ => null
+        };
 
-        if (span.Equals("small-caps", StringComparison.OrdinalIgnoreCase))
-            return FontVariant.SmallCaps;
-        if (span.Equals("normal", StringComparison.OrdinalIgnoreCase))
-            return FontVariant.Normal;
-
-        return null;
+        return variant is not null;
     }
 
-    public static FontStyle? ToFontStyle(ReadOnlySpan<char> span)
+    public static bool TryParseFontStyle(ReadOnlySpan<char> span,
+        [NotNullWhen(true)] out FontStyle? style)
     {
-        if (span.IsEmpty) return null;
+        style = span switch
+        {
+            _ when span.IsEmpty => null,
+            _ when span.Is("italic") || span.Is("oblique") => FontStyle.Italic,
+            _ when span.Is("normal") => FontStyle.Normal,
+            _ => null
+        };
 
-        if (span.Equals("italic", StringComparison.OrdinalIgnoreCase)
-            || span.Equals("oblique", StringComparison.OrdinalIgnoreCase))
-            return FontStyle.Italic;
-        if (span.Equals("normal", StringComparison.OrdinalIgnoreCase))
-            return FontStyle.Normal;
-
-        return null;
+        return style is not null;
     }
 
-    public static FontWeight? ToFontWeight(ReadOnlySpan<char> span)
+    public static bool TryParseFontWeight(ReadOnlySpan<char> span,
+        [NotNullWhen(true)] out FontWeight? weight)
     {
-        if (span.IsEmpty) return null;
+        weight = span switch
+        {
+            _ when span.IsEmpty => null,
+            _ when span.Is("700") || span.Is("bold") => FontWeight.Bold,
+            _ when span.Is("bolder") => FontWeight.Bolder,
+            _ when span.Is("400") || span.Is("normal") => FontWeight.Normal,
+            _ => null
+        };
 
-        if (span.Equals("700", StringComparison.OrdinalIgnoreCase)
-            || span.Equals("bold", StringComparison.OrdinalIgnoreCase))
-            return FontWeight.Bold;
-        if (span.Equals("bolder", StringComparison.OrdinalIgnoreCase))
-            return FontWeight.Bolder;
-        if (span.Equals("400", StringComparison.OrdinalIgnoreCase)
-            || span.Equals("normal", StringComparison.OrdinalIgnoreCase))
-            return FontWeight.Normal;
-
-        return null;
+        return weight is not null;
     }
 
-    public static string? ToFontFamily(ReadOnlySpan<char> span)
+    public static bool TryParseFontFamily(ReadOnlySpan<char> span,
+        [NotNullWhen(true)] out string? family)
     {
-        if (span.IsEmpty) return null;
-
         // return the first font name
         Span<Range> tokens = stackalloc Range[1];
-        return span.SplitCompositeAttribute(tokens, ',') switch
+        family = span.SplitCompositeAttribute(tokens, ',') switch
         {
             1 => span[tokens[0]].Unquote().Trim().ToString(),
             _ => null
         };
+
+        return family is not null;
     }
 
-    public static BorderValues ToBorderStyle(ReadOnlySpan<char> span)
+    public static bool TryParseBorderStyle(ReadOnlySpan<char> span,
+        [NotNullWhen(true)] out BorderValues? border)
     {
-        if (span.IsEmpty)
-            return BorderValues.Nil;
+        border = span switch
+        {
+            _ when span.IsEmpty => null,
+            _ when span.Is("dotted") => BorderValues.Dotted,
+            _ when span.Is("dashed") => BorderValues.Dashed,
+            _ when span.Is("solid") => BorderValues.Single,
+            _ when span.Is("double") => BorderValues.Double,
+            _ when span.Is("inset") => BorderValues.Inset,
+            _ when span.Is("outset") => BorderValues.Outset,
+            _ when span.Is("none") => BorderValues.None,
+            _ => null
+        };
 
-        if (span.Equals("dotted", StringComparison.OrdinalIgnoreCase))
-            return BorderValues.Dotted;
-        if (span.Equals("dashed", StringComparison.OrdinalIgnoreCase))
-            return BorderValues.Dashed;
-        if (span.Equals("solid", StringComparison.OrdinalIgnoreCase))
-            return BorderValues.Single;
-        if (span.Equals("double", StringComparison.OrdinalIgnoreCase))
-            return BorderValues.Double;
-        if (span.Equals("inset", StringComparison.OrdinalIgnoreCase))
-            return BorderValues.Inset;
-        if (span.Equals("outset", StringComparison.OrdinalIgnoreCase))
-            return BorderValues.Outset;
-        if (span.Equals("none", StringComparison.OrdinalIgnoreCase))
-            return BorderValues.None;
-
-        return BorderValues.Nil;
+        return border is not null;
     }
 
     public static TextDecoration ToTextDecoration(ReadOnlySpan<char> span)
@@ -181,17 +184,17 @@ static class Converter
         for (int i = 0; i < tokenCount; i++)
         {
             var token = span[tokens[i]];
-            if (token.Equals("underline", StringComparison.OrdinalIgnoreCase))
+            if (token.Is("underline"))
                 decorations |= TextDecoration.Underline;
-            else if (token.Equals("line-through", StringComparison.OrdinalIgnoreCase))
+            else if (token.Is("line-through"))
                 decorations |= TextDecoration.LineThrough;
-            else if (token.Equals("double", StringComparison.OrdinalIgnoreCase))
+            else if (token.Is("double"))
                 decorations |= TextDecoration.Double;
-            else if (token.Equals("dotted", StringComparison.OrdinalIgnoreCase))
+            else if (token.Is("dotted"))
                 decorations |= TextDecoration.Dotted;
-            else if (token.Equals("dashed", StringComparison.OrdinalIgnoreCase))
+            else if (token.Is("dashed"))
                 decorations |= TextDecoration.Dashed;
-            else if (token.Equals("wavy", StringComparison.OrdinalIgnoreCase))
+            else if (token.Is("wavy"))
                 decorations |= TextDecoration.Wave;
             // blink and overline are not supported
         }

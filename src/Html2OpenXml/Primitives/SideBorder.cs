@@ -41,7 +41,7 @@ readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
         // Initialize default values
         Unit borderWidth = Unit.Empty;
         HtmlColor borderColor = HtmlColor.Empty;
-        BorderValues borderStyle = BorderValues.Nil;
+        BorderValues? borderStyle = null;
 
         // Now try to guess the values with their permutation
         var tokenIndexes = new List<int>(Enumerable.Range(0, tokenCount));
@@ -49,8 +49,7 @@ readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
         // handle border style
         for (int i = 0; i < tokenIndexes.Count; i++)
         {
-            borderStyle = Converter.ToBorderStyle(span[tokens[tokenIndexes[i]]]);
-            if (borderStyle != BorderValues.Nil)
+            if (Converter.TryParseBorderStyle(span[tokens[tokenIndexes[i]]], out borderStyle))
             {
                 tokenIndexes.RemoveAt(i); // no need to process this part anymore
                 break;
@@ -71,13 +70,13 @@ readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
         if(tokenIndexes.Count > 0)
             borderColor = HtmlColor.Parse(span[tokens[tokenIndexes[0]]]);
 
-        if (borderColor.IsEmpty && !borderWidth.IsValid && borderStyle == BorderValues.Nil)
+        if (borderColor.IsEmpty && !borderWidth.IsValid && !borderStyle.HasValue)
             return Empty;
 
         // returns the instance with default value if needed.
         // These value are the ones used by the browser, i.e: solid 3px black
         return new SideBorder(
-            borderStyle == BorderValues.Nil? BorderValues.Single : borderStyle,
+            borderStyle ?? BorderValues.Single,
             borderColor.IsEmpty? HtmlColor.Black : borderColor,
             borderWidth.IsFixed? borderWidth : new Unit(UnitMetric.Pixel, 4));
     }
@@ -92,11 +91,11 @@ readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
         }
         else
         {
-            if (borderWidth.Equals("thin", StringComparison.OrdinalIgnoreCase))
+            if (borderWidth.Is("thin"))
                 return new Unit(UnitMetric.Pixel, 1);
-            if (borderWidth.Equals("medium", StringComparison.OrdinalIgnoreCase))
+            if (borderWidth.Is("medium"))
                 return new Unit(UnitMetric.Pixel, 3);
-            if (borderWidth.Equals("thick", StringComparison.OrdinalIgnoreCase))
+            if (borderWidth.Is("thick"))
                 return new Unit(UnitMetric.Pixel, 5);
         }
 

@@ -59,7 +59,8 @@ struct HtmlBorder(SideBorder all)
             return;
 
         if (!CssShorthand.TryParse(span,
-            s => Converter.ToBorderStyle(s), s => s != BorderValues.Nil, out var sides))
+            s => Converter.TryParseBorderStyle(s, out var b)? b.Value : BorderValues.Nil,
+            s => s != BorderValues.Nil, out var sides))
         {
             return;
         }

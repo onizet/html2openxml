@@ -45,7 +45,7 @@ readonly struct Unit
             return new Unit(defaultMetric, span[0] - '0');
         }
 
-        if (span.Equals("auto", StringComparison.OrdinalIgnoreCase))
+        if (span.Is("auto"))
             return Auto;
 
         // guess the unit first than use the native Double parsing

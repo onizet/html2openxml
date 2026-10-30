@@ -26,7 +26,7 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
     private readonly OpenXmlLeafElement? defaultStyleProperty = styleProperty;
 
     protected readonly RunProperties runProperties = new();
-    protected HtmlAttributeCollection styleAttributes;
+    protected readonly HtmlAttributeCollection styleAttributes = node.GetStyles();
     protected IHtmlElement node = node;
 
 
@@ -82,7 +82,6 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
     /// </summary>
     protected virtual void ComposeStyles (ParsingContext context)
     {
-        styleAttributes = node.GetStyles();
         if (defaultStyleProperty != null)
             runProperties.AddChild(defaultStyleProperty.CloneNode(true));
 

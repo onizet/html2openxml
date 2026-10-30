@@ -208,36 +208,32 @@ sealed class HtmlAttributeCollection
                  var m = BoxThickness.Parse(rawValue.AsSpan()[decl.Value]);
                 if (m.IsValid) margin = m;
             }
-            else if (stringSuffix.Equals("-block", StringComparison.OrdinalIgnoreCase))
+            else if (stringSuffix.Is("-block"))
             {
                 u = Unit.Parse(rawValue.AsSpan()[decl.Value], UnitMetric.Pixel);
                 if (u.IsValid) margin.Top = margin.Bottom = u;
             }
-            else if (stringSuffix.Equals("-inline", StringComparison.OrdinalIgnoreCase))
+            else if (stringSuffix.Is("-inline"))
             { 
                 u = Unit.Parse(rawValue.AsSpan()[decl.Value], UnitMetric.Pixel);
                 if (u.IsValid) margin.Left = margin.Right = u;
             }
-            else if (stringSuffix.Equals("-top", StringComparison.OrdinalIgnoreCase)
-                || stringSuffix.Equals("-block-start", StringComparison.OrdinalIgnoreCase))
+            else if (stringSuffix.Is("-top") || stringSuffix.Is("-block-start"))
             {
                 u = Unit.Parse(rawValue.AsSpan()[decl.Value], UnitMetric.Pixel);
                 if (u.IsValid) margin.Top = u;
             }
-            else if (stringSuffix.Equals("-left", StringComparison.OrdinalIgnoreCase)
-                || stringSuffix.Equals("-inline-start", StringComparison.OrdinalIgnoreCase))
+            else if (stringSuffix.Is("-left") || stringSuffix.Is("-inline-start"))
             {
                 u = Unit.Parse(rawValue.AsSpan()[decl.Value], UnitMetric.Pixel);
                 if (u.IsValid) margin.Left = u;
             }
-            else if (stringSuffix.Equals("-right", StringComparison.OrdinalIgnoreCase)
-                || stringSuffix.Equals("-inline-end", StringComparison.OrdinalIgnoreCase))
+            else if (stringSuffix.Is("-right") || stringSuffix.Is("-inline-end"))
             {
                 u = Unit.Parse(rawValue.AsSpan()[decl.Value], UnitMetric.Pixel);
                 if (u.IsValid) margin.Right = u;
             }
-            else if (stringSuffix.Equals("-bottom", StringComparison.OrdinalIgnoreCase)
-                || stringSuffix.Equals("-block-end", StringComparison.OrdinalIgnoreCase))
+            else if (stringSuffix.Is("-bottom") || stringSuffix.Is("-block-end"))
             {
                 u = Unit.Parse(rawValue.AsSpan()[decl.Value], UnitMetric.Pixel);
                 if (u.IsValid) margin.Bottom = u;
@@ -274,12 +270,12 @@ sealed class HtmlAttributeCollection
                 var b = SideBorder.Parse(rawValue.AsSpan()[decl.Value]);
                 if (b.IsValid) borders = new(b);
             }
-            else if (stringSuffix.Equals("-block", StringComparison.OrdinalIgnoreCase))
+            else if (stringSuffix.Is("-block"))
             {
                 sb = SideBorder.Parse(rawValue.AsSpan()[decl.Value]);
                 if (sb.IsValid) borders.Top = borders.Bottom = sb;
             }
-            else if (stringSuffix.Equals("-inline", StringComparison.OrdinalIgnoreCase))
+            else if (stringSuffix.Is("-inline"))
             {
                 sb = SideBorder.Parse(rawValue.AsSpan()[decl.Value]);
                 if (sb.IsValid) borders.Left = borders.Right = sb;
@@ -317,15 +313,15 @@ sealed class HtmlAttributeCollection
                 borders.Bottom = GetSideBorder(borders.Bottom, stringSuffix.Slice("-block-end".Length), decl);
             }
             // shorthand properties
-            else if (stringSuffix.Equals("-width", StringComparison.OrdinalIgnoreCase))
+            else if (stringSuffix.Is("-width"))
             {
                 borders.ParseWidths(rawValue.AsSpan()[decl.Value]);
             }
-            else if (stringSuffix.Equals("-color", StringComparison.OrdinalIgnoreCase))
+            else if (stringSuffix.Is("-color"))
             {
                 borders.ParseColors(rawValue.AsSpan()[decl.Value]);
             }
-            else if (stringSuffix.Equals("-style", StringComparison.OrdinalIgnoreCase))
+            else if (stringSuffix.Is("-style"))
             {
                 borders.ParseStyles(rawValue.AsSpan()[decl.Value]);
             }
@@ -346,20 +342,20 @@ sealed class HtmlAttributeCollection
             var sb = SideBorder.Parse(rawValue.AsSpan()[decl.Value]);
             if (sb.IsValid) return sb;
         }
-        else if (name.Equals("-width", StringComparison.OrdinalIgnoreCase))
+        else if (name.Is("-width"))
         {
             var u = Unit.Parse(rawValue.AsSpan()[decl.Value], UnitMetric.Unitless);
             if (u.IsFixed) return border.Apply(u);
         }
-        else if (name.Equals("-color", StringComparison.OrdinalIgnoreCase))
+        else if (name.Is("-color"))
         {
             var c = HtmlColor.Parse(rawValue.AsSpan()[decl.Value]);
             if (!c.IsEmpty) return border.Apply(c);
         }
-        else if (name.Equals("-style", StringComparison.OrdinalIgnoreCase))
+        else if (name.Is("-style"))
         {
-            var s = Converter.ToBorderStyle(rawValue.AsSpan()[decl.Value]);
-            if (s != BorderValues.Nil) return border.Apply(s);
+            if (Converter.TryParseBorderStyle(rawValue.AsSpan()[decl.Value], out var s))
+                return border.Apply(s.Value);
         }
 
         return border;
@@ -398,27 +394,23 @@ sealed class HtmlAttributeCollection
                 fontSize = font.Size;
                 family = font.Family;
             }
-            else if (stringSuffix.Equals("-style", StringComparison.OrdinalIgnoreCase))
+            else if (stringSuffix.Is("-style"))
             {
-                var s = Converter.ToFontStyle(rawValue.AsSpan()[decl.Value].Trim());
-                if (s.HasValue) fontStyle = s;
+                Converter.TryParseFontStyle(rawValue.AsSpan()[decl.Value].Trim(), out fontStyle);
             }
-            else if (stringSuffix.Equals("-variant", StringComparison.OrdinalIgnoreCase))
+            else if (stringSuffix.Is("-variant"))
             {
-                var v = Converter.ToFontVariant(rawValue.AsSpan()[decl.Value].Trim());
-                if (v.HasValue) variant = v;
+                Converter.TryParseFontVariant(rawValue.AsSpan()[decl.Value].Trim(), out variant);
             }
-            else if (stringSuffix.Equals("-weight", StringComparison.OrdinalIgnoreCase))
+            else if (stringSuffix.Is("-weight"))
             {
-                var w = Converter.ToFontWeight(rawValue.AsSpan()[decl.Value]);
-                if (w.HasValue) weight = w;
+                Converter.TryParseFontWeight(rawValue.AsSpan()[decl.Value], out weight);
             }
-            else if (stringSuffix.Equals("-family", StringComparison.OrdinalIgnoreCase))
+            else if (stringSuffix.Is("-family"))
             {
-                var f = Converter.ToFontFamily(rawValue.AsSpan()[decl.Value].Trim());
-                if (f != null) family = f;
+                Converter.TryParseFontFamily(rawValue.AsSpan()[decl.Value].Trim(), out family);
             }
-            else if (stringSuffix.Equals("-size", StringComparison.OrdinalIgnoreCase))
+            else if (stringSuffix.Is("-size"))
             {
                 Unit u = Unit.Parse(rawValue.AsSpan()[decl.Value], UnitMetric.Unitless);
                 if (u.IsValid) fontSize = u;
