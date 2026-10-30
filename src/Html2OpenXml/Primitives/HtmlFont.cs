@@ -44,9 +44,10 @@ readonly struct HtmlFont(Unit size, string? family, FontStyle? style,
     {
         // http://www.w3schools.com/cssref/pr_font_font.asp
 
-        if (span.IsEmpty || span.Length < 2) return Empty;
+        if (span.IsEmpty || span.Length < 2)
+            return Empty;
 
-        Span<Range> tokens = stackalloc Range[6];
+        Span<Range> tokens = stackalloc Range[10];
         var tokenCount = span.SplitCompositeAttribute(tokens, ' ', skipSeparatorIfPrecededBy: ',');
         if (tokenCount == 0)
             return Empty;
@@ -59,55 +60,44 @@ readonly struct HtmlFont(Unit size, string? family, FontStyle? style,
         Unit fontSize = Unit.Empty, lineHeight = Unit.Empty;
         string? fontFamily = null;
 
-        if (tokenCount == 2) // 2=the minimal set of required parameters
+        // fast path: 2=the minimal set of required parameters, e.g.: '12px Arial'
+        if (tokenCount == 2)
         {
             // should be the size and the family (in that order). Others are set to their default values
-            fontSize = Converter.ToFontSize(span[tokens[0]]);
-            if (!fontSize.IsValid) return Empty;
-            fontFamily = Converter.ToFontFamily(span[tokens[1]]);
+            if (!Converter.TryParseFontSize(span[tokens[0]], out fontSize))
+                return Empty;
+
+            _ = Converter.TryParseFontFamily(span[tokens[1]], out fontFamily);
             return new HtmlFont(fontSize, fontFamily, style, variant, weight, lineHeight);
         }
-        else if (tokenCount > 10)
-        {
-            // safety check to avoid overflow with stackalloc in a loop
-            return Empty;
-        }
 
-        Span<char> loweredValue = stackalloc char[128];
         for (int i = 0; i < tokenCount; i++)
         {
             var token = span[tokens[i]].Trim();
-            token.ToLowerInvariant(loweredValue);
 
-            switch (loweredValue.Slice(0, token.Length))
+            // normal could be used for multiple cases
+            if (token.Is("normal"))
             {
-                case "italic" or "oblique": style = FontStyle.Italic; break;
-                case "normal":
-                    style ??= FontStyle.Normal;
-                    variant ??= FontVariant.Normal; 
-                    weight ??= FontWeight.Normal;
-                    break;
-                case "small-caps": variant = FontVariant.SmallCaps; break;
-                case "700" or "bold": weight = FontWeight.Bold; break;
-                case "bolder": weight = FontWeight.Bolder; break;
-                case "400": weight = FontWeight.Normal; break;
-                case "xx-small": fontSize = new Unit(UnitMetric.Point, 10); break;
-                case "x-small": fontSize = new Unit(UnitMetric.Point, 15); break;
-                case "small": fontSize = new Unit(UnitMetric.Point, 20); break;
-                case "medium": fontSize = new Unit(UnitMetric.Point, 27); break;
-                case "large": fontSize = new Unit(UnitMetric.Point, 36); break;
-                case "x-large": fontSize = new Unit(UnitMetric.Point, 48); break;
-                case "xx-large": fontSize = new Unit(UnitMetric.Point, 72); break;
-                default:
-                {
-                    if (fontSize.IsValid || !TryParseFontSize (token, out fontSize, out lineHeight))
-                    {
-                        fontFamily ??= Converter.ToFontFamily(token);
-                    }
-
-                    break;
-                }
+                style ??= FontStyle.Normal;
+                variant ??= FontVariant.Normal;
+                weight ??= FontWeight.Normal;
+                continue;
             }
+
+            if (!weight.HasValue && Converter.TryParseFontWeight(token, out weight))
+                continue;
+
+            if (!style.HasValue && Converter.TryParseFontStyle(token, out style))
+                continue;
+
+            if (!variant.HasValue && Converter.TryParseFontVariant(token, out variant))
+                continue;
+
+            if (!fontSize.IsValid && TryParseFontSize(token, out fontSize, out lineHeight))
+                continue;
+
+            if (fontFamily is null && Converter.TryParseFontFamily(token, out fontFamily))
+                continue;
         }
 
         return new HtmlFont(fontSize, fontFamily, style, variant, weight, lineHeight);
@@ -124,9 +114,8 @@ readonly struct HtmlFont(Unit size, string? family, FontStyle? style,
             return fontSize.IsValid;
         }
 
-        fontSize = Unit.Parse(token);
         lineHeight = Unit.Empty;
-        return fontSize.IsValid;
+        return Converter.TryParseFontSize(token, out fontSize);
     }
 
     //____________________________________________________________________

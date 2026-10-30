@@ -9,23 +9,28 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace HtmlToOpenXml;
 
 /// <summary>
 /// Represents the collection of attributes present in the current html tag.
 /// </summary>
-readonly struct HtmlAttributeCollection
+sealed class HtmlAttributeCollection
 {
+    // we use Range to avoid string allocation
+    record struct StyleAttribute(Range Name, Range Value);
+
     // Style key associated with a pointer to rawValue.
-    private readonly Dictionary<string, Range> attributes = [];
+    private readonly MultiValueDictionary<string, StyleAttribute> attributes;
+    private HtmlBorder? cachedBorders;
+    private BoxThickness? cachedMargin, cachedPadding;
     private readonly string rawValue;
 
 
     private HtmlAttributeCollection(string htmlStyles)
     {
         rawValue = htmlStyles;
+        attributes = new(comparer: StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -33,75 +38,78 @@ readonly struct HtmlAttributeCollection
     /// </summary>
     public bool IsEmpty => attributes.Count == 0;
 
+    /// <summary>
+    /// Parse the <c>style</c> attribute from a HTML element.
+    /// </summary>
     public static HtmlAttributeCollection ParseStyle(string? htmlStyles)
     {
         var collection = new HtmlAttributeCollection(htmlStyles!);
         if (string.IsNullOrWhiteSpace(htmlStyles)) return collection;
 
-        var span = htmlStyles.AsSpan();
-        int startIndex = 0;
-        bool foundKey = false;
-        string? key = null;
+        var stylesSpan = htmlStyles.AsSpan();
 
-        while (span.Length > 0)
+        Span<Range> tokens = stackalloc Range[20];
+        var tokenCount = stylesSpan.SplitCompositeAttribute(tokens, ';');
+        if (tokenCount == 0)
+            return collection;
+
+        for (int i = 0; i < tokenCount; i++)
         {
             // Encoded ':' and ';' characters are valid for browser
             // <span style="text-decoration&#58;underline&#59;color:red">
-            int index = span.IndexOfAny(';', '&', ':');
+            var segmentSpan = stylesSpan[tokens[i]];
+            int index = segmentSpan.IndexOfAny('&', ':');
+            int charsConsumed = 0;
+
             if (index == -1)
-            {
-                if (foundKey)
-                {
-                    // process the last value
-                    collection.attributes[key!] = new Range(startIndex, startIndex + span.Length);
-                }
-                break;
-            }
+                continue; // no key:value -> ignore this style
 
-            var separator = span[index];
-            if (separator == ';' && foundKey)
+            if ((charsConsumed = HtmlEntities.IsColon(segmentSpan.Slice(index))) > 0)
             {
-                if (index > 0)
-                    collection.attributes[key!] = new Range(startIndex, startIndex + index);
-                foundKey = false;
-                index++;
-            }
-            else if (separator == ';' && !foundKey)
-            {
-                // unexpected semicolon (ie, key with no value) -> ignore this style
-                index++;
-            }
-            else if (separator == ':' && !foundKey)
-            {
-                key = span.Slice(0, index).Trim().ToString().ToLowerInvariant();
-                foundKey = true;
-                index++;
-            }
-            // html-encoded semicolon
-            else if (foundKey && span.Slice(index).StartsWith(['&','#','5','9',';']))
-            {
-                if (index > 0)
-                    collection.attributes[key!] = new Range(startIndex, startIndex + index);
-                foundKey = false;
-                index += 5; // length of "&#58;"
-            }
-            else if (!foundKey && span.Slice(index).StartsWith(['&','#','5','8',';']))
-            {
-                key = span.Slice(0, index).Trim().ToString().ToLowerInvariant();
-                foundKey = true;
-                index += 5; // length of "&#58;"
-            }
-            else
-            {
-                span = span.Slice(index + 1);
-                continue;
-            }
+                // trim() the key but keeep note of the new range
+                var key = segmentSpan.Slice(0, index);
+                int startTrim = 0, endTrim = index;
+                while (startTrim < key.Length && char.IsWhiteSpace(key[startTrim]))
+                    startTrim++;
+                while (endTrim > startTrim && char.IsWhiteSpace(key[endTrim - 1]))
+                    endTrim--;
 
-            span = span.Slice(index);
-            startIndex += index;
+                key = segmentSpan.Slice(startTrim, endTrim - startTrim);
+
+                if (key.Length == 0) continue; // empty key
+
+                var startIndex = index + charsConsumed;
+                if (startIndex >= segmentSpan.Length) continue; // empty value
+
+                var familyKey = GetStyleFamily(key);
+                var keyRng = new Range(tokens[i].Start.Value + startTrim, tokens[i].Start.Value + endTrim);
+                var valueRng = new Range(tokens[i].Start.Value + startIndex, tokens[i].End);
+                collection.attributes.AddWithValue(familyKey, new(keyRng, valueRng));
+            }
         }
 
         return collection;
+    }
+
+    /// <summary>
+    /// Determines the high-level, encompassing style family from a specific CSS attribute name.
+    /// <para>
+    /// This allows the system to correctly apply a holistic style (e.g., applying a <c>margin</c> style 
+    /// when only <c>margin-top</c> was originally specified).
+    /// </para>
+    /// </summary>
+    private static string GetStyleFamily(ReadOnlySpan<char> attributeName)
+    {
+        if (attributeName.StartsWith("font", StringComparison.OrdinalIgnoreCase))
+            return "font";
+        if (attributeName.StartsWith("padding", StringComparison.OrdinalIgnoreCase))
+            return "padding";
+        if (attributeName.StartsWith("margin", StringComparison.OrdinalIgnoreCase))
+            return "margin";
+        if (attributeName.StartsWith("border", StringComparison.OrdinalIgnoreCase))
+            return "border";
+
+        return attributeName.ToString();
     }
 
     /// <summary>
@@ -109,12 +117,7 @@ readonly struct HtmlAttributeCollection
     /// </summary>
     public ReadOnlySpan<char> this[string name]
     {
-        get 
-        {
-            if (attributes.TryGetValue(name, out var range))
-                return rawValue.AsSpan()[range].Trim();
-            return [];
-        }
+        get => TryGetValue(name, out var span)? span : [];
     }
 
     /// <summary>
@@ -122,24 +125,23 @@ readonly struct HtmlAttributeCollection
     /// </summary>
     public bool TryGetValue(string name, out ReadOnlySpan<char> value)
     {
-        if (attributes.TryGetValue(name, out var range))
+        if (attributes.TryGetLastValue(name, out var decl))
         {
-            value = rawValue.AsSpan()[range].Trim();
+            value = rawValue.AsSpan()[decl.Value].Trim();
             return true;
         }
-        value = default;
+        value = [];
         return false;
     }
 
     /// <summary>
     /// Efficient way to determine if a style is equals to a value.
     /// </summary>
-    public bool HasKeyEqualsTo(string name, string value)
+    public bool HasStyleEqualsTo(string name, ReadOnlySpan<char> value)
     {
-        if (attributes.TryGetValue(name, out var range))
+        if (TryGetValue(name, out var span))
         {
-            var span = rawValue.AsSpan()[range].Trim();
-            return span.Equals(value.AsSpan(), StringComparison.InvariantCultureIgnoreCase);
+            return span.Equals(value, StringComparison.OrdinalIgnoreCase);
         }
         return false;
     }
@@ -150,8 +152,16 @@ readonly struct HtmlAttributeCollection
     /// </summary>
     public HtmlColor GetColor(string name)
     {
-        if (attributes.TryGetValue(name, out var range))
-            return HtmlColor.Parse(rawValue.AsSpan()[range]);
+        if (!attributes.TryGetValue(name, out var declarations))
+            return HtmlColor.Empty;
+
+        for (int i = declarations.Count - 1; i >= 0; i--)
+        {
+            var color = HtmlColor.Parse(rawValue.AsSpan()[declarations[i].Value]);
+            if (!color.IsEmpty)
+                return color;
+        }
+
         return HtmlColor.Empty;
     }
 
@@ -161,49 +171,81 @@ readonly struct HtmlAttributeCollection
     /// <returns>If the attribute is misformed, the <see cref="Unit.IsValid"/> property is set to false.</returns>
     public Unit GetUnit(string name, UnitMetric defaultMetric = UnitMetric.Unitless)
     {
-        if (attributes.TryGetValue(name, out var range))
-            return Unit.Parse(rawValue.AsSpan()[range], defaultMetric);
+        if (TryGetValue(name, out var span))
+            return Unit.Parse(span, defaultMetric);
         return Unit.Empty;
+    }
+
+    public BoxThickness GetPadding()
+    {
+        if (cachedPadding.HasValue)
+            return cachedPadding.Value;
+        return (cachedPadding = GetBoxSpacing("padding")).Value;
+    }
+
+    public BoxThickness GetMargin()
+    {
+        if (cachedMargin.HasValue)
+            return cachedMargin.Value;
+        return (cachedMargin = GetBoxSpacing("margin")).Value;
     }
 
     /// <summary>
     /// Gets an attribute representing the 4 unit sides.
     /// If a side has been specified individually, it will override the grouped definition.
     /// </summary>
-    /// <returns>If the attribute is misformed, the <see cref="Margin.IsValid"/> property is set to false.</returns>
-    public Margin GetMargin(string name)
+    /// <returns>If the attribute is misformed, the <see cref="BoxThickness.IsValid"/> property is set to false.</returns>
+    private BoxThickness GetBoxSpacing(string name)
     {
-        Margin margin = Margin.Empty;
-        // shortcut to avoid resolving each individual side when we know this collection is empty
-        if (IsEmpty) return margin;
-
+        BoxThickness margin = BoxThickness.Empty;
         Unit u;
 
-        if (attributes.TryGetValue(name, out var range))
-            margin = Margin.Parse(rawValue.AsSpan()[range]);
-        if (attributes.TryGetValue(name + "-inline", out range))
-        {
-            u = Unit.Parse(rawValue.AsSpan()[range]);
-            if (u.IsValid) margin.Left = margin.Right = u;
-        }
-        if (attributes.TryGetValue(name + "-block", out range))
-        {
-            u = Unit.Parse(rawValue.AsSpan()[range]);
-            if (u.IsValid) margin.Top = margin.Bottom = u;
-        }
+        // shortcut to avoid resolving each individual side when we know this collection is empty
+        if (IsEmpty || !attributes.TryGetValue(name, out var declarations))
+            return margin;
 
-        u = GetUnit(name + "-top", UnitMetric.Pixel);
-        if (!u.IsValid) u = GetUnit(name + "-block-start");
-        if (u.IsValid) margin.Top = u;
-        u = GetUnit(name + "-right", UnitMetric.Pixel);
-        if (!u.IsValid) u = GetUnit(name + "-inline-end");
-        if (u.IsValid) margin.Right = u;
-        u = GetUnit(name + "-bottom", UnitMetric.Pixel);
-        if (!u.IsValid) u = GetUnit(name + "-block-end");
-        if (u.IsValid) margin.Bottom = u;
-        u = GetUnit(name + "-left", UnitMetric.Pixel);
-        if (!u.IsValid) u = GetUnit(name + "-inline-start");
-        if (u.IsValid) margin.Left = u;
+        int suffixStart = name.Length;
+        // declarations are processed in source order.
+        // later declarations override earlier ones according to CSS cascade rules
+        foreach (var decl in declarations)
+        {
+            var stringSuffix = rawValue.AsSpan()[decl.Name].Slice(suffixStart);
+            if (stringSuffix.IsEmpty) // the name itself, e.g., `padding`
+            {
+                 var m = BoxThickness.Parse(rawValue.AsSpan()[decl.Value]);
+                if (m.IsValid) margin = m;
+            }
+            else if (stringSuffix.Is("-block"))
+            {
+                u = Unit.Parse(rawValue.AsSpan()[decl.Value], UnitMetric.Pixel);
+                if (u.IsValid) margin.Top = margin.Bottom = u;
+            }
+            else if (stringSuffix.Is("-inline"))
+            { 
+                u = Unit.Parse(rawValue.AsSpan()[decl.Value], UnitMetric.Pixel);
+                if (u.IsValid) margin.Left = margin.Right = u;
+            }
+            else if (stringSuffix.Is("-top") || stringSuffix.Is("-block-start"))
+            {
+                u = Unit.Parse(rawValue.AsSpan()[decl.Value], UnitMetric.Pixel);
+                if (u.IsValid) margin.Top = u;
+            }
+            else if (stringSuffix.Is("-left") || stringSuffix.Is("-inline-start"))
+            {
+                u = Unit.Parse(rawValue.AsSpan()[decl.Value], UnitMetric.Pixel);
+                if (u.IsValid) margin.Left = u;
+            }
+            else if (stringSuffix.Is("-right") || stringSuffix.Is("-inline-end"))
+            {
+                u = Unit.Parse(rawValue.AsSpan()[decl.Value], UnitMetric.Pixel);
+                if (u.IsValid) margin.Right = u;
+            }
+            else if (stringSuffix.Is("-bottom") || stringSuffix.Is("-block-end"))
+            {
+                u = Unit.Parse(rawValue.AsSpan()[decl.Value], UnitMetric.Pixel);
+                if (u.IsValid) margin.Bottom = u;
+            }
+        }
 
         return margin;
     }
@@ -215,19 +257,84 @@ readonly struct HtmlAttributeCollection
     /// <returns>If the attribute is misformed, the <see cref="HtmlBorder.IsEmpty"/> property is set to false.</returns>
     public HtmlBorder GetBorders()
     {
-        HtmlBorder border = new(GetSideBorder("border"));
+        if (cachedBorders.HasValue)
+            return cachedBorders.Value;
+
+        // shortcut to avoid resolving each individual side when we know this collection is empty
+        if (IsEmpty || !attributes.TryGetValue("border", out var declarations))
+            return (cachedBorders = HtmlBorder.Empty).Value;
+
+        HtmlBorder borders = new();
         SideBorder sb;
 
-        sb = GetSideBorder("border-top");
-        if (sb.IsValid) border.Top = sb;
-        sb = GetSideBorder("border-right");
-        if (sb.IsValid) border.Right = sb;
-        sb = GetSideBorder("border-bottom");
-        if (sb.IsValid) border.Bottom = sb;
-        sb = GetSideBorder("border-left");
-        if (sb.IsValid) border.Left = sb;
+        // declarations are processed in source order.
+        // later declarations override earlier ones according to CSS cascade rules
+        foreach (var decl in declarations)
+        {
+            var stringSuffix = rawValue.AsSpan()[decl.Name].Slice(6 /* border */);
+            if (stringSuffix.IsEmpty) // the name itself, e.g., `border`
+            {
+                var b = SideBorder.Parse(rawValue.AsSpan()[decl.Value]);
+                if (b.IsValid) borders = new(b);
+            }
+            else if (stringSuffix.Is("-block"))
+            {
+                sb = SideBorder.Parse(rawValue.AsSpan()[decl.Value]);
+                if (sb.IsValid) borders.Top = borders.Bottom = sb;
+            }
+            else if (stringSuffix.Is("-inline"))
+            {
+                sb = SideBorder.Parse(rawValue.AsSpan()[decl.Value]);
+                if (sb.IsValid) borders.Left = borders.Right = sb;
+            }
+            else if (stringSuffix.StartsWith("-top", StringComparison.OrdinalIgnoreCase))
+            {
+                borders.Top = GetSideBorder(borders.Top, stringSuffix.Slice("-top".Length), decl);
+            }
+            else if (stringSuffix.StartsWith("-block-start", StringComparison.OrdinalIgnoreCase))
+            {
+                borders.Top = GetSideBorder(borders.Top, stringSuffix.Slice("-block-start".Length), decl);
+            }
+            else if (stringSuffix.StartsWith("-left", StringComparison.OrdinalIgnoreCase))
+            {
+                borders.Left = GetSideBorder(borders.Left, stringSuffix.Slice("-left".Length), decl);
+            }
+            else if (stringSuffix.StartsWith("-inline-start", StringComparison.OrdinalIgnoreCase))
+            {
+                borders.Left = GetSideBorder(borders.Left, stringSuffix.Slice("-inline-start".Length), decl);
+            }
+            else if (stringSuffix.StartsWith("-right", StringComparison.OrdinalIgnoreCase))
+            {
+                borders.Right = GetSideBorder(borders.Right, stringSuffix.Slice("-right".Length), decl);
+            }
+            else if (stringSuffix.StartsWith("-inline-end", StringComparison.OrdinalIgnoreCase))
+            {
+                borders.Right = GetSideBorder(borders.Right, stringSuffix.Slice("-inline-end".Length), decl);
+            }
+            else if (stringSuffix.StartsWith("-bottom", StringComparison.OrdinalIgnoreCase))
+            {
+                borders.Bottom = GetSideBorder(borders.Bottom, stringSuffix.Slice("-bottom".Length), decl);
+            }
+            else if (stringSuffix.StartsWith("-block-end", StringComparison.OrdinalIgnoreCase))
+            {
+                borders.Bottom = GetSideBorder(borders.Bottom, stringSuffix.Slice("-block-end".Length), decl);
+            }
+            // shorthand properties
+            else if (stringSuffix.Is("-width"))
+            {
+                borders.ParseWidths(rawValue.AsSpan()[decl.Value]);
+            }
+            else if (stringSuffix.Is("-color"))
+            {
+                borders.ParseColors(rawValue.AsSpan()[decl.Value]);
+            }
+            else if (stringSuffix.Is("-style"))
+            {
+                borders.ParseStyles(rawValue.AsSpan()[decl.Value]);
+            }
+        }
 
-        return border;
+        return borders;
     }
 
     /// <summary>
@@ -235,45 +342,42 @@ readonly struct HtmlAttributeCollection
     /// If a border style/color/width has been specified individually, it will override the grouped definition.
     /// </summary>
     /// <returns>If the attribute is misformed, the <see cref="HtmlBorder.IsEmpty"/> property is set to false.</returns>
-    public SideBorder GetSideBorder(string name)
+    private SideBorder GetSideBorder(SideBorder border, ReadOnlySpan<char> name, StyleAttribute decl)
     {
-        SideBorder border = SideBorder.Empty;
-        if (IsEmpty) return border;
-
-        if (attributes.TryGetValue(name, out Range range))
-            border = SideBorder.Parse(rawValue.AsSpan()[range]);
-
-        // handle attributes specified individually.
-        Unit width = border.Width;
-        if (attributes.TryGetValue(name + "-width", out range))
+        if (name.IsEmpty)
         {
-            var w = SideBorder.ParseWidth(rawValue.AsSpan()[range]);
-            if (w.IsValid) width = w;
+            var sb = SideBorder.Parse(rawValue.AsSpan()[decl.Value]);
+            if (sb.IsValid) return sb;
+        }
+        else if (name.Is("-width"))
+        {
+            var u = Unit.Parse(rawValue.AsSpan()[decl.Value], UnitMetric.Unitless);
+            if (u.IsFixed) return border.Apply(u);
+        }
+        else if (name.Is("-color"))
+        {
+            var c = HtmlColor.Parse(rawValue.AsSpan()[decl.Value]);
+            if (!c.IsEmpty) return border.Apply(c);
+        }
+        else if (name.Is("-style"))
+        {
+            if (Converter.TryParseBorderStyle(rawValue.AsSpan()[decl.Value], out var s))
+                return border.Apply(s.Value);
         }
 
-        var color = GetColor(name + "-color");
-        if (color.IsEmpty) color = border.Color;
-
-        BorderValues style = border.Style;
-        if (attributes.TryGetValue(name + "-style", out range))
-        {
-            var s = Converter.ToBorderStyle(rawValue.AsSpan()[range]);
-            if (s != BorderValues.Nil) style = s;
-        }
-
-        return new SideBorder(style, color, width);
+        return border;
     }
 
     /// <summary>
-    /// Gets the `font` attribute and combine with the style, size and family.
+    /// Gets the <c>font</c> attribute and combine with the style, size and family.
     /// </summary>
-    public HtmlFont GetFont(string name)
+    public HtmlFont GetFont()
     {
         HtmlFont font = HtmlFont.Empty;
-        if (IsEmpty) return font;
 
-        if (attributes.TryGetValue(name, out Range range))
-            font = HtmlFont.Parse(rawValue.AsSpan()[range]);
+        // shortcut to avoid resolving each individual side when we know this collection is empty
+        if (IsEmpty || !attributes.TryGetValue("font", out var declarations))
+            return font;
 
         FontStyle? fontStyle = font.Style;
         FontVariant? variant = font.Variant;
@@ -281,43 +385,58 @@ readonly struct HtmlAttributeCollection
         Unit fontSize = font.Size;
         string? family = font.Family;
 
-        if (attributes.TryGetValue(name + "-style", out range))
+        // declarations are processed in source order.
+        // later declarations override earlier ones according to CSS cascade rules
+        foreach (var decl in declarations)
         {
-            var s = Converter.ToFontStyle(rawValue.AsSpan()[range]);
-            if (s.HasValue) fontStyle = s;
-        }
+            var stringSuffix = rawValue.AsSpan()[decl.Name].Slice(4 /* font */);
+            if (stringSuffix.IsEmpty)
+            {
+                font =  HtmlFont.Parse(rawValue.AsSpan()[decl.Value]);
+                if (font.Equals(HtmlFont.Empty)) continue;
 
-        if (attributes.TryGetValue(name + "-variant", out range))
-        {
-            var v = Converter.ToFontVariant(rawValue.AsSpan()[range]);
-            if (v.HasValue) variant = v;
+                fontStyle = font.Style;
+                variant = font.Variant;
+                weight = font.Weight;
+                fontSize = font.Size;
+                family = font.Family;
+            }
+            else if (stringSuffix.Is("-style"))
+            {
+                if (Converter.TryParseFontStyle(rawValue.AsSpan()[decl.Value].Trim(), out var s))
+                    fontStyle = s;
+            }
+            else if (stringSuffix.Is("-variant"))
+            {
+                if (Converter.TryParseFontVariant(rawValue.AsSpan()[decl.Value].Trim(), out var v))
+                    variant = v;
+            }
+            else if (stringSuffix.Is("-weight"))
+            {
+                if (Converter.TryParseFontWeight(rawValue.AsSpan()[decl.Value], out var w))
+                    weight = w;
+            }
+            else if (stringSuffix.Is("-family"))
+            {
+                _ = Converter.TryParseFontFamily(rawValue.AsSpan()[decl.Value].Trim(), out family);
+            }
+            else if (stringSuffix.Is("-size"))
+            {
+                if (Converter.TryParseFontSize(rawValue.AsSpan()[decl.Value], out var u))
+                    fontSize = u;
+            }
         }
-
-        if (attributes.TryGetValue(name + "-weight", out range))
-        {
-            var w = Converter.ToFontWeight(rawValue.AsSpan()[range]);
-            if (w.HasValue) weight = w;
-        }
-
-        if (attributes.TryGetValue(name + "-family", out range))
-        {
-            var f = Converter.ToFontFamily(rawValue.AsSpan()[range]);
-            if (f != null) family = f;
-        }
-
-        Unit unit = this.GetUnit(name + "-size");
-        if (unit.IsValid) fontSize = unit;
 
         return new HtmlFont(fontSize, family, fontStyle, variant, weight, Unit.Empty);
     }
 
     /// <summary>
-    /// Gets the composite `text-decoration` style.
+    /// Gets the composite <c>text-decoration</c> style.
     /// </summary>
-    public IEnumerable<TextDecoration> GetTextDecorations(string name)
+    public TextDecoration GetTextDecorations()
     {
-        if (attributes.TryGetValue(name, out Range range))
-            return Converter.ToTextDecoration(rawValue.AsSpan()[range]);
-        return [];
+        if (TryGetValue("text-decoration", out var span))
+            return Converter.ToTextDecoration(span);
+        return TextDecoration.None;
     }
 }

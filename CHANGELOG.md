@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.1.0
+
+- Support CSS shorthand for `border` style, co-authored with @AyUsH18102001.
+- Indent listnode elements to compensate for margin-left in list elements (#250, another thanks to @AyUsH18102001)
+- Rewriting of the parsing `style` attribute to reduce memory pressure and a faster execution. This is the hotest class of this library.
+- Rewriting of the Data URI (inline base64 images) to use optimised parsing and short-circuit if the URI is not an image.
+
 ## 4.0.0
 
 - **New official NuGet feed**: Please update your bookmark to: [HtmlToOpenXml](https://www.nuget.org/packages/HtmlToOpenXml) (removing the .dll suffix)

@@ -21,9 +21,7 @@ readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
     /// <summary>Represents an empty border (not defined).</summary>
     public static readonly SideBorder Empty = new(BorderValues.Nil, HtmlColor.Empty, Unit.Empty);
 
-    private readonly BorderValues style = style;
-    private readonly HtmlColor color = color;
-    private readonly Unit size = size;
+
 
     public static SideBorder Parse(ReadOnlySpan<char> span)
     {
@@ -36,14 +34,14 @@ readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
             return Empty;
 
         Span<Range> tokens = stackalloc Range[6];
-        var tokenCount = span.SplitCompositeAttribute(tokens);
+        var tokenCount = span.SplitCompositeAttribute(tokens, separator: ' ');
         if (tokenCount == 0)
             return Empty;
 
         // Initialize default values
         Unit borderWidth = Unit.Empty;
         HtmlColor borderColor = HtmlColor.Empty;
-        BorderValues borderStyle = BorderValues.Nil;
+        BorderValues? borderStyle = null;
 
         // Now try to guess the values with their permutation
         var tokenIndexes = new List<int>(Enumerable.Range(0, tokenCount));
@@ -51,8 +49,7 @@ readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
         // handle border style
         for (int i = 0; i < tokenIndexes.Count; i++)
         {
-            borderStyle = Converter.ToBorderStyle(span[tokens[tokenIndexes[i]]]);
-            if (borderStyle != BorderValues.Nil)
+            if (Converter.TryParseBorderStyle(span[tokens[tokenIndexes[i]]], out borderStyle))
             {
                 tokenIndexes.RemoveAt(i); // no need to process this part anymore
                 break;
@@ -73,39 +70,46 @@ readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
         if(tokenIndexes.Count > 0)
             borderColor = HtmlColor.Parse(span[tokens[tokenIndexes[0]]]);
 
-        if (borderColor.IsEmpty && !borderWidth.IsValid && borderStyle == BorderValues.Nil)
+        if (borderColor.IsEmpty && !borderWidth.IsValid && !borderStyle.HasValue)
             return Empty;
 
         // returns the instance with default value if needed.
         // These value are the ones used by the browser, i.e: solid 3px black
         return new SideBorder(
-            borderStyle == BorderValues.Nil? BorderValues.Single : borderStyle,
+            borderStyle ?? BorderValues.Single,
             borderColor.IsEmpty? HtmlColor.Black : borderColor,
             borderWidth.IsFixed? borderWidth : new Unit(UnitMetric.Pixel, 4));
     }
 
-    internal static Unit ParseWidth(ReadOnlySpan<char> borderWidth)
+    static Unit ParseWidth(ReadOnlySpan<char> borderWidth)
     {
         Unit bu = Unit.Parse(borderWidth, UnitMetric.Pixel);
         if (bu.IsValid)
         {
             if (bu.Value > 0 && bu.Metric == UnitMetric.Pixel)
                 return bu;
-            return Unit.Empty;
         }
         else
         {
-            Span<char> loweredValue = borderWidth.Length <= 128 ? stackalloc char[borderWidth.Length] : new char[borderWidth.Length];
-            borderWidth.ToLowerInvariant(loweredValue);
-
-            return loweredValue switch {
-               "thin" => new Unit(UnitMetric.Pixel, 1),
-                "medium" => new Unit(UnitMetric.Pixel, 3),
-                "thick" => new Unit(UnitMetric.Pixel, 5),
-                _ => Unit.Empty,
-            };
+            if (borderWidth.Is("thin"))
+                return new Unit(UnitMetric.Pixel, 1);
+            if (borderWidth.Is("medium"))
+                return new Unit(UnitMetric.Pixel, 3);
+            if (borderWidth.Is("thick"))
+                return new Unit(UnitMetric.Pixel, 5);
         }
+
+        return Unit.Empty;
     }
+
+    public SideBorder Apply(Unit size)
+        => this with { Width = size };
+
+    public SideBorder Apply(HtmlColor color)
+        => this with { Color = color };
+
+    public SideBorder Apply(BorderValues style)
+        => this with { Style = style };
 
     //____________________________________________________________________
     //
@@ -113,32 +117,23 @@ readonly struct SideBorder(BorderValues style, HtmlColor color, Unit size)
     /// <summary>
     /// Gets or sets the type of border (solid, dashed, dotted, ...)
     /// </summary>
-    public BorderValues Style
-    {
-        get { return style; }
-    }
+    public BorderValues Style { get; init; } = style;
 
     /// <summary>
     /// Gets or sets the color of the border.
     /// </summary>
-    public HtmlColor Color
-    {
-        get { return color; }
-    }
+    public HtmlColor Color { get; init; } = color;
 
     /// <summary>
     /// Gets or sets the size of the border expressed with its unit.
     /// </summary>
-    public Unit Width
-    {
-        get { return size; }
-    }
+    public Unit Width { get; init; } = size;
 
     /// <summary>
     /// Gets whether the border is well formed and not empty.
     /// </summary>
     public bool IsValid
     {
-        get { return !BorderValues.Nil.Equals(Style); }
+        get { return !BorderValues.Nil.Equals(Style) && Width.IsValid; }
     }
 }

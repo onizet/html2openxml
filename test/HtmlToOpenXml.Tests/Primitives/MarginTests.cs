@@ -15,7 +15,7 @@ namespace HtmlToOpenXml.Tests.Primitives
         [TestCase("25px   75px", 25, 75, 25, 75)]
         public void ParseHtmlString_ShouldSucceed (string html, int top, int right, int bottom, int left)
         {
-            var margin = Margin.Parse(html.AsSpan());
+            var margin = BoxThickness.Parse(html.AsSpan());
 
             using (Assert.EnterMultipleScope())
             {
@@ -30,7 +30,7 @@ namespace HtmlToOpenXml.Tests.Primitives
         [Test]
         public void ParseWithFloat_ShouldSucceed ()
         {
-            var margin = Margin.Parse("0 50% 9.5pt .00001pt".AsSpan());
+            var margin = BoxThickness.Parse("0 50% 9.5pt .00001pt".AsSpan());
 
             using (Assert.EnterMultipleScope())
             {
@@ -58,7 +58,7 @@ namespace HtmlToOpenXml.Tests.Primitives
         [Test]
         public void ParseWithAuto_ShouldSucceed ()
         {
-            var margin = Margin.Parse("0 auto".AsSpan());
+            var margin = BoxThickness.Parse("0 auto".AsSpan());
 
             using (Assert.EnterMultipleScope())
             {
@@ -81,7 +81,7 @@ namespace HtmlToOpenXml.Tests.Primitives
         public void CombinedMarginStyle_ShouldSucceed(string html, int top, int right, int bottom, int left)
         {
             var styleAttributes = HtmlAttributeCollection.ParseStyle(html);
-            var margin = styleAttributes.GetMargin("margin");
+            var margin = styleAttributes.GetMargin();
 
             using (Assert.EnterMultipleScope())
             {
