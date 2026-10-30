@@ -186,10 +186,9 @@ class BlockElementExpression: PhrasingElementExpression
             };
         }
 
-        JustificationValues? align = Converter.ToParagraphAlign(styleAttributes["text-align"]);
-        if (!align.HasValue) align = Converter.ToParagraphAlign(node.GetAttribute("align").AsSpan());
-        if (!align.HasValue) align = Converter.ToParagraphAlign(styleAttributes["justify-content"]);
-        if (align.HasValue)
+        if (Converter.TryParseHAlign(styleAttributes["text-align"], out var align)
+            || Converter.TryParseHAlign(node.GetAttribute("align").AsSpan(), out align)
+            || Converter.TryParseHAlign(styleAttributes["justify-content"], out align))
         {
             paraProperties.Justification = new() { Val = align };
             tableProperties ??= new();
@@ -214,7 +213,7 @@ class BlockElementExpression: PhrasingElementExpression
             }
         }
 
-        var margin = styleAttributes.GetMargin("margin");
+        var margin = styleAttributes.GetMargin();
         Indentation? indentation = null;
         if (!margin.IsEmpty)
         {
@@ -244,7 +243,7 @@ class BlockElementExpression: PhrasingElementExpression
         }
 
         // support left and right padding
-        var padding = styleAttributes.GetMargin("padding");
+        var padding = styleAttributes.GetPadding();
         if (!padding.IsEmpty && (padding.Left.IsFixed || padding.Right.IsFixed))
         {
             indentation ??= new Indentation();
@@ -256,7 +255,7 @@ class BlockElementExpression: PhrasingElementExpression
 
         var lineHeight = styleAttributes.GetUnit("line-height");
         if (!lineHeight.IsValid 
-            && styleAttributes.HasKeyEqualsTo("line-height", "normal"))
+            && styleAttributes.HasStyleEqualsTo("line-height", "normal"))
         {
             // if `normal` is specified, reset any values
             lineHeight = new Unit(UnitMetric.Unitless, 1);

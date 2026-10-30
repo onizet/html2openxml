@@ -19,8 +19,6 @@ namespace HtmlToOpenXml.Tests.Primitives
             using (Assert.EnterMultipleScope())
             {
                 Assert.That(styles["text-decoration"].ToString(), Is.EqualTo("underline"));
-                Assert.That(styles.HasKeyEqualsTo("text-decoration", "underline"), Is.True);
-                Assert.That(styles.HasKeyEqualsTo("color", "red"), Is.True);
                 Assert.That(styles["color"].ToString(), Is.EqualTo("red"));
             }
         }
@@ -29,7 +27,21 @@ namespace HtmlToOpenXml.Tests.Primitives
         public void DuplicateStyle_ReturnsLatter()
         {
             var styleAttributes = HtmlAttributeCollection.ParseStyle("color:red;color:BLUE");
-            Assert.That(styleAttributes.HasKeyEqualsTo("color", "blue"), Is.True);
+            Assert.That(styleAttributes["color"].ToString(), Is.EqualTo("BLUE"));
+        }
+
+        [Test(Description = "Parser should consider the last valid occurence of a style")]
+        public void DuplicateInvalidStyle_ReturnsLastValid()
+        {
+            var styleAttributes = HtmlAttributeCollection.ParseStyle("color:red;color:UNKNOWN");
+            var color = styleAttributes.GetColor("color");
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(color.IsEmpty, Is.False);
+                Assert.That(color.R, Is.EqualTo(255));
+                Assert.That(color.G, Is.Zero);
+                Assert.That(color.B, Is.Zero);
+            }
         }
 
         [TestCase("color;color;")]
@@ -47,15 +59,15 @@ namespace HtmlToOpenXml.Tests.Primitives
         {
             var styles = HtmlAttributeCollection.ParseStyle("color:red&green;text-decoration:underline");
             Assert.That(styles.IsEmpty, Is.False);
-            Assert.That(styles.HasKeyEqualsTo("text-decoration", "underline"), Is.True);
+            Assert.That(styles.GetTextDecorations(), Is.EqualTo(TextDecoration.Underline));
         }
 
         [Test]
         public void WithMultipleTextDecoration_ReturnsAllValues()
         {
             var styles = HtmlAttributeCollection.ParseStyle("text-decoration:underline dotted wavy");
-            var decorations = styles.GetTextDecorations("text-decoration");
-            Assert.That(decorations, Is.EquivalentTo([TextDecoration.Underline, TextDecoration.Dotted, TextDecoration.Wave]));
+            var decorations = styles.GetTextDecorations();
+            Assert.That(decorations, Is.EqualTo(TextDecoration.Underline| TextDecoration.Dotted| TextDecoration.Wave));
         }
 
         [Test]
@@ -78,7 +90,7 @@ namespace HtmlToOpenXml.Tests.Primitives
         public void EncodedStyle_ShouldSucceed()
         {
             var styleAttributes = HtmlAttributeCollection.ParseStyle("text-decoration&#58;underline&#59;color:red");
-            Assert.That(styleAttributes["text-decoration"].ToString(), Is.EqualTo("underline"));
+            Assert.That(styleAttributes.GetTextDecorations(), Is.EqualTo(TextDecoration.Underline));
             Assert.That(styleAttributes["color"].ToString(), Is.EqualTo("red"));
         }
 
@@ -86,8 +98,12 @@ namespace HtmlToOpenXml.Tests.Primitives
         public void EmptyStyle_ShouldBeIgnored()
         {
             var styleAttributes = HtmlAttributeCollection.ParseStyle("text-decoration;color:red");
-            Assert.That(styleAttributes.TryGetValue("text-decoration", out var _), Is.False);
-            Assert.That(styleAttributes["color"].ToString(), Is.EqualTo("red"));
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(styleAttributes.TryGetValue("text-decoration", out var _), Is.False);
+                Assert.That(styleAttributes.GetTextDecorations(), Is.EqualTo(TextDecoration.None));
+                Assert.That(styleAttributes["color"].ToString(), Is.EqualTo("red"));
+            }
         }
     }
 }

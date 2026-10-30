@@ -22,6 +22,7 @@ namespace HtmlToOpenXml.Tests
         public void AfterBorderlessContent_ReturnsWithNoSpacing ()
         {
             var elements = converter.Parse("<p style='border-top:1px solid black'>Before</p><hr>");
+            Assert.That(elements, Has.Count.EqualTo(2));
             AssertIsHr(elements[1], false);
         }
 

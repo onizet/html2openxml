@@ -80,11 +80,8 @@ readonly record struct DataUri(string MimeType, string? Charset = null, byte[]? 
         if (commaIndex < 5 || commaIndex > 128)
             return false;
 
-        Span<char> loweredValue = stackalloc char[commaIndex];
-        uriSpan.Slice(0, commaIndex).ToLowerInvariant(loweredValue);
-
         // must starts with `data:`
-        if (!loweredValue.StartsWith("data:"))
+        if (!IsDataUri(uriSpan))
             return false;
 
         // if mime is omitted, set default value as it stands in the norm
@@ -94,16 +91,19 @@ readonly record struct DataUri(string MimeType, string? Charset = null, byte[]? 
         bool isBase64 = false;
 
         Span<Range> tokens = stackalloc Range[8];
-        var tokenCount = loweredValue.Split(tokens, ';', StringSplitOptions.RemoveEmptyEntries);
+        var tokenCount = uriSpan.Slice(0, commaIndex).Split(tokens, ';', StringSplitOptions.RemoveEmptyEntries);
         for (var i = 0; i < tokenCount; i++)
         {
-            var token = loweredValue[tokens[i]];
-            if (token is "base64") isBase64 = true;
-            else if (token.StartsWith("data:") && token.Length > 6)
+            var token = uriSpan[tokens[i]];
+            if (token.Equals("base64", StringComparison.OrdinalIgnoreCase))
+            { 
+                isBase64 = true;
+            }
+            else if (token.StartsWith("data:", StringComparison.OrdinalIgnoreCase) && token.Length > 6)
             {
                 mime = token.Slice(5).Trim().ToString();
             }
-            else if (token.StartsWith("charset="))
+            else if (token.StartsWith("charset=", StringComparison.OrdinalIgnoreCase))
             {
                 try
                 {
@@ -121,7 +121,7 @@ readonly record struct DataUri(string MimeType, string? Charset = null, byte[]? 
         }
 
         // ignoreCase is not needed as this span was lowered
-        if (breakIfNotImage && !mime.StartsWith("image/", StringComparison.Ordinal))
+        if (breakIfNotImage && !mime.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
             return false;
 
         // use the uriSpan to preserve the casing for the data segment
@@ -233,7 +233,7 @@ readonly record struct DataUri(string MimeType, string? Charset = null, byte[]? 
     /// <summary>
     /// Determines whether the uri looks like a Data Uri.
     /// </summary>
-    public static bool IsDataUri(string uri)
+    public static bool IsDataUri(ReadOnlySpan<char> uri)
     {
         return uri.StartsWith("data:", StringComparison.OrdinalIgnoreCase);
     }

@@ -47,6 +47,10 @@ static partial class SpanExtensions
 #endif
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool Is(this ReadOnlySpan<char> span, string value)
+        => span.Equals(value, StringComparison.OrdinalIgnoreCase);
+
     /// <summary>
     /// Convert a potential percentage value to its numeric representation.
     /// Saturation and Lightness can contains both a percentage value or a value comprised between 0.0 and 1.0. 

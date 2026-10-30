@@ -2,7 +2,7 @@
     <PropertyGroup>
         <Copyright>Copyright 2009-$([System.DateTime]::Today.Year) Olivier Nizet</Copyright>
         <Nullable>enable</Nullable>
-        <LangVersion>preview</LangVersion>
+        <LangVersion>latest</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Version>4.0.0</Version>
     </PropertyGroup>

@@ -316,7 +316,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
     protected override void ComposeStyles(ParsingContext context)
     {
         base.ComposeStyles(context); 
-        var margin = styleAttributes.GetMargin("margin");
+        var margin = styleAttributes.GetMargin();
         if (!margin.IsEmpty && margin.Left.IsFixed && margin.Left.Value > 0)
             _listIndentationOffset = margin.Left.ValueInDxa;
     }

@@ -26,7 +26,7 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
     private readonly OpenXmlLeafElement? defaultStyleProperty = styleProperty;
 
     protected readonly RunProperties runProperties = new();
-    protected HtmlAttributeCollection styleAttributes;
+    protected readonly HtmlAttributeCollection styleAttributes = node.GetStyles();
     protected IHtmlElement node = node;
 
 
@@ -82,7 +82,6 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
     /// </summary>
     protected virtual void ComposeStyles (ParsingContext context)
     {
-        styleAttributes = node.GetStyles();
         if (defaultStyleProperty != null)
             runProperties.AddChild(defaultStyleProperty.CloneNode(true));
 
@@ -103,13 +102,13 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
         }
 
         // OpenXml limits the border to 4-side of the same color and style.
-        SideBorder border = styleAttributes.GetSideBorder("border");
-        if (border.IsValid)
+        var borders = styleAttributes.GetBorders();
+        if (borders.Top.IsValid)
         {
             runProperties.Border = new Border() {
-                Val = border.Style,
-                Color = border.Color.ToHexString(),
-                Size = (uint) border.Width.ValueInPx * 4,
+                Val = borders.Top.Style,
+                Color = borders.Top.Color.ToHexString(),
+                Size = (uint) borders.Top.Width.ValueInPx * 4,
                 Space = 1U
             };
         }
@@ -128,24 +127,20 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
             runProperties.Shading = new Shading { Val = ShadingPatternValues.Clear, Fill = bgcolor.ToHexString() };
         }
 
-        foreach (var decoration in styleAttributes.GetTextDecorations("text-decoration"))
-        {
-            switch (decoration)
-            {
-                case TextDecoration.Underline:
-                    runProperties.Underline = new Underline { Val = UnderlineValues.Single }; break;
-                case TextDecoration.Dotted:
-                    runProperties.Underline = new Underline { Val = UnderlineValues.Dotted }; break;
-                case TextDecoration.Dashed:
-                    runProperties.Underline = new Underline { Val = UnderlineValues.Dash }; break;
-                case TextDecoration.Wave:
-                    runProperties.Underline = new Underline { Val = UnderlineValues.Wave }; break;
-                case TextDecoration.Double:
-                    runProperties.DoubleStrike = new DoubleStrike(); break;
-                case TextDecoration.LineThrough:
-                    runProperties.Strike = new Strike(); break;
-            }
-        }
+        var decorations = styleAttributes.GetTextDecorations();
+
+        if (decorations.HasFlag(TextDecoration.Underline))
+            runProperties.Underline = new Underline { Val = UnderlineValues.Single };
+        if (decorations.HasFlag(TextDecoration.Dotted))
+            runProperties.Underline = new Underline { Val = UnderlineValues.Dotted };
+        if (decorations.HasFlag(TextDecoration.Dashed))
+            runProperties.Underline = new Underline { Val = UnderlineValues.Dash };
+        if (decorations.HasFlag(TextDecoration.Wave))
+            runProperties.Underline = new Underline { Val = UnderlineValues.Wave };
+        if (decorations.HasFlag(TextDecoration.Double))
+            runProperties.DoubleStrike = new DoubleStrike();
+        if (decorations.HasFlag(TextDecoration.LineThrough))
+            runProperties.Strike = new Strike();
 
         // these style cannot be defined at the same time
         if (runProperties.DoubleStrike != null)
@@ -162,7 +157,7 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
             }
         }
 
-        HtmlFont font = styleAttributes.GetFont("font");
+        HtmlFont font = styleAttributes.GetFont();
 
         if (font.Style == FontStyle.Italic)
             runProperties.Italic = new Italic();

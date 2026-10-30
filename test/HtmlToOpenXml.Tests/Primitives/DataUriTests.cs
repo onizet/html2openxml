@@ -22,7 +22,7 @@ namespace HtmlToOpenXml.Tests.Primitives
         }
 
         [TestCase("data:text/html,%3Ch1%3EHello%2C%20World%21%3C%2Fh1%3E", "text/html", "ascii", "<h1>Hello, World!</h1>")]
-        [TestCase("data:text/plain;charset=UTF-8,the%20data:1234,5678", "text/plain", "utf-8", "the data:1234,5678")]
+        [TestCase("data:text/plain;charset=UTF-8,the%20data:1234,5678", "text/plain", "UTF-8", "the data:1234,5678")]
         [TestCase("data:,foo", "text/plain", "ascii", "foo")]
         [TestCase("data:,", "text/plain", "ascii", null!)]
         public void ParseCharset_ShouldSucceed(string uri, string expectedMimeType, string? expectedEncoding, string expectedContent)

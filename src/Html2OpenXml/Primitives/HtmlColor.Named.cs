@@ -4,26 +4,38 @@ using System.Collections.Frozen;
 
 namespace HtmlToOpenXml;
 
+#if NET5_0_OR_GREATER
+using NamedColorDictionary = FrozenDictionary<string, HtmlColor>;
+#else
+using NamedColorDictionary = Dictionary<string, HtmlColor>;
+#endif
+
 /// <summary>
 /// Helper class to translate a named color to its ARGB representation.
 /// </summary>
 partial struct HtmlColor
 {
-    private static readonly IReadOnlyDictionary<string, HtmlColor> namedColors = InitKnownColors();
+    private static readonly NamedColorDictionary namedColors = InitKnownColors();
+#if NET9_0_OR_GREATER
+    private static readonly NamedColorDictionary.AlternateLookup<ReadOnlySpan<char>> namedColorsLookup =
+        namedColors.GetAlternateLookup<ReadOnlySpan<char>>();
+#endif
+
 
     private static HtmlColor GetNamedColor (ReadOnlySpan<char> name)
     {
-        // the longest built-in Color's name is much lower than this check, so we should not allocate here in a typical usage
-        Span<char> loweredValue = name.Length <= 128 ? stackalloc char[name.Length] : new char[name.Length];
-        name.ToLowerInvariant(loweredValue);
+#if NET9_0_OR_GREATER
+        namedColorsLookup.TryGetValue(name, out var color);
+#else
+        namedColors.TryGetValue(name.ToString(), out var color);
+#endif
 
-        namedColors.TryGetValue(loweredValue.ToString(), out var color);
         return color;
     }
 
-    private static IReadOnlyDictionary<string, HtmlColor> InitKnownColors()
+    private static NamedColorDictionary InitKnownColors()
     {
-        var colors = new Dictionary<string, HtmlColor>()
+        var colors = new Dictionary<string, HtmlColor>(StringComparer.OrdinalIgnoreCase)
         {
             { "black", Black },
             { "white", FromArgb(255,255,255) },
