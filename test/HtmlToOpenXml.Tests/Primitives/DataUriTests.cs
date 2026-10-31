@@ -9,17 +9,50 @@ namespace HtmlToOpenXml.Tests.Primitives
     [TestFixture]
     public class DataUriTests
     {
-        [TestCase("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==", Description = "red dot")]
-        [TestCase("data:text/html,%3Ch1%3EHello%2C%20World%21%3C%2Fh1%3E")]
-        [TestCase("data:text/plain;charset=UTF-8,the%20data:1234,5678")]
-        public void InlineData_ShouldSucceed(string uri)
+        [TestCase("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==")]
+        [TestCase("data: image/png;base64, iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==")]
+        public void ParseBase64_ShouldSucceed(string uri)
         {
-            DataUri.TryCreate(uri, out DataUri? result);
-            Assert.That(result, Is.Not.Null);
+            var success = DataUri.TryCreate(uri, out var result);
+            Assert.That(success, Is.True);
+            Assert.That(result, Is.Not.EqualTo(DataUri.Invalid));
+            Assert.That(result.MimeType, Is.EqualTo("image/png"));
+            Assert.That(result.Charset, Is.Null);
+            Assert.That(result.Data, Is.Not.Null);
+        }
+
+        [TestCase("data:text/html,%3Ch1%3EHello%2C%20World%21%3C%2Fh1%3E", "text/html", "ascii", "<h1>Hello, World!</h1>")]
+        [TestCase("data:text/plain;charset=UTF-8,the%20data:1234,5678", "text/plain", "UTF-8", "the data:1234,5678")]
+        [TestCase("data:,foo", "text/plain", "ascii", "foo")]
+        [TestCase("data:,", "text/plain", "ascii", null!)]
+        public void ParseCharset_ShouldSucceed(string uri, string expectedMimeType, string? expectedEncoding, string expectedContent)
+        {
+            var success = DataUri.TryCreate(uri, out var result);
+            Assert.That(success, Is.True);
+            Assert.That(result.MimeType, Is.EqualTo(expectedMimeType));
+            Assert.That(result.Charset, Is.EqualTo(expectedEncoding));
+            Assert.That(result.Content, Is.EqualTo(expectedContent));
         }
 
         [Test]
-        public void MultilineData_ShouldSucceed()
+        public void ContentWithPlus_ShouldReturns_UnescapedContent()
+        {
+            var success = DataUri.TryCreate("data:,C++", out var result);
+            Assert.That(success, Is.True);
+            Assert.That(result, Is.Not.EqualTo(DataUri.Invalid));
+            Assert.That(result.MimeType, Is.EqualTo("text/plain"));
+            Assert.That(result.Content, Is.EqualTo("C++"));
+        }
+
+        [TestCase("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==", ExpectedResult = true)]
+        [TestCase("data:text/html,%3Ch1%3EHello%2C%20World%21%3C%2Fh1%3E", ExpectedResult = false)]
+        public bool ParseImageOnly_ShouldSucceed(string uri)
+        {
+            return DataUri.TryCreateImage(uri, out var _);
+        }
+
+        [Test]
+        public void Multiline_ShouldSucceed()
         {
             string uri = @"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAoHBwgHBgoICAgLCgoLDhgQDg0NDh0VFhEYIx8l
 JCIfIiEmKzcvJik0KSEiMEExNDk7Pj4+JS5ESUM8SDc9Pjv/wAALCABVAEABAREA/8QAHwAA
@@ -63,16 +96,19 @@ OfDEXhz/AIRbxtAkV1pYNrJHNC0qSbPlDKQDg8e3tVD4Q6BKPGmp67Y2lxbaJ5ckVo04IMgZ
 1KjnqAByfXFezMiv95Q2PUZoCKOigY9BSkA9QDjmgqGBDAEHsaia0tnQxtbxMjdVKAg0W9pb
 Wilba3ihB6iNAufyoltLaZw8tvFIw6FkBNSgADA4FLRRRRRRRX//2Q==
 ";
-            DataUri.TryCreate(uri, out DataUri? result);
-            Assert.That(result, Is.Not.Null);
+            var success = DataUri.TryCreate(uri, out var result);
+            Assert.That(success, Is.True);
+            Assert.That(result.Data, Is.Not.Null);
+            Assert.That(result.MimeType, Is.EqualTo("image/jpeg"));
         }
 
         [TestCase("data:text/plain;charset=utf-123,the%20data:1234,5678")]
         [TestCase("data:image/png;base64,abc")]
-        public void InvalidData_ShouldFail(string uri)
+        [TestCase("data,")]
+        public void ParseMalformed_ShouldFail(string uri)
         {
-            DataUri.TryCreate(uri, out DataUri ?result);
-            Assert.That(result, Is.Null);
+            var success = DataUri.TryCreate(uri, out var result);
+            Assert.That(success, Is.False);
         }
     }
 }

@@ -10,64 +10,104 @@
  * PARTICULAR PURPOSE.
  */
 
+using DocumentFormat.OpenXml.Wordprocessing;
+
 namespace HtmlToOpenXml;
 
 /// <summary>
 /// Represents a Html Border with the 4 sides.
 /// </summary>
-struct HtmlBorder
+/// <remarks>Apply to all four sides.</remarks>
+struct HtmlBorder(SideBorder all)
 {
-    private SideBorder[]? sides;
+    public static readonly HtmlBorder Empty = new();
+
+    private SideBorder top = all, right = all, bottom = all, left = all;
 
 
-    public HtmlBorder(SideBorder all)
+    public void ParseWidths(ReadOnlySpan<char> span)
     {
-        if (!all.IsValid) sides = null;
-        else this.sides = [all, all, all, all];
+        var widths = BoxThickness.Parse(span);
+        if (!widths.IsValid) return;
+
+        Top = Top.Apply(widths.Top);
+        Left = Left.Apply(widths.Left);
+        Right = Right.Apply(widths.Right);
+        Bottom = Bottom.Apply(widths.Bottom);
     }
 
-    private void EnsureSides()
+    public void ParseColors(ReadOnlySpan<char> span)
     {
-        if(this.sides == null) sides = new SideBorder[4];
+        if (span.IsEmpty || span.IsWhiteSpace())
+            return;
+
+        if (!CssShorthand.TryParse(span,
+            s => HtmlColor.Parse(s), c => !c.IsEmpty, out var sides))
+        {
+            return;
+        }
+
+        top = top.Apply(sides.Top);
+        right = right.Apply(sides.Right);
+        bottom = bottom.Apply(sides.Bottom);
+        left = left.Apply(sides.Left);
+    }
+
+    public void ParseStyles(ReadOnlySpan<char> span)
+    {
+        if (span.IsEmpty || span.IsWhiteSpace())
+            return;
+
+        if (!CssShorthand.TryParse(span,
+            s => Converter.TryParseBorderStyle(s, out var b)? b.Value : BorderValues.Nil,
+            s => s != BorderValues.Nil, out var sides))
+        {
+            return;
+        }
+
+        top = top.Apply(sides.Top);
+        right = right.Apply(sides.Right);
+        bottom = bottom.Apply(sides.Bottom);
+        left = left.Apply(sides.Left);
     }
 
     //____________________________________________________________________
     //
 
     /// <summary>
-    /// Gets or sets the border of the bottom side.
+    /// Gets or sets the unit of the bottom side.
     /// </summary>
     public SideBorder Bottom
     {
-        readonly get { return sides == null ? SideBorder.Empty : sides[2]; }
-        set { EnsureSides(); sides![2] = value; }
+        readonly get => bottom;
+        set => bottom = value;
     }
 
     /// <summary>
-    /// Gets or sets the border of the left side.
+    /// Gets or sets the unit of the left side.
     /// </summary>
     public SideBorder Left
     {
-        readonly get { return sides == null ? SideBorder.Empty : sides[3]; }
-        set { EnsureSides(); sides![3] = value; }
+        readonly get => left;
+        set => left = value;
     }
 
     /// <summary>
-    /// Gets or sets the border of the top side.
+    /// Gets or sets the unit of the top side.
     /// </summary>
     public SideBorder Top
     {
-        readonly get { return sides == null ? SideBorder.Empty : sides[0]; }
-        set { EnsureSides(); sides![0] = value; }
+        readonly get => top;
+        set => top = value;
     }
 
     /// <summary>
-    /// Gets or sets the border of the right side.
+    /// Gets or sets the unit of the right side.
     /// </summary>
     public SideBorder Right
     {
-        readonly get { return sides == null ? SideBorder.Empty : sides[1]; }
-        set { EnsureSides(); sides![1] = value; }
+        readonly get => right;
+        set => right = value;
     }
 
     /// <summary>
@@ -75,6 +115,6 @@ struct HtmlBorder
     /// </summary>
     public readonly bool IsEmpty
     {
-        get => sides == null || !(Left.IsValid || Right.IsValid || Bottom.IsValid || Top.IsValid);
+        get => !(Left.IsValid || Right.IsValid || Bottom.IsValid || Top.IsValid);
     }
 }

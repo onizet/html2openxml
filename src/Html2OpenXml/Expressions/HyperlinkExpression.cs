@@ -112,7 +112,7 @@ sealed class HyperlinkExpression(IHtmlAnchorElement node) : PhrasingElementExpre
         // ensure the links does not start with javascript:
         else if (AngleSharpExtensions.TryParseUrl(att, UriKind.Absolute, out var uri))
         {
-            var extLink = context.HostingPart.AddHyperlinkRelationship(uri!, true);
+            var extLink = context.HostingPart.AddHyperlinkRelationship(uri, true);
 
             h = new Hyperlink(
                 ) { History = true, Id = extLink.Id };

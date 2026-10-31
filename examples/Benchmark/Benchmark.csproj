@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BenchmarkDotnet" Version="0.15.6" />
+    <PackageReference Include="BenchmarkDotnet" Version="0.15.8" />
     <ProjectReference Include="..\..\src\Html2OpenXml\HtmlToOpenXml.csproj" />
   </ItemGroup>
 

@@ -15,12 +15,14 @@ namespace HtmlToOpenXml;
 /// <summary>
 /// Specifies some decoration to apply to a text.
 /// </summary>
+[Flags]
 enum TextDecoration
 {
-    Underline,
-    LineThrough,
-    Double,
-    Dotted,
-    Dashed,
-    Wave
+    None = 0,
+    Underline = 1,
+    LineThrough = 2,
+    Double = 4,
+    Dotted = 8,
+    Dashed = 16,
+    Wave = 32
 }

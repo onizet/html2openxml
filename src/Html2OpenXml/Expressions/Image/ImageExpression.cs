@@ -37,8 +37,12 @@ class ImageExpression(IHtmlImageElement node) : ImageExpressionBase(node)
 
         // Bug reported by Erik2014. Inline 64 bit images can be too big and Uri.TryCreate will fail silently with a SizeLimit error.
         // To circumvent this buffer size, we will work either on the Uri, either on the original src.
-        if (src == null || 
-            (!DataUri.IsWellFormed(src) && !AngleSharpExtensions.TryParseUrl(src, UriKind.RelativeOrAbsolute, out var _)))
+        if (src == null)
+            return null;
+
+        var isDataUri = DataUri.IsDataUri(src);
+        if (!isDataUri &&
+            !AngleSharpExtensions.TryParseUrl(src, UriKind.RelativeOrAbsolute, out var _))
         {
             return null;
         }
@@ -118,10 +122,9 @@ class ImageExpression(IHtmlImageElement node) : ImageExpressionBase(node)
                         new pic.Picture(
                             new pic.NonVisualPictureProperties
                             {
-                                NonVisualDrawingProperties = new pic.NonVisualDrawingProperties()
-                                {
+                                NonVisualDrawingProperties = new pic.NonVisualDrawingProperties() {
                                     Id = imageObjId,
-                                    Name = DataUri.IsWellFormed(src) ? string.Empty : src,
+                                    Name = isDataUri ? string.Empty : src,
                                     Description = alt
                                 },
                                 NonVisualPictureDrawingProperties = new pic.NonVisualPictureDrawingProperties(

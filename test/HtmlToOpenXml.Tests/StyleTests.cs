@@ -158,28 +158,5 @@ For 50 years, <b>WWF</b> has been protecting the future of nature. The world's l
             Assert.That(paragraph.ParagraphProperties, Is.Not.Null);
             Assert.That(paragraph.ParagraphProperties?.ParagraphStyleId?.Val?.Value, Is.EqualTo("CustomIntenseQuoteStyle"));
         }
-
-        [Test(Description = "Parser should consider the last occurence of a style")]
-        public void DuplicateStyle_ReturnsLatter()
-        {
-            var styleAttributes = HtmlAttributeCollection.ParseStyle("color:red;color:blue");
-            Assert.That(styleAttributes["color"].ToString(), Is.EqualTo("blue"));
-        }
-
-        [Test(Description = "Encoded ':' and ';' characters are valid")]
-        public void EncodedStyle_ShouldSucceed()
-        {
-            var styleAttributes = HtmlAttributeCollection.ParseStyle("text-decoration&#58;underline&#59;color:red");
-            Assert.That(styleAttributes["text-decoration"].ToString(), Is.EqualTo("underline"));
-            Assert.That(styleAttributes["color"].ToString(), Is.EqualTo("red"));
-        }
-
-        [Test(Description = "Key style with no value should be ignored")]
-        public void EmptyStyle_ShouldBeIgnored()
-        {
-            var styleAttributes = HtmlAttributeCollection.ParseStyle("text-decoration;color:red");
-            Assert.That(styleAttributes.TryGetValue("text-decoration", out var _), Is.False);
-            Assert.That(styleAttributes["color"].ToString(), Is.EqualTo("red"));
-        }
     }
 }

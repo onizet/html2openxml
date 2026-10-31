@@ -56,12 +56,12 @@ abstract class ImageExpressionBase(AngleSharp.Dom.IElement node)  : HtmlDomExpre
         var border = new Border() { Val = BorderValues.None };
 
         // OpenXml limits the border to 4-side of the same color and style.
-        SideBorder styleBorder = styleAttributes.GetSideBorder("border");
-        if (styleBorder.IsValid)
+        var styleBorders = styleAttributes.GetBorders();
+        if (styleBorders.Top.IsValid)
         {
-            border.Val = styleBorder.Style;
-            border.Color = styleBorder.Color.ToHexString();
-            border.Size = (uint) styleBorder.Width.ValueInPx * 4;
+            border.Val = styleBorders.Top.Style;
+            border.Color = styleBorders.Top.Color.ToHexString();
+            border.Size = (uint) styleBorders.Top.Width.ValueInPx * 4;
         }
         else
         {
@@ -80,7 +80,7 @@ abstract class ImageExpressionBase(AngleSharp.Dom.IElement node)  : HtmlDomExpre
 
         // if the layout is not inline and both left and right are auto, image appears centered
         // https://developer.mozilla.org/en-US/docs/Web/CSS/margin-left
-        var margin = styleAttributes.GetMargin("margin");
+        var margin = styleAttributes.GetMargin();
         if (margin.Left.Metric == UnitMetric.Auto 
             && margin.Right.Metric == UnitMetric.Auto
             && !AngleSharpExtensions.IsInlineLayout(styleAttributes["display"], "inline-block"))

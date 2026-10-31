@@ -58,8 +58,7 @@ sealed class TableCaptionExpression(Table table, IHtmlElement node) : PhrasingEl
         if (att.IsEmpty) att = node.GetAttribute("align").AsSpan();
         if (!att.IsEmpty)
         {
-            JustificationValues? align = Converter.ToParagraphAlign(att);
-            if (align.HasValue)
+            if (Converter.TryParseHAlign(att, out var align))
                 p.ParagraphProperties.Justification = new() { Val = align };
         }
         else

@@ -85,7 +85,7 @@ sealed class TableCellExpression(IHtmlTableCellElement node) : TableElementExpre
             };
         }
 
-        var padding = styleAttributes.GetMargin("padding");
+        var padding = styleAttributes.GetPadding();
 
         var cellMargin = new TableCellMargin();
         if (padding.Top.IsFixed)

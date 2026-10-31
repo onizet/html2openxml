@@ -164,7 +164,6 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
     {
         tableProperties.TableStyle = context.DocumentStyle.GetTableStyle(context.DocumentStyle.DefaultStyles.TableStyle);
 
-        styleAttributes = tableNode.GetStyles();
         var width = styleAttributes.GetUnit("width", UnitMetric.Pixel);
         if (!width.IsValid) width = Unit.Parse(tableNode.GetAttribute("width").AsSpan(), UnitMetric.Pixel);
         if (!width.IsValid) width = new Unit(UnitMetric.Percent, 100);
@@ -281,11 +280,10 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
         if (tableBorders.ChildElements.Count > 0)
             tableProperties.TableBorders = tableBorders;
 
-        var align = Converter.ToParagraphAlign(tableNode.GetAttribute("align").AsSpan())
-            ?? Converter.ToParagraphAlign(styleAttributes["justify-self"]);
-        if (!align.HasValue)
+        if (!Converter.TryParseHAlign(tableNode.GetAttribute("align").AsSpan(), out var align)
+            && !Converter.TryParseHAlign(styleAttributes["justify-self"], out align))
         {
-            var margin = styleAttributes.GetMargin("margin");
+            var margin = styleAttributes.GetMargin();
             if (margin.Left.Metric == UnitMetric.Auto)
             {
                 align = margin.Right.Metric == UnitMetric.Auto?
