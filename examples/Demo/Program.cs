@@ -2,7 +2,6 @@
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Validation;
-using DocumentFormat.OpenXml.Wordprocessing;
 using HtmlToOpenXml;
 
 namespace Demo
@@ -26,7 +25,7 @@ namespace Demo
 
                 generatedDocument.Position = 0L;
                 //using (WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true))
-                using (WordprocessingDocument package = WordDocumentFactory.Create(generatedDocument, PageOrientation.Landscape)) //WordprocessingDocument.Create(generatedDocument, WordprocessingDocumentType.Document))
+                using (WordprocessingDocument package = WordDocumentFactory.Create(generatedDocument))
                 {
                     HtmlConverter converter = new(package, new HtmlToOpenXml.IO.DefaultWebRequest(){
                         BaseImageUrl = new Uri(Path.Combine(Environment.CurrentDirectory, "images"))

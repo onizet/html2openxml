@@ -107,7 +107,7 @@ public partial class HtmlConverter
         if (package is null)
             throw new ArgumentNullException(nameof(package));
 
-        this.mainPart = WordDocumentFactory.GetOrCreateMainDocumentPart(package, PageOrientation.Portrait);
+        this.mainPart = WordDocumentFactory.GetOrCreateMainDocumentPart(package);
         this.htmlStyles = new WordDocumentStyle(this.mainPart);
         this.webRequester = webRequester ?? new DefaultWebRequest();
     }

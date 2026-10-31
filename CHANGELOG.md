@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.2.0
+
+Ease of Use Improvements:
+
+- New `WordDocumentFactory.Create()` helper.
+- New `HtmlConverter(WordProcessingDocument)` constructor overload.
+- Automatic creation of missing document structure (`MainDocumentPart`, `Body`).
+- New `PageOrientation` support for document creation.
+
 ## 4.1.0
 
 - Support CSS shorthand for `border` style, co-authored with @AyUsH18102001.

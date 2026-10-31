@@ -59,15 +59,16 @@ public static class WordDocumentFactory
     {
         var package = WordprocessingDocument.Create(stream, WordprocessingDocumentType.Document);
 
-        GetOrCreateMainDocumentPart(package, orientation);
+        var mainPart = GetOrCreateMainDocumentPart(package);
+        var sectionProperties = CreateSectionProperties(orientation);
+        mainPart.Document!.Body!.AddChild(sectionProperties);
         return package;
     }
 
     /// <summary>
     /// Gets the main document part associated with the document, creating it when it does not already exist.
     /// </summary>
-    internal static MainDocumentPart GetOrCreateMainDocumentPart(WordprocessingDocument package,
-        PageOrientation orientation)
+    internal static MainDocumentPart GetOrCreateMainDocumentPart(WordprocessingDocument package)
     {
         var mainPart = package.MainDocumentPart;
         if (mainPart is null)
@@ -76,8 +77,6 @@ public static class WordDocumentFactory
             new Document(new Body()).Save(mainPart);
         }
 
-        var sectionProperties = CreateSectionProperties(orientation);
-        mainPart.Document!.Body!.AddChild(sectionProperties);
         return mainPart;
     }
 
