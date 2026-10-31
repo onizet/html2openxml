@@ -29,19 +29,10 @@ using HtmlToOpenXml;
 using (var generatedDocumentStream = new MemoryStream())
 {
      // Initialize the DOCX package structure. This must happen before conversion.
-     using (WordprocessingDocument package = WordprocessingDocument.Create(generatedDocumentStream, WordprocessingDocumentType.Document))
+     using (WordprocessingDocument document = WordDocumentFactory.Create(generatedDocumentStream))
      {
-          MainDocumentPart mainPart = package.MainDocumentPart;
-
-          // Ensure the body is ready to receive content (optional, but robust).
-          if (mainPart?.Document == null)
-          {
-               mainPart = package.AddMainDocumentPart(); 
-               new Document(new Body()).Save(mainPart);
-          }
-
           // Initialize the Converter, binding it to the target document part.
-          HtmlConverter converter = new HtmlConverter(mainPart);
+          HtmlConverter converter = new HtmlConverter(document);
 
           // Perform the conversion into the document body.
           await converter.ParseBody(htmlInput);
@@ -78,3 +69,36 @@ DemoHtml.html:
 ### Step 3: Visual generated output
 
 ![Quickstart output in MS Word](/images/quickstart.png)
+
+## Page Orientation
+
+Use the `PageOrientation` enumeration when creating a new document.
+
+```csharp
+using var document = WordDocumentFactory.Create(stream, PageOrientation.Landscape);
+HtmlConverter converter = new HtmlConverter(document);
+await converter.ParseBody(htmlInput);
+```
+
+## Using an existing template
+
+HtmlToOpenXml can append content to an existing Word template while preserving its styles, themes,
+numbering definitions, headers, footers, bookmarks and other document settings.
+
+```csharp
+await using var templateStream = File.OpenRead("template.docx");
+
+await using var generatedDocument = new MemoryStream();
+await templateStream.CopyToAsync(generatedDocument);
+generatedDocument.Position = 0L;
+
+using var package = WordprocessingDocument.Open(generatedDocument, true);
+HtmlConverter converter = new(package);
+await converter.ParseBody("""
+     <h1>Project Report</h1>
+     <p>This content uses the styles already defined in the template.</p>
+""");
+```
+
+This approach is recommended when your organisation already maintains a Word template containing
+corporate branding, custom styles, predefined headers, footers or document settings.

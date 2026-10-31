@@ -130,7 +130,7 @@ namespace HtmlToOpenXml.Tests
         [Test(Description = "Provided mainPart is null")]
         public void ProvidedMainPart_WithNull_ShouldFail()
         {
-            Assert.Throws<ArgumentNullException>(() => new HtmlConverter(null!));
+            Assert.Throws<ArgumentNullException>(() => new HtmlConverter((MainDocumentPart) null!));
         }
 
         [Test(Description = "Provided mainPart.Document is empty")]

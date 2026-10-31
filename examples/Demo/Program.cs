@@ -26,16 +26,9 @@ namespace Demo
 
                 generatedDocument.Position = 0L;
                 //using (WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true))
-                using (WordprocessingDocument package = WordprocessingDocument.Create(generatedDocument, WordprocessingDocumentType.Document))
+                using (WordprocessingDocument package = WordDocumentFactory.Create(generatedDocument, PageOrientation.Landscape)) //WordprocessingDocument.Create(generatedDocument, WordprocessingDocumentType.Document))
                 {
-                    MainDocumentPart? mainPart = package.MainDocumentPart;
-                    if (mainPart == null)
-                    {
-                        mainPart = package.AddMainDocumentPart();
-                        new Document(new Body()).Save(mainPart);
-                    }
-
-                    HtmlConverter converter = new(mainPart, new HtmlToOpenXml.IO.DefaultWebRequest(){
+                    HtmlConverter converter = new(package, new HtmlToOpenXml.IO.DefaultWebRequest(){
                         BaseImageUrl = new Uri(Path.Combine(Environment.CurrentDirectory, "images"))
                     });
                     converter.RenderPreAsTable = true;

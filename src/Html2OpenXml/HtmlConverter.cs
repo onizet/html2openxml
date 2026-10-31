@@ -92,6 +92,27 @@ public partial class HtmlConverter
     }
 
     /// <summary>
+    /// Create a converter bound to a Word document.
+    /// 
+    /// <para>
+    /// Reuse the same HtmlConverter instance for the lifetime of a document
+    /// to avoid reloading cached configuration such as styles and bookmarks.
+    /// </para>
+    /// Do not use the same converter instance with multiple documents.
+    /// </summary>
+    /// <param name="package">The top-level class of a Word document where converted content will be inserted.</param>
+    /// <param name="webRequester">Control retrieval of external resources such as images.</param>
+    public HtmlConverter(WordprocessingDocument package, IWebRequest? webRequester = null)
+    {
+        if (package is null)
+            throw new ArgumentNullException(nameof(package));
+
+        this.mainPart = WordDocumentFactory.GetOrCreateMainDocumentPart(package, PageOrientation.Portrait);
+        this.htmlStyles = new WordDocumentStyle(this.mainPart);
+        this.webRequester = webRequester ?? new DefaultWebRequest();
+    }
+
+    /// <summary>
     /// Convert HTML into OpenXml elements and return them to the caller.
     /// 
     /// <para>
@@ -244,7 +265,9 @@ public partial class HtmlConverter
             return;
 
         Body body = mainPart.Document!.Body!;
-        SectionProperties? sectionProperties = body.GetLastChild<SectionProperties>();
+        SectionProperties? sectionProperties = body.GetLastChild<SectionProperties>()
+            ?? WordDocumentFactory.CreateSectionProperties(PageOrientation.Portrait);
+
         foreach (var para in paragraphs)
             body.Append(para);
 
@@ -262,7 +285,7 @@ public partial class HtmlConverter
 
         // Push the sectionProperties as the last element of the Body
         // (required by OpenXml schema to avoid the bad formatting of the document)
-        if (sectionProperties != null)
+        if (sectionProperties != null && sectionProperties.Parent != null)
         {
             sectionProperties.Remove();
             body.AddChild(sectionProperties);

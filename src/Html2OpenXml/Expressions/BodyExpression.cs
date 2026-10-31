@@ -24,8 +24,6 @@ namespace HtmlToOpenXml.Expressions;
 sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
     : BlockElementExpression(node, defaultStyle)
 {
-    private const uint PortraitPageWidth = 11906U;
-    private const uint PortraitPageHeight = 16838U;
     private bool shouldRegisterTopBookmark;
 
 
@@ -37,7 +35,7 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
         var sectionProperties = body.Descendants<SectionProperties>().LastOrDefault();
         if (sectionProperties != null)
         {
-            context.IsLandscape = sectionProperties.GetFirstChild<PageSize>()?.Width?.Value >= PortraitPageHeight;
+            context.IsLandscape = WordDocumentFactory.IsLandscape(sectionProperties.GetFirstChild<PageSize>());
         }
 
         var elements = base.Interpret(context);
@@ -71,25 +69,23 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
         // orientation is applied on the whole document
         if (styleAttributes.TryGetValue("page-orientation", out var attrValue))
         {
-            PageOrientationValues orientation = PageOrientationValues.Portrait;
-            if ("landscape".Equals(attrValue, StringComparison.InvariantCultureIgnoreCase))
-                orientation = PageOrientationValues.Landscape;
+            PageOrientation orientation = attrValue.Is("landscape")?
+                PageOrientation.Landscape : PageOrientation.Portrait;
 
             var sectionProperties = mainPart.Document!.Body!.GetFirstChild<SectionProperties>();
-            if (sectionProperties == null || sectionProperties.GetFirstChild<PageSize>() == null)
+            var pageSize = sectionProperties?.GetFirstChild<PageSize>();
+            if (pageSize == null)
             {
-                context.IsLandscape = orientation == PageOrientationValues.Landscape;
-                mainPart.Document.Body.Append(ChangePageOrientation(orientation));
+                context.IsLandscape = orientation == PageOrientation.Landscape;
+                mainPart.Document.Body.Append(WordDocumentFactory.CreateSectionProperties(orientation));
             }
-            else
+            else if (WordDocumentFactory.IsLandscape(pageSize) != (orientation == PageOrientation.Landscape))
             {
-                var pageSize = sectionProperties.GetFirstChild<PageSize>();
-                if (pageSize == null || !pageSize.Compare(orientation))
-                {
-                    SectionProperties validSectionProp = ChangePageOrientation(orientation);
-                    pageSize?.Remove();
-                    sectionProperties.PrependChild(validSectionProp.GetFirstChild<PageSize>()!.CloneNode(true));
-                }
+                PageSize newPageSize = WordDocumentFactory.CreateSectionProperties(orientation)
+                    .GetFirstChild<PageSize>()!;
+
+                pageSize.Width = newPageSize.Width;
+                pageSize.Height = newPageSize.Height;
             }
         }
 
@@ -103,32 +99,6 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
 
             sectionProperties.AddChild(paraProperties.BiDi.CloneNode(true));
         }
-    }
-
-    /// <summary>
-    /// Generate the required OpenXml element for handling page orientation.
-    /// </summary>
-    private static SectionProperties ChangePageOrientation(PageOrientationValues orientation)
-    {
-        PageSize pageSize = new() { Width = PortraitPageWidth, Height = PortraitPageHeight };
-        if (orientation == PageOrientationValues.Portrait)
-        {
-            pageSize.Orient = orientation;
-        }
-        else
-        {
-            (pageSize.Height, pageSize.Width) = (pageSize.Width, pageSize.Height);
-        }
-
-        return new SectionProperties (
-            pageSize,
-            new PageMargin() {
-                Top = 1417, Right = (UInt32Value) 1417U, Bottom = 1417, Left = (UInt32Value) 1417U,
-                Header = (UInt32Value) 708U, Footer = (UInt32Value) 708U, Gutter = (UInt32Value) 0U
-            },
-            new Columns() { Space = "708" },
-            new DocGrid() { LinePitch = 360 }
-        );
     }
 
     /// <summary>
