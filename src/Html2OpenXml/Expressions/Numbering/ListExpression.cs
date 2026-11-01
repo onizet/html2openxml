@@ -23,6 +23,10 @@ namespace HtmlToOpenXml.Expressions;
 sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 {
     readonly record struct ListContext(string Name, int AbsNumId, int InstanceId, int Level, DirectionMode? Dir);
+    readonly record struct MarkerStyle(string? Color, string? FontSize, bool? Bold, bool? Italic, string? Font)
+    {
+        internal bool HasAny => Color != null || FontSize != null || Bold != null || Italic != null || Font != null;
+    }
     private long _listIndentationOffset;
 
 
@@ -59,7 +63,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         var parentContext = listContext;
         var listStyle = GetListName(node, listContext.Name);
         bool listMarginOnNumberingInstance = false;
-        if (listContext.InstanceId == 0 || listContext.Name != listStyle || _listIndentationOffset > 0)
+        if (listContext.InstanceId == 0 || listContext.Name != listStyle || _listIndentationOffset > 0 || GetListStartValue(out _))
         {
             var abstractNumId = GetOrCreateListTemplate(context, listStyle);
             listContext = ConcretiseInstance(context, abstractNumId, listStyle, listContext.Level, _listIndentationOffset);
@@ -83,6 +87,8 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
             var expression = new BlockElementExpression(liNode);
             var childElements = expression.Interpret(context);
             if (!childElements.Any()) continue;
+
+            MergeListStylesInLiRuns(childElements);
 
             // table must be aligned to the list item
             var tables = childElements.OfType<Table>();
@@ -115,6 +121,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
                     NumberingLevelReference = new() { Val = level - 1 },
                     NumberingId = new() { Val = listContext.InstanceId }
                 };
+                ApplyListMarkerStyle(p);
                 if (listContext.Dir.HasValue) {
                     p.ParagraphProperties.BiDi = new() {
                         Val = OnOffValue.FromBoolean(listContext.Dir == DirectionMode.Rtl)
@@ -181,14 +188,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
             return new ListContext(listStyle, abstractNumId, instanceId.Value, currentLevel + 1, dir);
         }
 
-        int startValue = 1;
-        if (isOrderedTag)
-        {
-            var startAttribute = node.GetAttribute("start");
-            if (startAttribute != null && int.TryParse(startAttribute, out var val) && val > 1)
-                startValue = val;
-        }
-
+        _ = GetListStartValue(out int startValue);
         var numbering = context.MainPart.NumberingDefinitionsPart!.Numbering!;
         var levelOverride = CreateLevelOverride(numbering, abstractNumId, listContext.Level, startValue, listMarginLeft);
         numbering.Append(
@@ -339,5 +339,128 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         if (pPr?.Indentation?.Left?.Value is { } left && long.TryParse(left, NumberStyles.Integer, CultureInfo.InvariantCulture, out var dxa))
             return dxa;
         return 0;
+    }
+
+    private void MergeListStylesInLiRuns(IEnumerable<OpenXmlElement> elements)
+    {
+        if (!runProperties.HasChildren)
+            return;
+        foreach (var run in elements.SelectMany(e => e.Descendants<Run>()))
+        {
+            run.RunProperties ??= new RunProperties();
+            foreach (var prop in runProperties)
+            {
+                if (prop is not (RunFonts or Bold or Italic or Color or FontSize))
+                    continue;
+                if (run.RunProperties.ChildElements.Any(child => child.GetType().IsAssignableFrom(prop.GetType())) == true)
+                    continue;
+                InsertRunProperty(run.RunProperties, prop.CloneNode(true));
+            }
+        }
+    }
+
+    private static int GetRunPropertyOrder(OpenXmlElement element) => element switch
+    {
+        RunFonts => 0,
+        Bold => 1,
+        Italic => 2,
+        Color => 3,
+        FontSize => 4,
+        FontSizeComplexScript => 5,
+        _ => int.MaxValue
+    };
+
+    private static void InsertRunProperty(RunProperties props, OpenXmlElement property)
+    {
+        int order = GetRunPropertyOrder(property);
+        var before = props.ChildElements.FirstOrDefault(child => GetRunPropertyOrder(child) > order);
+        if (before == null)
+            props.Append(property);
+        else
+            props.InsertBefore(property, before);
+    }
+
+    private void ApplyListMarkerStyle(Paragraph paragraph)
+    {
+        var marker = ResolveMarkerStyle(paragraph);
+        if (!marker.HasAny)
+            return;
+
+        var props = paragraph.ParagraphProperties!;
+        var preserved = props.ParagraphMarkRunProperties?.Where(c => c is not (RunFonts or Bold or Italic or Color or FontSize or FontSizeComplexScript))
+            .Select(c => c.CloneNode(true)).ToList();
+
+        var mark = new ParagraphMarkRunProperties();
+        if (marker.Font != null)
+            mark.Append(new RunFonts { Ascii = marker.Font, HighAnsi = marker.Font });
+        if (marker.Bold.HasValue)
+            mark.Append(marker.Bold.Value ? new Bold() : new Bold { Val = false });
+        if (marker.Italic.HasValue)
+            mark.Append(marker.Italic.Value ? new Italic() : new Italic { Val = false });
+        if (marker.Color != null)
+            mark.Append(new Color { Val = marker.Color });
+        if (marker.FontSize != null)
+        {
+            mark.Append(new FontSize { Val = marker.FontSize });
+            mark.Append(new FontSizeComplexScript { Val = marker.FontSize });
+        }
+        if (preserved != null)
+        {
+            foreach (var child in preserved)
+                mark.Append(child);
+        }
+
+        props.ParagraphMarkRunProperties = mark;
+    }
+
+    private MarkerStyle ResolveMarkerStyle(Paragraph paragraph)
+    {
+        var item = ReadItemRunProperties(paragraph);
+        return new MarkerStyle(
+            item?.Color?.Val?.Value ?? runProperties.Color?.Val?.Value,
+            item?.FontSize?.Val?.Value ?? runProperties.FontSize?.Val?.Value,
+            ReadToggle(item?.Bold) ?? ReadToggle(runProperties.Bold),
+            ReadToggle(item?.Italic) ?? ReadToggle(runProperties.Italic),
+            item?.RunFonts?.Ascii?.Value ?? runProperties.RunFonts?.Ascii?.Value);
+    }
+
+    private static RunProperties? ReadItemRunProperties(Paragraph paragraph)
+    {
+        RunProperties? fallback = null;
+        foreach (var run in paragraph.Descendants<Run>())
+        {
+            RunProperties? props = run.RunProperties;
+            if (props == null)
+                continue;
+
+            fallback ??= props;
+
+            if (props.Color != null || props.FontSize != null || props.Bold != null || props.Italic != null || props.RunFonts != null)
+                return props;
+        }
+
+        return fallback;
+    }
+
+    private static bool? ReadToggle(OnOffType? toggle)
+    {
+        if (toggle == null)
+            return null;
+        return toggle.Val?.Value ?? true;
+    }
+
+    private bool GetListStartValue(out int start)
+    {
+        start = 1;
+        if (!node.NodeName.Equals("ol", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        string? startAttribute = node.GetAttribute("start");
+        if (startAttribute != null && int.TryParse(startAttribute, out int val))
+        {
+            start = val;
+            return true;
+        }
+        return false;
     }
 }

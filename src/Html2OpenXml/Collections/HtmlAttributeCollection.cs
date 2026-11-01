@@ -413,7 +413,7 @@ sealed class HtmlAttributeCollection
             }
             else if (stringSuffix.Is("-weight"))
             {
-                if (Converter.TryParseFontWeight(rawValue.AsSpan()[decl.Value], out var w))
+                if (Converter.TryParseFontWeight(rawValue.AsSpan()[decl.Value].Trim(), out var w))
                     weight = w;
             }
             else if (stringSuffix.Is("-family"))

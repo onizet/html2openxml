@@ -891,5 +891,90 @@ namespace HtmlToOpenXml.Tests
                 _ => bulletText
             };
         }
+
+        [Test(Description = "Each li marker is stored on the paragraph mark of one shared numbering instance")]
+        public async Task ListItemMarkerStyle_ShareOneNumberingInstance()
+        {
+            await converter.ParseBody(@"
+                <ol>
+                    <li style='color: red; font-size: 12px; font-family: system-ui; font-weight: bold;'>One</li>
+                    <li style='color: green; font-size: 16px; font-family: Impact;'>Two</li>
+                    <li style='color: blue; font-size: 20px; font-family: Courier New;'>Three</li>
+                </ol>");
+
+            var paragraphs = mainPart.Document!.Body!.Elements<Paragraph>().ToList();
+            Assert.That(paragraphs, Has.Count.EqualTo(3));
+
+            var numIds = paragraphs.Select(p => p.ParagraphProperties!.NumberingProperties!.NumberingId!.Val!.Value).ToList();
+            Assert.That(numIds, Is.All.EqualTo(numIds[0]));
+
+            using (Assert.EnterMultipleScope())
+            {
+                AssertParagraphMarkMatchesRun(paragraphs[0], "One");
+                AssertParagraphMarkMatchesRun(paragraphs[1], "Two");
+                AssertParagraphMarkMatchesRun(paragraphs[2], "Three");
+                Assert.That(paragraphs[0].ParagraphProperties?.ParagraphMarkRunProperties?.GetFirstChild<Bold>(), Is.Not.Null);
+                Assert.That(paragraphs[1].ParagraphProperties?.ParagraphMarkRunProperties?.GetFirstChild<Bold>(), Is.Null);
+            }
+            AssertThatOpenXmlDocumentIsValid();
+        }
+
+        [Test(Description = "List font fills paragraph-mark gaps while every item shares one numbering instance")]
+        public async Task ListItemMarkerStyle_ListFontFillsGaps_OnParagraphMark()
+        {
+            await converter.ParseBody(@"
+                <ol style='color: red; font-size: 16px;'>
+                    <li>One</li>
+                    <li style='color: green;'>Two</li>
+                    <li style='color: green;'>Three</li>
+                </ol>");
+
+            var paragraphs = mainPart.Document!.Body!.Elements<Paragraph>().ToList();
+            var numIds = paragraphs.Select(p => p.ParagraphProperties!.NumberingProperties!.NumberingId!.Val!.Value).ToList();
+            var firstMark = paragraphs[0].ParagraphProperties?.ParagraphMarkRunProperties;
+            var secondMark = paragraphs[1].ParagraphProperties?.ParagraphMarkRunProperties;
+            var thirdMark = paragraphs[2].ParagraphProperties?.ParagraphMarkRunProperties;
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(numIds, Is.All.EqualTo(numIds[0]));
+                Assert.That(firstMark?.GetFirstChild<Color>()?.Val?.Value, Is.EqualTo("FF0000"));
+                Assert.That(secondMark?.GetFirstChild<Color>()?.Val?.Value, Is.EqualTo("008000"));
+                Assert.That(thirdMark?.GetFirstChild<Color>()?.Val?.Value, Is.EqualTo("008000"));
+                Assert.That(firstMark?.GetFirstChild<FontSize>()?.Val?.Value, Is.EqualTo("24"));
+                Assert.That(firstMark?.GetFirstChild<FontSizeComplexScript>()?.Val?.Value, Is.EqualTo("24"));
+                Assert.That(secondMark?.GetFirstChild<FontSize>()?.Val?.Value, Is.EqualTo("24"));
+                Assert.That(secondMark?.GetFirstChild<FontSizeComplexScript>()?.Val?.Value, Is.EqualTo("24"));
+            }
+            AssertThatOpenXmlDocumentIsValid();
+        }
+
+        [Test(Description = "Marker font stays on the paragraph mark while list margin stays on the numbering level")]
+        public async Task ListItemMarkerStyle_WithMargin_KeepsIndent()
+        {
+            await converter.ParseBody(@"<ol style='margin-left: 18pt; color: red;'><li>First</li></ol>");
+
+            var paragraph = mainPart.Document!.Body!.Elements<Paragraph>().Single();
+            var numId = paragraph.ParagraphProperties!.NumberingProperties!.NumberingId!.Val!.Value;
+            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(GetListInstanceLevelIndentLeft(numbering, numId), Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
+                Assert.That(GetListInstanceLevelOverride(numbering, numId)?.NumberingSymbolRunProperties, Is.Null);
+                Assert.That(paragraph.ParagraphProperties?.ParagraphMarkRunProperties?.GetFirstChild<Color>()?.Val?.Value, Is.EqualTo("FF0000"));
+            }
+            AssertThatOpenXmlDocumentIsValid();
+        }
+
+        private static void AssertParagraphMarkMatchesRun(Paragraph paragraph, string text)
+        {
+            var run = paragraph.Descendants<Run>().First(r => r.InnerText.Contains(text));
+            var mark = paragraph.ParagraphProperties?.ParagraphMarkRunProperties;
+            Assert.That(mark?.GetFirstChild<Color>()?.Val?.Value, Is.EqualTo(run.RunProperties?.Color?.Val?.Value));
+            Assert.That(mark?.GetFirstChild<FontSize>()?.Val?.Value, Is.EqualTo(run.RunProperties?.FontSize?.Val?.Value));
+            Assert.That(mark?.GetFirstChild<FontSizeComplexScript>()?.Val?.Value, Is.EqualTo(run.RunProperties?.FontSize?.Val?.Value));
+            Assert.That(mark?.GetFirstChild<RunFonts>()?.Ascii?.Value, Is.EqualTo(run.RunProperties?.RunFonts?.Ascii?.Value));
+        }
     }
 }
