@@ -24,7 +24,9 @@ abstract class HtmlDomExpression
     static readonly Dictionary<string, Func<IElement, HtmlDomExpression>> knownTags = InitKnownTags();
     static readonly HashSet<string> ignoreTags = new(StringComparer.OrdinalIgnoreCase) {
         TagNames.Xml, TagNames.AnnotationXml, TagNames.Button, TagNames.Progress,
-        TagNames.Select, TagNames.Input, TagNames.Textarea, TagNames.Meter };
+        TagNames.Select, TagNames.Input, TagNames.Textarea, TagNames.Meter, TagNames.Applet,
+        TagNames.Style, TagNames.NoFrames, TagNames.NoEmbed, TagNames.NoScript,
+        TagNames.Script, TagNames.Bgsound, TagNames.Menu, TagNames.MenuItem, };
 
     private static Dictionary<string, Func<IElement, HtmlDomExpression>> InitKnownTags()
     {
