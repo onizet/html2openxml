@@ -11,7 +11,7 @@ namespace Demo
         static async Task Main(string[] args)
         {
             const string filename = "test.docx";
-            string html = ResourceHelper.GetString("Resources.UlStyles.html");
+            string html = ResourceHelper.GetString("Resources.CompleteRunTest.html");
             if (File.Exists(filename)) File.Delete(filename);
 
             using (MemoryStream generatedDocument = new())
@@ -36,7 +36,9 @@ namespace Demo
                     AssertThatOpenXmlDocumentIsValid(package);
                 }
 
-                await File.WriteAllBytesAsync(filename, generatedDocument.ToArray());
+                generatedDocument.Position = 0L;
+                await using var fileStream = new FileStream(filename, FileMode.Create);
+                await generatedDocument.CopyToAsync(fileStream);
             }
 
             Process.Start(new ProcessStartInfo(filename) { UseShellExecute = true });
