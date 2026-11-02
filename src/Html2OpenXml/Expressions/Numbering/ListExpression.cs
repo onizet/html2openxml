@@ -42,8 +42,18 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
     {
         ComposeStyles(context);
         var liNodes = node.Children.Where(n => n.LocalName.Equals("li", StringComparison.OrdinalIgnoreCase));
-        if (!liNodes.Any()) yield break;
+        if (!liNodes.Any()) return [];
 
+        if (renderAsFramed)
+        {
+            return [CreateFrame(InterpretListItems(context, liNodes))];
+        }
+
+        return InterpretListItems(context, liNodes);
+    }
+
+    private IEnumerable<OpenXmlElement> InterpretListItems(ParsingContext context, IEnumerable<IElement> liNodes)
+    {
         // W3C requires that nested list stands below a `li` element but some editors
         // don't care to respect the standard. Let's reparent those lists
         var nestedList = node.Children.Where(n => 
