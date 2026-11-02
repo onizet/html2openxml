@@ -18,8 +18,7 @@ namespace HtmlToOpenXml.Tests
         public void Init ()
         {
             generatedDocument = new MemoryStream();
-            package = WordprocessingDocument.Create(generatedDocument, WordprocessingDocumentType.Document);
-
+            package = WordDocumentFactory.Create(generatedDocument);
             mainPart = package.MainDocumentPart!;
             Assume.That(mainPart, Is.Not.Null);
             this.converter = new HtmlConverter(package);
