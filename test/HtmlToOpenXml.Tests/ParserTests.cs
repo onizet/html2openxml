@@ -13,7 +13,7 @@ namespace HtmlToOpenXml.Tests
     {
         [TestCase("<!--<p>some text</p>-->")]
         [TestCase("<script>document.getElementById('body');</script>")]
-        [TestCase("<style>{font-size:2em}</script>")]
+        [TestCase("<style>{font-size:2em}</style>")]
         [TestCase("<xml><element><childElement attr='value' /></element></xml>")]
         [TestCase("<button>Save</button>")]
         [TestCase("<input type='search' placeholder='Search' />")]
