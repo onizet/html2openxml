@@ -67,9 +67,10 @@ namespace HtmlToOpenXml;
 public partial class HtmlConverter
 {
     internal readonly MainDocumentPart mainPart;
+    private readonly Body body;
+
     // Cache all the ImagePart processed to avoid downloading the same image
     private IImageLoader? headerImageLoader, bodyImageLoader, footerImageLoader;
-    private readonly WordDocumentStyle htmlStyles;
     private readonly IWebRequest webRequester;
 
 
@@ -87,7 +88,8 @@ public partial class HtmlConverter
     public HtmlConverter(MainDocumentPart mainPart, IWebRequest? webRequester = null)
     {
         this.mainPart = mainPart ?? throw new ArgumentNullException(nameof(mainPart));
-        this.htmlStyles = new WordDocumentStyle(mainPart);
+        this.body = WordDocumentFactory.GetOrCreateDocumentBody(mainPart);
+        HtmlStyles = new WordDocumentStyle(mainPart);
         this.webRequester = webRequester ?? new DefaultWebRequest();
     }
 
@@ -108,7 +110,8 @@ public partial class HtmlConverter
             throw new ArgumentNullException(nameof(package));
 
         this.mainPart = WordDocumentFactory.GetOrCreateMainDocumentPart(package);
-        this.htmlStyles = new WordDocumentStyle(this.mainPart);
+        this.body = WordDocumentFactory.GetOrCreateDocumentBody(mainPart);
+        HtmlStyles = new WordDocumentStyle(this.mainPart);
         this.webRequester = webRequester ?? new DefaultWebRequest();
     }
 
@@ -196,7 +199,7 @@ public partial class HtmlConverter
 
         var paragraphs = await ParseCoreAsync(html, headerPart, headerImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
-            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.ParagraphHeaderStyle))
+            HtmlStyles.GetParagraphStyle(HtmlStyles.DefaultStyles.ParagraphHeaderStyle))
             .ConfigureAwait(false);
 
         headerPart.Header.Append(paragraphs);
@@ -226,7 +229,7 @@ public partial class HtmlConverter
 
         var paragraphs = await ParseCoreAsync(html, footerPart, footerImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
-            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.ParagraphFooterStyle))
+            HtmlStyles.GetParagraphStyle(HtmlStyles.DefaultStyles.ParagraphFooterStyle))
             .ConfigureAwait(false);
 
         footerPart.Footer.Append(paragraphs);
@@ -258,37 +261,36 @@ public partial class HtmlConverter
         bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester, ImageProcessing);
         var paragraphs = await ParseCoreAsync(html, mainPart, bodyImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
-            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.ParagraphBodyStyle))
+            HtmlStyles.GetParagraphStyle(HtmlStyles.DefaultStyles.ParagraphBodyStyle))
             .ConfigureAwait(false);
 
         if (!paragraphs.Any())
             return;
 
-        Body body = mainPart.Document!.Body!;
         SectionProperties? sectionProperties = body.GetLastChild<SectionProperties>()
             ?? WordDocumentFactory.CreateSectionProperties(PageOrientation.Portrait);
 
         foreach (var para in paragraphs)
             body.Append(para);
 
+        // Push the sectionProperties as the last element of the Body
+        // (required by OpenXml schema to avoid the bad formatting of the document)
+        if (sectionProperties?.Parent != null)
+        {
+            sectionProperties.Remove();
+            body.AddChild(sectionProperties);
+        }
+
         // we automatically create the _top bookmark if missing. To avoid having an empty paragrah,
         // let's try to merge with its next paragraph.
         var p = body.GetFirstChild<Paragraph>();
-        if (p != null && p.GetFirstChild<BookmarkStart>()?.Name == "_top"
+        if (p?.GetFirstChild<BookmarkStart>()?.Name == "_top"
             && !p.HasChild<Run>()
             && p.NextSibling() is Paragraph nextPara)
         {
             nextPara.PrependChild(p.GetFirstChild<BookmarkEnd>()?.CloneNode(false));
             nextPara.PrependChild(p.GetFirstChild<BookmarkStart>()!.CloneNode(false));
             p.Remove();
-        }
-
-        // Push the sectionProperties as the last element of the Body
-        // (required by OpenXml schema to avoid the bad formatting of the document)
-        if (sectionProperties != null && sectionProperties.Parent != null)
-        {
-            sectionProperties.Remove();
-            body.AddChild(sectionProperties);
         }
     }
 
@@ -300,7 +302,7 @@ public partial class HtmlConverter
     /// from <see cref="WordDocumentStyle.StyleMissing"/> event.</remarks>
     public void RefreshStyles()
     {
-        htmlStyles.PrepareStyles(mainPart);
+        HtmlStyles.PrepareStyles(mainPart);
     }
 
     /// <summary>
@@ -324,11 +326,6 @@ public partial class HtmlConverter
         var htmlDocument = await browsingContext.OpenAsync(req => req.Content(html), parallelOptions.CancellationToken).ConfigureAwait(false);
         if (htmlDocument == null)
             return [];
-
-        if (mainPart.Document == null)
-            new Document(new Body()).Save(mainPart);
-        else if (mainPart.Document.Body == null)
-            mainPart.Document.Body = new Body();
 
         await PreloadImages(htmlDocument, imageLoader, parallelOptions).ConfigureAwait(false);
 
@@ -377,11 +374,11 @@ public partial class HtmlConverter
         bool wasRefSet = false;
         TPart? part = null;
 
-        var sectionProps = mainPart.Document!.Body!.Elements<SectionProperties>();
+        var sectionProps = body.Elements<SectionProperties>();
         if (!sectionProps.Any())
         {
             sectionProps = [new SectionProperties()];
-            mainPart.Document.Body!.AddChild(sectionProps.First());
+            body.AddChild(sectionProps.First());
         }
         else
         {
@@ -452,10 +449,7 @@ public partial class HtmlConverter
     /// and react when a referenced style is missing from the document.
     /// </para>
     /// </summary>
-    public WordDocumentStyle HtmlStyles
-    {
-        get { return htmlStyles; }
-    }
+    public WordDocumentStyle HtmlStyles { get; }
 
     /// <summary>
     /// Defines where the Legend tag (<c>caption</c>) should be rendered above or below the table.

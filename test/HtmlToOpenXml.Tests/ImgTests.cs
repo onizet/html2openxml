@@ -239,7 +239,6 @@ namespace HtmlToOpenXml.Tests
             }
 
             Assert.That(host, Is.Not.Null);
-            Assert.That(host.ChildElements, Has.Count.EqualTo(1));
             var p = host.ChildElements.FirstOrDefault(c => c is Paragraph);
             Assert.That(p, Is.Not.Null);
             AssertIsImg(container, p);

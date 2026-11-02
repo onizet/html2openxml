@@ -50,7 +50,7 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
 
             var bookmarkId = IncrementBookmarkId(context).ToString(CultureInfo.InvariantCulture);
             // this is expected to stand in the 1st paragraph
-            Paragraph? p = body.FirstChild as Paragraph;
+            Paragraph? p = body.GetFirstChild<Paragraph>();
             p ??= body.PrependChild(new Paragraph());
             p.InsertAfter(new BookmarkEnd() { Id = bookmarkId }, p.ParagraphProperties);
             p.InsertAfter(new BookmarkStart() { Id = bookmarkId, Name = "_top" }, p.ParagraphProperties);

@@ -81,6 +81,19 @@ public static class WordDocumentFactory
     }
 
     /// <summary>
+    /// Gets the document body part associated with the document, creating it when it does not already exist.
+    /// </summary>
+    internal static Body GetOrCreateDocumentBody(MainDocumentPart mainPart)
+    {
+        if (mainPart.Document == null)
+            new Document(new Body()).Save(mainPart);
+        else if (mainPart.Document.Body == null)
+            mainPart.Document.Body = new Body();
+
+        return mainPart.Document!.Body!;
+    }
+
+    /// <summary>
     /// Generate the required OpenXml element for handling page orientation.
     /// </summary>
     internal static SectionProperties CreateSectionProperties(PageOrientation orientation)
