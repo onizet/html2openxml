@@ -817,6 +817,26 @@ namespace HtmlToOpenXml.Tests
                 "Level override must clone the template level so bullet markers still render");
         }
 
+        [Test]
+        public async Task ListContainer_Styling_CascadeToListItems()
+        {
+            var elements = converter.Parse(@"
+                <ol style='color:red;'>
+                    <li><p>One</p><p style='color:blue'>Two</p></li>
+                </ol>");
+
+            var paragraphs = elements.OfType<Paragraph>().ToList();
+            Assert.That(paragraphs, Has.Count.EqualTo(2));
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(paragraphs[0].ParagraphProperties?.NumberingProperties, Is.Not.Null);
+                Assert.That(paragraphs[1].ParagraphProperties?.NumberingProperties, Is.Null);
+                Assert.That(paragraphs[0].GetFirstChild<Run>()?.RunProperties?.Color?.Val?.Value, Is.EqualTo("FF0000"));
+                Assert.That(paragraphs[1].GetFirstChild<Run>()?.RunProperties?.Color?.Val?.Value, Is.EqualTo("0000FF"));
+            }
+        }
+
         private static string? GetListInstanceLevelIndentLeft(Numbering numbering, int numId, int ilvl = 0)
         {
             return GetListInstanceLevelOverride(numbering, numId, ilvl)?.PreviousParagraphProperties?.Indentation?.Left?.Value;
@@ -839,9 +859,6 @@ namespace HtmlToOpenXml.Tests
         /// <summary>
         /// A nested ul type attribute must use its own bullet, not the parent marker
         /// </summary>
-        /// <param name="listType"></param>
-        /// <param name="nestedListType"></param>
-        /// <returns></returns>
         [TestCase("disc", "square", ExpectedResult = "•,▪")]
         [TestCase("disc", "circle", ExpectedResult = "•,\u25CB")]
         public async Task<string> NestedUnorderedList_TypeAttribute_UsesOwnBullet(string listType, string nestedListType)
@@ -859,7 +876,10 @@ namespace HtmlToOpenXml.Tests
             Assert.That(paragraphs, Has.Count.EqualTo(2));
             AssertThatOpenXmlDocumentIsValid();
 
-            return string.Join(",", paragraphs.Select(GetBulletText).Select(BulletTextUnicode));
+            return string.Join(",", paragraphs.Select(GetBulletText).Select(bulletText => bulletText switch {
+                "o" => "\u25CB",  // ○ circle
+                _ => bulletText
+            }));
         }
 
         [Test(Description = "CSS list-style-type takes precedence over the ul type attribute")]
@@ -881,15 +901,6 @@ namespace HtmlToOpenXml.Tests
             var instance = numbering.Elements<NumberingInstance>().Single(i => i.NumberID?.Value == numId);
             var abstractNum = numbering.Elements<AbstractNum>().Single(a => a.AbstractNumberId?.Value == instance.AbstractNumId!.Val!.Value);
             return abstractNum.Elements<Level>().First(l => l.LevelIndex?.Value == level).LevelText?.Val?.Value;
-        }
-
-        private string? BulletTextUnicode(string? bulletText)
-        {
-            return bulletText switch
-            {
-                "o" => "\u25CB",  // ○ circle
-                _ => bulletText
-            };
         }
     }
 }
