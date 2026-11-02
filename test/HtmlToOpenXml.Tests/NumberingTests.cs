@@ -517,6 +517,35 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test]
+        public async Task WithBorder_ReturnedFramedList()
+        {
+            var elements = converter.Parse(@"
+                <ol style='border: 1px solid black'>
+                    <li><p>One</p><p>Two</p></li>
+                </ol>");
+
+            Assert.That(elements[0], Is.TypeOf<Table>());
+
+            var framedTable = (Table) elements[0];
+            var borders = framedTable.GetFirstChild<TableProperties>()?.TableBorders;
+            Assert.That(borders, Is.Not.Null, "Assert that border is applied on table scope");
+            Assert.That(borders.Elements<BorderType>()!
+                .Select(b => b.Val?.Value),
+                Has.All.EqualTo(BorderValues.Single));
+
+            var cell = framedTable.GetFirstChild<TableRow>()?.GetFirstChild<TableCell>();
+            Assert.That(cell, Is.Not.Null);
+            var paragraphs = cell.Elements<Paragraph>();
+            Assert.That(paragraphs.Count(), Is.EqualTo(2));
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(paragraphs.First().ParagraphProperties?.NumberingProperties, Is.Not.Null);
+                Assert.That(paragraphs.ElementAt(1).ParagraphProperties?.NumberingProperties, Is.Null);
+            }
+        }
+
+        [Test]
         public void NestedNumberList_ReturnsIncrementalIndentation()
         {
             const int maxLevel = 8;

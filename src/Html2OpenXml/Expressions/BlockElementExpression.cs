@@ -383,7 +383,7 @@ class BlockElementExpression: PhrasingElementExpression
     /// <summary>
     /// Group all the paragraph inside a framed table.
     /// </summary>
-    private Table CreateFrame(IEnumerable<OpenXmlElement> childElements)
+    protected Table CreateFrame(IEnumerable<OpenXmlElement> childElements)
     {
         List<OpenXmlElement> childrens = childElements.ToList();
         if (childrens.LastOrDefault() is not Paragraph)
