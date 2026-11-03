@@ -1,7 +1,7 @@
-#NuSpec.AI/v2 HtmlToOpenXml 4.0.0
+#NuSpec.AI/v2 HtmlToOpenXml 4.2.0
 #desc Convert simple or advanced HTML into OpenXML Word content while reusing existing document styles, numbering, and templates.
 #tfm netstandard2.0;net462;net8.0;net10.0
-#dep AngleSharp|1.8.0|0;DocumentFormat.OpenXml|3.5.1|0;Microsoft.Extensions.Logging.Abstractions|6.0.0|0;System.ValueTuple|4.5.0|0
+#dep AngleSharp|1.8.6|0;DocumentFormat.OpenXml|3.5.1|0;Microsoft.Extensions.Logging.Abstractions|6.0.0|0;System.ValueTuple|4.6.2|0
 @e AcronymPosition "Controls where the definition of an acronym or abbreviation is rendered during conversion. AcronymFor example, the definition assocaited with an HTML abbr element can be rendered at the end of the page or collected at the end of the document."
  .ev PageEnd=0,DocumentEnd=1
 @c DefaultStyles [entity] "Contains the default OpenXml style mappings used by HtmlToOpenXml.HtmlConverter. Styles selected through these mappings provide the base formatting. CSS attributes defined on HTML elements are still applied on top of the resulting Word style. Several commonly used Word styles such as headings, hyperlinks, captions, tables, footnotes and quotes can be created automatically when missing from the document. Customise these mappings to use your own style names during conversion."
@@ -18,14 +18,12 @@
  .p QuoteStyle:string "Default style for quotes (quote, cite)."
  .p IntenseQuoteStyle:string "Default style for intense quotes (blockquote)."
  .p TableStyle:string "Default style for tables (table)."
- .p HeaderStyle:string "Default style for any paragraphs (p) in the header section (DocumentFormat.OpenXml.Packaging.HeaderPart )."
  .p ParagraphHeaderStyle:string "Default style for any paragraphs (p) in the header section (DocumentFormat.OpenXml.Packaging.HeaderPart )."
- .p FooterStyle:string "Default style for any paragraphs (p) in the footer section (DocumentFormat.OpenXml.Packaging.FooterPart )."
  .p ParagraphFooterStyle:string "Default style for any paragraphs (p) in the footer section (DocumentFormat.OpenXml.Packaging.FooterPart )."
- .p Paragraph:string "Default style for body paragraph (body or any top level tag in HTML source)."
  .p ParagraphBodyStyle:string "Default style for paragraph (p or body or any top level tag in HTML source) in the body section."
 @c HtmlConverter "Primary entry point for converting HTML into OpenXml Word document. The converter can be used with newly created documents as well as existing document templates. When a template is used, styles, themes, numbering definitions, bookmarks, and other Word settings are automatically reused. Supports both left-to-right (LTR) and right-to-left (LTR) visual flow content. Direction can be specified using the HTML dir attribute (recommended) or inferred from the lang attribute. When not specified, the converter preserves the layout defined by the target Word document. Supports full OpenXML table translation, including complex structural elements (nested tables, `colspan`/`rowspan`) and precise dimension mapping (`px`, `%`), column definitions, vertical text, and automatic conversion of table widths. Table widths can be specified using auto, percentages, or fixed dimensions (px/pt). Use HtmlToOpenXml.HtmlConverter.HtmlStyles to customise styling and HtmlToOpenXml.IO.IWebRequest to customise external resource retrieval. Typical usage: Create an HtmlConverter from a MainDocumentPart obtained from a WordProcessingDocument. Call ParseBody() to append the converted content to the document body. Advanced scenarios can use ParseAsync() to control where the generated OpenXml elements are inserted."
  .ctor (MainDocumentPart mainPart, IWebRequest? webRequester = null) "Create a converter bound to a Word document. Reuse the same HtmlConverter instance for the lifetime of a document to avoid reloading cached configuration such as styles and bookmarks. Do not use the same converter instance with multiple documents."
+ .ctor (WordprocessingDocument package, IWebRequest? webRequester = null) "Create a converter bound to a Word document. Reuse the same HtmlConverter instance for the lifetime of a document to avoid reloading cached configuration such as styles and bookmarks. Do not use the same converter instance with multiple documents."
  .m Parse:IList<OpenXmlCompositeElement>(string html) "Convert HTML into OpenXml elements and return them to the caller. Use this method when your HTML is simple and don't need to download any external resources. Parse() is equivalent to ParseAsync() and is retained for backward compatibility. New code should prefer ParseBody(), ParseHeader() or ParseFooter() to make the target document section explicit."
  .m ParseAsync:Task<IEnumerable<OpenXmlCompositeElement>>(string html, CancellationToken cancellationToken = null) "Convert HTML into OpenXml elements and return them to the caller. However, the conversion process itself may still update the underlying document by creating styles, numbering definitions, image parts, bookmarks, or other resources required by the generated content. Use this method when you need full control over the insertion point or need to inspect or modify the generated elements before adding them to the document. For most scenarios, prefer ParseBody()."
  .m ParseAsync:Task<IEnumerable<OpenXmlCompositeElement>>(string html, ParallelOptions parallelOptions) "Convert HTML into OpenXml elements and return them to the caller. Use this method when you need full control over the insertion point or need to inspect or modify the generated elements before adding them to the document. For most scenarios, prefer ParseBody()."
@@ -43,11 +41,6 @@
  .p SupportsHeadingNumbering:bool "Defines whether (h1-h6) elements are mapped to the corresponding Word heading style. Missing heading styles are added automatically when required. When heading text begins with a numbering pattern such as "1.", "1.1.", or "1 " or when the heading uses the `decimal-tiered` CSS class, the converter interprets it as a numbered heading. Any associated heading numbering is then managed by Word through the Heading styles. This feature is enabled by default."
 @e ImageProcessingMode "Controls whether images are embedded in the generated document or kept as external references."
  .ev Embed=0,LinkExternal=1,EmbedDataUriOnly=2
-@c DataUri "Represents a Data URI containing inline content encoded directly in the URI string, typically using Base64 encoding. Data URIs are commonly used to embed images in HTML without referencing an external resource, for example: data:image/png;base64,..."
- .m TryCreate:bool(string uri, out DataUri? result) "Parse an instance of the Data URI scheme."
- .m IsWellFormed:bool(string uri) "Indicates whether the string is well-formed by attempting to construct a DataUri with the string."
- .p Mime:string "Gets the MIME type declared by the Data URI, such as image/png or image/jpeg."
- .p Data:byte[] "Gets the decoded binary content extracted from the Data URI."
 @c DefaultWebRequest "Default implementation of HtmlToOpenXml.IO.IWebRequest. Supports http, https, local file and inline data (base64). Derive from this class to customise resource retrieval, authentication, image processing, URL resolution, or content transformation while reusing the built-in behaviour."
  .ctor (ILogger? logger = null) "Initialize a new instance of the HtmlToOpenXml.IO.DefaultWebRequest class."
  .ctor (HttpClient httpClient, ILogger? logger = null) "Initialize a new instance of the HtmlToOpenXml.IO.DefaultWebRequest class with the specified HttpClient. Supply your own HttpClient to customise how external resources are retrieved, for example to configure cookies, authentication headers, API keys, proxies, or message handlers."
@@ -62,6 +55,8 @@
  .p Headers:string> "Optional response Http headers. Content-Type is used when the resource type cannot be determined from the URL."
  .p Content:Stream "Gets the resource content stream. The stream must be readable.Resource type detection may inspect the beginning of the stream and reset its position afterwards, therefore the stream should support seeking."
  .m Dispose:void()
+@e PageOrientation "Specifies the page orientation used when creating a new Word document. The orientation determines whether pages are laid out vertically (portrait) or horizontally (landscape)."
+ .ev Portrait=0,Landscape=1
 @s QuoteChars "Predefined quote style as defined by the browser (used for the q HTML tag)."
  .ctor (string begin, string end) "Predefined quote style as defined by the browser (used for the q HTML tag)."
  .f IE:QuoteChars "Internet Explorer style: « abc »"
@@ -70,6 +65,8 @@
 @c StyleEventArgs [entity] "Provides information about a style requested during conversion that could not be found in the Word document. The HtmlToOpenXml.WordDocumentStyle.StyleMissing event uses these arguments to indicate which style should be dynamically provisioned and which OpenXml style type is expected."
  .p Name:string "Gets the identifier of the missing style. Use this value when creating and registering the style."
  .p Type:StyleValues "Gets the OpenXml style type expected by the converter, such as paragraph, table or character."
+@c WordDocumentFactory [factory] "Provides helper methods for creating Word documents configured for use with HtmlToOpenXml.HtmlConverter. This factory simplifies the creation of new DOCX documents by configuring the required OpenXML package structure, document parts, and page settings. The generated documents can be used directly with HtmlToOpenXml.HtmlConverter to convert HTML content into WordProcessingML."
+ .m Create:WordprocessingDocument(Stream stream, PageOrientation orientation = Portrait) "Create a new Word document on the specified stream and configures its page settings. The created document contains the minimum required OpenXML structure, including a main document part and an empty body. The returned document can be passed directly to HtmlToOpenXml.HtmlConverter or further customised using the Open XML SDK."
 @c WordDocumentStyle "Provides style-related services used during HTML conversion. HTML class names may be mapped directly to Word styles with the same name (case insensitive). When a referenced style cannot be found, the HtmlToOpenXml.WordDocumentStyle.StyleMissing event allows it to be provisioned dynamically."
  .m AddStyle:void(Style style) "Adds a new style to the Word document and refreshes the converter's internal style cache. Use this method in conjunction with the HtmlToOpenXml.WordDocumentStyle.StyleMissing event to inject styles required by a template that are absent from the source document."
  .p DefaultStyles:DefaultStyles "Contains the default styles for new OpenXml elements, created during the conversion process."

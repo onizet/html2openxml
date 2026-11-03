@@ -22,9 +22,7 @@ When creating a blank document:
 await using var generatedDocument = new MemoryStream();
 using var package = WordprocessingDocument.Create(generatedDocument, WordprocessingDocumentType.Document);
 
-var mainPart = package.AddMainDocumentPart();
-new Document(new Body()).Save(mainPart);
-HtmlConverter converter = new(mainPart);
+HtmlConverter converter = new(package);
 await converter.ParseBody(html);
 ```
 
@@ -33,14 +31,9 @@ When inserting inside an existing document:
 ```csharp
 await using var generatedDocument = new MemoryStream();
 await templateFileStream.CopyToAsync(generatedDocument);
+generatedDocument.Position = 0L;
 using var package = WordprocessingDocument.Open(generatedDocument, true);
-MainDocumentPart? mainPart = package.MainDocumentPart;
-if (mainPart == null)
-{
-    mainPart = package.AddMainDocumentPart();
-    new Document(new Body()).Save(mainPart);
-}
-HtmlConverter converter = new(mainPart);
+HtmlConverter converter = new(package);
 await converter.ParseBody(html);
 ```
 

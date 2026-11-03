@@ -222,7 +222,7 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
     /// </summary>
     /// <param name="customSymbol">The custom character or string to be used as the list bullet.</param>
     /// <returns>An <see cref="AbstractNum"/> instance configured with the custom bullet symbol across all levels.</returns>
-    private AbstractNum CreateCustomBulletAbstractNum(string customSymbol)
+    private static AbstractNum CreateCustomBulletAbstractNum(string customSymbol)
     {
         var abstractNum = new AbstractNum {
             AbstractNumDefinitionName = new() { Val = customSymbol },

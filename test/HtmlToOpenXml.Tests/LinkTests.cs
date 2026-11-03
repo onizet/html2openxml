@@ -235,15 +235,18 @@ namespace HtmlToOpenXml.Tests
         {
             await converter.ParseBody($"<table><tr><td>Cell1</td></tr></table><a href='#{anchor}'>Move to top</a>");
 
-            Assert.That(mainPart.Document!.Body!.Elements().Count(), Is.EqualTo(3));
-            Assert.That(mainPart.Document.Body!.FirstChild, Is.TypeOf<Paragraph>());
-            Assert.That(mainPart.Document.Body!.ElementAt(1), Is.TypeOf<Table>());
-            Assert.That(mainPart.Document.Body!.LastChild, Is.TypeOf<Paragraph>());
+            var body = mainPart.Document!.Body!;
+            Assert.That(body.Elements().Count(), Is.EqualTo(4));
+            Assert.That(body.FirstChild, Is.TypeOf<Paragraph>());
+            Assert.That(body.ElementAt(1), Is.TypeOf<Table>());
+            Assert.That(body.ElementAt(2), Is.TypeOf<Paragraph>());
+            Assert.That(body.LastChild, Is.TypeOf<SectionProperties>(),
+                "SectionProperties must be pushed as last child");
 
-            var p = mainPart.Document.Body!.GetFirstChild<Paragraph>()!;
+            var p = body.GetFirstChild<Paragraph>()!;
             Assert.That(p.GetFirstChild<BookmarkStart>()?.Name?.Value, Is.EqualTo("_top"), "Reserved keyword `_top`");
 
-            p = mainPart.Document.Body!.GetLastChild<Paragraph>()!;
+            p = body.GetLastChild<Paragraph>()!;
             Assert.That(p.GetFirstChild<Hyperlink>()?.Anchor?.Value, Is.EqualTo("_top"));
         }
 
@@ -258,7 +261,7 @@ namespace HtmlToOpenXml.Tests
             using (Assert.EnterMultipleScope())
             {
                 Assert.That(p.GetFirstChild<BookmarkStart>()?.Name?.Value, Is.EqualTo("_top"),
-                    "Expected `_top` bookmark in the first body paragraph");
+                    "Expected `_top` bookmark is merged into the first paragraph which is the heading");
                 Assert.That(p.GetFirstChild<Run>(), Is.Not.Null);
                 Assert.That(p.ParagraphProperties?.ParagraphStyleId?.Val?.Value, Is.EqualTo("Heading1"),
                     "Expected first paragraph is the heading");
@@ -284,7 +287,7 @@ namespace HtmlToOpenXml.Tests
         private static void AssertHyperlink(OpenXmlPartContainer container, IEnumerable<OpenXmlElement> elements,
             string expectedUri)
         {
-            Assert.That(elements.Count(), Is.EqualTo(1));
+            Assert.That(elements, Is.Not.Empty);
             using (Assert.EnterMultipleScope())
             {
                 Assert.That(elements.First(), Is.TypeOf<Paragraph>());

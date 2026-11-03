@@ -13,7 +13,7 @@ namespace HtmlToOpenXml.Tests
     {
         [TestCase("<!--<p>some text</p>-->")]
         [TestCase("<script>document.getElementById('body');</script>")]
-        [TestCase("<style>{font-size:2em}</script>")]
+        [TestCase("<style>{font-size:2em}</style>")]
         [TestCase("<xml><element><childElement attr='value' /></element></xml>")]
         [TestCase("<button>Save</button>")]
         [TestCase("<input type='search' placeholder='Search' />")]
@@ -130,7 +130,7 @@ namespace HtmlToOpenXml.Tests
         [Test(Description = "Provided mainPart is null")]
         public void ProvidedMainPart_WithNull_ShouldFail()
         {
-            Assert.Throws<ArgumentNullException>(() => new HtmlConverter(null!));
+            Assert.Throws<ArgumentNullException>(() => new HtmlConverter((MainDocumentPart) null!));
         }
 
         [Test(Description = "Provided mainPart.Document is empty")]
