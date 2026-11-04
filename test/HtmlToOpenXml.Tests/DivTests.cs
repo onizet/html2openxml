@@ -86,6 +86,18 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements[1].LastChild?.HasChild<LastRenderedPageBreak>(), Is.False);
         }
 
+        [TestCase("left", ExpectedResult = "left")]
+        [TestCase("center", ExpectedResult = "center")]
+        [TestCase("right", ExpectedResult = "right")]
+        [TestCase("justify", ExpectedResult = "both")]
+        public string? WithTextAlign_ReturnsJustification(string align)
+        {
+            var elements = converter.Parse($@"<p style='text-align:{align}'>Lorem</p>");
+            Assert.That(elements, Has.Count.EqualTo(1));
+            Assert.That(elements, Has.All.TypeOf<Paragraph>());
+            return elements[0].GetFirstChild<ParagraphProperties>()?.Justification?.Val?.InnerText;
+        }
+
         [TestCase("rtl", ExpectedResult = true)]
         [TestCase("ltr", ExpectedResult = false)]
         [TestCase("", ExpectedResult = null)]
