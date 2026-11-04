@@ -69,7 +69,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         var parentContext = listContext;
         var listStyle = GetListName(node, listContext.Name);
         bool listMarginOnNumberingInstance = false;
-        if (listContext.InstanceId == 0 || listContext.Name != listStyle || _listIndentationOffset > 0)
+        if (listContext.InstanceId == 0 || listContext.Name != listStyle || _listIndentationOffset > 0 || GetListStartValue(out _))
         {
             var abstractNumId = GetOrCreateListTemplate(context, listStyle);
             listContext = ConcretiseInstance(context, abstractNumId, listStyle, listContext.Level, _listIndentationOffset);
@@ -192,14 +192,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
             return new ListContext(listStyle, abstractNumId, instanceId.Value, currentLevel + 1, dir);
         }
 
-        int startValue = 1;
-        if (isOrderedTag)
-        {
-            var startAttribute = node.GetAttribute("start");
-            if (startAttribute != null && int.TryParse(startAttribute, out var val) && val > 1)
-                startValue = val;
-        }
-
+        _ = GetListStartValue(out int startValue);
         var numbering = context.MainPart.NumberingDefinitionsPart!.Numbering!;
         var levelOverride = CreateLevelOverride(numbering, abstractNumId, listContext.Level, startValue, listMarginLeft);
         numbering.Append(
@@ -350,5 +343,20 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         if (pPr?.Indentation?.Left?.Value is { } left && long.TryParse(left, NumberStyles.Integer, CultureInfo.InvariantCulture, out var dxa))
             return dxa;
         return 0;
+    }
+
+    private bool GetListStartValue(out int start)
+    {
+        start = 1;
+        if (!node.NodeName.Equals("ol", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        string? startAttribute = node.GetAttribute("start");
+        if (startAttribute != null && int.TryParse(startAttribute, out int val))
+        {
+            start = val;
+            return true;
+        }
+        return false;
     }
 }

@@ -917,6 +917,26 @@ namespace HtmlToOpenXml.Tests
             AssertThatOpenXmlDocumentIsValid();
         }
 
+        [Test(Description = "Ordered list start value is reflected in the marker value")]
+        public async Task OrderedList_StartValue_IsAddedToMarkerValue()
+        {
+            await converter.ParseBody(@"<ol start='10'><li>Ten</li></ol>");
+
+            var paragraph = mainPart.Document!.Body!.Elements<Paragraph>().Single();
+            Assert.That(GetListMarkerNumberingValue(paragraph), Is.EqualTo("10"));
+            AssertThatOpenXmlDocumentIsValid();
+        }
+
+        [Test(Description = "Nested ordered list start value is reflected in the marker value")]
+        public async Task NestedOrderedList_StartValue_IsAddedToMarkerValue()
+        {
+            await converter.ParseBody(@"<ol><li>One<ol start='10'><li>Ten</li></ol></li></ol>");
+
+            var paragraphs = mainPart.Document!.Body!.Elements<Paragraph>().ToList();
+            Assert.That(GetListMarkerNumberingValue(paragraphs.Last()), Is.EqualTo("10"));
+            AssertThatOpenXmlDocumentIsValid();
+        }
+
         private string? GetBulletText(Paragraph paragraph)
         {
             var numberingProperties = paragraph.ParagraphProperties?.NumberingProperties;
@@ -926,6 +946,16 @@ namespace HtmlToOpenXml.Tests
             var instance = numbering.Elements<NumberingInstance>().Single(i => i.NumberID?.Value == numId);
             var abstractNum = numbering.Elements<AbstractNum>().Single(a => a.AbstractNumberId?.Value == instance.AbstractNumId!.Val!.Value);
             return abstractNum.Elements<Level>().First(l => l.LevelIndex?.Value == level).LevelText?.Val?.Value;
+        }
+
+        private string? GetListMarkerNumberingValue(Paragraph paragraph)
+        {
+            var numberingProperties = paragraph.ParagraphProperties?.NumberingProperties;
+            var numId = numberingProperties?.NumberingId?.Val?.Value;
+            var level = numberingProperties?.NumberingLevelReference?.Val?.Value;
+            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
+            var instance = numbering.Elements<NumberingInstance>().Single(i => i.NumberID?.Value == numId);
+            return instance.GetFirstChild<LevelOverride>()?.GetFirstChild<StartOverrideNumberingValue>()?.Val;
         }
     }
 }
