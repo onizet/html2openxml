@@ -30,7 +30,7 @@ static class Converter
         justification = span switch
         {
             _ when span.IsEmpty => null,
-            _ when span.Is("top") => JustificationValues.Left,
+            _ when span.Is("left") => JustificationValues.Left,
             _ when span.Is("right") => JustificationValues.Right,
             _ when span.Is("center") => JustificationValues.Center,
             _ when span.Is("justify") => JustificationValues.Both,
