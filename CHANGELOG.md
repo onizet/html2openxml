@@ -8,6 +8,9 @@ Ease of Use Improvements:
 - New `HtmlConverter(WordProcessingDocument)` constructor overload.
 - Automatic creation of missing document structure (`MainDocumentPart`, `Body`).
 - New `PageOrientation` support for document creation.
+- Improve numbering list items which do not inherit styling from the parent list #252
+- Fix text-align: left being ignored- #263, thanks to @cyril265
+- Numbering list now support border style.
 
 ## 4.1.0
 
