@@ -121,8 +121,6 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
             {
                 var p = paragraphs.First();
                 p.ParagraphProperties ??= new();
-                if (listMarginOnNumberingInstance)
-                    p.ParagraphProperties.GetFirstChild<Indentation>()?.Remove();
                 p.ParagraphProperties.ParagraphStyleId = listItemStyleId;
                 p.ParagraphProperties!.NumberingProperties ??= new NumberingProperties {
                     NumberingLevelReference = new() { Val = level - 1 },
@@ -144,9 +142,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 
                 p.ParagraphProperties ??= new();
                 p.ParagraphProperties.ParagraphStyleId ??= (ParagraphStyleId?) listItemStyleId!.CloneNode(true);
-                if (listMarginOnNumberingInstance)
-                    p.ParagraphProperties.GetFirstChild<Indentation>()?.Remove();
-                SetListItemElementParagraphIndentationLeft(p.ParagraphProperties, level, _listIndentationOffset);
+               SetListItemElementParagraphIndentationLeft(p.ParagraphProperties, level, _listIndentationOffset);
             }
 
             foreach (var child in childElements)
@@ -327,6 +323,13 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         var margin = styleAttributes.GetMargin();
         if (!margin.IsEmpty && margin.Left.IsFixed && margin.Left.Value > 0)
             _listIndentationOffset = margin.Left.ValueInDxa;
+
+        // rollback the left indentation, we already have the reference in _listIndentationOffset
+        var ind = paraProperties.Indentation;
+        if (ind?.Left?.Value == _listIndentationOffset.ToString(CultureInfo.InvariantCulture))
+        {
+            ind.Left = null;
+        }
     }
 
     /// <summary>
