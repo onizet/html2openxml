@@ -121,6 +121,8 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
             {
                 var p = paragraphs.First();
                 p.ParagraphProperties ??= new();
+                if (listMarginOnNumberingInstance)
+                    p.ParagraphProperties.GetFirstChild<Indentation>()?.Remove();
                 p.ParagraphProperties.ParagraphStyleId = listItemStyleId;
                 p.ParagraphProperties!.NumberingProperties ??= new NumberingProperties {
                     NumberingLevelReference = new() { Val = level - 1 },
@@ -142,6 +144,8 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 
                 p.ParagraphProperties ??= new();
                 p.ParagraphProperties.ParagraphStyleId ??= (ParagraphStyleId?) listItemStyleId!.CloneNode(true);
+                if (listMarginOnNumberingInstance)
+                    p.ParagraphProperties.GetFirstChild<Indentation>()?.Remove();
                 SetListItemElementParagraphIndentationLeft(p.ParagraphProperties, level, _listIndentationOffset);
             }
 
