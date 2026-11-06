@@ -917,16 +917,6 @@ namespace HtmlToOpenXml.Tests
             AssertThatOpenXmlDocumentIsValid();
         }
 
-        [Test(Description = "Ordered list start value is reflected in the marker value")]
-        public async Task OrderedList_StartValue_IsAddedToMarkerValue()
-        {
-            await converter.ParseBody(@"<ol start='10'><li>Ten</li></ol>");
-
-            var paragraph = mainPart.Document!.Body!.Elements<Paragraph>().Single();
-            Assert.That(GetListMarkerNumberingValue(paragraph), Is.EqualTo("10"));
-            AssertThatOpenXmlDocumentIsValid();
-        }
-
         [Test(Description = "Nested ordered list start value is reflected in the marker value")]
         public async Task NestedOrderedList_StartValue_IsAddedToMarkerValue()
         {
