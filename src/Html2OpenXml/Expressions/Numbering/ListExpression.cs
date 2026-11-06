@@ -23,7 +23,9 @@ namespace HtmlToOpenXml.Expressions;
 sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 {
     readonly record struct ListContext(string Name, int AbsNumId, int InstanceId, int Level, DirectionMode? Dir);
-    private long _listIndentationOffset;
+    private readonly bool isOrderedTag = node.NodeName.Equals("ol", StringComparison.OrdinalIgnoreCase);
+    private long leftIndentation;
+    private int startValue = 1;
 
 
     // https://www.w3schools.com/cssref/playdemo.php?filename=playcss_list-style-type
@@ -68,14 +70,16 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         var listContext = context.Properties<ListContext>("listContext");
         var parentContext = listContext;
         var listStyle = GetListName(node, listContext.Name);
+        if (isOrderedTag && int.TryParse(node.GetAttribute("start"), out int val))
+            startValue = val;
         bool listMarginOnNumberingInstance = false;
-        if (listContext.InstanceId == 0 || listContext.Name != listStyle || _listIndentationOffset > 0)
+        if (listContext.InstanceId == 0 || listContext.Name != listStyle || leftIndentation > 0 || startValue != 1  )
         {
             var abstractNumId = GetOrCreateListTemplate(context, listStyle);
-            listContext = ConcretiseInstance(context, abstractNumId, listStyle, listContext.Level, _listIndentationOffset);
+            listContext = ConcretiseInstance(context, abstractNumId, listStyle, listContext.Level, leftIndentation);
 
             listParagraphStyleId = GetStyleIdForListItem(context.DocumentStyle, node, defaultIfEmpty: false);
-            listMarginOnNumberingInstance = _listIndentationOffset > 0;
+            listMarginOnNumberingInstance = leftIndentation > 0;
         }
         else
         {
@@ -142,7 +146,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 
                 p.ParagraphProperties ??= new();
                 p.ParagraphProperties.ParagraphStyleId ??= (ParagraphStyleId?) listItemStyleId!.CloneNode(true);
-                SetListItemElementParagraphIndentationLeft(p.ParagraphProperties, level, _listIndentationOffset);
+               SetListItemElementParagraphIndentationLeft(p.ParagraphProperties, level, leftIndentation);
             }
 
             foreach (var child in childElements)
@@ -190,14 +194,6 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         else
         {
             return new ListContext(listStyle, abstractNumId, instanceId.Value, currentLevel + 1, dir);
-        }
-
-        int startValue = 1;
-        if (isOrderedTag)
-        {
-            var startAttribute = node.GetAttribute("start");
-            if (startAttribute != null && int.TryParse(startAttribute, out var val) && val > 1)
-                startValue = val;
         }
 
         var numbering = context.MainPart.NumberingDefinitionsPart!.Numbering!;
@@ -329,7 +325,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         base.ComposeStyles(context); 
         var margin = styleAttributes.GetMargin();
         if (!margin.IsEmpty && margin.Left.IsFixed && margin.Left.Value > 0)
-            _listIndentationOffset = margin.Left.ValueInDxa;
+            leftIndentation = margin.Left.ValueInDxa;
     }
 
     /// <summary>
