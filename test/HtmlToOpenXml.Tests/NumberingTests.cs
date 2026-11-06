@@ -917,6 +917,33 @@ namespace HtmlToOpenXml.Tests
             AssertThatOpenXmlDocumentIsValid();
         }
 
+        [Test(Description = "Nested ordered list start value is reflected in the marker value")]
+        public async Task NestedOrderedList_StartValue_IsAddedToMarkerValue()
+        {
+            await converter.ParseBody(@"<ol><li>One<ol start='10'><li>Ten</li></ol></li></ol>");
+
+            var paragraphs = mainPart.Document!.Body!.Elements<Paragraph>().ToList();
+            Assert.That(GetListMarkerNumberingValue(paragraphs.Last()), Is.EqualTo("10"));
+            AssertThatOpenXmlDocumentIsValid();
+        }
+
+        [Test(Description = "Paragraph margin-left inside a list item must be applied independently of the list item indentation")]
+        public async Task ListItemWithMultipleParagraphs_AppliesIndependentParagraphIndentation()
+        {
+            await converter.ParseBody(@"<ol style='margin-left: 18pt;'><li><p>First</p><p style='margin-left: 18pt;'>Last</p></li></ol>");
+            var paragraphs = mainPart.Document?.Body!.Elements<Paragraph>().ToList();
+            var firstParagraph = paragraphs?.First();
+            var lastParagraph = paragraphs?.Last();
+
+            var firstParaIndent = firstParagraph?.ParagraphProperties?.Indentation?.Left?.Value;
+            var lastParaIndent = lastParagraph?.ParagraphProperties?.Indentation?.Left?.Value;
+
+            Assert.That(firstParaIndent, Is.Null, "The first paragraph should not have direct indentation because indentation is assigned through the list levelOverride instance.");
+            Assert.That(lastParaIndent, Is.Not.Null);
+            // i.e. level indentation + paragraph indentation + list left indentation = 720+360+360 = 1440
+            Assert.That(lastParaIndent, Is.EqualTo("1440"), "The last paragraph must have its own additional indentation from its margin-left. qith value equal to 360 dxa");
+        }
+
         private string? GetBulletText(Paragraph paragraph)
         {
             var numberingProperties = paragraph.ParagraphProperties?.NumberingProperties;
@@ -926,6 +953,16 @@ namespace HtmlToOpenXml.Tests
             var instance = numbering.Elements<NumberingInstance>().Single(i => i.NumberID?.Value == numId);
             var abstractNum = numbering.Elements<AbstractNum>().Single(a => a.AbstractNumberId?.Value == instance.AbstractNumId!.Val!.Value);
             return abstractNum.Elements<Level>().First(l => l.LevelIndex?.Value == level).LevelText?.Val?.Value;
+        }
+
+        private string? GetListMarkerNumberingValue(Paragraph paragraph)
+        {
+            var numberingProperties = paragraph.ParagraphProperties?.NumberingProperties;
+            var numId = numberingProperties?.NumberingId?.Val?.Value;
+            var level = numberingProperties?.NumberingLevelReference?.Val?.Value;
+            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
+            var instance = numbering.Elements<NumberingInstance>().Single(i => i.NumberID?.Value == numId);
+            return instance.GetFirstChild<LevelOverride>()?.GetFirstChild<StartOverrideNumberingValue>()?.Val;
         }
     }
 }
