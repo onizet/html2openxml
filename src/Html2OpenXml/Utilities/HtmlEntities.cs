@@ -18,8 +18,11 @@ namespace HtmlToOpenXml;
 /// Custom utility providing compatible decoding functionality.
 /// This implementation embraces the modern API <c>Span&lt;char&gt;</c> for maximum efficiency.
 /// </summary>
-static partial class HtmlEntities
+static class HtmlEntities
 {
+    /// <summary>
+    /// Result of IsRecognizedEntity.
+    /// </summary>
     /// <param name="EncodedLength">The number  of <see cref="Char"/> consumed or <c>0</c> if not matched.</param>
     /// <param name="DecodedChar">The decoded character.</param>
     public readonly record struct EntityMatchResult(int EncodedLength, char DecodedChar)

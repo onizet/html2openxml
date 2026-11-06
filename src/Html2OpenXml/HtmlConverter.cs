@@ -64,7 +64,7 @@ namespace HtmlToOpenXml;
 /// await converter.ParseBody(html);
 /// </code>
 /// </example>
-public partial class HtmlConverter
+public class HtmlConverter
 {
     internal readonly MainDocumentPart mainPart;
     // Cache all the ImagePart processed to avoid downloading the same image
@@ -127,8 +127,7 @@ public partial class HtmlConverter
     /// <returns>Returns a collection of generated OpenXml elements.</returns>
     public IList<OpenXmlCompositeElement> Parse(string html)
     {
-        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester, ImageProcessing);
-        return ParseCoreAsync(html, mainPart, bodyImageLoader,
+        return ParseAsync(html,
             new ParallelOptions() { CancellationToken = CancellationToken.None })
             .ConfigureAwait(false).GetAwaiter().GetResult().ToList();
     }
@@ -165,11 +164,50 @@ public partial class HtmlConverter
     /// <param name="html">The HTML content to parse</param>
     /// <param name="parallelOptions">Control the parallelism when downloading the remote resources such as images.</param>
     /// <returns>Returns a collection of generated OpenXml elements.</returns>
-    public Task<IEnumerable<OpenXmlCompositeElement>> ParseAsync(string html, ParallelOptions parallelOptions)
+    public async Task<IEnumerable<OpenXmlCompositeElement>> ParseAsync(string html, ParallelOptions parallelOptions)
     {
-        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester, ImageProcessing);
+        if (string.IsNullOrWhiteSpace(html))
+            return [];
 
-        return ParseCoreAsync(html, mainPart, bodyImageLoader, parallelOptions);
+        var config = GetParserConfiguration();
+        var browsingContext = BrowsingContext.New(config);
+
+        var htmlDocument = await browsingContext.OpenAsync(req => req.Content(html), parallelOptions.CancellationToken).ConfigureAwait(false);
+        if (htmlDocument == null)
+            return [];
+
+        await OnDocumentLoadedAsync(htmlDocument, browsingContext, parallelOptions.CancellationToken).ConfigureAwait(false);
+
+        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester, ImageProcessing);
+        return await ParseCoreAsync(htmlDocument, mainPart, bodyImageLoader,
+            parallelOptions,
+            HtmlStyles.GetParagraphStyle(HtmlStyles.DefaultStyles.ParagraphBodyStyle))
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Parse some HTML and append the genereated content to a Word header.
+    /// </summary>
+    /// <param name="htmlDocument">The parsed HTML document.</param>
+    /// <param name="headerType">Determines the page(s) on which the current header shall be displayed.
+    /// If omitted, the value <see cref="HeaderFooterValues.Default"/> is used.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <seealso cref="ParseFooter(string, HeaderFooterValues?, CancellationToken)"/>
+    protected async Task ParseHeader(AngleSharp.Dom.IDocument htmlDocument, HeaderFooterValues? headerType = null,
+        CancellationToken cancellationToken = default)
+    {
+        headerType ??= HeaderFooterValues.Default;
+        var headerPart = ResolveHeaderFooterPart<HeaderReference, HeaderPart>(headerType);
+
+        headerPart.Header ??= new();
+        headerImageLoader ??= new ImagePrefetcher<HeaderPart>(headerPart, webRequester, ImageProcessing);
+
+         var paragraphs = await ParseCoreAsync(htmlDocument, headerPart, headerImageLoader,
+            new ParallelOptions() { CancellationToken = cancellationToken },
+            HtmlStyles.GetParagraphStyle(HtmlStyles.DefaultStyles.ParagraphHeaderStyle))
+            .ConfigureAwait(false);
+
+        headerPart.Header.Append(paragraphs);
     }
 
     /// <summary>
@@ -188,18 +226,48 @@ public partial class HtmlConverter
     public async Task ParseHeader(string html, HeaderFooterValues? headerType = null,
         CancellationToken cancellationToken = default)
     {
-        headerType ??= HeaderFooterValues.Default;
-        var headerPart = ResolveHeaderFooterPart<HeaderReference, HeaderPart>(headerType);
+        if (string.IsNullOrWhiteSpace(html))
+            return;
 
-        headerPart.Header ??= new();
-        headerImageLoader ??= new ImagePrefetcher<HeaderPart>(headerPart, webRequester, ImageProcessing);
+        var config = GetParserConfiguration();
+        var browsingContext = BrowsingContext.New(config);
 
-        var paragraphs = await ParseCoreAsync(html, headerPart, headerImageLoader,
+        var htmlDocument = await browsingContext.OpenAsync(req => req.Content(html), cancellationToken).ConfigureAwait(false);
+        if (htmlDocument == null)
+            return;
+
+        await OnDocumentLoadedAsync(htmlDocument, browsingContext, cancellationToken).ConfigureAwait(false);
+
+        await ParseHeader(htmlDocument, headerType, cancellationToken);
+    }
+
+    /// <summary>
+    /// Parse some HTML and append the generated content into a Word footer.
+    /// </summary>
+    /// <param name="htmlDocument">The parsed HTML document.</param>
+    /// <param name="footerType">Determines the page(s) on which the current footer shall be displayed.
+    /// If omitted, the value <see cref="HeaderFooterValues.Default"/> is used.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <seealso cref="ParseFooter(string, HeaderFooterValues?, CancellationToken)"/>
+    protected async Task ParseFooter(AngleSharp.Dom.IDocument htmlDocument, HeaderFooterValues? footerType = null,
+        CancellationToken cancellationToken = default)
+    {
+        footerType ??= HeaderFooterValues.Default;
+        var footerPart = ResolveHeaderFooterPart<FooterReference, FooterPart>(footerType);
+
+        footerPart.Footer ??= new();
+        footerImageLoader ??= new ImagePrefetcher<FooterPart>(footerPart, webRequester, ImageProcessing);
+
+        var paragraphs = await ParseCoreAsync(htmlDocument, footerPart, footerImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
+<<<<<<< Updated upstream
             htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.ParagraphHeaderStyle))
+=======
+            HtmlStyles.GetParagraphStyle(HtmlStyles.DefaultStyles.ParagraphFooterStyle))
+>>>>>>> Stashed changes
             .ConfigureAwait(false);
 
-        headerPart.Header.Append(paragraphs);
+        footerPart.Footer.Append(paragraphs);
     }
 
     /// <summary>
@@ -218,45 +286,38 @@ public partial class HtmlConverter
     public async Task ParseFooter(string html, HeaderFooterValues? footerType = null,
         CancellationToken cancellationToken = default)
     {
-        footerType ??= HeaderFooterValues.Default;
-        var footerPart = ResolveHeaderFooterPart<FooterReference, FooterPart>(footerType);
+        if (string.IsNullOrWhiteSpace(html))
+            return;
 
-        footerPart.Footer ??= new();
-        footerImageLoader ??= new ImagePrefetcher<FooterPart>(footerPart, webRequester, ImageProcessing);
+        var config = GetParserConfiguration();
+        var browsingContext = BrowsingContext.New(config);
 
+<<<<<<< Updated upstream
         var paragraphs = await ParseCoreAsync(html, footerPart, footerImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
             htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.ParagraphFooterStyle))
             .ConfigureAwait(false);
+=======
+        var htmlDocument = await browsingContext.OpenAsync(req => req.Content(html), cancellationToken).ConfigureAwait(false);
+        if (htmlDocument == null)
+            return;
+>>>>>>> Stashed changes
 
-        footerPart.Footer.Append(paragraphs);
+        await OnDocumentLoadedAsync(htmlDocument, browsingContext, cancellationToken).ConfigureAwait(false);
+
+        await ParseFooter(htmlDocument, footerType, cancellationToken);
     }
 
     /// <summary>
     /// Parses some Html and appends the generated content to the document body.
-    /// This is the recommended method for most scenarios.
-    /// 
-    /// <para>
-    /// <c>Page Break</c> can be inserted using the CSS properties <c>page-break-before</c>
-    /// and <c>page-break-after</c> with the value "always".
-    /// Useful for reports, invoices, contracts, and other multi-page business documents.
-    /// </para>
-    /// 
-    /// <para>
-    /// <c>Page Orientation</c> can be changed through the non-standard <c>page-orientation</c>
-    /// attribute (supported values: portrait and landscape).
-    /// This is useful for wide tables, reports and other content that benefits
-    /// from a landscape layout.
-    /// Currently, the attribute is supported on the body element and applies to the main document.
-    /// </para>
     /// </summary>
-    /// <param name="html">The HTML content to parse</param>
+    /// <param name="htmlDocument">The parsed HTML document.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    /// <seealso cref="MainDocumentPart"/>
-    public async Task ParseBody(string html, CancellationToken cancellationToken = default)
+    /// <seealso cref="ParseBody(string, CancellationToken)"/>
+    protected async Task ParseBody(AngleSharp.Dom.IDocument htmlDocument, CancellationToken cancellationToken = default)
     {
         bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester, ImageProcessing);
-        var paragraphs = await ParseCoreAsync(html, mainPart, bodyImageLoader,
+        var paragraphs = await ParseCoreAsync(htmlDocument, mainPart, bodyImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
             htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.ParagraphBodyStyle))
             .ConfigureAwait(false);
@@ -293,10 +354,48 @@ public partial class HtmlConverter
     }
 
     /// <summary>
+    /// Parses some Html and appends the generated content to the document body.
+    /// This is the recommended method for most scenarios.
+    /// 
+    /// <para>
+    /// <c>Page Break</c> can be inserted using the CSS properties <c>page-break-before</c>
+    /// and <c>page-break-after</c> with the value "always".
+    /// Useful for reports, invoices, contracts, and other multi-page business documents.
+    /// </para>
+    /// 
+    /// <para>
+    /// <c>Page Orientation</c> can be changed through the non-standard <c>page-orientation</c>
+    /// attribute (supported values: portrait and landscape).
+    /// This is useful for wide tables, reports and other content that benefits
+    /// from a landscape layout.
+    /// Currently, the attribute is supported on the body element and applies to the main document.
+    /// </para>
+    /// </summary>
+    /// <param name="html">The HTML content to parse</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <seealso cref="MainDocumentPart"/>
+    public async Task ParseBody(string html, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(html))
+            return;
+
+        var config = GetParserConfiguration();
+        var browsingContext = BrowsingContext.New(config);
+
+        var htmlDocument = await browsingContext.OpenAsync(req => req.Content(html), cancellationToken).ConfigureAwait(false);
+        if (htmlDocument == null)
+            return;
+
+        await OnDocumentLoadedAsync(htmlDocument, browsingContext, cancellationToken).ConfigureAwait(false);
+
+        await ParseBody(htmlDocument, cancellationToken);
+    }
+
+    /// <summary>
     /// Reloads the style cache from the current Word document (<see cref="WordDocumentStyle"/>).
     /// Call this method if styles are added after the HtmlConverter instance has been created.
     /// </summary>
-    /// <remarks>You don't need to call this method if you register the missing style 
+    /// <remarks>You don't need to call this method if you register the missing style
     /// from <see cref="WordDocumentStyle.StyleMissing"/> event.</remarks>
     public void RefreshStyles()
     {
@@ -306,17 +405,19 @@ public partial class HtmlConverter
     /// <summary>
     /// Core method to start the asynchronous parse processing.
     /// </summary>
-    /// <param name="html">The HTML content to parse</param>
+    /// <param name="htmlDocument">The parsed HTML document.</param>
     /// <param name="hostingPart">The OpenXml container where the content will be inserted into.</param>
     /// <param name="imageLoader">The image resolver service linked to the <paramref name="hostingPart"/>.</param>
     /// <param name="parallelOptions">The configuration of parallelism while downloading the remote resources.</param>
-    /// <param name="defaultParagraphStyleId">The default OpenXml style to apply on paragraphs.</param> 
+    /// <param name="defaultParagraphStyleId">The default OpenXml style to apply on paragraphs.</param>
     /// <returns>Returns a list of parsed paragraph.</returns>
-    private async Task<IEnumerable<OpenXmlCompositeElement>> ParseCoreAsync(string html,
+    private async Task<IEnumerable<OpenXmlCompositeElement>> ParseCoreAsync(
+        AngleSharp.Dom.IDocument htmlDocument,
         OpenXmlPartContainer hostingPart, IImageLoader imageLoader,
         ParallelOptions parallelOptions,
         ParagraphStyleId? defaultParagraphStyleId = null)
     {
+<<<<<<< Updated upstream
         if (string.IsNullOrWhiteSpace(html))
             return [];
 
@@ -330,6 +431,8 @@ public partial class HtmlConverter
         else if (mainPart.Document.Body == null)
             mainPart.Document.Body = new Body();
 
+=======
+>>>>>>> Stashed changes
         await PreloadImages(htmlDocument, imageLoader, parallelOptions).ConfigureAwait(false);
 
         Expressions.HtmlDomExpression expression;
@@ -341,6 +444,29 @@ public partial class HtmlConverter
         var parsingContext = new ParsingContext(this, hostingPart, imageLoader);
         var paragraphs = expression.Interpret(parsingContext);
         return paragraphs.Cast<OpenXmlCompositeElement>();
+    }
+
+    /// <summary>
+    /// Provides a factory method to initialize the configuration for the internal parsing context.
+    /// Override this method to register advanced features like custom scripting or AngleSharp.Css extensions.
+    /// </summary>
+    /// <returns>An <see cref="IConfiguration"/> instance used to build the document context.</returns>
+    protected virtual IConfiguration GetParserConfiguration()
+    {
+        return Configuration.Default;
+    }
+
+    /// <summary>
+    /// Event hook triggered immediately after the HTML string is first parsed into a DOM tree.
+    /// This method allows extensions to inline CSS declarations, manipulate nodes, or alter the DOM tree before document interpretation begins.
+    /// </summary>
+    /// <param name="htmlDocument">The parsed document DOM tree structure.</param>
+    /// <param name="browsingContext">The context of the parsing, where additional services could have been registered.</param>
+    /// <param name="cancellation">The cancellation token.</param>
+    /// <returns>A task representing the asynchronous post-parsing pipeline operation.</returns>
+    protected virtual Task OnDocumentLoadedAsync(AngleSharp.Dom.IDocument htmlDocument, IBrowsingContext browsingContext, CancellationToken cancellation)
+    {
+        return Task.CompletedTask;
     }
 
     /// <summary>

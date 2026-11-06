@@ -7,10 +7,6 @@
         <Version>4.2.0</Version>
     </PropertyGroup>
 
-    <PropertyGroup>
-        <DocumentFormatOpenXmlPackageVersion>3.5.1</DocumentFormatOpenXmlPackageVersion>
-    </PropertyGroup>
-
     <PropertyGroup Condition="'$(PackageVersion)' != ''">
         <PackageVersion>$(PackageVersion)</PackageVersion>
     </PropertyGroup>

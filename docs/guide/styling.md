@@ -102,8 +102,6 @@ If you add this line of code in the startup example and run it again, you will n
 In fact, the "Heading 1" style is well applied but this style does not exists in the document ; when you create a new document, no styles are defined : it's up to you. HtmlToOpenXml handles automatically the hyperlink style for you but it does not deal with every styles.
 You can subscribe to the StyleMissing event to be warned and add them yourself.
 
-
-
 Generally, you will load in memory an existing document template and append the Html conversion inside it. MS Word 2007 embeds a lot of informations (like styles, themes, document properties, ...) that you don't really want to bother with.
 
 ## Dynamic Style Provisioning
@@ -131,11 +129,33 @@ converter.HtmlStyles.StyleMissing += delegate(object sender, StyleEventArgs args
 
 ## Note on External CSS
 
-The converter does not process external stylesheets (`<link rel="stylesheet">`) or `<style>` block content by default. To ensure visual fidelity, you must use a pre-processing tool (like [PreMailer.Net](https://www.nuget.org/packages/PreMailer.Net)) to inline the CSS into the HTML tags before passing it to the converter.
+`HtmlToOpenXml` handles standard inline HTML layouts and native **inline CSS** styles (e.g., `style="color: red;"`) out of the box with zero configuration.
+
+By default, the converter **does not** process global stylesheets (`<link rel="stylesheet">`) or `<style>` block content. If your HTML template relies on classes and standalone CSS sheets, you must pre-process and inline the CSS into the HTML tags before conversion using one of these options:
+
+### Option A: The First-Party Inliner (Recommended)
+
+> An optimized pre-processing extension that automatically compiles and flattens global `<style>` declarations into native inline attributes using an asynchronous DOM pipeline.
+
+Add our dedicated companion package to automate style compilation in a single, unified execution chain:
+
+1. Add a reference this NuGet package `dotnet add package HtmlToOpenXml.CssInliner`.
+2. Instantiate `CssStyleHtmlConverter`.
+
+```csharp
+var converter = new CssStyleHtmlConverter();
+await converter.ParseHtmlAsync(mainPart, htmlWithStyleTags);
+```
+
+### Option B: Third-Party Pre-Processing (PreMailer.Net)
+
+If you prefer a standalone utility or are already using **PreMailer.Net** in an email template workflow, you can explicitly move your CSS inline manually before parsing. The downside is the HTML is going to be parsed twice. This was the recommended option until v4.
 
 ```csharp
 string html = ResourceHelper.GetString("Resources.CompleteRunTest.html");
 string css = ResourceHelper.GetString("Resources.style.css");
+
+// Compile separate CSS declarations straight into inline attributes
 var result = PreMailer.Net.PreMailer.MoveCssInline(html, css: css);
 html = result.Html;
 
