@@ -260,11 +260,7 @@ public class HtmlConverter
 
         var paragraphs = await ParseCoreAsync(htmlDocument, footerPart, footerImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
-<<<<<<< Updated upstream
-            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.ParagraphHeaderStyle))
-=======
             HtmlStyles.GetParagraphStyle(HtmlStyles.DefaultStyles.ParagraphFooterStyle))
->>>>>>> Stashed changes
             .ConfigureAwait(false);
 
         footerPart.Footer.Append(paragraphs);
@@ -292,16 +288,9 @@ public class HtmlConverter
         var config = GetParserConfiguration();
         var browsingContext = BrowsingContext.New(config);
 
-<<<<<<< Updated upstream
-        var paragraphs = await ParseCoreAsync(html, footerPart, footerImageLoader,
-            new ParallelOptions() { CancellationToken = cancellationToken },
-            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.ParagraphFooterStyle))
-            .ConfigureAwait(false);
-=======
         var htmlDocument = await browsingContext.OpenAsync(req => req.Content(html), cancellationToken).ConfigureAwait(false);
         if (htmlDocument == null)
             return;
->>>>>>> Stashed changes
 
         await OnDocumentLoadedAsync(htmlDocument, browsingContext, cancellationToken).ConfigureAwait(false);
 
@@ -417,22 +406,6 @@ public class HtmlConverter
         ParallelOptions parallelOptions,
         ParagraphStyleId? defaultParagraphStyleId = null)
     {
-<<<<<<< Updated upstream
-        if (string.IsNullOrWhiteSpace(html))
-            return [];
-
-        var browsingContext = BrowsingContext.New();
-        var htmlDocument = await browsingContext.OpenAsync(req => req.Content(html), parallelOptions.CancellationToken).ConfigureAwait(false);
-        if (htmlDocument == null)
-            return [];
-
-        if (mainPart.Document == null)
-            new Document(new Body()).Save(mainPart);
-        else if (mainPart.Document.Body == null)
-            mainPart.Document.Body = new Body();
-
-=======
->>>>>>> Stashed changes
         await PreloadImages(htmlDocument, imageLoader, parallelOptions).ConfigureAwait(false);
 
         Expressions.HtmlDomExpression expression;
