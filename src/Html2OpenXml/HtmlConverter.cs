@@ -183,8 +183,7 @@ public class HtmlConverter
 
         bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester, ImageProcessing);
         return await ParseCoreAsync(htmlDocument, mainPart, bodyImageLoader,
-            parallelOptions,
-            HtmlStyles.GetParagraphStyle(HtmlStyles.DefaultStyles.ParagraphBodyStyle))
+            parallelOptions)
             .ConfigureAwait(false);
     }
 
