@@ -14,7 +14,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/onizet/html2openxml</PackageProjectUrl>
     <RepositoryUrl>https://github.com/onizet/html2openxml</RepositoryUrl>
-    <Description>Extension library to support CSS stylesheet.</Description>
+    <Description>Extension library to HtmlToOpenXml to support CSS stylesheet.</Description>
     <Authors>Olivier Nizet</Authors>
     <RepositoryType>GIT</RepositoryType>
     <NoWarn>$(NoWarn);CS8981</NoWarn>
@@ -28,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-      <ProjectReference Include="..\Html2OpenXml\HtmlToOpenXml.csproj" />
+    <ProjectReference Include="..\Html2OpenXml\HtmlToOpenXml.csproj" />
   </ItemGroup>
 
   <ItemGroup>
