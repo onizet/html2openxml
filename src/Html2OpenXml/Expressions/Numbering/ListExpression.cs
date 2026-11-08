@@ -23,10 +23,6 @@ namespace HtmlToOpenXml.Expressions;
 sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 {
     readonly record struct ListContext(string Name, int AbsNumId, int InstanceId, int Level, DirectionMode? Dir);
-    readonly record struct MarkerStyle(string? Color, string? FontSize, bool? Bold, bool? Italic, string? Font)
-    {
-        internal bool HasAny => Color != null || FontSize != null || Bold != null || Italic != null || Font != null;
-    }
     private readonly bool isOrderedTag = node.NodeName.Equals("ol", StringComparison.OrdinalIgnoreCase);
     private long leftIndentation;
     private int startValue = 1;
@@ -358,70 +354,25 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 
     private void ApplyListMarkerStyle(Paragraph paragraph)
     {
-        var marker = ResolveMarkerStyle(paragraph);
-        if (!marker.HasAny)
+        var runProps = paragraph.Descendants<Run>().Select(r => r.RunProperties).FirstOrDefault(r => r is { HasChildren: true });
+        if (runProps == null)
             return;
 
         var props = paragraph.ParagraphProperties!;
-        var preserved = props.ParagraphMarkRunProperties?.Where(c => c is not (RunFonts or Bold or Italic or Color or FontSize or FontSizeComplexScript))
-            .Select(c => c.CloneNode(true)).ToList();
-
         var mark = new ParagraphMarkRunProperties();
-        if (marker.Font != null)
-            mark.Append(new RunFonts { Ascii = marker.Font, HighAnsi = marker.Font });
-        if (marker.Bold.HasValue)
-            mark.Append(marker.Bold.Value ? new Bold() : new Bold { Val = false });
-        if (marker.Italic.HasValue)
-            mark.Append(marker.Italic.Value ? new Italic() : new Italic { Val = false });
-        if (marker.Color != null)
-            mark.Append(new Color { Val = marker.Color });
-        if (marker.FontSize != null)
-        {
-            mark.Append(new FontSize { Val = marker.FontSize });
-            mark.Append(new FontSizeComplexScript { Val = marker.FontSize });
-        }
-        if (preserved != null)
-        {
-            foreach (var child in preserved)
-                mark.Append(child);
-        }
+        foreach (var runProp in runProps)
+            mark.Append(runProp.CloneNode(true));
 
+        if (props.ParagraphMarkRunProperties != null)
+        {
+            var known = new HashSet<string>(mark.Select(c => c.LocalName));
+            foreach (var runProp in props.ParagraphMarkRunProperties)
+            {
+                // add marker styling i.e. fill gaps and not override existing mark run properties
+                if (known.Add(runProp.LocalName))
+                    mark.Append(runProp.CloneNode(true));
+            }
+        }
         props.ParagraphMarkRunProperties = mark;
-    }
-
-    private MarkerStyle ResolveMarkerStyle(Paragraph paragraph)
-    {
-        var item = ReadItemRunProperties(paragraph);
-        return new MarkerStyle(
-            item?.Color?.Val?.Value ?? runProperties.Color?.Val?.Value,
-            item?.FontSize?.Val?.Value ?? runProperties.FontSize?.Val?.Value,
-            ReadToggle(item?.Bold) ?? ReadToggle(runProperties.Bold),
-            ReadToggle(item?.Italic) ?? ReadToggle(runProperties.Italic),
-            item?.RunFonts?.Ascii?.Value ?? runProperties.RunFonts?.Ascii?.Value);
-    }
-
-    private static RunProperties? ReadItemRunProperties(Paragraph paragraph)
-    {
-        RunProperties? fallback = null;
-        foreach (var run in paragraph.Descendants<Run>())
-        {
-            RunProperties? props = run.RunProperties;
-            if (props == null)
-                continue;
-
-            fallback ??= props;
-
-            if (props.Color != null || props.FontSize != null || props.Bold != null || props.Italic != null || props.RunFonts != null)
-                return props;
-        }
-
-        return fallback;
-    }
-
-    private static bool? ReadToggle(OnOffType? toggle)
-    {
-        if (toggle == null)
-            return null;
-        return toggle.Val?.Value ?? true;
     }
 }
