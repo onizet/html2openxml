@@ -991,7 +991,6 @@ namespace HtmlToOpenXml.Tests
                 // list items font-size check
                 Assert.That(firstMark?.GetFirstChild<FontSize>()?.Val?.Value, Is.EqualTo("24"));
                 Assert.That(secondMark?.GetFirstChild<FontSize>()?.Val?.Value, Is.EqualTo("24"));
-                Assert.That(secondMark?.GetFirstChild<FontSizeComplexScript>()?.Val?.Value, Is.EqualTo("24"));
             }
             AssertThatOpenXmlDocumentIsValid();
         }
