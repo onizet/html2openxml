@@ -41,7 +41,8 @@ To override the default behavior or apply a unique style, use the `class` attrib
 <table class="Standard_Table TableWhite">...</table>
 ```
 
-*The converter attempts to locate and apply styles matching the class names (`Standard_Table`, `TableWhite`).*
+*The converter attempts to locate and apply styles matching the class names (`Standard_Table`, `TableWhite`), performing a runtime translation
+between your HTML structure and the target DOCX.*
 
 ## OpenXml style mapping
 
@@ -91,7 +92,7 @@ If it is not found, you can provide your own OpenXml style definition.
 
 In this sample, the converter will try to find a style with the name **Standard_Table** and if not found, **TableWhite**.
 
-### Provision your style
+### Advanced Workflow: Handling Missing Styles
 
 If you add this line of code in the startup example and run it again, you will not see the "Heading 1" style applied.
 

@@ -45,3 +45,26 @@ Purpose: Converts HTML into a standalone, actionable collection of OpenXML eleme
 * **Use Case:** You are building a custom element, merging snippets from multiple sources, or needing to inspect and modify the generated code before injecting it into a document.
 
 * **Note on Synchronicity**: Use `Parse()` for basic, non-resource-dependent conversions. Use `ParseAsync()` when the content requires external resource fetching (images, links) or longer processing time.
+
+## Advanced Extension Hooks (Optional)
+
+For scenarios requiring custom preprocessing, deep analysis of the input document, or programmatic control over the conversion stages, the following virtual methods allow you to extend the library's default behavior:
+
+### `GetParserConfiguration()`
+
+* **Purpose:** This method dictates how the initial HTML string is interpreted into a parsable Document Object Model (DOM).
+
+* **Use Case:** Override this method to inject custom parsers, attach unique behaviors to AngleSharp during the parsing phase, or configure how external dependencies (like CSS loaders) are initialized before conversion begins.
+
+* **Default Behavior:** Returns the default parser configuration, enabling standard HTML compliance.
+
+### `OnDocumentLoadedAsync()`
+
+* **Purpose:** Serves as a post-parsing hook. It executes *after* the HTML has been fully parsed into the internal DOM tree but *before* the `HtmlConverter` begins the translation into OpenXML.
+
+* **Use Case:** Manipulate or analyze the parsed DOM structure. This is the ideal location to run logic such as inlining external CSS blocks, cleaning up metadata tags, or performing complex pre-conversion checks.
+
+* **Default Behavior:** Executes immediately and completes without taking action on the parsed document.
+
+---
+*Note: These methods allow you to modify the conversion pipeline's behavior, enabling scenarios like CSS inlining or custom preprocessing.*
