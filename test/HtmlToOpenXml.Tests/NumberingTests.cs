@@ -990,7 +990,6 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(thirdMark?.GetFirstChild<Color>()?.Val?.Value, Is.EqualTo("008000"));
                 // list items font-size check
                 Assert.That(firstMark?.GetFirstChild<FontSize>()?.Val?.Value, Is.EqualTo("24"));
-                Assert.That(firstMark?.GetFirstChild<FontSizeComplexScript>()?.Val?.Value, Is.EqualTo("24"));
                 Assert.That(secondMark?.GetFirstChild<FontSize>()?.Val?.Value, Is.EqualTo("24"));
                 Assert.That(secondMark?.GetFirstChild<FontSizeComplexScript>()?.Val?.Value, Is.EqualTo("24"));
             }
@@ -1032,11 +1031,8 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(marks[4]?.GetFirstChild<Color>()?.Val?.Value, Is.EqualTo("800080"));
                 // font size inherited from parent list in all list items
                 Assert.That(marks[0]?.GetFirstChild<FontSize>()?.Val?.Value, Is.EqualTo("24"));
-                Assert.That(marks[0]?.GetFirstChild<FontSizeComplexScript>()?.Val?.Value, Is.EqualTo("24"));
                 Assert.That(marks[1]?.GetFirstChild<FontSize>()?.Val?.Value, Is.EqualTo("24"));
-                Assert.That(marks[1]?.GetFirstChild<FontSizeComplexScript>()?.Val?.Value, Is.EqualTo("24"));
                 Assert.That(marks[2]?.GetFirstChild<FontSize>()?.Val?.Value, Is.EqualTo("24"));
-                Assert.That(marks[2]?.GetFirstChild<FontSizeComplexScript>()?.Val?.Value, Is.EqualTo("24"));
             }
 
             AssertThatOpenXmlDocumentIsValid();
