@@ -85,13 +85,26 @@ public class CssStyleHtmlConverter : HtmlConverter
         // Enables full CSS parsing and computation mechanisms
         var configuration = Configuration.Default.WithCss();
         if (CssProcessing == CssProcessingMode.All)
+        {
             configuration.WithDefaultLoader();
+        }
+
         return configuration;
     }
 
     /// <inheritdoc />
     protected override async Task OnDocumentLoadedAsync(IDocument document, IBrowsingContext browsingContext,
         CancellationToken cancellationToken)
+    {
+        InlineStyles(document);
+    }
+
+    /// <summary>
+    /// Compiles internal CSS rules found in &lt;style&gt; tags into native inline attributes 
+    /// on the matched HTML elements within the document. This process effectively merges 
+    /// embedded stylesheets into the structural content during conversion.
+    /// </summary>
+    protected void InlineStyles(IDocument document)
     {
         // gather all <style> tags using AngleSharp.Css
         var styleElements = document.QuerySelectorAll("style");
@@ -102,7 +115,7 @@ public class CssStyleHtmlConverter : HtmlConverter
             var stylesheet = cssParser.ParseStyleSheet(styleEl.TextContent);
 
             // map selectors down into raw inline style strings
-            foreach (var rule in stylesheet.Rules.OfType<AngleSharp.Css.Dom.ICssStyleRule>())
+            foreach (var rule in stylesheet.Rules.OfType<ICssStyleRule>())
             {
                 var matchingElements = document.QuerySelectorAll(rule.SelectorText);
                 foreach (var element in matchingElements)
@@ -119,7 +132,10 @@ public class CssStyleHtmlConverter : HtmlConverter
 
     private static void AppendStylesToElement(IElement element, ICssStyleDeclaration newStyles, CssParser parser)
     {
-        var currentStyleText = element.GetAttribute("style") ?? "";
+        string? currentStyleText = element.GetAttribute("style");
+        if (currentStyleText is null)
+            return;
+
         var currentStyles = parser.ParseDeclaration(currentStyleText);
         if (currentStyles is null)
             return;
@@ -127,9 +143,10 @@ public class CssStyleHtmlConverter : HtmlConverter
         foreach (var property in newStyles)
         {
             var priority = newStyles.GetPropertyPriority(property.Name);
-            if (string.IsNullOrEmpty(currentStyles.GetPropertyValue(property.Name)) || priority == "important")
+            bool isPriority = priority.Equals("important", StringComparison.OrdinalIgnoreCase);
+            if (string.IsNullOrEmpty(currentStyles.GetPropertyValue(property.Name)) || isPriority)
             {
-                currentStyles.SetProperty(property.Name, property.Value, priority);
+                currentStyles.SetProperty(property.Name, property.Value, isPriority? priority : null);
             }
         }
 

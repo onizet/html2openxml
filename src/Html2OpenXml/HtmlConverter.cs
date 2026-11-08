@@ -19,8 +19,10 @@ using HtmlToOpenXml.IO;
 namespace HtmlToOpenXml;
 
 /// <summary>
+/// <para>
 /// Primary entry point for converting HTML into OpenXml Word document.
-/// 
+/// </para>
+///
 /// The converter can be used with newly created documents as well as existing document templates.
 /// When a template is used, styles, themes, numbering definitions, bookmarks, and other Word settings
 /// are automatically reused.
@@ -49,12 +51,12 @@ namespace HtmlToOpenXml;
 /// <item>Call ParseBody() to append the converted content to the document body.</item>
 /// </list>
 /// </para>
-/// 
+///
 /// Advanced scenarios can use ParseAsync() to control where the generated OpenXml elements are inserted.
 /// </summary>
 /// <example>
 /// Basic quick start:
-/// 
+///
 /// <code>
 /// await using var generatedDocument = new MemoryStream();
 /// using var package = WordprocessingDocument.Create(generatedDocument, WordprocessingDocumentType.Document);
@@ -539,20 +541,22 @@ public class HtmlConverter
     /// <remarks>
     /// It exists some predefined anchors used by Word such as <c>#_top</c> to refer to the top of the document.
     /// This built-in anchor is always accepted regardless this property value.
-    /// For others anchors like referring to your own bookmark or a title, add a 
-    /// <see cref="DocumentFormat.OpenXml.Wordprocessing.BookmarkStart"/> and 
+    /// For others anchors like referring to your own bookmark or a title, add a
+    /// <see cref="DocumentFormat.OpenXml.Wordprocessing.BookmarkStart"/> and
     /// <see cref="DocumentFormat.OpenXml.Wordprocessing.BookmarkEnd"/> elements
     /// and set the value of href to <c>#your_bookmark</c>.
     /// </remarks>
     public bool SupportsAnchorLinks { get; set; } = true;
 
     /// <summary>
-    /// Gets the style manager for the current conversion.
-    /// 
+    /// Gets the style translator used for the current conversion.
+    ///
     /// <para>
-    /// HtmlStyles controls how HTML elements are translated into Word styles.
+    /// HtmlStyles acts as the runtime bridge between CSS <c>class</c> attributes and target Word styles.
     /// Through this object you can customize the default style mappings, add custom styles,
-    /// and react when a referenced style is missing from the document.
+    /// and handle the <see cref="WordDocumentStyle.StyleMissing"/> event when a referenced style is absent from the template.
+    /// Class name are case insensitive, e.g., <c>&lt;p class="important_paragraph"&gt;&lt;/p&gt;</c>
+    /// will be mapped to and rendered using the Word style <c>Important_Paragraph</c>.
     /// </para>
     /// </summary>
     public WordDocumentStyle HtmlStyles { get; }
