@@ -48,23 +48,38 @@ Purpose: Converts HTML into a standalone, actionable collection of OpenXML eleme
 
 ## Advanced Extension Hooks (Optional)
 
-For scenarios requiring custom preprocessing, deep analysis of the input document, or programmatic control over the conversion stages, the following virtual methods allow you to extend the library's default behavior:
+`HtmlConverter` can be extended by overriding two virtual methods that participate in the HTML parsing pipeline.
+These hooks are intended for advanced scenarios such as CSS inlining, DOM transformations, custom AngleSharp integrations, URL rewriting, or document validation before conversion.
 
 ### `GetParserConfiguration()`
 
-* **Purpose:** This method dictates how the initial HTML string is interpreted into a parsable Document Object Model (DOM).
+* **Purpose:** Provides the `AngleSharp` configuration used to parse the input HTML before conversion begins.
 
-* **Use Case:** Override this method to inject custom parsers, attach unique behaviors to AngleSharp during the parsing phase, or configure how external dependencies (like CSS loaders) are initialized before conversion begins.
+* **Use Case:** Override this method to register AngleSharp extensions, services, or features required during
+document parsing. Typical scenario include enabling support for CSS processing, custom resource loaders, or other AngleSharp integrations.
 
-* **Default Behavior:** Returns the default parser configuration, enabling standard HTML compliance.
+* **Default Behavior:** Returns `Configuration.Default`, providing standard HTML parsing behaviour.
+
+```csharp
+protected override IConfiguration GetParserConfiguration()
+{
+    return Configuration.Default
+        .WithCss();
+}
+```
 
 ### `OnDocumentLoadedAsync()`
 
-* **Purpose:** Serves as a post-parsing hook. It executes *after* the HTML has been fully parsed into the internal DOM tree but *before* the `HtmlConverter` begins the translation into OpenXML.
+* **Purpose:** Executes after the HTML has been parsed into an AngleSharp document but before any OpenXML elements or image resources are generated.
 
-* **Use Case:** Manipulate or analyze the parsed DOM structure. This is the ideal location to run logic such as inlining external CSS blocks, cleaning up metadata tags, or performing complex pre-conversion checks.
+* **Use Case:** Inspect or alter the DOM before conversion. Typical sccenarios include:
+  * Inlining CSS stylesheets
+  * Rewriting image URLs
+  * Removing unsupported elements
+  * Adding custom attributes
+  * Performing document validation
 
-* **Default Behavior:** Executes immediately and completes without taking action on the parsed document.
+* **Default Behavior:** Performs no action.
 
----
-*Note: These methods allow you to modify the conversion pipeline's behavior, enabling scenarios like CSS inlining or custom preprocessing.*
+* **Note:** Any changes made to the DOM are used by all subsequent conversion stages, including the image discovery,
+resource loading, and OpenXML conversion.
