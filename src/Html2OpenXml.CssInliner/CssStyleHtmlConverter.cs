@@ -82,14 +82,18 @@ public class CssStyleHtmlConverter : HtmlConverter
     /// <inheritdoc />
     protected override IConfiguration GetParserConfiguration()
     {
-        // Enables full CSS parsing and computation mechanisms
-        var configuration = Configuration.Default.WithCss();
+        // Enables downloading the external stylesheets
         if (CssProcessing == CssProcessingMode.All)
         {
-            configuration.WithDefaultLoader();
+            return Configuration.Default
+                .With(new WebRequestRequester(WebRequester))
+                .WithDefaultLoader(new AngleSharp.Io.LoaderOptions {
+                IsResourceLoadingEnabled = true
+            })
+            .WithCss();
         }
 
-        return configuration;
+        return Configuration.Default.WithCss();
     }
 
     /// <inheritdoc />
@@ -100,42 +104,50 @@ public class CssStyleHtmlConverter : HtmlConverter
     }
 
     /// <summary>
-    /// Compiles internal CSS rules found in &lt;style&gt; tags into native inline attributes 
-    /// on the matched HTML elements within the document. This process effectively merges 
+    /// Compiles internal CSS rules found in &lt;style&gt; tags into native inline attributes
+    /// on the matched HTML elements within the document. This process effectively merges
     /// embedded stylesheets into the structural content during conversion.
     /// </summary>
     protected void InlineStyles(IDocument document)
     {
-        // gather all <style> tags using AngleSharp.Css
-        var styleElements = document.QuerySelectorAll("style");
         var cssParser = new CssParser();
 
+        foreach (var stylesheet in document.StyleSheets.OfType<ICssStyleSheet>())
+        {
+            // map selectors down into raw inline style strings
+            ApplyCssRules(document, cssParser, stylesheet.Rules);
+        }
+
+        // gather all <style> tags using AngleSharp.Css
+        var styleElements = document.QuerySelectorAll("style");
         foreach (var styleEl in styleElements)
         {
             var stylesheet = cssParser.ParseStyleSheet(styleEl.TextContent);
 
-            // map selectors down into raw inline style strings
-            foreach (var rule in stylesheet.Rules.OfType<ICssStyleRule>())
-            {
-                var matchingElements = document.QuerySelectorAll(rule.SelectorText);
-                foreach (var element in matchingElements)
-                {
-                    // Convert rule.Style into native inline attributes
-                    AppendStylesToElement(element, rule.Style, cssParser);
-                }
-            }
+            ApplyCssRules(document, cssParser, stylesheet.Rules);
 
             // Remove the style tag so it isn't parsed again
             styleEl.Remove();
         }
     }
 
+    private void ApplyCssRules(IDocument document, CssParser cssParser, ICssRuleList rules)
+    {
+        // map selectors down into raw inline style strings
+        foreach (var rule in rules.OfType<ICssStyleRule>())
+        {
+            var matchingElements = document.QuerySelectorAll(rule.SelectorText);
+            foreach (var element in matchingElements)
+            {
+                // Convert rule.Style into native inline attributes
+                AppendStylesToElement(element, rule.Style, cssParser);
+            }
+        }
+    }
+
     private static void AppendStylesToElement(IElement element, ICssStyleDeclaration newStyles, CssParser parser)
     {
-        string? currentStyleText = element.GetAttribute("style");
-        if (currentStyleText is null)
-            return;
-
+        string? currentStyleText = element.GetAttribute("style") ?? "";
         var currentStyles = parser.ParseDeclaration(currentStyleText);
         if (currentStyles is null)
             return;

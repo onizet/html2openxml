@@ -73,7 +73,6 @@ public class HtmlConverter
 
     // Cache all the ImagePart processed to avoid downloading the same image
     private IImageLoader? headerImageLoader, bodyImageLoader, footerImageLoader;
-    private readonly IWebRequest webRequester;
 
 
     /// <summary>
@@ -92,7 +91,7 @@ public class HtmlConverter
         this.mainPart = mainPart ?? throw new ArgumentNullException(nameof(mainPart));
         this.body = WordDocumentFactory.GetOrCreateDocumentBody(mainPart);
         HtmlStyles = new WordDocumentStyle(mainPart);
-        this.webRequester = webRequester ?? new DefaultWebRequest();
+        this.WebRequester = webRequester ?? new DefaultWebRequest();
     }
 
     /// <summary>
@@ -114,7 +113,7 @@ public class HtmlConverter
         this.mainPart = WordDocumentFactory.GetOrCreateMainDocumentPart(package);
         this.body = WordDocumentFactory.GetOrCreateDocumentBody(mainPart);
         HtmlStyles = new WordDocumentStyle(this.mainPart);
-        this.webRequester = webRequester ?? new DefaultWebRequest();
+        this.WebRequester = webRequester ?? new DefaultWebRequest();
     }
 
     /// <summary>
@@ -183,7 +182,7 @@ public class HtmlConverter
 
         await OnDocumentLoadedAsync(htmlDocument, browsingContext, parallelOptions.CancellationToken).ConfigureAwait(false);
 
-        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester, ImageProcessing);
+        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, WebRequester, ImageProcessing);
         return await ParseCoreAsync(htmlDocument, mainPart, bodyImageLoader,
             parallelOptions)
             .ConfigureAwait(false);
@@ -204,7 +203,7 @@ public class HtmlConverter
         var headerPart = ResolveHeaderFooterPart<HeaderReference, HeaderPart>(headerType);
 
         headerPart.Header ??= new();
-        headerImageLoader ??= new ImagePrefetcher<HeaderPart>(headerPart, webRequester, ImageProcessing);
+        headerImageLoader ??= new ImagePrefetcher<HeaderPart>(headerPart, WebRequester, ImageProcessing);
 
          var paragraphs = await ParseCoreAsync(htmlDocument, headerPart, headerImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
@@ -260,7 +259,7 @@ public class HtmlConverter
         var footerPart = ResolveHeaderFooterPart<FooterReference, FooterPart>(footerType);
 
         footerPart.Footer ??= new();
-        footerImageLoader ??= new ImagePrefetcher<FooterPart>(footerPart, webRequester, ImageProcessing);
+        footerImageLoader ??= new ImagePrefetcher<FooterPart>(footerPart, WebRequester, ImageProcessing);
 
         var paragraphs = await ParseCoreAsync(htmlDocument, footerPart, footerImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
@@ -309,7 +308,7 @@ public class HtmlConverter
     /// <seealso cref="ParseBody(string, CancellationToken)"/>
     protected async Task ParseBody(AngleSharp.Dom.IDocument htmlDocument, CancellationToken cancellationToken = default)
     {
-        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester, ImageProcessing);
+        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, WebRequester, ImageProcessing);
         var paragraphs = await ParseCoreAsync(htmlDocument, mainPart, bodyImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
             HtmlStyles.GetParagraphStyle(HtmlStyles.DefaultStyles.ParagraphBodyStyle))
@@ -633,4 +632,17 @@ public class HtmlConverter
     /// This feature is enabled by default.
     /// </summary>
     public bool SupportsHeadingNumbering { get; set; } = true;
+
+    /// <summary>
+    /// Gets the resource retrieval service used by the converter.
+    /// </summary>
+    /// <remarks>
+    /// The <see cref="IWebRequest"/> implementation is responsible for resolving external
+    /// resources referenced by the HTML document, such as images, stylesheets or local files.
+    /// <para>
+    /// This property is intended for derived classes that need access to the resource retrieval infrastructure
+    /// when extending the parsing pipeline, for example to configure AngleSharp resource loaders.
+    /// </para>
+    /// </remarks>
+    protected IWebRequest WebRequester { get; }
 }

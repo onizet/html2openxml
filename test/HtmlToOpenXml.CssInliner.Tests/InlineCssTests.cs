@@ -5,7 +5,7 @@ using DocumentFormat.OpenXml.Packaging;
 namespace HtmlToOpenXml.CssInliner.Tests;
 
 /// <summary>
-/// Tests parser with various complex Html style tags.
+/// Tests parser with various complex Html <c>&lt;style&gt;</c> tags.
 /// </summary>
 [TestFixture]
 public class InlineCssTests
