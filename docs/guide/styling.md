@@ -1,7 +1,7 @@
 ---
 lang: en-US
 title: Styling
-description: 
+description: Documentation for HTML, CSS, and OpenXml style handling, including class mapping, default styles and CSS inlining.
 ---
 
 The `HtmlToOpenXml` converter serves as the bridge between the flexible structure of HTML and the rigorous object model of DOCX. The resulting fidelity depends on how you leverage the built-in style detection and mapping capabilities of the converter.
@@ -147,6 +147,13 @@ Add our dedicated companion package to automate style compilation in a single, u
 var converter = new CssStyleHtmlConverter();
 await converter.ParseHtmlAsync(mainPart, htmlWithStyleTags);
 ```
+
+The `CssProcessing` property controls how stylesheets are resolved during conversion.
+
+| Mode | Description | Use Case |
+| :--- | :--- | :--- |
+| `InternalOnly` | Processes only `<style>` elements embedded in the HTML document. | Network access is unavailable, HTML originates from untrusted sources or all required styles are already embedded in the document. |
+| `All` (default) | Processes both the `<style>` elements and external stylesheets referenced through the `<link rel="stylesheet">` tag. | HTML relies on shared stylesheets or external CSS frameworks. Perform a network access, through `IWebRequest`. |
 
 ### Option B: Third-Party Pre-Processing (PreMailer.Net)
 
