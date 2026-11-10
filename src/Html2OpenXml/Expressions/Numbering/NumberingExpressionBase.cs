@@ -49,7 +49,6 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
         }
 
         Numbering numberingPart = context.MainPart.NumberingDefinitionsPart!.Numbering!;
-
         AbstractNum abstractNum;
         
         // at this stage, we have sanitized the list style so it's safe to grab them from the predefined template lists
@@ -63,7 +62,7 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
             // If not found in predefined lists, listName contains a custom bullet character (e.g., "-")
             abstractNum = CreateCustomBulletAbstractNum(listName);
         }
-        
+
         abstractNum = (AbstractNum) abstractNum.CloneNode(true);
         abstractNum.AbstractNumberId = IncrementAbstractNumId(context, numberingPart);
         var level1 = abstractNum.GetFirstChild<Level>()!;

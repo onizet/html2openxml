@@ -389,6 +389,29 @@ namespace HtmlToOpenXml.Tests
                 Is.EqualTo(startLevel));
         }
 
+        [Test(Description = "Allow to specify another start value for the first item of a nested `ol` list")]
+        public void OverrideStartNumber_WithNestedOl_ShouldSucceed()
+        {
+            const short startLevel = 3;
+            var elements = converter.Parse($"""
+                <ol start='{startLevel+1}'>
+                    <li>One 
+                        <ol start='{startLevel}'><li>Three</li></ol>
+                    </li>
+                </ol>
+            """);
+            Assert.That(elements, Has.Count.EqualTo(2));
+            Assert.That(elements, Has.All.TypeOf<Paragraph>());
+
+            var instances = mainPart.NumberingDefinitionsPart?.Numbering?
+                .Elements<NumberingInstance>();
+            Assert.That(instances, Has.Exactly(2).Items);
+            Assert.That(instances.First().GetFirstChild<LevelOverride>()?.StartOverrideNumberingValue?.Val?.Value,
+                Is.EqualTo(startLevel + 1));
+            Assert.That(instances.Last().GetFirstChild<LevelOverride>()?.StartOverrideNumberingValue?.Val?.Value,
+                Is.EqualTo(startLevel));
+        }
+
         [Test(Description = "Allow to specify another start value for the first item of a `ul` list")]
         public void OverrideStartNumber_WithUl_ShouldBeIgnored()
         {
@@ -617,7 +640,7 @@ namespace HtmlToOpenXml.Tests
             var elements = converter.Parse(@"<ul>
                 <li>
                     <p>Paragraph text</p>
-                    <p>Paragraph text</p>
+                    <p id='alone'>Paragraph text</p>
                 </li>
                 </ul>");
 
@@ -673,11 +696,12 @@ namespace HtmlToOpenXml.Tests
             }
         }
 
-        [Test]
-        public async Task LowerGreekList_ReturnsListWithGreekNumbering()
+        [TestCase("lower-greek", nameof(NumberFormatValues.LowerLetter))]
+        [TestCase("upper-greek", nameof(NumberFormatValues.UpperLetter))]
+        public async Task GreekList_ReturnsListWithGreekNumbering(string listStyle, string numberFormat)
         {
-            await converter.ParseBody(@"
-                <ol style='list-style-type: lower-greek'>
+            await converter.ParseBody($@"
+                <ol style='list-style-type: {listStyle}'>
                     <li>Item 1</li>
                     <li>Item 2</li>
                 </ol>"
@@ -690,38 +714,14 @@ namespace HtmlToOpenXml.Tests
             var absNum = numbering.Elements<AbstractNum>().SingleOrDefault();
 
             Assert.That(absNum, Is.Not.Null);
-            Assert.That(absNum.AbstractNumDefinitionName?.Val?.Value, Is.EqualTo("lower-greek"));
+            Assert.That(absNum.AbstractNumDefinitionName?.Val?.Value, Is.EqualTo(listStyle));
 
             var level = absNum.Elements<Level>().First();
 
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(level.NumberingFormat?.Val?.Value, Is.EqualTo(NumberFormatValues.LowerLetter));
+                Assert.That(((DocumentFormat.OpenXml.IEnumValue) level.NumberingFormat?.Val?.Value!).Value, Is.EqualTo(numberFormat).IgnoreCase);
                 Assert.That(level.LevelText?.Val?.Value, Is.EqualTo("%1."));
-            }
-        }
-
-        [Test]
-        public async Task UpperGreekList_ReturnsListWithGreekNumbering()
-        {
-            await converter.ParseBody(@"
-                <ol style='list-style-type: upper-greek'>
-                    <li>Item 1</li>
-                </ol>"
-            );
-
-            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
-            var absNum = numbering.Elements<AbstractNum>().SingleOrDefault();
-
-            Assert.That(absNum, Is.Not.Null);
-            Assert.That(absNum.AbstractNumDefinitionName?.Val?.Value, Is.EqualTo("upper-greek"));
-
-            var level = absNum.Elements<Level>().First();
-
-            using (Assert.EnterMultipleScope())
-            {
-                Assert.That(level.NumberingFormat?.Val?.Value, Is.EqualTo(NumberFormatValues.UpperLetter));
-                Assert.That(level.LevelText?.Val?.Value,  Is.EqualTo("%1."));
             }
         }
 
@@ -757,9 +757,6 @@ namespace HtmlToOpenXml.Tests
             AssertThatOpenXmlDocumentIsValid();
         }
 
-        /// <summary>Level-1 list indent plus 18pt <c>&lt;ol&gt;</c> margin-left.</summary>
-        private const string Level1ListIndent_AddedWith_18PtMargin_DXA_Value = "1080";
-
         [Test(Description = "List container margin-left must not create a separate abstractNum for the same list-style-type")]
         public void ListContainerMarginLeft_SharesAbstractNumAcrossDifferentMargins()
         {
@@ -784,9 +781,9 @@ namespace HtmlToOpenXml.Tests
         public void ListContainerMarginLeft_NestedList_AppliesLevelAndMargin()
         {
             var elements = converter.Parse(@"
-                <ol style='margin-left: 18pt;'>
+                <ol style='margin-left: 10px;'>
                     <li>Outer
-                        <ol style='margin-left: 18pt;'><li>Inner</li></ol>
+                        <ol style='margin-left: 20px;'><li>Inner</li></ol>
                     </li>
                 </ol>");
 
@@ -804,7 +801,7 @@ namespace HtmlToOpenXml.Tests
 
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(GetListInstanceLevelIndentLeft(numbering, outerNumId), Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
+                Assert.That(GetListInstanceLevelIndentLeft(numbering, outerNumId), Is.EqualTo("1080"));
                 Assert.That(GetListInstanceLevelIndentLeft(numbering, innerNumId, ilvl: 1), Is.EqualTo("1800"));
             }
         }
@@ -814,7 +811,9 @@ namespace HtmlToOpenXml.Tests
         {
             var elements = converter.Parse(@"
                 <ol style='margin-left: 18pt;'>
-                    <li><p>One</p><p>Two</p></li>
+                    <li><p>One</p>
+                        <p>Two</p>
+                    </li>
                 </ol>");
 
             var paragraphs = elements.OfType<Paragraph>().ToList();
@@ -824,7 +823,7 @@ namespace HtmlToOpenXml.Tests
             {
                 Assert.That(paragraphs[0].ParagraphProperties?.NumberingProperties, Is.Not.Null);
                 Assert.That(paragraphs[1].ParagraphProperties?.NumberingProperties, Is.Null);
-                Assert.That(paragraphs[1].ParagraphProperties?.Indentation?.Left?.Value, Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
+                Assert.That(paragraphs[1].ParagraphProperties?.Indentation?.Left?.Value, Is.EqualTo("1080"));
             }
         }
 
@@ -836,7 +835,7 @@ namespace HtmlToOpenXml.Tests
             var numId = p.ParagraphProperties!.NumberingProperties!.NumberingId!.Val!.Value;
             var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
             Assert.That(p.ParagraphProperties?.NumberingProperties, Is.Not.Null);
-            Assert.That(GetListInstanceLevelIndentLeft(numbering, numId), Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
+            Assert.That(GetListInstanceLevelIndentLeft(numbering, numId), Is.EqualTo("1080"));
             var overrideLevel = GetListInstanceLevelOverride(numbering, numId);
             Assert.That(overrideLevel?.NumberingFormat?.Val?.Value, Is.EqualTo(NumberFormatValues.Bullet),
                 "Level override must clone the template level so bullet markers still render");
@@ -930,7 +929,14 @@ namespace HtmlToOpenXml.Tests
         [Test(Description = "Paragraph margin-left inside a list item must be applied independently of the list item indentation")]
         public async Task ListItemWithMultipleParagraphs_AppliesIndependentParagraphIndentation()
         {
-            await converter.ParseBody(@"<ol style='margin-left: 18pt;'><li><p>First</p><p style='margin-left: 18pt;'>Last</p></li></ol>");
+            await converter.ParseBody("""
+                    <ol style='margin-left: 18pt;'>
+                        <li>
+                            <p>First</p>
+                            <p style='margin-left: 18pt;'>Last</p>
+                        </li>
+                    </ol>
+                """);
             var paragraphs = mainPart.Document?.Body!.Elements<Paragraph>().ToList();
             var firstParagraph = paragraphs?.First();
             var lastParagraph = paragraphs?.Last();
