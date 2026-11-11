@@ -22,6 +22,8 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 class BlockElementExpression: PhrasingElementExpression
 {
+    // 100% A4 page width expressed in Pct
+    internal const string FullPageWidthPct = "5000";
     private readonly OpenXmlLeafElement[]? defaultStyleProperties;
     protected readonly ParagraphProperties paraProperties = new();
     protected TableProperties? tableProperties;
@@ -377,7 +379,10 @@ class BlockElementExpression: PhrasingElementExpression
         TableProperties tableProperties;
         Table framedTable = new(
             tableProperties = new TableProperties {
-                TableWidth = new() { Type = TableWidthUnitValues.Pct, Width = "5000" } // 100%
+                TableWidth = new() {
+                    Type = TableWidthUnitValues.Pct,
+                    Width = FullPageWidthPct
+                }
             },
             new TableGrid(
                 new GridColumn() { Width = "9442" }),

@@ -22,11 +22,10 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 {
-    readonly record struct ListContext(string Name, int AbsNumId, int InstanceId,
-        int Level, DirectionMode? Dir, long MarginLeftDxa);
     private readonly bool isOrderedTag = node.NodeName.Equals("ol", StringComparison.OrdinalIgnoreCase);
     private long listMarginLeftDxa;
-    private int startValue = 1, hanging;
+    private int startValue = 1, hanging, leftIndentation;
+    private bool isNestedList;
 
 
 
@@ -55,7 +54,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         if (margin.Left.IsFixed && margin.Left.Value != 0)
             listMarginLeftDxa = margin.Left.ValueInDxa;
 
-        var numberingContext = context.CreateChild(this, isStyleScoped: true);
+        var numberingContext = context.CreateChild(this, isStyleScoped: !isNestedList);
         var liParagraphs = InterpretListItems(numberingContext, liNodes);
 
         if (renderAsFramed)
@@ -93,16 +92,12 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         }
         else
         {
-            var dir = node.GetTextDirection();
-            listContext = new ListContext(listContext.Name, listContext.AbsNumId, 
-                // +1 because index starts on 1 and not 0
-                listContext.InstanceId, listContext.Level + 1, dir ?? listContext.Dir,
-                listContext.MarginLeftDxa + listMarginLeftDxa);
+            listContext = listContext.NextLevel(node.GetTextDirection(), listMarginLeftDxa);
+            leftIndentation = listContext.Level * Indentation;
         }
 
         context.Properties("listContext", listContext);
-
-        var leftIndentation = listContext.Level * Indentation;
+        isNestedList = listContext.Level > 1;
 
         foreach (IHtmlElement liNode in liNodes.Cast<IHtmlElement>())
         {
@@ -121,7 +116,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
                 tableProperties.TableIndentation ??= new() { Width = leftIndentation * 2 };
                 // ensure to restrain the table width to the list item
                 if (tableProperties.TableWidth?.Type?.Value == TableWidthUnitValues.Pct
-                    && tableProperties.TableWidth?.Width?.Value == "5000")
+                    && tableProperties.TableWidth?.Width?.Value == FullPageWidthPct)
                 {
                     tableProperties.TableWidth.Width = (5000 - leftIndentation).ToString();
                 }
@@ -140,6 +135,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
                     NumberingLevelReference = new() { Val = listContext.Level - 1 },
                     NumberingId = new() { Val = listContext.InstanceId }
                 };
+                p.ParagraphProperties.Indentation?.Remove();
                 if (listContext.Dir.HasValue) {
                     p.ParagraphProperties.BiDi = new() {
                         Val = OnOffValue.FromBoolean(listContext.Dir == DirectionMode.Rtl)
@@ -159,7 +155,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 
                 var liExtraMargin = ParseIndentationLeft(p.ParagraphProperties); // parsed paragraph left indentation (if any)
                 p.ParagraphProperties.Indentation ??= new();
-                p.ParagraphProperties.Indentation.Left = (leftIndentation * 2 + liExtraMargin - hanging).ToString(CultureInfo.InvariantCulture);
+                p.ParagraphProperties.Indentation.Left = (leftIndentation + liExtraMargin - hanging).ToString(CultureInfo.InvariantCulture);
             }
 
             foreach (var child in childElements)
@@ -181,6 +177,9 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         var instanceId = GetListInstance(abstractNumId);
         var dir = node.GetTextDirection();
         var newLevel = Math.Min(currentLevel + 1, MaxLevel);
+
+        leftIndentation = (int) (newLevel * Indentation * 2 + listMarginLeftDxa);
+        hanging = listMarginLeftDxa > 0? Indentation : 0;
 
         // be sure to restart to 1 any nested ordered list
         if (currentLevel > 0 && isOrderedTag)
@@ -210,8 +209,8 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         }
 
         var numbering = context.MainPart.NumberingDefinitionsPart!.Numbering!;
-        var levelOverride = CreateLevelOverride(numbering, abstractNumId, newLevel, startValue, listMarginLeftDxa,
-            out var hanging);
+        var levelOverride = CreateLevelOverride(numbering, abstractNumId, newLevel, startValue);
+
         numbering.Append(
             new NumberingInstance(
                 new AbstractNumId() { Val = abstractNumId },
@@ -219,39 +218,31 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
             )
             { NumberID = instanceId.Value });
 
-        this.hanging = hanging;
         return listContext;
     }
 
     /// <summary>
     /// Builds the list instance level-override (start value and optional indent from list margin-left).
     /// </summary>
-    private static LevelOverride CreateLevelOverride(Numbering numbering, int abstractNumId, int listLevel,
-        int startValue, long listMarginLeftDxa, out int hanging)
+    private LevelOverride CreateLevelOverride(Numbering numbering, int abstractNumId, int listLevel, int startValue)
     {
-        int ilvl = listLevel - 1;
+       int ilvl = listLevel - 1;
         var levelOverride = new LevelOverride(
             new StartOverrideNumberingValue() { Val = startValue }
         ) { LevelIndex = ilvl };
 
-        if (listMarginLeftDxa == 0)
+        if (listMarginLeftDxa > 0)
         {
-            hanging = 0;
-            return levelOverride;
+            var abstractNum = numbering.Elements<AbstractNum>().First(a => a.AbstractNumberId!.Value == abstractNumId);
+            var templateLevel = abstractNum.Elements<Level>().First(l => l.LevelIndex!.Value == ilvl);
+            var overrideLevel = (Level) templateLevel.CloneNode(true);
+            overrideLevel.PreviousParagraphProperties ??= new PreviousParagraphProperties();
+            overrideLevel.PreviousParagraphProperties.Indentation = new Indentation {
+                Left = leftIndentation.ToString(CultureInfo.InvariantCulture),
+                Hanging = hanging.ToString()
+            };
+            levelOverride.Level = overrideLevel;
         }
-
-        long leftDxa = listLevel * Indentation * 2L + listMarginLeftDxa;
-        hanging = Indentation;
-
-        var abstractNum = numbering.Elements<AbstractNum>().First(a => a.AbstractNumberId!.Value == abstractNumId);
-        var templateLevel = abstractNum.Elements<Level>().First(l => l.LevelIndex!.Value == ilvl);
-        var overrideLevel = (Level)templateLevel.CloneNode(true);
-        overrideLevel.PreviousParagraphProperties ??= new PreviousParagraphProperties();
-        overrideLevel.PreviousParagraphProperties.Indentation = new Indentation {
-            Left = leftDxa.ToString(CultureInfo.InvariantCulture),
-            Hanging = hanging.ToString()
-        };
-        levelOverride.Level = overrideLevel;
 
         return levelOverride;
     }

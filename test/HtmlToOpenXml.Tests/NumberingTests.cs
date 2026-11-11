@@ -640,7 +640,7 @@ namespace HtmlToOpenXml.Tests
             var elements = converter.Parse(@"<ul>
                 <li>
                     <p>Paragraph text</p>
-                    <p id='alone'>Paragraph text</p>
+                    <p>Paragraph text bis</p>
                 </li>
                 </ul>");
 
@@ -781,9 +781,9 @@ namespace HtmlToOpenXml.Tests
         public void ListContainerMarginLeft_NestedList_AppliesLevelAndMargin()
         {
             var elements = converter.Parse(@"
-                <ol style='margin-left: 10px;'>
+                <ol style='margin-left: 20pt;'>
                     <li>Outer
-                        <ol style='margin-left: 20px;'><li>Inner</li></ol>
+                        <ol style='margin-left: 20pt;'><li>Inner</li></ol>
                     </li>
                 </ol>");
 
@@ -801,8 +801,8 @@ namespace HtmlToOpenXml.Tests
 
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(GetListInstanceLevelIndentLeft(numbering, outerNumId), Is.EqualTo("1080"));
-                Assert.That(GetListInstanceLevelIndentLeft(numbering, innerNumId, ilvl: 1), Is.EqualTo("1800"));
+                Assert.That(GetListInstanceLevelIndentLeft(numbering, outerNumId), Is.EqualTo("1120"), "720 (2 x Indentation) + 400 (20pt)");
+                Assert.That(GetListInstanceLevelIndentLeft(numbering, innerNumId, ilvl: 1), Is.EqualTo("2240"), "1120 + 720 + 400 (20pt)");
             }
         }
 
@@ -927,27 +927,25 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test(Description = "Paragraph margin-left inside a list item must be applied independently of the list item indentation")]
-        public async Task ListItemWithMultipleParagraphs_AppliesIndependentParagraphIndentation()
+        public async Task ListContainerAndParagraphs_AppliesExtraMargin()
         {
-            await converter.ParseBody("""
-                    <ol style='margin-left: 18pt;'>
+            var elements = converter.Parse("""
+                    <ol style='margin-left: 20pt;'>
                         <li>
                             <p>First</p>
-                            <p style='margin-left: 18pt;'>Last</p>
+                            <p style='margin-left: 20pt;'>Last</p>
                         </li>
                     </ol>
                 """);
-            var paragraphs = mainPart.Document?.Body!.Elements<Paragraph>().ToList();
-            var firstParagraph = paragraphs?.First();
-            var lastParagraph = paragraphs?.Last();
 
-            var firstParaIndent = firstParagraph?.ParagraphProperties?.Indentation?.Left?.Value;
-            var lastParaIndent = lastParagraph?.ParagraphProperties?.Indentation?.Left?.Value;
+            var paragraphs = elements.OfType<Paragraph>().ToList();
+            Assert.That(paragraphs, Has.Count.EqualTo(2));
 
-            Assert.That(firstParaIndent, Is.Null, "The first paragraph should not have direct indentation because indentation is assigned through the list levelOverride instance.");
-            Assert.That(lastParaIndent, Is.Not.Null);
+            Assert.That(paragraphs[0].ParagraphProperties?.Indentation?.Left, Is.Null,
+                "The first paragraph should not have direct indentation because indentation is assigned through the list levelOverride instance.");
             // i.e. level indentation + paragraph indentation + list left indentation = 720+360+360 = 1440
-            Assert.That(lastParaIndent, Is.EqualTo("1440"), "The last paragraph must have its own additional indentation from its margin-left. qith value equal to 360 dxa");
+            Assert.That(paragraphs[1].ParagraphProperties?.Indentation?.Left?.Value, Is.EqualTo("1120"),
+                "The last paragraph must have its own additional indentation from its margin-left, i.e., 720 + 400");
         }
 
         private string? GetBulletText(Paragraph paragraph)
