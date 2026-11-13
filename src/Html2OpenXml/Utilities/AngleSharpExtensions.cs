@@ -52,7 +52,7 @@ static class AngleSharpExtensions
     /// <summary>
     /// Gets whether the given child is preceded by any list element (<c>ol</c> or <c>ul</c>).
     /// </summary>
-    public static bool IsPrecededByListElement(this INode child, out IElement? precedingElement)
+    public static bool IsPrecededByListElement(this INode child, [NotNullWhen(true)] out IElement? precedingElement)
     {
         precedingElement = null;
 

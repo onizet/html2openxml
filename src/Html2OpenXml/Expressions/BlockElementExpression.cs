@@ -22,6 +22,8 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 class BlockElementExpression: PhrasingElementExpression
 {
+    // 100% A4 page width expressed in Pct
+    internal const string FullPageWidthPct = "5000";
     private readonly OpenXmlLeafElement[]? defaultStyleProperties;
     protected readonly ParagraphProperties paraProperties = new();
     protected TableProperties? tableProperties;
@@ -89,25 +91,8 @@ class BlockElementExpression: PhrasingElementExpression
         ParsingContext context, IEnumerable<AngleSharp.Dom.INode> childNodes)
     {
         return ComposeChildren(context, childNodes, paraProperties,
-            (runs) => {
-                if (styleAttributes.RequiresPageBreakBefore())
-                {
-                    runs.Add(
-                        new Run(
-                            new Break() { Type = BreakValues.Page })
-                    );
-                    runs.Add(new Run(
-                        new LastRenderedPageBreak())
-                    );
-                }
-            },
-            (runs) => {
-                if (styleAttributes.RequiresPageBreakAfter())
-                {
-                    runs.Add(new Run(
-                        new Break() { Type = BreakValues.Page }));
-                }
-            });
+            prefixRuns: CreatePageBreakBeforeRuns(),
+            suffiRuns: CreatePageBreakAfterRuns());
     }
 
     public override void CascadeStyles(OpenXmlElement element)
@@ -301,18 +286,19 @@ class BlockElementExpression: PhrasingElementExpression
     /// <param name="context">The child parsing context.</param>
     /// <param name="childNodes">The list of child nodes.</param>
     /// <param name="paragraphProperties">The parent paragraph properties to apply.</param>
-    /// <param name="preAction">Optionally insert new runs at the beginning of the processing.</param>
-    /// <param name="postAction">Optionally insert new runs at the end of the processing.</param>
+    /// <param name="prefixRuns">Prepend runs at the beginning of the processing (optional).</param>
+    /// <param name="suffiRuns">Append runs at the end of the processing (optional).</param>
     internal static IEnumerable<OpenXmlElement> ComposeChildren(ParsingContext context, 
         IEnumerable<AngleSharp.Dom.INode> childNodes,
         ParagraphProperties paragraphProperties,
-        Action<IList<OpenXmlElement>>? preAction = null,
-        Action<IList<OpenXmlElement>>? postAction = null)
+        IEnumerable<OpenXmlElement>? prefixRuns = null,
+        IEnumerable<OpenXmlElement>? suffiRuns = null)
     {
         var runs = new List<OpenXmlElement>();
         var flowElements = new List<OpenXmlElement>();
 
-        preAction?.Invoke(runs);
+        if (prefixRuns != null)
+            runs.AddRange(prefixRuns);
 
         OpenXmlElement? previousElement = null;
         foreach (var child in childNodes)
@@ -346,7 +332,8 @@ class BlockElementExpression: PhrasingElementExpression
             }
         }
 
-        postAction?.Invoke(runs);
+        if (suffiRuns != null)
+            runs.AddRange(suffiRuns);
 
         if (runs.Count > 0)
             flowElements.Add(CreateParagraph(context, runs, paragraphProperties));
@@ -379,7 +366,6 @@ class BlockElementExpression: PhrasingElementExpression
         return p;
     }
 
-
     /// <summary>
     /// Group all the paragraph inside a framed table.
     /// </summary>
@@ -393,7 +379,10 @@ class BlockElementExpression: PhrasingElementExpression
         TableProperties tableProperties;
         Table framedTable = new(
             tableProperties = new TableProperties {
-                TableWidth = new() { Type = TableWidthUnitValues.Pct, Width = "5000" } // 100%
+                TableWidth = new() {
+                    Type = TableWidthUnitValues.Pct,
+                    Width = FullPageWidthPct
+                }
             },
             new TableGrid(
                 new GridColumn() { Width = "9442" }),
@@ -441,5 +430,26 @@ class BlockElementExpression: PhrasingElementExpression
         bookmarkRef++;
         context.Properties("bookmarkRef", bookmarkRef);
         return bookmarkRef.Value;
+    }
+
+    private IEnumerable<OpenXmlElement> CreatePageBreakBeforeRuns()
+    {
+        if (!styleAttributes.RequiresPageBreakBefore())
+            yield break;
+
+        yield return new Run(
+            new Break() { Type = BreakValues.Page });
+
+        yield return new Run(
+            new LastRenderedPageBreak());
+    }
+
+    private IEnumerable<OpenXmlElement> CreatePageBreakAfterRuns()
+    {
+        if (!styleAttributes.RequiresPageBreakAfter())
+            yield break;
+
+        yield return new Run(
+                new Break() { Type = BreakValues.Page });
     }
 }
