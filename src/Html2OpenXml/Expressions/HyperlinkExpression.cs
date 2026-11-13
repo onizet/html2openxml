@@ -30,8 +30,11 @@ sealed class HyperlinkExpression(IHtmlAnchorElement node) : PhrasingElementExpre
     /// <inheritdoc/>
     public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
     {
+        var childElements = Interpret(context.CreateChild(this), linkNode.ChildNodes).ToList();
+        if (childElements.Count == 0)
+            return [];
+
         var h = CreateHyperlink(context);
-        var childElements = Interpret(context.CreateChild(this), linkNode.ChildNodes);
         if (h is null)
         {
             return childElements;
@@ -40,10 +43,9 @@ sealed class HyperlinkExpression(IHtmlAnchorElement node) : PhrasingElementExpre
         // Let's see whether the link tag include an image inside its body.
         // If so, the Hyperlink OpenXmlElement is lost and we'll keep only the images
         // and applied a HyperlinkOnClick attribute.
-        IEnumerable<OpenXmlElement> imagesInLink;
+        var imagesInLink = childElements.Where(e => e.HasChild<Drawing>()).ToList();
         // Clickable image is only supported in body but not in header/footer
-        if (context.HostingPart is MainDocumentPart &&
-            (imagesInLink = childElements.Where(e => e.HasChild<Drawing>())).Any())
+        if (context.HostingPart is MainDocumentPart && imagesInLink.Count > 0)
         {
             foreach (var img in imagesInLink)
             {
@@ -51,15 +53,13 @@ sealed class HyperlinkExpression(IHtmlAnchorElement node) : PhrasingElementExpre
                 Drawing? d = img.GetFirstChild<Drawing>();
                 if (d == null) continue;
 
-                var enDp = d.Descendants<pic.NonVisualDrawingProperties>().GetEnumerator();
-                string? alt;
-                if (enDp.MoveNext()) alt = enDp.Current.Description;
-                else alt = null;
+                string? alt = d.Descendants<pic.NonVisualDrawingProperties>()
+                    .FirstOrDefault()?.Description;
 
                 d.Inline ??= new a.Wordprocessing.Inline();
                 d.Inline.DocProperties ??= new a.Wordprocessing.DocProperties();
 
-                if (h.Anchor == "_top")
+                if (AngleSharpExtensions.IsTopAnchor(h.Anchor))
                 {
                     // exception case: clickable image requires the _top bookmark get registred with a relationship
                     var extLink = context.HostingPart.AddHyperlinkRelationship(new Uri("#_top", UriKind.Relative), false);
@@ -79,13 +79,15 @@ sealed class HyperlinkExpression(IHtmlAnchorElement node) : PhrasingElementExpre
         foreach (var el in childElements)
         {
             if (el is Run r) runs.Add(r);
-            // unroll paragraphs. CloneNode is need to unparent the run
+            // unroll paragraphs. CloneNode is needed to unparent the run
             else runs.AddRange(el.Elements<Run>().Select(r => (Run) r.CloneNode(true)));
         }
 
         foreach (var run in runs.Where(run => !run.HasChild<Drawing>()))
         {
             run.RunProperties ??= new();
+
+            // always override the style
             run.RunProperties.RunStyle = context.DocumentStyle.GetRunStyle(
                     context.DocumentStyle.DefaultStyles.HyperlinkStyle);
         }

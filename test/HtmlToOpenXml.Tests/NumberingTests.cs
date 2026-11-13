@@ -1,6 +1,7 @@
 ﻿using NUnit.Framework;
 using DocumentFormat.OpenXml.Wordprocessing;
 using DocumentFormat.OpenXml.Packaging;
+using HtmlToOpenXml.Expressions;
 
 namespace HtmlToOpenXml.Tests
 {
@@ -33,11 +34,11 @@ namespace HtmlToOpenXml.Tests
         [Test(Description = "Two consecutive lists should restart numbering to 1")]
         public async Task ConsecutiveList_ReturnsList_RestartingOrder()
         {
-            await converter.ParseBody(@"
+            var elements = converter.Parse(@"
                 <oL><li>Item 1.1</li></oL>
                 <p>placeholder</p>
                 <ol><li>Item 2.1</li></ol>");
-            var elements = mainPart.Document!.Body!.ChildElements;
+
             using (Assert.EnterMultipleScope())
             {
                 Assert.That(elements, Has.Count.EqualTo(3));
@@ -71,14 +72,14 @@ namespace HtmlToOpenXml.Tests
         [Test]
         public async Task NestedNumberList_ReturnsMultilevelList()
         {
-            await converter.ParseBody(
+            var elements = converter.Parse(
                 @"<ol>
                     <li>Item 1
                         <ol><li>Item 1.1</li></ol>
                     </li>
                     <li>Item 2</li>
                 </ol>");
-            var elements = mainPart.Document!.Body!.ChildElements;
+
             using (Assert.EnterMultipleScope())
             {
                 Assert.That(elements, Has.Count.EqualTo(3));
@@ -338,7 +339,7 @@ namespace HtmlToOpenXml.Tests
         [Test(Description = "Nested numbering (issue #81)")]
         public async Task DecimalTieredStyle_ReturnsListWithTieredNumbering()
         {
-            await converter.ParseBody(
+            var elements = converter.Parse(
                 @"<ol style='list-style-type:decimal-tiered'>
                     <li>Item 1
                         <ol><li>Item 1.1</li></ol>
@@ -346,7 +347,6 @@ namespace HtmlToOpenXml.Tests
                     <li>Item 2</li>
                 </ol>");
 
-            var elements = mainPart.Document!.Body!.ChildElements;
             var absNum = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<AbstractNum>()
                 .SingleOrDefault();
@@ -390,6 +390,29 @@ namespace HtmlToOpenXml.Tests
                 Is.EqualTo(startLevel));
         }
 
+        [Test(Description = "Allow to specify another start value for the first item of a nested `ol` list")]
+        public void OverrideStartNumber_WithNestedOl_ShouldSucceed()
+        {
+            const short startLevel = 3;
+            var elements = converter.Parse($"""
+                <ol start='{startLevel+1}'>
+                    <li>One 
+                        <ol start='{startLevel}'><li>Three</li></ol>
+                    </li>
+                </ol>
+            """);
+            Assert.That(elements, Has.Count.EqualTo(2));
+            Assert.That(elements, Has.All.TypeOf<Paragraph>());
+
+            var instances = mainPart.NumberingDefinitionsPart?.Numbering?
+                .Elements<NumberingInstance>();
+            Assert.That(instances, Has.Exactly(2).Items);
+            Assert.That(instances.First().GetFirstChild<LevelOverride>()?.StartOverrideNumberingValue?.Val?.Value,
+                Is.EqualTo(startLevel + 1));
+            Assert.That(instances.Last().GetFirstChild<LevelOverride>()?.StartOverrideNumberingValue?.Val?.Value,
+                Is.EqualTo(startLevel));
+        }
+
         [Test(Description = "Allow to specify another start value for the first item of a `ul` list")]
         public void OverrideStartNumber_WithUl_ShouldBeIgnored()
         {
@@ -408,14 +431,13 @@ namespace HtmlToOpenXml.Tests
         [Test]
         public async Task RomanList_ReturnsListWithCustomStyle()
         {
-            await converter.ParseBody(@"<ul style='list-style-type:lower-roman'>
+            var elements = await converter.ParseAsync(@"<ul style='list-style-type:lower-roman'>
                     <li>Item 1</li>
                 </ul>");
 
-            var elements = mainPart.Document!.Body!.ChildElements;
             Assert.That(elements, Is.Not.Empty);
             Assert.That(elements, Is.All.TypeOf<Paragraph>());
-            var numId = ((Paragraph) elements[0]).ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value;
+            var numId = ((Paragraph) elements.First()).ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value;
             Assert.That(numId, Is.Not.Null);
 
             var numInst = mainPart.NumberingDefinitionsPart!.Numbering!
@@ -517,6 +539,35 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test]
+        public async Task WithBorder_ReturnedFramedList()
+        {
+            var elements = converter.Parse(@"
+                <ol style='border: 1px solid black'>
+                    <li><p>One</p><p>Two</p></li>
+                </ol>");
+
+            Assert.That(elements[0], Is.TypeOf<Table>());
+
+            var framedTable = (Table) elements[0];
+            var borders = framedTable.GetFirstChild<TableProperties>()?.TableBorders;
+            Assert.That(borders, Is.Not.Null, "Assert that border is applied on table scope");
+            Assert.That(borders.Elements<BorderType>()!
+                .Select(b => b.Val?.Value),
+                Has.All.EqualTo(BorderValues.Single));
+
+            var cell = framedTable.GetFirstChild<TableRow>()?.GetFirstChild<TableCell>();
+            Assert.That(cell, Is.Not.Null);
+            var paragraphs = cell.Elements<Paragraph>();
+            Assert.That(paragraphs.Count(), Is.EqualTo(2));
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(paragraphs.First().ParagraphProperties?.NumberingProperties, Is.Not.Null);
+                Assert.That(paragraphs.ElementAt(1).ParagraphProperties?.NumberingProperties, Is.Null);
+            }
+        }
+
+        [Test]
         public void NestedNumberList_ReturnsIncrementalIndentation()
         {
             const int maxLevel = 8;
@@ -539,8 +590,8 @@ namespace HtmlToOpenXml.Tests
             {
                 var level = levels.ElementAt(i);
                 var ident = level.PreviousParagraphProperties?.Indentation;
-                Assert.That(ident?.Hanging?.Value, Is.EqualTo("360"));
-                Assert.That(Convert.ToInt32(ident?.Left?.Value), Is.EqualTo((i + 1) * 2 * 360));
+                Assert.That(ident?.Hanging?.Value, Is.EqualTo(NumberingExpressionBase.HangingStr));
+                Assert.That(Convert.ToInt32(ident?.Left?.Value), Is.EqualTo((i + 1) * NumberingExpressionBase.LevelIndent));
                 TestContext.Out.WriteLine($"{i}. {ident?.Left?.Value}");
             }
         }
@@ -548,11 +599,11 @@ namespace HtmlToOpenXml.Tests
         [Test(Description = "Nested list must be a children of a `li` tag but some editor are not respecting the W3C standard (issue #173)")]
         public async Task NestedNumberList_NonCompliant_ReturnsIncrementalIndentation()
         {
-            await converter.ParseBody(@"<ol>
+            var elements = converter.Parse(@"<ol>
                 <li>Item1</li>
                 <li>Item2</li>
                     <ol><li>Item 2.1</li></ol>
-                </ol>",TestContext.CurrentContext.CancellationToken);
+                </ol>");
 
             var absNum = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<AbstractNum>()
@@ -564,7 +615,6 @@ namespace HtmlToOpenXml.Tests
             Assert.That(inst, Is.Not.Null);
             Assert.That(inst.NumberID?.Value, Is.Not.Null);
 
-            var elements = mainPart.Document!.Body!.ChildElements;
             using (Assert.EnterMultipleScope())
             {
                 Assert.That(elements, Has.Count.EqualTo(3));
@@ -591,7 +641,7 @@ namespace HtmlToOpenXml.Tests
             var elements = converter.Parse(@"<ul>
                 <li>
                     <p>Paragraph text</p>
-                    <p>Paragraph text</p>
+                    <p>Paragraph text bis</p>
                 </li>
                 </ul>");
 
@@ -611,7 +661,7 @@ namespace HtmlToOpenXml.Tests
                     Has.All.EqualTo("ListParagraph"),
                     "All paragraphs use the same paragraph style");
                 Assert.That(elements.Last().GetFirstChild<ParagraphProperties>()?.Indentation?.Left?.Value,
-                    Is.EqualTo("720"),
+                    Is.EqualTo(NumberingExpressionBase.LevelIndent.ToString()),
                     "Last standalone paragraph is aligned with the level 1");
             }
         }
@@ -639,7 +689,7 @@ namespace HtmlToOpenXml.Tests
                 var tableProperties = table.GetFirstChild<TableProperties>();
                 Assert.That(tableProperties, Is.Not.Null);
                 Assert.That(tableProperties.TableIndentation, Is.Not.Null);
-                Assert.That(tableProperties.TableIndentation.Width?.Value, Is.EqualTo(720 * (i+1)));
+                Assert.That(tableProperties.TableIndentation.Width?.Value, Is.EqualTo(NumberingExpressionBase.LevelIndent * (i+1)));
                 Assert.That(tableProperties.TableWidth, Is.Not.Null);
                 Assert.That(tableProperties.TableWidth.Type?.Value, Is.EqualTo(TableWidthUnitValues.Pct));
                 Assert.That(tableProperties.TableWidth.Width?.HasValue, Is.True);
@@ -647,11 +697,12 @@ namespace HtmlToOpenXml.Tests
             }
         }
 
-        [Test]
-        public async Task LowerGreekList_ReturnsListWithGreekNumbering()
+        [TestCase("lower-greek", nameof(NumberFormatValues.LowerLetter))]
+        [TestCase("upper-greek", nameof(NumberFormatValues.UpperLetter))]
+        public async Task GreekList_ReturnsListWithGreekNumbering(string listStyle, string numberFormat)
         {
-            await converter.ParseBody(@"
-                <ol style='list-style-type: lower-greek'>
+            await converter.ParseBody($@"
+                <ol style='list-style-type: {listStyle}'>
                     <li>Item 1</li>
                     <li>Item 2</li>
                 </ol>"
@@ -664,49 +715,24 @@ namespace HtmlToOpenXml.Tests
             var absNum = numbering.Elements<AbstractNum>().SingleOrDefault();
 
             Assert.That(absNum, Is.Not.Null);
-            Assert.That(absNum.AbstractNumDefinitionName?.Val?.Value, Is.EqualTo("lower-greek"));
+            Assert.That(absNum.AbstractNumDefinitionName?.Val?.Value, Is.EqualTo(listStyle));
 
             var level = absNum.Elements<Level>().First();
 
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(level.NumberingFormat?.Val?.Value, Is.EqualTo(NumberFormatValues.LowerLetter));
+                Assert.That(((DocumentFormat.OpenXml.IEnumValue) level.NumberingFormat?.Val?.Value!).Value, Is.EqualTo(numberFormat).IgnoreCase);
                 Assert.That(level.LevelText?.Val?.Value, Is.EqualTo("%1."));
-            }
-        }
-
-        [Test]
-        public async Task UpperGreekList_ReturnsListWithGreekNumbering()
-        {
-            await converter.ParseBody(@"
-                <ol style='list-style-type: upper-greek'>
-                    <li>Item 1</li>
-                </ol>"
-            );
-
-            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
-            var absNum = numbering.Elements<AbstractNum>().SingleOrDefault();
-
-            Assert.That(absNum, Is.Not.Null);
-            Assert.That(absNum.AbstractNumDefinitionName?.Val?.Value, Is.EqualTo("upper-greek"));
-
-            var level = absNum.Elements<Level>().First();
-
-            using (Assert.EnterMultipleScope())
-            {
-                Assert.That(level.NumberingFormat?.Val?.Value, Is.EqualTo(NumberFormatValues.UpperLetter));
-                Assert.That(level.LevelText?.Val?.Value,  Is.EqualTo("%1."));
             }
         }
 
         [Test]
         public async Task CustomBulletList_ReturnsListWithCustomStyle()
         {
-            await converter.ParseBody(@"<ul style='list-style-type:""😀""'>
+            var elements = converter.Parse(@"<ul style='list-style-type:""😀""'>
                     <li>Item 1</li>
                 </ul>");
 
-            var elements = mainPart.Document!.Body!.ChildElements;
             Assert.That(elements, Is.Not.Empty);
             Assert.That(elements, Is.All.TypeOf<Paragraph>());
             var numId = ((Paragraph) elements[0]).ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value;
@@ -732,9 +758,6 @@ namespace HtmlToOpenXml.Tests
             AssertThatOpenXmlDocumentIsValid();
         }
 
-        /// <summary>Level-1 list indent plus 18pt ol margin-left.</summary>
-        private const string Level1ListIndent_AddedWith_18PtMargin_DXA_Value = "1080";
-
         [Test(Description = "List container margin-left must not create a separate abstractNum for the same list-style-type")]
         public void ListContainerMarginLeft_SharesAbstractNumAcrossDifferentMargins()
         {
@@ -755,41 +778,77 @@ namespace HtmlToOpenXml.Tests
             Assert.That(instances, Has.Count.GreaterThanOrEqualTo(2));
         }
 
-        [Test(Description = "Nested ol margin-left stacks with numbering level indent on each list")]
-        public void ListContainerMarginLeft_NestedList_AppliesLevelAndMargin()
+        [Test(Description = "Continuation paragraphs inside a margined list item align with the numbered line")]
+        public void ListContainerMarginLeft_MultiParagraphListItem_Aligned()
         {
             var elements = converter.Parse(@"
-                <ol style='margin-left: 18pt;'>
-                    <li>Outer
-                        <ol style='margin-left: 18pt;'><li>Inner</li></ol>
+                <ol style='margin-left: 20pt;'>
+                    <li><p>One</p>
+                        <p>Two</p>
                     </li>
                 </ol>");
 
             var paragraphs = elements.OfType<Paragraph>().ToList();
             Assert.That(paragraphs, Has.Count.EqualTo(2));
-
-            var outer = paragraphs.Single(p =>
-                p.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value == 0);
-            var inner = paragraphs.Single(p =>
-                p.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value == 1);
-
-            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
-            var outerNumId = outer.ParagraphProperties!.NumberingProperties!.NumberingId!.Val!.Value;
-            var innerNumId = inner.ParagraphProperties!.NumberingProperties!.NumberingId!.Val!.Value;
+            Assert.That(elements.Cast<Paragraph>().Select(e => 
+                    e.ParagraphProperties?.Indentation),
+                    Has.All.Not.Null,
+                    "All paragraphs have an indentation marker");
 
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(GetListInstanceLevelIndentLeft(numbering, outerNumId), Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
-                Assert.That(GetListInstanceLevelIndentLeft(numbering, innerNumId, ilvl: 1), Is.EqualTo("1800"));
+                var indentation0 = elements[0].GetFirstChild<ParagraphProperties>()?.Indentation!;
+                var indentation1 = elements[1].GetFirstChild<ParagraphProperties>()?.Indentation!;
+
+                Assert.That(paragraphs[0].ParagraphProperties?.NumberingProperties, Is.Not.Null);
+                Assert.That(paragraphs[1].ParagraphProperties?.NumberingProperties, Is.Null);
+
+                Assert.That(indentation0.Hanging?.Value, Is.EqualTo(NumberingExpressionBase.HangingStr));
+                Assert.That(indentation0.Left?.Value, Is.EqualTo("1120"), "720 (LevelIndent) + 400 (20pt)");
+                Assert.That(indentation1.Hanging?.Value, Is.EqualTo("0"));
+                Assert.That(indentation1.Left?.Value, Is.EqualTo("1120"), "720 (LevelIndent) + 400 (20pt)");
             }
         }
 
-        [Test(Description = "Continuation paragraphs inside a margined list item align with the numbered line")]
-        public void ListContainerMarginLeft_MultiParagraphListItem_Aligned()
+        [Test(Description = "Nested ol margin-left stacks with numbering level indent on each list")]
+        public void ListContainerMarginLeft_NestedList_AppliesLevelAndMargin()
         {
             var elements = converter.Parse(@"
-                <ol style='margin-left: 18pt;'>
-                    <li><p>One</p><p>Two</p></li>
+                <ol style='margin-left: 20pt;'>
+                    <li>Outer
+                        <ol style='margin-left: 20pt;'><li>Inner</li></ol>
+                    </li>
+                </ol>");
+
+            var paragraphs = elements.OfType<Paragraph>().ToList();
+            Assert.That(paragraphs, Has.Count.EqualTo(2));
+            Assert.That(elements.Cast<Paragraph>().Select(e => 
+                    e.ParagraphProperties?.Indentation),
+                    Has.All.Not.Null,
+                    "All paragraphs have an indentation marker");
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(elements.Cast<Paragraph>().Select(e => 
+                    e.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value),
+                    Has.All.Not.Null,
+                    "All paragraphs are linked to list instances");
+
+                var indentation0 = elements[0].GetFirstChild<ParagraphProperties>()?.Indentation!;
+                var indentation1 = elements[1].GetFirstChild<ParagraphProperties>()?.Indentation!;
+                Assert.That(indentation0.Hanging?.Value, Is.EqualTo(NumberingExpressionBase.HangingStr));
+                Assert.That(indentation0.Left?.Value, Is.EqualTo("1120"), "720 (LevelIndent) + 400 (20pt)");
+                Assert.That(indentation1.Hanging?.Value, Is.EqualTo(NumberingExpressionBase.HangingStr));
+                Assert.That(indentation1.Left?.Value, Is.EqualTo("1440"), "2*720 (LevelIndent) + 400 (20pt)");
+            }
+        }
+
+        [Test]
+        public async Task ListContainer_Styling_CascadeToListItems()
+        {
+            var elements = converter.Parse(@"
+                <ol style='color:red;'>
+                    <li><p>One</p><p style='color:blue'>Two</p></li>
                 </ol>");
 
             var paragraphs = elements.OfType<Paragraph>().ToList();
@@ -799,49 +858,14 @@ namespace HtmlToOpenXml.Tests
             {
                 Assert.That(paragraphs[0].ParagraphProperties?.NumberingProperties, Is.Not.Null);
                 Assert.That(paragraphs[1].ParagraphProperties?.NumberingProperties, Is.Null);
-                Assert.That(paragraphs[1].ParagraphProperties?.Indentation?.Left?.Value, Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
+                Assert.That(paragraphs[0].GetFirstChild<Run>()?.RunProperties?.Color?.Val?.Value, Is.EqualTo("FF0000"));
+                Assert.That(paragraphs[1].GetFirstChild<Run>()?.RunProperties?.Color?.Val?.Value, Is.EqualTo("0000FF"));
             }
-        }
-
-        [Test(Description = "Unordered lists apply ol margin-left the same way as ordered lists")]
-        public void ListContainerMarginLeft_AppliesToUnorderedList()
-        {
-            var elements = converter.Parse(@"<ul style='margin-left: 18pt;'><li>Bullet</li></ul>");
-            var p = (Paragraph)elements.Single();
-            var numId = p.ParagraphProperties!.NumberingProperties!.NumberingId!.Val!.Value;
-            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
-            Assert.That(p.ParagraphProperties?.NumberingProperties, Is.Not.Null);
-            Assert.That(GetListInstanceLevelIndentLeft(numbering, numId), Is.EqualTo(Level1ListIndent_AddedWith_18PtMargin_DXA_Value));
-            var overrideLevel = GetListInstanceLevelOverride(numbering, numId);
-            Assert.That(overrideLevel?.NumberingFormat?.Val?.Value, Is.EqualTo(NumberFormatValues.Bullet),
-                "Level override must clone the template level so bullet markers still render");
-        }
-
-        private static string? GetListInstanceLevelIndentLeft(Numbering numbering, int numId, int ilvl = 0)
-        {
-            return GetListInstanceLevelOverride(numbering, numId, ilvl)?.PreviousParagraphProperties?.Indentation?.Left?.Value;
-        }
-
-        private static Level? GetListInstanceLevelOverride(Numbering numbering, int numId, int ilvl = 0)
-        {
-            var instance = numbering.Elements<NumberingInstance>().Single(i => i.NumberID!.Value == numId);
-            foreach (var levelOverride in instance.Elements<LevelOverride>())
-            {
-                foreach (var level in levelOverride.Elements<Level>())
-                {
-                    if (level.LevelIndex?.Value == ilvl)
-                        return level;
-                }
-            }
-            return null;
         }
 
         /// <summary>
         /// A nested ul type attribute must use its own bullet, not the parent marker
         /// </summary>
-        /// <param name="listType"></param>
-        /// <param name="nestedListType"></param>
-        /// <returns></returns>
         [TestCase("disc", "square", ExpectedResult = "•,▪")]
         [TestCase("disc", "circle", ExpectedResult = "•,\u25CB")]
         public async Task<string> NestedUnorderedList_TypeAttribute_UsesOwnBullet(string listType, string nestedListType)
@@ -859,7 +883,10 @@ namespace HtmlToOpenXml.Tests
             Assert.That(paragraphs, Has.Count.EqualTo(2));
             AssertThatOpenXmlDocumentIsValid();
 
-            return string.Join(",", paragraphs.Select(GetBulletText).Select(BulletTextUnicode));
+            return string.Join(",", paragraphs.Select(GetBulletText).Select(bulletText => bulletText switch {
+                "o" => "\u25CB",  // ○ circle
+                _ => bulletText
+            }));
         }
 
         [Test(Description = "CSS list-style-type takes precedence over the ul type attribute")]
@@ -872,6 +899,37 @@ namespace HtmlToOpenXml.Tests
             AssertThatOpenXmlDocumentIsValid();
         }
 
+        [Test(Description = "Paragraph margin-left inside a list item must be applied independently of the list item indentation")]
+        public async Task ListContainerAndParagraphs_AppliesExtraMargin()
+        {
+            var elements = converter.Parse("""
+                    <ol style='margin-left: 20pt;'>
+                        <li>
+                            <p>First</p>
+                            <p style='margin-left: 20pt;'>Last</p>
+                        </li>
+                    </ol>
+                """);
+
+            var paragraphs = elements.OfType<Paragraph>().ToList();
+            Assert.That(paragraphs, Has.Count.EqualTo(2));
+            Assert.That(elements.Cast<Paragraph>().Select(e => 
+                    e.ParagraphProperties?.Indentation),
+                    Has.All.Not.Null,
+                    "All paragraphs have an indentation marker");
+
+            using (Assert.EnterMultipleScope())
+            {
+                var indentation0 = elements[0].GetFirstChild<ParagraphProperties>()?.Indentation!;
+                var indentation1 = elements[1].GetFirstChild<ParagraphProperties>()?.Indentation!;
+
+                Assert.That(indentation0.Hanging?.Value, Is.EqualTo(NumberingExpressionBase.HangingStr));
+                Assert.That(indentation0.Left?.Value, Is.EqualTo("1120"), "720 (LevelIndent) + 400 (20pt)");
+                Assert.That(indentation1.Hanging?.Value, Is.EqualTo("0"));
+                Assert.That(indentation1.Left?.Value, Is.EqualTo("1520"), "720 (LevelIndent) + 400 (20pt) + 400 (20pt)");
+            }
+        }
+
         private string? GetBulletText(Paragraph paragraph)
         {
             var numberingProperties = paragraph.ParagraphProperties?.NumberingProperties;
@@ -881,15 +939,6 @@ namespace HtmlToOpenXml.Tests
             var instance = numbering.Elements<NumberingInstance>().Single(i => i.NumberID?.Value == numId);
             var abstractNum = numbering.Elements<AbstractNum>().Single(a => a.AbstractNumberId?.Value == instance.AbstractNumId!.Val!.Value);
             return abstractNum.Elements<Level>().First(l => l.LevelIndex?.Value == level).LevelText?.Val?.Value;
-        }
-
-        private string? BulletTextUnicode(string? bulletText)
-        {
-            return bulletText switch
-            {
-                "o" => "\u25CB",  // ○ circle
-                _ => bulletText
-            };
         }
     }
 }

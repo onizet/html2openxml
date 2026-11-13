@@ -35,11 +35,11 @@ class ImageExpression(IHtmlImageElement node) : ImageExpressionBase(node)
     {
         string? src = imgNode.GetAttribute("src");
 
-        // Bug reported by Erik2014. Inline 64 bit images can be too big and Uri.TryCreate will fail silently with a SizeLimit error.
-        // To circumvent this buffer size, we will work either on the Uri, either on the original src.
         if (src == null)
             return null;
 
+        // Bug reported by Erik2014. Inline 64 bit images can be too big and Uri.TryCreate will fail silently with a SizeLimit error.
+        // To circumvent this buffer size, we will work either on the Uri, either on the original src.
         var isDataUri = DataUri.IsDataUri(src);
         if (!isDataUri &&
             !AngleSharpExtensions.TryParseUrl(src, UriKind.RelativeOrAbsolute, out var _))
@@ -89,7 +89,7 @@ class ImageExpression(IHtmlImageElement node) : ImageExpressionBase(node)
         {
             preferredSize = iinfo.Size;
         }
-        else if (preferredSize.Width <= 0 || preferredSize.Height <= 0)
+        else if (preferredSize.HasInvalidDimension)
         {
             Size actualSize = iinfo.Size;
             // Image perspective skewed. Bug fixed by ddeforge on github.com/onizet/html2openxml/discussions/350500

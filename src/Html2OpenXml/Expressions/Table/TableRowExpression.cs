@@ -22,15 +22,15 @@ sealed class TableRowExpression : TableElementExpressionBase
 {
     private readonly IHtmlTableRowElement rowNode;
     private readonly TableRowProperties rowProperties = new();
-    private readonly int columCount;
-    private readonly RowSpanCollection carriedRowSpans, rowSpans = [];
+    private readonly int columnCount;
+    private readonly RowSpanCollection carriedRowSpans;
 
 
-    public TableRowExpression(IHtmlTableRowElement node, int columCount, RowSpanCollection carriedRowSpans)
+    public TableRowExpression(IHtmlTableRowElement node, int columnCount, RowSpanCollection carriedRowSpans)
         : base (node)
     {
         rowNode = node;
-        this.columCount = columCount;
+        this.columnCount = columnCount;
         this.carriedRowSpans = carriedRowSpans;
     }
 
@@ -41,7 +41,7 @@ sealed class TableRowExpression : TableElementExpressionBase
 
         // RowSpan in html requires to skip the cell declaration on the next row,
         // whilst in OpenXml, the cell must exists with the VerticalMerge=Continue property
-        var cells = new List<IHtmlTableCellElement?>(columCount);
+        var cells = new List<IHtmlTableCellElement?>(columnCount);
         cells.AddRange(rowNode.Cells);
         foreach (var idx in carriedRowSpans.Columns)
         {
@@ -80,20 +80,22 @@ sealed class TableRowExpression : TableElementExpressionBase
 
             if (TableCellExpression.IsValidRowSpan(cell.RowSpan))
             {
-                rowSpans.Add(colIndex, cell.RowSpan, cell.ColumnSpan);
+                RowSpans.Add(colIndex, cell.RowSpan, cell.ColumnSpan);
             }
 
             // The space effectively occupied by this cell.
+            // AngleSharp normalise the ColSpan (negative or zero become 1)
             colIndex += cell.ColumnSpan;
         }
 
         // if the row is not complete, create empty cells
-        if (colIndex < columCount)
+        while (colIndex < columnCount)
         {
             tableRow.AppendChild(TableCellExpression.CreateEmpty());
+            colIndex++;
         }
 
-        rowSpans.UnionWith(carriedRowSpans);
+        RowSpans.CarryForward(carriedRowSpans);
         return [tableRow];
     }
 
@@ -118,8 +120,5 @@ sealed class TableRowExpression : TableElementExpressionBase
     /// <summary>
     /// The carried row spans.
     /// </summary>
-    public RowSpanCollection RowSpans
-    {
-        get => rowSpans;
-    }
+    public RowSpanCollection RowSpans { get; } = [];
 }

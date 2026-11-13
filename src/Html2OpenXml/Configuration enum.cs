@@ -74,3 +74,30 @@ public enum ImageProcessingMode
     /// </summary>
     EmbedDataUriOnly = 2,
 }
+
+/// <summary>
+/// Specifies the page orientation used when creating a new Word document.
+/// The orientation determines whether pages are laid out vertically (portrait)
+/// or horizontally (landscape).
+/// </summary>
+public enum PageOrientation
+{
+    /// <summary>
+    /// Pages are taller than they are wide.
+    ///
+    /// <para>
+    /// This is the default orientation for most documents such as letters, reports,
+    /// contracts, and articles.
+    /// </para>
+    /// </summary>
+    Portrait,
+    /// <summary>
+    /// Pages are wider than they are tall.
+    ///
+    /// <para>
+    /// This orientation is commonly used for wide tables, spreadsheets, diagrams,
+    /// and content requiring additional horizontal space.
+    /// </para>
+    /// </summary>
+    Landscape
+}

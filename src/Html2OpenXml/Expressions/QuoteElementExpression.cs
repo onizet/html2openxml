@@ -24,7 +24,7 @@ sealed class QuoteElementExpression(IHtmlElement node) : PhrasingElementExpressi
     public override IEnumerable<OpenXmlElement> Interpret(ParsingContext context)
     {
         // The browsers render the quote tag between a kind of separators.
-        // We add the Quote style to the nested runs to match more Word.
+        // We apply the Quote character style to better match Word rendering.
 
         Run prefixRun = new(
             new Text(" " + context.DocumentStyle.QuoteCharacters.Prefix) { Space = SpaceProcessingModeValues.Preserve }
@@ -33,8 +33,7 @@ sealed class QuoteElementExpression(IHtmlElement node) : PhrasingElementExpressi
         prefixRun.RunProperties.RunStyle = context.DocumentStyle.GetRunStyle(context.DocumentStyle.DefaultStyles.QuoteStyle);
 
         yield return prefixRun;
-        var elements = base.Interpret(context);
-        foreach (var el in elements)
+        foreach (var el in base.Interpret(context))
             yield return el;
 
         Run suffixRun = new(

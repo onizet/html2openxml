@@ -9,8 +9,6 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System.Collections.Generic;
-using System.Linq;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -28,8 +26,8 @@ sealed class TableCaptionExpression(Table table, IHtmlElement node) : PhrasingEl
     public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
     {
         ComposeStyles(context);
-        var childElements = Interpret(context.CreateChild(this), node.ChildNodes);
-        if (!childElements.Any())
+        var childElements = Interpret(context.CreateChild(this), node.ChildNodes).ToList();
+        if (childElements.Count == 0)
             return [];
 
         var p = new Paragraph (
@@ -46,11 +44,10 @@ sealed class TableCaptionExpression(Table table, IHtmlElement node) : PhrasingEl
             }
         };
 
-        if (childElements.First() is Run run) // any caption?
+        if (childElements[0] is Run run) // any caption?
         {
             Text? t = run.GetFirstChild<Text>();
-            if (t != null)
-                t.Text = " " + t.InnerText;
+            t?.Text = " " + t.InnerText;
         }
         p.Append(childElements);
 
@@ -63,13 +60,13 @@ sealed class TableCaptionExpression(Table table, IHtmlElement node) : PhrasingEl
         }
         else
         {
-            // If no particular alignement has been specified for the legend, we will align the legend
+            // If no particular alignment has been specified for the legend, we will align the legend
             // relative to the owning table
             TableProperties? props = table.GetFirstChild<TableProperties>();
             if (props != null)
             {
                 TableJustification? justif = props.GetFirstChild<TableJustification>();
-                if (justif?.Val != null) 
+                if (justif?.Val != null)
                     p.ParagraphProperties.Justification = new() { Val = justif.Val.Value.ToJustification() };
             }
         }

@@ -2,7 +2,6 @@
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Validation;
-using DocumentFormat.OpenXml.Wordprocessing;
 using HtmlToOpenXml;
 
 namespace Demo
@@ -12,7 +11,7 @@ namespace Demo
         static async Task Main(string[] args)
         {
             const string filename = "test.docx";
-            string html = ResourceHelper.GetString("Resources.UlStyles.html");
+            string html = ResourceHelper.GetString("Resources.CompleteRunTest.html");
             if (File.Exists(filename)) File.Delete(filename);
 
             using (MemoryStream generatedDocument = new())
@@ -26,16 +25,9 @@ namespace Demo
 
                 generatedDocument.Position = 0L;
                 //using (WordprocessingDocument package = WordprocessingDocument.Open(generatedDocument, true))
-                using (WordprocessingDocument package = WordprocessingDocument.Create(generatedDocument, WordprocessingDocumentType.Document))
+                using (WordprocessingDocument package = WordDocumentFactory.Create(generatedDocument))
                 {
-                    MainDocumentPart? mainPart = package.MainDocumentPart;
-                    if (mainPart == null)
-                    {
-                        mainPart = package.AddMainDocumentPart();
-                        new Document(new Body()).Save(mainPart);
-                    }
-
-                    HtmlConverter converter = new(mainPart, new HtmlToOpenXml.IO.DefaultWebRequest(){
+                    HtmlConverter converter = new(package, new HtmlToOpenXml.IO.DefaultWebRequest(){
                         BaseImageUrl = new Uri(Path.Combine(Environment.CurrentDirectory, "images"))
                     });
                     converter.RenderPreAsTable = true;
@@ -44,7 +36,9 @@ namespace Demo
                     AssertThatOpenXmlDocumentIsValid(package);
                 }
 
-                await File.WriteAllBytesAsync(filename, generatedDocument.ToArray());
+                generatedDocument.Position = 0L;
+                await using var fileStream = new FileStream(filename, FileMode.Create);
+                await generatedDocument.CopyToAsync(fileStream);
             }
 
             Process.Start(new ProcessStartInfo(filename) { UseShellExecute = true });

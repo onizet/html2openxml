@@ -96,7 +96,7 @@ class WebPWebRequest : DefaultWebRequest
         if (resource.Content is not null && requestUri.OriginalString.EndsWith(".webp"))
         {
             // Load, convert to PNG stream, and replace the original resource content.
-            using var img = await Image.LoadAsync(resource.Content, cancellationToken); 
+            using var img = await SixLabors.ImageSharp.Image.LoadAsync(resource.Content, cancellationToken); 
             var convertedStream = new MemoryStream();
             await img.SaveAsPngAsync(convertedStream, cancellationToken);
             

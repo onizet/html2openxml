@@ -49,7 +49,8 @@ sealed class OpenXmlDocumentStyleCollection : SortedList<string, Style>
                 style = this.Values[mid];
                 Style firstFoundStyle = style;
 
-                // we have found the named style but maybe the style doesn't match (Paragraph is not Character)
+                // Multiple styles may share a name but differ by type (Paragraph, Character, Table).
+                // Scan adjacent entries with the same name to find the requested type
                 for (int i = mid; i < keys.Count && !styleType.Equals(style.Type!); i++)
                 {
                     style = this.Values[i];

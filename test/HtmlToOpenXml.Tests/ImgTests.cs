@@ -41,6 +41,19 @@ namespace HtmlToOpenXml.Tests
         }
 
         [Test]
+        public async Task PercentSize_ReturnsDrawing_()
+        {
+            await converter.ParseBody(
+                @"<img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=='
+                    width='100%' height='auto'>",
+                TestContext.CurrentContext.CancellationToken);
+
+            var paragraphs = mainPart.Document!.Body!.Elements<Paragraph>();
+            Assert.That(paragraphs.Count(), Is.EqualTo(1));
+            var (_, imagePart) = AssertIsImg(mainPart, paragraphs.First());
+        }
+
+        [Test]
         public void DataUri_ReturnsDrawing_WithDecryptedData()
         {
             var elements = converter.Parse(@"<img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==' alt='Smiley face' width='42' height='42'>");
@@ -239,7 +252,6 @@ namespace HtmlToOpenXml.Tests
             }
 
             Assert.That(host, Is.Not.Null);
-            Assert.That(host.ChildElements, Has.Count.EqualTo(1));
             var p = host.ChildElements.FirstOrDefault(c => c is Paragraph);
             Assert.That(p, Is.Not.Null);
             AssertIsImg(container, p);

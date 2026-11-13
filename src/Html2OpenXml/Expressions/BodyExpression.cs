@@ -24,25 +24,23 @@ namespace HtmlToOpenXml.Expressions;
 sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
     : BlockElementExpression(node, defaultStyle)
 {
-    private const uint PortraitPageWidth = 11906U;
-    private const uint PortraitPageHeight = 16838U;
     private bool shouldRegisterTopBookmark;
 
 
     public override IEnumerable<OpenXmlElement> Interpret(ParsingContext context)
     {
-        MarkAllBookmarks();
+        MarBookmarkTargets();
 
         var body = context.MainPart.Document!.Body!;
         var sectionProperties = body.Descendants<SectionProperties>().LastOrDefault();
         if (sectionProperties != null)
         {
-            context.IsLandscape = sectionProperties.GetFirstChild<PageSize>()?.Width?.Value >= PortraitPageHeight;
+            context.IsLandscape = WordDocumentFactory.IsLandscape(sectionProperties.GetFirstChild<PageSize>());
         }
 
-        var elements = base.Interpret(context);
+        var elements = base.Interpret(context).ToList();
 
-        if (shouldRegisterTopBookmark && elements.Any())
+        if (shouldRegisterTopBookmark && elements.Count > 0)
         {
             // Check whether it already exists
             if (body.Descendants<BookmarkStart>().Any(b => b.Name?.Value == "_top"))
@@ -52,7 +50,7 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
 
             var bookmarkId = IncrementBookmarkId(context).ToString(CultureInfo.InvariantCulture);
             // this is expected to stand in the 1st paragraph
-            Paragraph? p = body.FirstChild as Paragraph;
+            Paragraph? p = body.GetFirstChild<Paragraph>();
             p ??= body.PrependChild(new Paragraph());
             p.InsertAfter(new BookmarkEnd() { Id = bookmarkId }, p.ParagraphProperties);
             p.InsertAfter(new BookmarkStart() { Id = bookmarkId, Name = "_top" }, p.ParagraphProperties);
@@ -71,25 +69,23 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
         // orientation is applied on the whole document
         if (styleAttributes.TryGetValue("page-orientation", out var attrValue))
         {
-            PageOrientationValues orientation = PageOrientationValues.Portrait;
-            if ("landscape".Equals(attrValue, StringComparison.InvariantCultureIgnoreCase))
-                orientation = PageOrientationValues.Landscape;
+            PageOrientation orientation = attrValue.Is("landscape")?
+                PageOrientation.Landscape : PageOrientation.Portrait;
 
             var sectionProperties = mainPart.Document!.Body!.GetFirstChild<SectionProperties>();
-            if (sectionProperties == null || sectionProperties.GetFirstChild<PageSize>() == null)
+            var pageSize = sectionProperties?.GetFirstChild<PageSize>();
+            if (pageSize == null)
             {
-                context.IsLandscape = orientation == PageOrientationValues.Landscape;
-                mainPart.Document.Body.Append(ChangePageOrientation(orientation));
+                context.IsLandscape = orientation == PageOrientation.Landscape;
+                mainPart.Document.Body.Append(WordDocumentFactory.CreateSectionProperties(orientation));
             }
-            else
+            else if (WordDocumentFactory.IsLandscape(pageSize) != (orientation == PageOrientation.Landscape))
             {
-                var pageSize = sectionProperties.GetFirstChild<PageSize>();
-                if (pageSize == null || !pageSize.Compare(orientation))
-                {
-                    SectionProperties validSectionProp = ChangePageOrientation(orientation);
-                    pageSize?.Remove();
-                    sectionProperties.PrependChild(validSectionProp.GetFirstChild<PageSize>()!.CloneNode(true));
-                }
+                PageSize newPageSize = WordDocumentFactory.CreateSectionProperties(orientation)
+                    .GetFirstChild<PageSize>()!;
+
+                pageSize.Width = newPageSize.Width;
+                pageSize.Height = newPageSize.Height;
             }
         }
 
@@ -98,43 +94,20 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
             var sectionProperties = mainPart.Document!.Body!.GetFirstChild<SectionProperties>();
             if (sectionProperties == null || sectionProperties.GetFirstChild<PageSize>() == null)
             {
-               mainPart.Document.Body.Append(sectionProperties = new());
+                mainPart.Document.Body.Append(sectionProperties = new());
             }
 
-            sectionProperties.AddChild(paraProperties.BiDi.CloneNode(true));
+            if (!sectionProperties.HasChild<BiDi>())
+            {
+                sectionProperties.AddChild(paraProperties.BiDi.CloneNode(true));
+            }
         }
     }
 
     /// <summary>
-    /// Generate the required OpenXml element for handling page orientation.
+    /// Detect all bookmarks (in-document) and modify the DOM to mark the nodes for future processing.
     /// </summary>
-    private static SectionProperties ChangePageOrientation(PageOrientationValues orientation)
-    {
-        PageSize pageSize = new() { Width = PortraitPageWidth, Height = PortraitPageHeight };
-        if (orientation == PageOrientationValues.Portrait)
-        {
-            pageSize.Orient = orientation;
-        }
-        else
-        {
-            (pageSize.Height, pageSize.Width) = (pageSize.Width, pageSize.Height);
-        }
-
-        return new SectionProperties (
-            pageSize,
-            new PageMargin() {
-                Top = 1417, Right = (UInt32Value) 1417U, Bottom = 1417, Left = (UInt32Value) 1417U,
-                Header = (UInt32Value) 708U, Footer = (UInt32Value) 708U, Gutter = (UInt32Value) 0U
-            },
-            new Columns() { Space = "708" },
-            new DocGrid() { LinePitch = 360 }
-        );
-    }
-
-    /// <summary>
-    /// Detect all bookmarks (in-document) and mark the nodes for future processing.
-    /// </summary>
-    private void MarkAllBookmarks()
+    private void MarBookmarkTargets()
     {
         var links = node.QuerySelectorAll("a[href^='#']");
         if (links.Length == 0) return;
@@ -144,7 +117,7 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
             if (link.IsTopAnchor())
             {
                 shouldRegisterTopBookmark = true;
-                return;
+                continue;
             }
 
             var id = link.Hash.Substring(1);

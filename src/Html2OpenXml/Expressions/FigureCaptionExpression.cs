@@ -26,7 +26,7 @@ sealed class FigureCaptionExpression(IHtmlElement node) : BlockElementExpression
     public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
     {
         ComposeStyles(context);
-        var childElements = Interpret(context.CreateChild(this), node.ChildNodes);
+        var childElements = Interpret(context.CreateChild(this), node.ChildNodes).ToList();
 
         var figNumRef = new List<OpenXmlElement>() {
             new Run(
@@ -39,7 +39,7 @@ sealed class FigureCaptionExpression(IHtmlElement node) : BlockElementExpression
         };
 
 
-        if (!childElements.Any())
+        if (childElements.Count == 0)
         {
             return [new Paragraph(figNumRef) {
                 ParagraphProperties = new ParagraphProperties {
@@ -49,27 +49,28 @@ sealed class FigureCaptionExpression(IHtmlElement node) : BlockElementExpression
             }];
         }
 
-        //Add the figure number references to the start of the first paragraph.
-        if(childElements.First() is Paragraph p)
+        // Add the figure number references to the start of the first paragraph.
+        if(childElements[0] is Paragraph p)
         {
-           var properties = p.GetFirstChild<ParagraphProperties>();
-           p.InsertAfter(new Run(
-              new Text(" ") { Space = SpaceProcessingModeValues.Preserve }
-           ), properties);
-           p.InsertAfter(figNumRef[1], properties);
-           p.InsertAfter(figNumRef[0], properties);
+            var properties = p.GetFirstChild<ParagraphProperties>();
+            p.InsertAfter(new Run(
+                new Text(" ") { Space = SpaceProcessingModeValues.Preserve }
+            ), properties);
+            p.InsertAfter(figNumRef[1], properties);
+            p.InsertAfter(figNumRef[0], properties);
         }
         else
         {
             // The first child of the figure caption is a table or something.
             // Just prepend a new paragraph with the figure number reference.
-            childElements =  [
+            childElements = [
                 new Paragraph(figNumRef),
                 ..childElements
             ];
         }
 
-        foreach (var paragraph in childElements.OfType<Paragraph>())
+        var paragraphs = childElements.OfType<Paragraph>().ToList();
+        foreach (var paragraph in paragraphs)
         {
             paragraph.ParagraphProperties ??= new ParagraphProperties();
             paragraph.ParagraphProperties.ParagraphStyleId ??= context.DocumentStyle.GetParagraphStyle(context.DocumentStyle.DefaultStyles.CaptionStyle);
@@ -77,10 +78,7 @@ sealed class FigureCaptionExpression(IHtmlElement node) : BlockElementExpression
             paragraph.ParagraphProperties.KeepNext = new KeepNext();
         }
 
-        if(childElements.OfType<Paragraph>().LastOrDefault() is Paragraph lastPara)
-        {
-            lastPara.ParagraphProperties!.KeepNext = DetermineKeepNext(node);
-        }
+        paragraphs[^1].ParagraphProperties!.KeepNext = DetermineKeepNext(node);
 
         return childElements;
     }
@@ -108,7 +106,7 @@ sealed class FigureCaptionExpression(IHtmlElement node) : BlockElementExpression
     }
 
     /// <summary>
-    /// Determines whether the KeepNext property should apply this this caption.
+    /// Determines whether the KeepNext property should apply to this caption.
     /// </summary>
     /// <returns>A new <see cref="KeepNext"/> or null.</returns>
     private static KeepNext? DetermineKeepNext(IHtmlElement node)

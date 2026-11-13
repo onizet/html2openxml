@@ -19,8 +19,10 @@ using HtmlToOpenXml.IO;
 namespace HtmlToOpenXml;
 
 /// <summary>
+/// <para>
 /// Primary entry point for converting HTML into OpenXml Word document.
-/// 
+/// </para>
+///
 /// The converter can be used with newly created documents as well as existing document templates.
 /// When a template is used, styles, themes, numbering definitions, bookmarks, and other Word settings
 /// are automatically reused.
@@ -49,12 +51,12 @@ namespace HtmlToOpenXml;
 /// <item>Call ParseBody() to append the converted content to the document body.</item>
 /// </list>
 /// </para>
-/// 
+///
 /// Advanced scenarios can use ParseAsync() to control where the generated OpenXml elements are inserted.
 /// </summary>
 /// <example>
 /// Basic quick start:
-/// 
+///
 /// <code>
 /// await using var generatedDocument = new MemoryStream();
 /// using var package = WordprocessingDocument.Create(generatedDocument, WordprocessingDocumentType.Document);
@@ -64,13 +66,13 @@ namespace HtmlToOpenXml;
 /// await converter.ParseBody(html);
 /// </code>
 /// </example>
-public partial class HtmlConverter
+public class HtmlConverter
 {
     internal readonly MainDocumentPart mainPart;
+    private readonly Body body;
+
     // Cache all the ImagePart processed to avoid downloading the same image
     private IImageLoader? headerImageLoader, bodyImageLoader, footerImageLoader;
-    private readonly WordDocumentStyle htmlStyles;
-    private readonly IWebRequest webRequester;
 
 
     /// <summary>
@@ -87,8 +89,31 @@ public partial class HtmlConverter
     public HtmlConverter(MainDocumentPart mainPart, IWebRequest? webRequester = null)
     {
         this.mainPart = mainPart ?? throw new ArgumentNullException(nameof(mainPart));
-        this.htmlStyles = new WordDocumentStyle(mainPart);
-        this.webRequester = webRequester ?? new DefaultWebRequest();
+        this.body = WordDocumentFactory.GetOrCreateDocumentBody(mainPart);
+        HtmlStyles = new WordDocumentStyle(mainPart);
+        this.WebRequester = webRequester ?? new DefaultWebRequest();
+    }
+
+    /// <summary>
+    /// Create a converter bound to a Word document.
+    /// 
+    /// <para>
+    /// Reuse the same HtmlConverter instance for the lifetime of a document
+    /// to avoid reloading cached configuration such as styles and bookmarks.
+    /// </para>
+    /// Do not use the same converter instance with multiple documents.
+    /// </summary>
+    /// <param name="package">The top-level class of a Word document where converted content will be inserted.</param>
+    /// <param name="webRequester">Control retrieval of external resources such as images.</param>
+    public HtmlConverter(WordprocessingDocument package, IWebRequest? webRequester = null)
+    {
+        if (package is null)
+            throw new ArgumentNullException(nameof(package));
+
+        this.mainPart = WordDocumentFactory.GetOrCreateMainDocumentPart(package);
+        this.body = WordDocumentFactory.GetOrCreateDocumentBody(mainPart);
+        HtmlStyles = new WordDocumentStyle(this.mainPart);
+        this.WebRequester = webRequester ?? new DefaultWebRequest();
     }
 
     /// <summary>
@@ -106,8 +131,7 @@ public partial class HtmlConverter
     /// <returns>Returns a collection of generated OpenXml elements.</returns>
     public IList<OpenXmlCompositeElement> Parse(string html)
     {
-        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester, ImageProcessing);
-        return ParseCoreAsync(html, mainPart, bodyImageLoader,
+        return ParseAsync(html,
             new ParallelOptions() { CancellationToken = CancellationToken.None })
             .ConfigureAwait(false).GetAwaiter().GetResult().ToList();
     }
@@ -144,11 +168,49 @@ public partial class HtmlConverter
     /// <param name="html">The HTML content to parse</param>
     /// <param name="parallelOptions">Control the parallelism when downloading the remote resources such as images.</param>
     /// <returns>Returns a collection of generated OpenXml elements.</returns>
-    public Task<IEnumerable<OpenXmlCompositeElement>> ParseAsync(string html, ParallelOptions parallelOptions)
+    public async Task<IEnumerable<OpenXmlCompositeElement>> ParseAsync(string html, ParallelOptions parallelOptions)
     {
-        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester, ImageProcessing);
+        if (string.IsNullOrWhiteSpace(html))
+            return [];
 
-        return ParseCoreAsync(html, mainPart, bodyImageLoader, parallelOptions);
+        var config = GetParserConfiguration();
+        var browsingContext = BrowsingContext.New(config);
+
+        var htmlDocument = await browsingContext.OpenAsync(req => req.Content(html), parallelOptions.CancellationToken).ConfigureAwait(false);
+        if (htmlDocument == null)
+            return [];
+
+        await OnDocumentLoadedAsync(htmlDocument, browsingContext, parallelOptions.CancellationToken).ConfigureAwait(false);
+
+        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, WebRequester, ImageProcessing);
+        return await ParseCoreAsync(htmlDocument, mainPart, bodyImageLoader,
+            parallelOptions)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Parse some HTML and append the genereated content to a Word header.
+    /// </summary>
+    /// <param name="htmlDocument">The parsed HTML document.</param>
+    /// <param name="headerType">Determines the page(s) on which the current header shall be displayed.
+    /// If omitted, the value <see cref="HeaderFooterValues.Default"/> is used.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <seealso cref="ParseFooter(string, HeaderFooterValues?, CancellationToken)"/>
+    protected async Task ParseHeader(AngleSharp.Dom.IDocument htmlDocument, HeaderFooterValues? headerType = null,
+        CancellationToken cancellationToken = default)
+    {
+        headerType ??= HeaderFooterValues.Default;
+        var headerPart = ResolveHeaderFooterPart<HeaderReference, HeaderPart>(headerType);
+
+        headerPart.Header ??= new();
+        headerImageLoader ??= new ImagePrefetcher<HeaderPart>(headerPart, WebRequester, ImageProcessing);
+
+         var paragraphs = await ParseCoreAsync(htmlDocument, headerPart, headerImageLoader,
+            new ParallelOptions() { CancellationToken = cancellationToken },
+            HtmlStyles.GetParagraphStyle(HtmlStyles.DefaultStyles.ParagraphHeaderStyle))
+            .ConfigureAwait(false);
+
+        headerPart.Header.Append(paragraphs);
     }
 
     /// <summary>
@@ -167,18 +229,44 @@ public partial class HtmlConverter
     public async Task ParseHeader(string html, HeaderFooterValues? headerType = null,
         CancellationToken cancellationToken = default)
     {
-        headerType ??= HeaderFooterValues.Default;
-        var headerPart = ResolveHeaderFooterPart<HeaderReference, HeaderPart>(headerType);
+        if (string.IsNullOrWhiteSpace(html))
+            return;
 
-        headerPart.Header ??= new();
-        headerImageLoader ??= new ImagePrefetcher<HeaderPart>(headerPart, webRequester, ImageProcessing);
+        var config = GetParserConfiguration();
+        var browsingContext = BrowsingContext.New(config);
 
-        var paragraphs = await ParseCoreAsync(html, headerPart, headerImageLoader,
+        var htmlDocument = await browsingContext.OpenAsync(req => req.Content(html), cancellationToken).ConfigureAwait(false);
+        if (htmlDocument == null)
+            return;
+
+        await OnDocumentLoadedAsync(htmlDocument, browsingContext, cancellationToken).ConfigureAwait(false);
+
+        await ParseHeader(htmlDocument, headerType, cancellationToken);
+    }
+
+    /// <summary>
+    /// Parse some HTML and append the generated content into a Word footer.
+    /// </summary>
+    /// <param name="htmlDocument">The parsed HTML document.</param>
+    /// <param name="footerType">Determines the page(s) on which the current footer shall be displayed.
+    /// If omitted, the value <see cref="HeaderFooterValues.Default"/> is used.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <seealso cref="ParseFooter(string, HeaderFooterValues?, CancellationToken)"/>
+    protected async Task ParseFooter(AngleSharp.Dom.IDocument htmlDocument, HeaderFooterValues? footerType = null,
+        CancellationToken cancellationToken = default)
+    {
+        footerType ??= HeaderFooterValues.Default;
+        var footerPart = ResolveHeaderFooterPart<FooterReference, FooterPart>(footerType);
+
+        footerPart.Footer ??= new();
+        footerImageLoader ??= new ImagePrefetcher<FooterPart>(footerPart, WebRequester, ImageProcessing);
+
+        var paragraphs = await ParseCoreAsync(htmlDocument, footerPart, footerImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
-            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.ParagraphHeaderStyle))
+            HtmlStyles.GetParagraphStyle(HtmlStyles.DefaultStyles.ParagraphFooterStyle))
             .ConfigureAwait(false);
 
-        headerPart.Header.Append(paragraphs);
+        footerPart.Footer.Append(paragraphs);
     }
 
     /// <summary>
@@ -197,18 +285,63 @@ public partial class HtmlConverter
     public async Task ParseFooter(string html, HeaderFooterValues? footerType = null,
         CancellationToken cancellationToken = default)
     {
-        footerType ??= HeaderFooterValues.Default;
-        var footerPart = ResolveHeaderFooterPart<FooterReference, FooterPart>(footerType);
+        if (string.IsNullOrWhiteSpace(html))
+            return;
 
-        footerPart.Footer ??= new();
-        footerImageLoader ??= new ImagePrefetcher<FooterPart>(footerPart, webRequester, ImageProcessing);
+        var config = GetParserConfiguration();
+        var browsingContext = BrowsingContext.New(config);
 
-        var paragraphs = await ParseCoreAsync(html, footerPart, footerImageLoader,
+        var htmlDocument = await browsingContext.OpenAsync(req => req.Content(html), cancellationToken).ConfigureAwait(false);
+        if (htmlDocument == null)
+            return;
+
+        await OnDocumentLoadedAsync(htmlDocument, browsingContext, cancellationToken).ConfigureAwait(false);
+
+        await ParseFooter(htmlDocument, footerType, cancellationToken);
+    }
+
+    /// <summary>
+    /// Parses some Html and appends the generated content to the document body.
+    /// </summary>
+    /// <param name="htmlDocument">The parsed HTML document.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <seealso cref="ParseBody(string, CancellationToken)"/>
+    protected async Task ParseBody(AngleSharp.Dom.IDocument htmlDocument, CancellationToken cancellationToken = default)
+    {
+        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, WebRequester, ImageProcessing);
+        var paragraphs = await ParseCoreAsync(htmlDocument, mainPart, bodyImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
-            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.ParagraphFooterStyle))
+            HtmlStyles.GetParagraphStyle(HtmlStyles.DefaultStyles.ParagraphBodyStyle))
             .ConfigureAwait(false);
 
-        footerPart.Footer.Append(paragraphs);
+        if (!paragraphs.Any())
+            return;
+
+        SectionProperties? sectionProperties = body.GetLastChild<SectionProperties>()
+            ?? WordDocumentFactory.CreateSectionProperties(PageOrientation.Portrait);
+
+        foreach (var para in paragraphs)
+            body.Append(para);
+
+        // Push the sectionProperties as the last element of the Body
+        // (required by OpenXml schema to avoid the bad formatting of the document)
+        if (sectionProperties?.Parent != null)
+        {
+            sectionProperties.Remove();
+            body.AddChild(sectionProperties);
+        }
+
+        // we automatically create the _top bookmark if missing. To avoid having an empty paragrah,
+        // let's try to merge with its next paragraph.
+        var p = body.GetFirstChild<Paragraph>();
+        if (p?.GetFirstChild<BookmarkStart>()?.Name == "_top"
+            && !p.HasChild<Run>()
+            && p.NextSibling() is Paragraph nextPara)
+        {
+            nextPara.PrependChild(p.GetFirstChild<BookmarkEnd>()?.CloneNode(false));
+            nextPara.PrependChild(p.GetFirstChild<BookmarkStart>()!.CloneNode(false));
+            p.Remove();
+        }
     }
 
     /// <summary>
@@ -234,78 +367,49 @@ public partial class HtmlConverter
     /// <seealso cref="MainDocumentPart"/>
     public async Task ParseBody(string html, CancellationToken cancellationToken = default)
     {
-        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, webRequester, ImageProcessing);
-        var paragraphs = await ParseCoreAsync(html, mainPart, bodyImageLoader,
-            new ParallelOptions() { CancellationToken = cancellationToken },
-            htmlStyles.GetParagraphStyle(htmlStyles.DefaultStyles.ParagraphBodyStyle))
-            .ConfigureAwait(false);
-
-        if (!paragraphs.Any())
+        if (string.IsNullOrWhiteSpace(html))
             return;
 
-        Body body = mainPart.Document!.Body!;
-        SectionProperties? sectionProperties = body.GetLastChild<SectionProperties>();
-        foreach (var para in paragraphs)
-            body.Append(para);
+        var config = GetParserConfiguration();
+        var browsingContext = BrowsingContext.New(config);
 
-        // we automatically create the _top bookmark if missing. To avoid having an empty paragrah,
-        // let's try to merge with its next paragraph.
-        var p = body.GetFirstChild<Paragraph>();
-        if (p != null && p.GetFirstChild<BookmarkStart>()?.Name == "_top"
-            && !p.HasChild<Run>()
-            && p.NextSibling() is Paragraph nextPara)
-        {
-            nextPara.PrependChild(p.GetFirstChild<BookmarkEnd>()?.CloneNode(false));
-            nextPara.PrependChild(p.GetFirstChild<BookmarkStart>()!.CloneNode(false));
-            p.Remove();
-        }
+        var htmlDocument = await browsingContext.OpenAsync(req => req.Content(html), cancellationToken).ConfigureAwait(false);
+        if (htmlDocument == null)
+            return;
 
-        // Push the sectionProperties as the last element of the Body
-        // (required by OpenXml schema to avoid the bad formatting of the document)
-        if (sectionProperties != null)
-        {
-            sectionProperties.Remove();
-            body.AddChild(sectionProperties);
-        }
+        await OnDocumentLoadedAsync(htmlDocument, browsingContext, cancellationToken).ConfigureAwait(false);
+
+        await ParseBody(htmlDocument, cancellationToken);
     }
 
     /// <summary>
     /// Reloads the style cache from the current Word document (<see cref="WordDocumentStyle"/>).
     /// Call this method if styles are added after the HtmlConverter instance has been created.
     /// </summary>
-    /// <remarks>You don't need to call this method if you register the missing style 
+    /// <remarks>You don't need to call this method if you register the missing style
     /// from <see cref="WordDocumentStyle.StyleMissing"/> event.</remarks>
     public void RefreshStyles()
     {
-        htmlStyles.PrepareStyles(mainPart);
+        HtmlStyles.PrepareStyles(mainPart);
     }
 
     /// <summary>
     /// Core method to start the asynchronous parse processing.
     /// </summary>
-    /// <param name="html">The HTML content to parse</param>
+    /// <param name="htmlDocument">The parsed HTML document.</param>
     /// <param name="hostingPart">The OpenXml container where the content will be inserted into.</param>
     /// <param name="imageLoader">The image resolver service linked to the <paramref name="hostingPart"/>.</param>
     /// <param name="parallelOptions">The configuration of parallelism while downloading the remote resources.</param>
-    /// <param name="defaultParagraphStyleId">The default OpenXml style to apply on paragraphs.</param> 
+    /// <param name="defaultParagraphStyleId">The default OpenXml style to apply on paragraphs.</param>
     /// <returns>Returns a list of parsed paragraph.</returns>
-    private async Task<IEnumerable<OpenXmlCompositeElement>> ParseCoreAsync(string html,
+    private async Task<IEnumerable<OpenXmlCompositeElement>> ParseCoreAsync(
+        AngleSharp.Dom.IDocument htmlDocument,
         OpenXmlPartContainer hostingPart, IImageLoader imageLoader,
         ParallelOptions parallelOptions,
         ParagraphStyleId? defaultParagraphStyleId = null)
     {
-        if (string.IsNullOrWhiteSpace(html))
-            return [];
-
-        var browsingContext = BrowsingContext.New();
-        var htmlDocument = await browsingContext.OpenAsync(req => req.Content(html), parallelOptions.CancellationToken).ConfigureAwait(false);
-        if (htmlDocument == null)
-            return [];
-
-        if (mainPart.Document == null)
-            new Document(new Body()).Save(mainPart);
-        else if (mainPart.Document.Body == null)
-            mainPart.Document.Body = new Body();
+        if (htmlDocument is null)
+            throw new ArgumentNullException(nameof(htmlDocument));
 
         await PreloadImages(htmlDocument, imageLoader, parallelOptions).ConfigureAwait(false);
 
@@ -318,6 +422,29 @@ public partial class HtmlConverter
         var parsingContext = new ParsingContext(this, hostingPart, imageLoader);
         var paragraphs = expression.Interpret(parsingContext);
         return paragraphs.Cast<OpenXmlCompositeElement>();
+    }
+
+    /// <summary>
+    /// Provides a factory method to initialize the configuration for the internal parsing context.
+    /// Override this method to register advanced features like custom scripting or AngleSharp.Css extensions.
+    /// </summary>
+    /// <returns>An <see cref="IConfiguration"/> instance used to build the document context.</returns>
+    protected virtual IConfiguration GetParserConfiguration()
+    {
+        return Configuration.Default;
+    }
+
+    /// <summary>
+    /// Event hook triggered immediately after the HTML string is first parsed into a DOM tree.
+    /// This method allows extensions to inline CSS declarations, manipulate nodes, or alter the DOM tree before document interpretation begins.
+    /// </summary>
+    /// <param name="htmlDocument">The parsed document DOM tree structure.</param>
+    /// <param name="browsingContext">The context of the parsing, where additional services could have been registered.</param>
+    /// <param name="cancellation">The cancellation token.</param>
+    /// <returns>A task representing the asynchronous post-parsing pipeline operation.</returns>
+    protected virtual Task OnDocumentLoadedAsync(AngleSharp.Dom.IDocument htmlDocument, IBrowsingContext browsingContext, CancellationToken cancellation)
+    {
+        return Task.CompletedTask;
     }
 
     /// <summary>
@@ -354,11 +481,11 @@ public partial class HtmlConverter
         bool wasRefSet = false;
         TPart? part = null;
 
-        var sectionProps = mainPart.Document!.Body!.Elements<SectionProperties>();
+        var sectionProps = body.Elements<SectionProperties>();
         if (!sectionProps.Any())
         {
             sectionProps = [new SectionProperties()];
-            mainPart.Document.Body!.AddChild(sectionProps.First());
+            body.AddChild(sectionProps.First());
         }
         else
         {
@@ -413,26 +540,25 @@ public partial class HtmlConverter
     /// <remarks>
     /// It exists some predefined anchors used by Word such as <c>#_top</c> to refer to the top of the document.
     /// This built-in anchor is always accepted regardless this property value.
-    /// For others anchors like referring to your own bookmark or a title, add a 
-    /// <see cref="DocumentFormat.OpenXml.Wordprocessing.BookmarkStart"/> and 
+    /// For others anchors like referring to your own bookmark or a title, add a
+    /// <see cref="DocumentFormat.OpenXml.Wordprocessing.BookmarkStart"/> and
     /// <see cref="DocumentFormat.OpenXml.Wordprocessing.BookmarkEnd"/> elements
     /// and set the value of href to <c>#your_bookmark</c>.
     /// </remarks>
     public bool SupportsAnchorLinks { get; set; } = true;
 
     /// <summary>
-    /// Gets the style manager for the current conversion.
-    /// 
+    /// Gets the style translator used for the current conversion.
+    ///
     /// <para>
-    /// HtmlStyles controls how HTML elements are translated into Word styles.
+    /// HtmlStyles acts as the runtime bridge between CSS <c>class</c> attributes and target Word styles.
     /// Through this object you can customize the default style mappings, add custom styles,
-    /// and react when a referenced style is missing from the document.
+    /// and handle the <see cref="WordDocumentStyle.StyleMissing"/> event when a referenced style is absent from the template.
+    /// Class name are case insensitive, e.g., <c>&lt;p class="important_paragraph"&gt;&lt;/p&gt;</c>
+    /// will be mapped to and rendered using the Word style <c>Important_Paragraph</c>.
     /// </para>
     /// </summary>
-    public WordDocumentStyle HtmlStyles
-    {
-        get { return htmlStyles; }
-    }
+    public WordDocumentStyle HtmlStyles { get; }
 
     /// <summary>
     /// Defines where the Legend tag (<c>caption</c>) should be rendered above or below the table.
@@ -506,4 +632,17 @@ public partial class HtmlConverter
     /// This feature is enabled by default.
     /// </summary>
     public bool SupportsHeadingNumbering { get; set; } = true;
+
+    /// <summary>
+    /// Gets the resource retrieval service used by the converter.
+    /// </summary>
+    /// <remarks>
+    /// The <see cref="IWebRequest"/> implementation is responsible for resolving external
+    /// resources referenced by the HTML document, such as images, stylesheets or local files.
+    /// <para>
+    /// This property is intended for derived classes that need access to the resource retrieval infrastructure
+    /// when extending the parsing pipeline, for example to configure AngleSharp resource loaders.
+    /// </para>
+    /// </remarks>
+    protected IWebRequest WebRequester { get; }
 }

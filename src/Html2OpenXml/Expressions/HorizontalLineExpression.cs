@@ -21,12 +21,14 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 sealed class HorizontalLineExpression(IHtmlElement node) : HtmlDomExpression
 {
+    const string BorderSpacingTwips = "240";
+
     /// <inheritdoc/>
     public override IEnumerable<OpenXmlElement> Interpret (ParsingContext context)
     {
         var paragraph = new Paragraph();
         HtmlAttributeCollection styleAttributes;
-        HtmlBorder border;
+        HtmlBorder border = HtmlBorder.Empty;
 
         var previousElement = node.PreviousElementSibling;
         if (previousElement != null)
@@ -44,31 +46,33 @@ sealed class HorizontalLineExpression(IHtmlElement node) : HtmlDomExpression
 
             if (shouldAddSpacing)
             {
-                paragraph.ParagraphProperties = new ParagraphProperties { 
-                    SpacingBetweenLines = new() { Before = "240" }
+                paragraph.ParagraphProperties = new ParagraphProperties {
+                    SpacingBetweenLines = new() { Before = BorderSpacingTwips }
                 };
             }
         }
 
-        // as this paragraph has no children, it will be deleted in RemoveEmptyParagraphs()
-        // in order to kept the <hr>, we force an empty run
+        // as this paragraph has no children, we force an empty run
         paragraph.Append(new Run());
 
         styleAttributes = node.GetStyles();
-        border = new HtmlBorder();
         if (!styleAttributes.IsEmpty)
             border = styleAttributes.GetBorders();
 
         // Get style from border (only top) or use Default style 
-        TopBorder? hrBorderStyle;
+        TopBorder hrBorderStyle;
         if (!border.IsEmpty && border.Top.IsValid)
+        {
             hrBorderStyle = new TopBorder {
-                Val = border.Top.Style, 
+                Val = border.Top.Style,
                 Color = StringValue.FromString(border.Top.Color.ToHexString()),
                 Size = (uint)border.Top.Width.ValueInPoint
             };
+        }
         else
+        {
             hrBorderStyle = new TopBorder() { Val = BorderValues.Single, Size = 4U };
+        }
 
         paragraph.ParagraphProperties ??= new();
         paragraph.ParagraphProperties.ParagraphBorders = new ParagraphBorders {

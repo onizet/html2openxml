@@ -10,6 +10,7 @@
  * PARTICULAR PURPOSE.
  */
 using System.Globalization;
+using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -81,12 +82,12 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
         var columns = new List<GridColumn>(columnCount);
         var colStyleExpressions = new List<TableColExpression>(columnCount);
 
-        var colgroup = tableNode.Children.FirstOrDefault(n => n.LocalName == "colgroup");
+        var colgroup = tableNode.Children.FirstOrDefault(n => n.LocalName == TagNames.Colgroup);
         // if colgroup tag is not found, maybe the table was misformed and they stand below the root level
         colgroup ??= tableNode;
 
         foreach (var col in colgroup.Children
-            .Where(n => n.LocalName == "col").Cast<IHtmlTableColumnElement>())
+            .Where(n => n.LocalName == TagNames.Col).Cast<IHtmlTableColumnElement>())
         {
             var expression = new TableColExpression(col);
             foreach (var child in expression.Interpret(context).Cast<GridColumn>())
@@ -120,6 +121,8 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
                 colIndex = 0;
             }
 
+            // cells are processed left-to-right. The current column style is applied
+            // before advancing the column index
             if (colIndex < colStyleExpressions.Length)
                 colStyleExpressions![colIndex].CascadeStyles(element);
 
@@ -205,8 +208,7 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
             };
         }
 
-        var spacing = Convert.ToInt16(tableNode.GetAttribute("cellspacing"));
-        if (spacing > 0)
+        if (short.TryParse(tableNode.GetAttribute("cellspacing"), out var spacing) && spacing > 0)
         {
             tableProperties.TableCellSpacing = new() {
                 Type = TableWidthUnitValues.Dxa, 
@@ -214,8 +216,7 @@ sealed class TableExpression(IHtmlTableElement node) : PhrasingElementExpression
             };
         }
 
-        var padding = Convert.ToInt16(tableNode.GetAttribute("cellpadding"));
-        if (padding > 0)
+        if (short.TryParse(tableNode.GetAttribute("cellpadding"), out var padding) && padding > 0)
         {
             int paddingDxa = (int) new Unit(UnitMetric.Pixel, padding).ValueInDxa;
 

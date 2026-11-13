@@ -9,8 +9,6 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
-using System;
-using System.Collections.Generic;
 using System.Globalization;
 using AngleSharp.Html.Dom;
 using DocumentFormat.OpenXml;
@@ -26,7 +24,7 @@ sealed class TableColExpression(IHtmlTableColumnElement node) : TableElementExpr
     private const int MaxTablePortraitWidth = 9622;
     private const int MaxTableLandscapeWidth = 12996;
     private readonly IHtmlTableColumnElement colNode = node;
-    private double? percentWidth;
+    private double? columnWidthPercent;
 
 
     /// <inheritdoc/>
@@ -47,8 +45,8 @@ sealed class TableColExpression(IHtmlTableColumnElement node) : TableElementExpr
             else if (width.Metric == UnitMetric.Percent)
             {
                 var maxWidth = context.IsLandscape ? MaxTableLandscapeWidth : MaxTablePortraitWidth;
-                percentWidth = Math.Max(0, Math.Min(100, width.Value));
-                column.Width = Math.Ceiling(maxWidth / 100d * percentWidth.Value).ToString(CultureInfo.InvariantCulture);
+                columnWidthPercent = Math.Max(0, Math.Min(100, width.Value));
+                column.Width = Math.Ceiling(maxWidth / 100d * columnWidthPercent.Value).ToString(CultureInfo.InvariantCulture);
             }
         }
 
@@ -58,7 +56,7 @@ sealed class TableColExpression(IHtmlTableColumnElement node) : TableElementExpr
         var elements = new OpenXmlElement[Math.Min(colNode.Span, TableExpression.MaxColumns)];
         elements[0] = column;
 
-        for (int i = 1; i < colNode.Span; i++)
+        for (int i = 1; i < elements.Length; i++)
             elements[i] = column.CloneNode(true);
 
         return elements;
@@ -68,12 +66,13 @@ sealed class TableColExpression(IHtmlTableColumnElement node) : TableElementExpr
     {
         base.CascadeStyles(element);
 
-        if (percentWidth.HasValue && element is TableCell cell &&
+        if (columnWidthPercent.HasValue && element is TableCell cell &&
             cell.TableCellProperties?.TableCellWidth is null)
         {
             cell.TableCellProperties!.TableCellWidth = new() {
                 Type = TableWidthUnitValues.Pct,
-                Width = ((int) (percentWidth.Value * 50)).ToString(CultureInfo.InvariantCulture)
+                // OpenXml stores percentage widths in fiftieths of a percent
+                Width = ((int) (columnWidthPercent.Value * 50)).ToString(CultureInfo.InvariantCulture)
             };
         }
     }

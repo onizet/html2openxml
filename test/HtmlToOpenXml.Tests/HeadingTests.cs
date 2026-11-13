@@ -14,19 +14,21 @@ namespace HtmlToOpenXml.Tests
         [TestCase("<h1>1. Heading 1</h1><h2>1.1  Heading Double Space</h2>", Description = "Double space after number")]
         [TestCase("<h1>1. Heading 1</h1><h2>1.2&#09;Heading Tab</h2>", Description = "Tab after number")]
         [TestCase("<h1>1. Heading 1</h1><h2>1.3Heading No Space</h2>", Description = "No space after number")]
+        [TestCase("<h1><b>1.</b> Heading 1</h1><h2>1.3Heading No Space</h2>", Description = "Bold stripped out")]
+        [TestCase("<h1><b>1</b>. Heading 1</h1><h2>1.3Heading No Space</h2>", Description = "Bold stripped out")]
+
         public void OrderedPattern_ReturnsNumberingHeading(string html)
         {
             var elements = converter.Parse(html);
 
             var absNum = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<AbstractNum>()
-                .Where(abs => abs.AbstractNumDefinitionName?.Val == NumberingExpressionBase.HeadingNumberingName)
-                .SingleOrDefault();
+                .SingleOrDefault(abs => abs.AbstractNumDefinitionName?.Val == NumberingExpressionBase.HeadingNumberingName);
             Assert.That(absNum, Is.Not.Null);
 
             var inst = mainPart.NumberingDefinitionsPart?.Numbering?
-                .Elements<NumberingInstance>().Where(i => i.AbstractNumId?.Val == absNum.AbstractNumberId)
-                .FirstOrDefault();
+                .Elements<NumberingInstance>()
+                .FirstOrDefault(i => i.AbstractNumId?.Val == absNum.AbstractNumberId);
             Assert.That(inst, Is.Not.Null);
             Assert.That(inst.NumberID?.Value, Is.Not.Null);
 
@@ -62,8 +64,7 @@ namespace HtmlToOpenXml.Tests
 
             var absNum = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<AbstractNum>()
-                .Where(abs => abs.AbstractNumDefinitionName?.Val == NumberingExpressionBase.HeadingNumberingName)
-                .SingleOrDefault();
+                .SingleOrDefault(abs => abs.AbstractNumDefinitionName?.Val == NumberingExpressionBase.HeadingNumberingName);
             Assert.That(absNum, Is.Null);
 
             var paragraphs = elements.Cast<Paragraph>();
@@ -109,8 +110,7 @@ namespace HtmlToOpenXml.Tests
 
             var absNum = mainPart.NumberingDefinitionsPart?.Numbering?
                 .Elements<AbstractNum>()
-                .Where(abs => abs.AbstractNumDefinitionName?.Val == NumberingExpressionBase.HeadingNumberingName)
-                .SingleOrDefault();
+                .SingleOrDefault(abs => abs.AbstractNumDefinitionName?.Val == NumberingExpressionBase.HeadingNumberingName);
             Assert.That(absNum, Is.Null);
 
             var paragraphs = elements.Cast<Paragraph>();
@@ -122,6 +122,21 @@ namespace HtmlToOpenXml.Tests
                     Is.Null,
                     "First paragraph is not a numbering");
             }
+        }
+
+        [Test]
+        public void HeadingSpanMultipleTextNodes_StripTheNumbering()
+        {
+            var run = new Run(
+                new Text(" "),
+                new Text("1."),
+                new Text("2 "),
+                new Text("Heading")
+            );
+            var success = HeadingElementExpression.TryStripHeadingNumbering(run);
+
+            Assert.That(success, Is.True);
+            Assert.That(run.InnerText, Is.EqualTo(" Heading"));
         }
     }
 }

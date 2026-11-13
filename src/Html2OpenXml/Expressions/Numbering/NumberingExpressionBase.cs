@@ -25,7 +25,9 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
 {
     /// <summary>Hard-coded value from Word</summary>
     public const int MaxLevel = 8;
-    protected const int Indentation = 360;
+    internal const int LevelIndent = 720;
+    internal const int Hanging = 360;
+    internal const string HangingStr = "360";
     public const string HeadingNumberingName = "decimal-heading-multi";
     private static readonly IReadOnlyDictionary<string, AbstractNum> predefinedNumberingLists = InitKnownLists();
     /// <summary>Contains the list of templated list along with the AbstractNumbId</summary>
@@ -49,22 +51,15 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
         }
 
         Numbering numberingPart = context.MainPart.NumberingDefinitionsPart!.Numbering!;
-
         AbstractNum abstractNum;
         
         // at this stage, we have sanitized the list style so it's safe to grab them from the predefined template lists
-        if (predefinedNumberingLists.TryGetValue(listName, out var predefined))
-        {
+        abstractNum = predefinedNumberingLists.TryGetValue(listName, out var predefined)?
             // If it's a predefined style, we clone it as usual
-            abstractNum = (AbstractNum)predefined.CloneNode(true);
-        }
-        else
-        {
+            (AbstractNum)predefined.CloneNode(true) :
             // If not found in predefined lists, listName contains a custom bullet character (e.g., "-")
-            abstractNum = CreateCustomBulletAbstractNum(listName);
-        }
-        
-        abstractNum = (AbstractNum) abstractNum.CloneNode(true);
+            CreateCustomBulletAbstractNum(listName);
+
         abstractNum.AbstractNumberId = IncrementAbstractNumId(context, numberingPart);
         var level1 = abstractNum.GetFirstChild<Level>()!;
 
@@ -180,14 +175,18 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
     }
 
     /// <summary>
-    /// Discover the list of existing templates and instances, already registred in the document.
+    /// Discover the list of existing templates and instances, already registered in the document.
     /// </summary>
     private void InitNumberingIds(ParsingContext context)
     {
         if (isInitialized) return;
         knownAbsNumIds = context.Properties<Dictionary<string, int>>("knownAbsNumIds");
         knownInstanceIds = context.Properties<Dictionary<int, int>>("knownInstanceIds");
-        if (knownAbsNumIds != null && knownInstanceIds != null) return;
+        if (knownAbsNumIds != null && knownInstanceIds != null)
+        {
+            isInitialized = true;
+            return;
+        }
 
         knownAbsNumIds = [];
         knownInstanceIds = [];
@@ -222,7 +221,7 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
     /// </summary>
     /// <param name="customSymbol">The custom character or string to be used as the list bullet.</param>
     /// <returns>An <see cref="AbstractNum"/> instance configured with the custom bullet symbol across all levels.</returns>
-    private AbstractNum CreateCustomBulletAbstractNum(string customSymbol)
+    private static AbstractNum CreateCustomBulletAbstractNum(string customSymbol)
     {
         var abstractNum = new AbstractNum {
             AbstractNumDefinitionName = new() { Val = customSymbol },
@@ -239,8 +238,8 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
                 LevelJustification = new() { Val = LevelJustificationValues.Left },
                 PreviousParagraphProperties = new() {
                     Indentation = new() {
-                        Left = ((lvlIndex + 1) * Indentation * 2).ToString(),
-                        Hanging = Indentation.ToString()
+                        Left = ((lvlIndex + 1) * LevelIndent).ToString(),
+                        Hanging = HangingStr
                     }
                 }
             });
@@ -288,8 +287,8 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
                     LevelJustification = new() { Val = LevelJustificationValues.Left },
                     PreviousParagraphProperties = new() {
                         Indentation = new() {
-                            Left = ((lvlIndex + 1) * Indentation * 2).ToString(),
-                            Hanging = Indentation.ToString()
+                            Left = ((lvlIndex + 1) * LevelIndent).ToString(),
+                            Hanging = HangingStr
                         }
                     },
                     NumberingSymbolRunProperties = useSymbol? new () {
@@ -320,7 +319,7 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
                     LevelIndex = lvlIndex,
                     LevelText = new() { Val = lvlText.ToString() },
                     PreviousParagraphProperties = new() {
-                        Indentation = new() { Left = "0", Hanging = Indentation.ToString() }
+                        Indentation = new() { Left = "0", Hanging = HangingStr }
                     }
                 });
             }
