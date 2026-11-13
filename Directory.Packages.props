@@ -36,4 +36,8 @@
     <GlobalPackageReference Include="Roslynator.Analyzers" Version="5.0.0" />
     <GlobalPackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="5.9.0" />
   </ItemGroup>
+
+  <ItemGroup Label="Target for NuGet package">
+    <PackageVersion Include="HtmlToOpenXml" Version="1.0.0" />
+  </ItemGroup>
 </Project>
