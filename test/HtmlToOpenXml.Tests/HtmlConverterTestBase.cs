@@ -1,7 +1,6 @@
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Validation;
-using DocumentFormat.OpenXml.Wordprocessing;
 using NUnit.Framework;
 
 namespace HtmlToOpenXml.Tests
@@ -21,6 +20,7 @@ namespace HtmlToOpenXml.Tests
             generatedDocument = new MemoryStream();
             package = WordDocumentFactory.Create(generatedDocument);
             mainPart = package.MainDocumentPart!;
+            Assume.That(mainPart, Is.Not.Null);
             this.converter = new HtmlConverter(package);
         }
 
