@@ -85,7 +85,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
                 p.ParagraphProperties!.DivId!.Remove();
         }
 
-        if (renderAsFramed)
+        if (mustRenderAsFrame)
         {
             return [CreateFrame(liParagraphs)];
         }

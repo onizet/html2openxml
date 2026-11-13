@@ -27,7 +27,7 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
 
     protected readonly RunProperties runProperties = new();
     protected readonly HtmlAttributeCollection styleAttributes = node.GetStyles();
-    protected IHtmlElement node = node;
+    protected readonly IHtmlElement node = node;
 
 
     /// <inheritdoc/>
@@ -66,10 +66,10 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
         var knownTags = new HashSet<string>();
         foreach (var prop in run.RunProperties)
         {
-            if (!knownTags.Contains(prop.LocalName))
-                knownTags.Add(prop.LocalName);
+            knownTags.Add(prop.LocalName);
         }
 
+        // inherit only properties that are not already defined
         foreach (var prop in runProperties)
         {
             if (!knownTags.Contains(prop.LocalName))
@@ -94,14 +94,15 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
             }
         }
 
-        // according to w3c, dir should be used in conjonction with lang. But whatever happens, we'll apply the RTL layout
+        // according to w3c, dir should be used in conjunction with lang. But whatever happens, we'll apply the RTL layout
         var dir = node.GetTextDirection();
         if (dir == DirectionMode.Rtl)
         {
             runProperties.RightToLeftText = new RightToLeftText();
         }
 
-        // OpenXml limits the border to 4-side of the same color and style.
+        // Use the top border as the representation border since
+        // OpenXml supports only a single border definition.
         var borders = styleAttributes.GetBorders();
         if (borders.Top.IsValid)
         {
@@ -131,11 +132,11 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
 
         if (decorations.HasFlag(TextDecoration.Underline))
             runProperties.Underline = new Underline { Val = UnderlineValues.Single };
-        if (decorations.HasFlag(TextDecoration.Dotted))
+        else if (decorations.HasFlag(TextDecoration.Dotted))
             runProperties.Underline = new Underline { Val = UnderlineValues.Dotted };
-        if (decorations.HasFlag(TextDecoration.Dashed))
+        else if (decorations.HasFlag(TextDecoration.Dashed))
             runProperties.Underline = new Underline { Val = UnderlineValues.Dash };
-        if (decorations.HasFlag(TextDecoration.Wave))
+        else if (decorations.HasFlag(TextDecoration.Wave))
             runProperties.Underline = new Underline { Val = UnderlineValues.Wave };
         if (decorations.HasFlag(TextDecoration.Double))
             runProperties.DoubleStrike = new DoubleStrike();

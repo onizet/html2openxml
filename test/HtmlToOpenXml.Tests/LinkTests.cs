@@ -284,6 +284,13 @@ namespace HtmlToOpenXml.Tests
             Assert.That(rel.Uri.ToString(), Is.EqualTo("#_top"));
         }
 
+        [Test]
+        public void Empty_Link_ShouldBeIgnored ()
+        {
+            var elements = converter.Parse(@"<a href=""#anchor1""></a>");
+            Assert.That(elements, Is.Empty);
+        }
+
         private static void AssertHyperlink(OpenXmlPartContainer container, IEnumerable<OpenXmlElement> elements,
             string expectedUri)
         {

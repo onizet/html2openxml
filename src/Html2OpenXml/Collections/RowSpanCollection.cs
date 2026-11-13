@@ -21,7 +21,7 @@ sealed class RowSpanCollection : IEnumerable<KeyValuePair<int, RowSpanCollection
     public readonly record struct CellSpan(int RowSpan, int Colspan);
 
 
-    /// <summary>Hold the remaining row span value per colum index</summary>
+    /// <summary>Hold the remaining row span value per column index</summary>
     private readonly SortedDictionary<int, CellSpan> spans = [];
 
     /// <summary>
@@ -39,7 +39,7 @@ sealed class RowSpanCollection : IEnumerable<KeyValuePair<int, RowSpanCollection
     }
 
     /// <summary>
-    /// Carry on the rown span on the next row.
+    /// Carry the rown span to the next row.
     /// </summary>
     public int Decrement(int columnIndex)
     {
@@ -54,7 +54,7 @@ sealed class RowSpanCollection : IEnumerable<KeyValuePair<int, RowSpanCollection
     /// <summary>
     /// Reconciliate the carried row span from previous rows with the current spans.
     /// </summary>
-    public void UnionWith(IEnumerable<KeyValuePair<int, CellSpan>> other)
+    public void CarryForward(IEnumerable<KeyValuePair<int, CellSpan>> other)
     {
         foreach (var span in other)
             spans.Add(span.Key, span.Value);
@@ -73,8 +73,5 @@ sealed class RowSpanCollection : IEnumerable<KeyValuePair<int, RowSpanCollection
     /// <summary>
     /// Iterate through the column indexes of carried row span.
     /// </summary>
-    public IEnumerable<int> Columns
-    {
-        get => spans.Keys;
-    }
+    public IReadOnlyCollection<int> Columns => spans.Keys;
 }

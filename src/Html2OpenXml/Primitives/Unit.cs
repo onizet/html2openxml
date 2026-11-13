@@ -19,20 +19,18 @@ namespace HtmlToOpenXml;
 readonly struct Unit
 {
     /// <summary>Represents an empty unit (not defined).</summary>
-    public static readonly Unit Empty = new Unit();
+    public static readonly Unit Empty = new();
     /// <summary>Represents an Auto unit.</summary>
-    public static readonly Unit Auto = new Unit(UnitMetric.Auto, 0L);
+    public static readonly Unit Auto = new(UnitMetric.Auto, 0L);
 
     private readonly UnitMetric metric;
-    private readonly double value;
-    private readonly long valueInEmus;
 
 
     public Unit(UnitMetric metric, double value)
     {
         this.metric = metric;
-        this.value = value;
-        this.valueInEmus = ComputeInEmus(metric, value);
+        this.Value = value;
+        this.ValueInEmus = ComputeInEmus(metric, value);
     }
 
     public static Unit Parse(ReadOnlySpan<char> span, UnitMetric defaultMetric = UnitMetric.Unitless)
@@ -134,33 +132,24 @@ readonly struct Unit
     /// <summary>
     /// Gets the type of unit (pixel, percent, point, ...)
     /// </summary>
-    public UnitMetric Metric
-    {
-        get { return metric; }
-    }
+    public UnitMetric Metric => metric;
 
     /// <summary>
     /// Gets the value of this unit.
     /// </summary>
-    public double Value
-    {
-        get { return value; }
-    }
+    public double Value { get; }
 
     /// <summary>
     /// Gets the value expressed in English Metrics Unit.
     /// </summary>
-    public long ValueInEmus
-    {
-        get { return valueInEmus; }
-    }
+    public long ValueInEmus { get; }
 
     /// <summary>
     /// Gets the value expressed in Dxa unit.
     /// </summary>
     public long ValueInDxa
     {
-        get { return (long) ((double) valueInEmus / 914400L * 20 * 72); }
+        get { return (long) ((double)ValueInEmus / 914400L * 20 * 72); }
     }
 
     /// <summary>
@@ -168,7 +157,7 @@ readonly struct Unit
     /// </summary>
     public int ValueInPx
     {
-        get { return (int) (metric == UnitMetric.Pixel ? this.value : (float) valueInEmus / 914400L * 96); }
+        get { return (int) (metric == UnitMetric.Pixel ? this.Value : (float)ValueInEmus / 914400L * 96); }
     }
 
     /// <summary>
@@ -176,7 +165,7 @@ readonly struct Unit
     /// </summary>
     public double ValueInPoint
     {
-        get { return metric == UnitMetric.Point ? this.value : (float) valueInEmus / 12700L; }
+        get { return metric == UnitMetric.Point ? this.Value : (float)ValueInEmus / 12700L; }
     }
 
     /// <summary>

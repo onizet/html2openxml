@@ -36,8 +36,7 @@ abstract class TableElementExpressionBase(IHtmlElement node) : PhrasingElementEx
             var knownTags = new HashSet<string>();
             foreach (var prop in p.ParagraphProperties)
             {
-                if (!knownTags.Contains(prop.LocalName))
-                    knownTags.Add(prop.LocalName);
+                knownTags.Add(prop.LocalName);
             }
 
             foreach (var prop in paraProperties)
@@ -55,8 +54,7 @@ abstract class TableElementExpressionBase(IHtmlElement node) : PhrasingElementEx
             var knownTags = new HashSet<string>();
             foreach (var prop in cell.TableCellProperties)
             {
-                if (!knownTags.Contains(prop.LocalName))
-                    knownTags.Add(prop.LocalName);
+                knownTags.Add(prop.LocalName);
             }
 
             foreach (var prop in cellProperties)
@@ -74,7 +72,7 @@ abstract class TableElementExpressionBase(IHtmlElement node) : PhrasingElementEx
         if (!Converter.TryParseVAlign(styleAttributes["vertical-align"], out var valign) &&
             !Converter.TryParseVAlign(node.GetAttribute("valign").AsSpan(), out valign))
         {
-            // in Html, table cell are vertically centered by default
+            // HTML table cells defaults to vertical middle alignment
             valign = TableVerticalAlignmentValues.Center;
         }
 

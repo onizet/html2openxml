@@ -89,7 +89,7 @@ class ImageExpression(IHtmlImageElement node) : ImageExpressionBase(node)
         {
             preferredSize = iinfo.Size;
         }
-        else if (preferredSize.Width <= 0 || preferredSize.Height <= 0)
+        else if (preferredSize.HasInvalidDimension)
         {
             Size actualSize = iinfo.Size;
             // Image perspective skewed. Bug fixed by ddeforge on github.com/onizet/html2openxml/discussions/350500
