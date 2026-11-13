@@ -55,6 +55,7 @@ await converter.ParseBody(html);
 * [Numbering List](https://onizet.github.io/html2openxml/guide/numbering.md)
 * [Advanced Table Structures (Row/ColSpan, ColGroup)](https://onizet.github.io/html2openxml/guide/tables.md)
 * [Image Processing](https://onizet.github.io/html2openxml/guide/images.md)
+* [CSS Stylesheet support](https://onizet.github.io/html2openxml/guide/styling.html#note-on-external-css)
 * [Performance notes and memory allocations](https://onizet.github.io/html2openxml/appendix/performance.md)
 
 ## How to implement or debug features
