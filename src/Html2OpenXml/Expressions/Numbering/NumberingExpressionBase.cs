@@ -25,7 +25,9 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
 {
     /// <summary>Hard-coded value from Word</summary>
     public const int MaxLevel = 8;
-    protected const int Indentation = 360;
+    internal const int LevelIndent = 720;
+    internal const int Hanging = 360;
+    internal const string HangingStr = "360";
     public const string HeadingNumberingName = "decimal-heading-multi";
     private static readonly IReadOnlyDictionary<string, AbstractNum> predefinedNumberingLists = InitKnownLists();
     /// <summary>Contains the list of templated list along with the AbstractNumbId</summary>
@@ -238,8 +240,8 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
                 LevelJustification = new() { Val = LevelJustificationValues.Left },
                 PreviousParagraphProperties = new() {
                     Indentation = new() {
-                        Left = ((lvlIndex + 1) * Indentation * 2).ToString(),
-                        Hanging = Indentation.ToString()
+                        Left = ((lvlIndex + 1) * LevelIndent).ToString(),
+                        Hanging = HangingStr
                     }
                 }
             });
@@ -287,8 +289,8 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
                     LevelJustification = new() { Val = LevelJustificationValues.Left },
                     PreviousParagraphProperties = new() {
                         Indentation = new() {
-                            Left = ((lvlIndex + 1) * Indentation * 2).ToString(),
-                            Hanging = Indentation.ToString()
+                            Left = ((lvlIndex + 1) * LevelIndent).ToString(),
+                            Hanging = HangingStr
                         }
                     },
                     NumberingSymbolRunProperties = useSymbol? new () {
@@ -319,7 +321,7 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
                     LevelIndex = lvlIndex,
                     LevelText = new() { Val = lvlText.ToString() },
                     PreviousParagraphProperties = new() {
-                        Indentation = new() { Left = "0", Hanging = Indentation.ToString() }
+                        Indentation = new() { Left = "0", Hanging = HangingStr }
                     }
                 });
             }

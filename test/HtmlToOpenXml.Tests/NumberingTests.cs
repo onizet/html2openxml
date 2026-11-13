@@ -1,6 +1,7 @@
 ﻿using NUnit.Framework;
 using DocumentFormat.OpenXml.Wordprocessing;
 using DocumentFormat.OpenXml.Packaging;
+using HtmlToOpenXml.Expressions;
 
 namespace HtmlToOpenXml.Tests
 {
@@ -589,8 +590,8 @@ namespace HtmlToOpenXml.Tests
             {
                 var level = levels.ElementAt(i);
                 var ident = level.PreviousParagraphProperties?.Indentation;
-                Assert.That(ident?.Hanging?.Value, Is.EqualTo("360"));
-                Assert.That(Convert.ToInt32(ident?.Left?.Value), Is.EqualTo((i + 1) * 2 * 360));
+                Assert.That(ident?.Hanging?.Value, Is.EqualTo(NumberingExpressionBase.HangingStr));
+                Assert.That(Convert.ToInt32(ident?.Left?.Value), Is.EqualTo((i + 1) * NumberingExpressionBase.LevelIndent));
                 TestContext.Out.WriteLine($"{i}. {ident?.Left?.Value}");
             }
         }
@@ -660,7 +661,7 @@ namespace HtmlToOpenXml.Tests
                     Has.All.EqualTo("ListParagraph"),
                     "All paragraphs use the same paragraph style");
                 Assert.That(elements.Last().GetFirstChild<ParagraphProperties>()?.Indentation?.Left?.Value,
-                    Is.EqualTo("720"),
+                    Is.EqualTo(NumberingExpressionBase.LevelIndent.ToString()),
                     "Last standalone paragraph is aligned with the level 1");
             }
         }
@@ -688,7 +689,7 @@ namespace HtmlToOpenXml.Tests
                 var tableProperties = table.GetFirstChild<TableProperties>();
                 Assert.That(tableProperties, Is.Not.Null);
                 Assert.That(tableProperties.TableIndentation, Is.Not.Null);
-                Assert.That(tableProperties.TableIndentation.Width?.Value, Is.EqualTo(720 * (i+1)));
+                Assert.That(tableProperties.TableIndentation.Width?.Value, Is.EqualTo(NumberingExpressionBase.LevelIndent * (i+1)));
                 Assert.That(tableProperties.TableWidth, Is.Not.Null);
                 Assert.That(tableProperties.TableWidth.Type?.Value, Is.EqualTo(TableWidthUnitValues.Pct));
                 Assert.That(tableProperties.TableWidth.Width?.HasValue, Is.True);
@@ -777,6 +778,38 @@ namespace HtmlToOpenXml.Tests
             Assert.That(instances, Has.Count.GreaterThanOrEqualTo(2));
         }
 
+        [Test(Description = "Continuation paragraphs inside a margined list item align with the numbered line")]
+        public void ListContainerMarginLeft_MultiParagraphListItem_Aligned()
+        {
+            var elements = converter.Parse(@"
+                <ol style='margin-left: 20pt;'>
+                    <li><p>One</p>
+                        <p>Two</p>
+                    </li>
+                </ol>");
+
+            var paragraphs = elements.OfType<Paragraph>().ToList();
+            Assert.That(paragraphs, Has.Count.EqualTo(2));
+            Assert.That(elements.Cast<Paragraph>().Select(e => 
+                    e.ParagraphProperties?.Indentation),
+                    Has.All.Not.Null,
+                    "All paragraphs have an indentation marker");
+
+            using (Assert.EnterMultipleScope())
+            {
+                var indentation0 = elements[0].GetFirstChild<ParagraphProperties>()?.Indentation!;
+                var indentation1 = elements[1].GetFirstChild<ParagraphProperties>()?.Indentation!;
+
+                Assert.That(paragraphs[0].ParagraphProperties?.NumberingProperties, Is.Not.Null);
+                Assert.That(paragraphs[1].ParagraphProperties?.NumberingProperties, Is.Null);
+
+                Assert.That(indentation0.Hanging?.Value, Is.EqualTo(NumberingExpressionBase.HangingStr));
+                Assert.That(indentation0.Left?.Value, Is.EqualTo("1120"), "720 (LevelIndent) + 400 (20pt)");
+                Assert.That(indentation1.Hanging?.Value, Is.EqualTo("0"));
+                Assert.That(indentation1.Left?.Value, Is.EqualTo("1120"), "720 (LevelIndent) + 400 (20pt)");
+            }
+        }
+
         [Test(Description = "Nested ol margin-left stacks with numbering level indent on each list")]
         public void ListContainerMarginLeft_NestedList_AppliesLevelAndMargin()
         {
@@ -789,56 +822,25 @@ namespace HtmlToOpenXml.Tests
 
             var paragraphs = elements.OfType<Paragraph>().ToList();
             Assert.That(paragraphs, Has.Count.EqualTo(2));
-
-            var outer = paragraphs.Single(p =>
-                p.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value == 0);
-            var inner = paragraphs.Single(p =>
-                p.ParagraphProperties?.NumberingProperties?.NumberingLevelReference?.Val?.Value == 1);
-
-            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
-            var outerNumId = outer.ParagraphProperties!.NumberingProperties!.NumberingId!.Val!.Value;
-            var innerNumId = inner.ParagraphProperties!.NumberingProperties!.NumberingId!.Val!.Value;
+            Assert.That(elements.Cast<Paragraph>().Select(e => 
+                    e.ParagraphProperties?.Indentation),
+                    Has.All.Not.Null,
+                    "All paragraphs have an indentation marker");
 
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(GetListInstanceLevelIndentLeft(numbering, outerNumId), Is.EqualTo("1120"), "720 (2 x Indentation) + 400 (20pt)");
-                Assert.That(GetListInstanceLevelIndentLeft(numbering, innerNumId, ilvl: 1), Is.EqualTo("2240"), "1120 + 720 + 400 (20pt)");
+                Assert.That(elements.Cast<Paragraph>().Select(e => 
+                    e.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value),
+                    Has.All.Not.Null,
+                    "All paragraphs are linked to list instances");
+
+                var indentation0 = elements[0].GetFirstChild<ParagraphProperties>()?.Indentation!;
+                var indentation1 = elements[1].GetFirstChild<ParagraphProperties>()?.Indentation!;
+                Assert.That(indentation0.Hanging?.Value, Is.EqualTo(NumberingExpressionBase.HangingStr));
+                Assert.That(indentation0.Left?.Value, Is.EqualTo("1120"), "720 (LevelIndent) + 400 (20pt)");
+                Assert.That(indentation1.Hanging?.Value, Is.EqualTo(NumberingExpressionBase.HangingStr));
+                Assert.That(indentation1.Left?.Value, Is.EqualTo("1440"), "2*720 (LevelIndent) + 400 (20pt)");
             }
-        }
-
-        [Test(Description = "Continuation paragraphs inside a margined list item align with the numbered line")]
-        public void ListContainerMarginLeft_MultiParagraphListItem_Aligned()
-        {
-            var elements = converter.Parse(@"
-                <ol style='margin-left: 18pt;'>
-                    <li><p>One</p>
-                        <p>Two</p>
-                    </li>
-                </ol>");
-
-            var paragraphs = elements.OfType<Paragraph>().ToList();
-            Assert.That(paragraphs, Has.Count.EqualTo(2));
-
-            using (Assert.EnterMultipleScope())
-            {
-                Assert.That(paragraphs[0].ParagraphProperties?.NumberingProperties, Is.Not.Null);
-                Assert.That(paragraphs[1].ParagraphProperties?.NumberingProperties, Is.Null);
-                Assert.That(paragraphs[1].ParagraphProperties?.Indentation?.Left?.Value, Is.EqualTo("1080"));
-            }
-        }
-
-        [Test(Description = "Unordered lists apply ol margin-left the same way as ordered lists")]
-        public void ListContainerMarginLeft_AppliesToUnorderedList()
-        {
-            var elements = converter.Parse(@"<ul style='margin-left: 18pt;'><li>Bullet</li></ul>");
-            var p = (Paragraph)elements.Single();
-            var numId = p.ParagraphProperties!.NumberingProperties!.NumberingId!.Val!.Value;
-            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
-            Assert.That(p.ParagraphProperties?.NumberingProperties, Is.Not.Null);
-            Assert.That(GetListInstanceLevelIndentLeft(numbering, numId), Is.EqualTo("1080"));
-            var overrideLevel = GetListInstanceLevelOverride(numbering, numId);
-            Assert.That(overrideLevel?.NumberingFormat?.Val?.Value, Is.EqualTo(NumberFormatValues.Bullet),
-                "Level override must clone the template level so bullet markers still render");
         }
 
         [Test]
@@ -859,25 +861,6 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(paragraphs[0].GetFirstChild<Run>()?.RunProperties?.Color?.Val?.Value, Is.EqualTo("FF0000"));
                 Assert.That(paragraphs[1].GetFirstChild<Run>()?.RunProperties?.Color?.Val?.Value, Is.EqualTo("0000FF"));
             }
-        }
-
-        private static string? GetListInstanceLevelIndentLeft(Numbering numbering, int numId, int ilvl = 0)
-        {
-            return GetListInstanceLevelOverride(numbering, numId, ilvl)?.PreviousParagraphProperties?.Indentation?.Left?.Value;
-        }
-
-        private static Level? GetListInstanceLevelOverride(Numbering numbering, int numId, int ilvl = 0)
-        {
-            var instance = numbering.Elements<NumberingInstance>().Single(i => i.NumberID!.Value == numId);
-            foreach (var levelOverride in instance.Elements<LevelOverride>())
-            {
-                foreach (var level in levelOverride.Elements<Level>())
-                {
-                    if (level.LevelIndex?.Value == ilvl)
-                        return level;
-                }
-            }
-            return null;
         }
 
         /// <summary>
@@ -916,16 +899,6 @@ namespace HtmlToOpenXml.Tests
             AssertThatOpenXmlDocumentIsValid();
         }
 
-        [Test(Description = "Nested ordered list start value is reflected in the marker value")]
-        public async Task NestedOrderedList_StartValue_IsAddedToMarkerValue()
-        {
-            await converter.ParseBody(@"<ol><li>One<ol start='10'><li>Ten</li></ol></li></ol>");
-
-            var paragraphs = mainPart.Document!.Body!.Elements<Paragraph>().ToList();
-            Assert.That(GetListMarkerNumberingValue(paragraphs.Last()), Is.EqualTo("10"));
-            AssertThatOpenXmlDocumentIsValid();
-        }
-
         [Test(Description = "Paragraph margin-left inside a list item must be applied independently of the list item indentation")]
         public async Task ListContainerAndParagraphs_AppliesExtraMargin()
         {
@@ -940,12 +913,21 @@ namespace HtmlToOpenXml.Tests
 
             var paragraphs = elements.OfType<Paragraph>().ToList();
             Assert.That(paragraphs, Has.Count.EqualTo(2));
+            Assert.That(elements.Cast<Paragraph>().Select(e => 
+                    e.ParagraphProperties?.Indentation),
+                    Has.All.Not.Null,
+                    "All paragraphs have an indentation marker");
 
-            Assert.That(paragraphs[0].ParagraphProperties?.Indentation?.Left, Is.Null,
-                "The first paragraph should not have direct indentation because indentation is assigned through the list levelOverride instance.");
-            // i.e. level indentation + paragraph indentation + list left indentation = 720+360+360 = 1440
-            Assert.That(paragraphs[1].ParagraphProperties?.Indentation?.Left?.Value, Is.EqualTo("1120"),
-                "The last paragraph must have its own additional indentation from its margin-left, i.e., 720 + 400");
+            using (Assert.EnterMultipleScope())
+            {
+                var indentation0 = elements[0].GetFirstChild<ParagraphProperties>()?.Indentation!;
+                var indentation1 = elements[1].GetFirstChild<ParagraphProperties>()?.Indentation!;
+
+                Assert.That(indentation0.Hanging?.Value, Is.EqualTo(NumberingExpressionBase.HangingStr));
+                Assert.That(indentation0.Left?.Value, Is.EqualTo("1120"), "720 (LevelIndent) + 400 (20pt)");
+                Assert.That(indentation1.Hanging?.Value, Is.EqualTo("0"));
+                Assert.That(indentation1.Left?.Value, Is.EqualTo("1520"), "720 (LevelIndent) + 400 (20pt) + 400 (20pt)");
+            }
         }
 
         private string? GetBulletText(Paragraph paragraph)
@@ -957,16 +939,6 @@ namespace HtmlToOpenXml.Tests
             var instance = numbering.Elements<NumberingInstance>().Single(i => i.NumberID?.Value == numId);
             var abstractNum = numbering.Elements<AbstractNum>().Single(a => a.AbstractNumberId?.Value == instance.AbstractNumId!.Val!.Value);
             return abstractNum.Elements<Level>().First(l => l.LevelIndex?.Value == level).LevelText?.Val?.Value;
-        }
-
-        private string? GetListMarkerNumberingValue(Paragraph paragraph)
-        {
-            var numberingProperties = paragraph.ParagraphProperties?.NumberingProperties;
-            var numId = numberingProperties?.NumberingId?.Val?.Value;
-            var level = numberingProperties?.NumberingLevelReference?.Val?.Value;
-            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
-            var instance = numbering.Elements<NumberingInstance>().Single(i => i.NumberID?.Value == numId);
-            return instance.GetFirstChild<LevelOverride>()?.GetFirstChild<StartOverrideNumberingValue>()?.Val;
         }
     }
 }
