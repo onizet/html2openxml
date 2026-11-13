@@ -54,18 +54,12 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
         AbstractNum abstractNum;
         
         // at this stage, we have sanitized the list style so it's safe to grab them from the predefined template lists
-        if (predefinedNumberingLists.TryGetValue(listName, out var predefined))
-        {
+        abstractNum = predefinedNumberingLists.TryGetValue(listName, out var predefined)?
             // If it's a predefined style, we clone it as usual
-            abstractNum = (AbstractNum)predefined.CloneNode(true);
-        }
-        else
-        {
+            (AbstractNum)predefined.CloneNode(true) :
             // If not found in predefined lists, listName contains a custom bullet character (e.g., "-")
-            abstractNum = CreateCustomBulletAbstractNum(listName);
-        }
+            CreateCustomBulletAbstractNum(listName);
 
-        abstractNum = (AbstractNum) abstractNum.CloneNode(true);
         abstractNum.AbstractNumberId = IncrementAbstractNumId(context, numberingPart);
         var level1 = abstractNum.GetFirstChild<Level>()!;
 
@@ -181,14 +175,18 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
     }
 
     /// <summary>
-    /// Discover the list of existing templates and instances, already registred in the document.
+    /// Discover the list of existing templates and instances, already registered in the document.
     /// </summary>
     private void InitNumberingIds(ParsingContext context)
     {
         if (isInitialized) return;
         knownAbsNumIds = context.Properties<Dictionary<string, int>>("knownAbsNumIds");
         knownInstanceIds = context.Properties<Dictionary<int, int>>("knownInstanceIds");
-        if (knownAbsNumIds != null && knownInstanceIds != null) return;
+        if (knownAbsNumIds != null && knownInstanceIds != null)
+        {
+            isInitialized = true;
+            return;
+        }
 
         knownAbsNumIds = [];
         knownInstanceIds = [];

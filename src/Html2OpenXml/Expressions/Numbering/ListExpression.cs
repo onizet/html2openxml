@@ -22,23 +22,22 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 {
+    // https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/list-style-type
+    // https://answers.microsoft.com/en-us/msoffice/forum/all/custom-list-number-style/21a54399-4404-4c37-8843-2ccaaf827485
+    // Image bullet: http://officeopenxml.com/WPnumbering-imagesAsSymbol.php
+    private static readonly HashSet<string> supportedListTypes = 
+        [with(StringComparer.OrdinalIgnoreCase), "disc", "decimal", "square", "circle", "dash",
+         "lower-alpha", "upper-alpha", "lower-latin", "upper-latin",
+         "lower-greek", "upper-greek",
+         "lower-roman", "upper-roman",
+         "decimal-tiered" /* not W3C compliant */];
+    private const string StandaloneParagraphMarker = "list-marker";
+    private ParagraphStyleId? listParagraphStyleId;
     private readonly bool isOrderedTag = node.NodeName.Equals("ol", StringComparison.OrdinalIgnoreCase);
     private long listMarginLeftDxa;
     private int startValue = 1, leftIndentation;
     private bool isNestedList;
 
-
-
-    // https://www.w3schools.com/cssref/playdemo.php?filename=playcss_list-style-type
-    // https://answers.microsoft.com/en-us/msoffice/forum/all/custom-list-number-style/21a54399-4404-4c37-8843-2ccaaf827485
-    // Image bullet: http://officeopenxml.com/WPnumbering-imagesAsSymbol.php
-    private static readonly HashSet<string> supportedListTypes = 
-        ["disc", "decimal", "square", "circle", "dash",
-         "lower-alpha", "upper-alpha", "lower-latin", "upper-latin",
-         "lower-greek", "upper-greek",
-         "lower-roman", "upper-roman",
-         "decimal-tiered" /* not W3C compliant */];
-    private ParagraphStyleId? listParagraphStyleId;
 
 
     public override IEnumerable<OpenXmlElement> Interpret(ParsingContext context)
@@ -104,6 +103,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
             listContext = ConcretiseInstance(context, abstractNumId, listStyle, listContext.Level,
                 listContext.MarginLeftDxa + listMarginLeftDxa);
 
+            leftIndentation = (int) (listContext.Level * LevelIndent + listMarginLeftDxa);
             listParagraphStyleId = GetStyleIdForListItem(context.DocumentStyle, node, defaultIfEmpty: false);
         }
         else
@@ -129,13 +129,14 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
             var paragraphs = childElements.OfType<Paragraph>();
             var listItemStyleId = GetStyleIdForListItem(context.DocumentStyle, liNode);
 
-            if (paragraphs.Any())
+            var firstPara = paragraphs.FirstOrDefault();
+            if (firstPara != null)
             {
-                AdjustListItemParagraphIndent(paragraphs.First(), listContext, listItemStyleId);
-            }
+                AdjustListItemParagraphIndent(firstPara, listContext, listItemStyleId);
 
-            // any standalone paragraphs must be aligned (indented) along its current level
-            AdjustStandaloneParagraphIndent(paragraphs.Skip(1), listItemStyleId);
+                // any standalone paragraphs must be aligned (indented) along its current level
+                AdjustStandaloneParagraphIndent(paragraphs.Skip(1), listItemStyleId);
+            }
 
             foreach (var child in childElements)
                 yield return child;
@@ -203,7 +204,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
             if (p.ParagraphProperties.DivId != null)
                 continue;
 
-            p.ParagraphProperties.DivId = new DivId() { Val = "list-marker" };
+            p.ParagraphProperties.DivId = new DivId() { Val = StandaloneParagraphMarker };
             p.ParagraphProperties.ParagraphStyleId ??= (ParagraphStyleId?) listItemStyleId!.CloneNode(true);
 
             // if this paragraph contains its own padding, this add to left indent
@@ -227,8 +228,6 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         var dir = node.GetTextDirection();
         var newLevel = Math.Min(currentLevel + 1, MaxLevel);
 
-        leftIndentation = (int) (newLevel * LevelIndent + listMarginLeftDxa);
-
         // be sure to restart to 1 any nested ordered list
         if (currentLevel > 0 && isOrderedTag)
         {
@@ -244,7 +243,7 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
         }
         else
             // if the previous element is the same list style,
-            // we must restart the ordering to 0
+            // we must restart the ordering to 1
             if (node.IsPrecededByListElement(out var precedingElement)
                 && GetListName(precedingElement) == listStyle)
         {
@@ -332,15 +331,15 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
     /// </summary>
     private ParagraphStyleId? GetStyleIdForListItem(WordDocumentStyle documentStyle, IHtmlElement liNode, bool defaultIfEmpty = true)
     {
-        if (listParagraphStyleId != null)
-            return (ParagraphStyleId) listParagraphStyleId.Clone();
-
         foreach(var clsName in liNode.ClassList)
         {
             var styleId = documentStyle.GetStyle(clsName, StyleValues.Paragraph, ignoreCase: true);
             if (styleId != null)
                 return new ParagraphStyleId { Val = styleId };
         }
+
+        if (listParagraphStyleId != null)
+            return (ParagraphStyleId) listParagraphStyleId.Clone();
 
         if (!defaultIfEmpty) return null;
         return documentStyle.GetParagraphStyle(documentStyle.DefaultStyles.ListParagraphStyle);
