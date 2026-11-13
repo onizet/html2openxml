@@ -713,10 +713,10 @@ namespace HtmlToOpenXml.Tests
             Assert.That(runs.First().RunProperties?.Border, Is.Null);
         }
 
-        [TestCase("100%", "pct", "5000")]
+        [TestCase("100%", "pct", Expressions.BlockElementExpression.FullPageWidthPct)]
         [TestCase("auto", "auto", "0")]
         [TestCase("120px", "dxa", "1800")]
-        [TestCase("", "pct", "5000", Description = "Defaults to 100%")]
+        [TestCase("", "pct", Expressions.BlockElementExpression.FullPageWidthPct, Description = "Defaults to 100%")]
         public void Width_ReturnsRefineTableWidth(string width, string expectedUnit, string expectedValue)
         {
             var elements = converter.Parse(@$"<table style='width: {width}'>
