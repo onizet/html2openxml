@@ -940,5 +940,87 @@ namespace HtmlToOpenXml.Tests
             var abstractNum = numbering.Elements<AbstractNum>().Single(a => a.AbstractNumberId?.Value == instance.AbstractNumId!.Val!.Value);
             return abstractNum.Elements<Level>().First(l => l.LevelIndex?.Value == level).LevelText?.Val?.Value;
         }
+
+        private string? GetListMarkerNumberingValue(Paragraph paragraph)
+        {
+            var numberingProperties = paragraph.ParagraphProperties?.NumberingProperties;
+            var numId = numberingProperties?.NumberingId?.Val?.Value;
+            var level = numberingProperties?.NumberingLevelReference?.Val?.Value;
+            var numbering = mainPart.NumberingDefinitionsPart!.Numbering!;
+            var instance = numbering.Elements<NumberingInstance>().Single(i => i.NumberID?.Value == numId);
+            return instance.GetFirstChild<LevelOverride>()?.GetFirstChild<StartOverrideNumberingValue>()?.Val;
+        }
+
+        [Test(Description = "List marker inherits list element styles and li element styles ")]
+        public async Task ListItemMarkerStyle_OnParagraphMark()
+        {
+            await converter.ParseBody(@"
+                <ol style='color: red; font-size: 16px;'>
+                    <li>One</li>
+                    <li style='color: green;'>Two</li>
+                    <li style='color: green;'>Three</li>
+                </ol>");
+
+            var paragraphs = mainPart.Document!.Body!.Elements<Paragraph>().ToList();
+            var numIds = paragraphs.Select(p => p.ParagraphProperties!.NumberingProperties!.NumberingId!.Val!.Value).ToList();
+            var firstMark = paragraphs[0].ParagraphProperties?.ParagraphMarkRunProperties;
+            var secondMark = paragraphs[1].ParagraphProperties?.ParagraphMarkRunProperties;
+            var thirdMark = paragraphs[2].ParagraphProperties?.ParagraphMarkRunProperties;
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(numIds, Is.All.EqualTo(numIds[0])); // check numbering instance
+                // list items color check
+                Assert.That(firstMark?.GetFirstChild<Color>()?.Val?.Value, Is.EqualTo("FF0000"));
+                Assert.That(secondMark?.GetFirstChild<Color>()?.Val?.Value, Is.EqualTo("008000"));
+                Assert.That(thirdMark?.GetFirstChild<Color>()?.Val?.Value, Is.EqualTo("008000"));
+                // list items font-size check
+                Assert.That(firstMark?.GetFirstChild<FontSize>()?.Val?.Value, Is.EqualTo("24"));
+                Assert.That(secondMark?.GetFirstChild<FontSize>()?.Val?.Value, Is.EqualTo("24"));
+            }
+            AssertThatOpenXmlDocumentIsValid();
+        }
+
+        [Test(Description = "Nested list markers inherit list element styles and li element styles")]
+        public async Task NestedListItemMarkerStyle_OnParagraphMark()
+        {
+            await converter.ParseBody(@"
+                <ol style='color: red; font-size: 16px;'>
+                    <li>One</li>
+                    <li style='color: green;'>Two</li>
+                    <li style='color: blue;'>Three</li>
+                    <li start='4' style='list-style-type: none'>
+                        <ol style='color: magenta;'>
+                            <li>Four</li>
+                            <li style='color: purple;'>Five</li>
+                        </ol>
+                    </li>
+                </ol>");
+
+            var paragraphs = mainPart.Document!.Body!.Elements<Paragraph>().ToList();
+            var numIds = paragraphs.Select(p => p.ParagraphProperties!.NumberingProperties!.NumberingId!.Val!.Value).ToList();
+            var levels = paragraphs.Select(p => p.ParagraphProperties!.NumberingProperties!.NumberingLevelReference!.Val!.Value).ToList();
+            var marks = paragraphs.Select(p => p.ParagraphProperties?.ParagraphMarkRunProperties).ToList();
+
+            using (Assert.EnterMultipleScope())
+            {
+                // check numbering instance
+                Assert.That(numIds[0], Is.EqualTo(numIds[1]));
+                Assert.That(numIds[1], Is.EqualTo(numIds[2]));
+                // parent list items color check
+                Assert.That(marks[0]?.GetFirstChild<Color>()?.Val?.Value, Is.EqualTo("FF0000"));
+                Assert.That(marks[1]?.GetFirstChild<Color>()?.Val?.Value, Is.EqualTo("008000"));
+                Assert.That(marks[2]?.GetFirstChild<Color>()?.Val?.Value, Is.EqualTo("0000FF"));
+                // nested list items color check
+                Assert.That(marks[3]?.GetFirstChild<Color>()?.Val?.Value, Is.EqualTo("FF00FF"));
+                Assert.That(marks[4]?.GetFirstChild<Color>()?.Val?.Value, Is.EqualTo("800080"));
+                // font size inherited from parent list in all list items
+                Assert.That(marks[0]?.GetFirstChild<FontSize>()?.Val?.Value, Is.EqualTo("24"));
+                Assert.That(marks[1]?.GetFirstChild<FontSize>()?.Val?.Value, Is.EqualTo("24"));
+                Assert.That(marks[2]?.GetFirstChild<FontSize>()?.Val?.Value, Is.EqualTo("24"));
+            }
+
+            AssertThatOpenXmlDocumentIsValid();
+        }
     }
 }
