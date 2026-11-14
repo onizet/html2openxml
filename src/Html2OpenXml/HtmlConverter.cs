@@ -28,7 +28,7 @@ namespace HtmlToOpenXml;
 /// are automatically reused.
 ///
 /// <para>
-/// Supports both left-to-right (LTR) and right-to-left (LTR) visual flow content. Direction can be specified
+/// Supports both left-to-right (LTR) and right-to-left (RTL) visual flow content. Direction can be specified
 /// using the HTML <c>dir</c> attribute (recommended) or inferred from the <c>lang</c> attribute.
 /// When not specified, the converter preserves the layout defined by the target Word document.
 /// </para>
@@ -83,6 +83,7 @@ public class HtmlConverter
     /// to avoid reloading cached configuration such as styles and bookmarks.
     /// </para>
     /// Do not use the same converter instance with multiple documents.
+    /// Instances are not thread-safe and should not be used concurrently.
     /// </summary>
     /// <param name="mainPart">The mainDocumentPart must be the document MainDocumentPart where converted content will be inserted.</param>
     /// <param name="webRequester">Control retrieval of external resources such as images.</param>
@@ -138,10 +139,9 @@ public class HtmlConverter
 
     /// <summary>
     /// Convert HTML into OpenXml elements and return them to the caller.
-    /// However, the conversion process itself may still update the underlying document
-    /// by creating styles, numbering definitions, image parts, bookmarks, or other resources
-    /// required by the generated content.
-    /// 
+    /// The returned elements are detached from the document body, but the conversion prcoess may create or udpate related
+    /// OpenXml parts such as styles, numbering definitions, bookmarks, image parts and relationship
+    ///
     /// <para>
     /// Use this method when you need full control over the insertion point or need
     /// to inspect or modify the generated elements before adding them to the document.
@@ -189,7 +189,7 @@ public class HtmlConverter
     }
 
     /// <summary>
-    /// Parse some HTML and append the genereated content to a Word header.
+    /// Parse some HTML and append the generated content to a Word header.
     /// </summary>
     /// <param name="htmlDocument">The parsed HTML document.</param>
     /// <param name="headerType">Determines the page(s) on which the current header shall be displayed.
@@ -214,7 +214,7 @@ public class HtmlConverter
     }
 
     /// <summary>
-    /// Parse some HTML and append the genereated content to a Word header.
+    /// Parse some HTML and append the generated content to a Word header.
     /// 
     /// <para>
     /// Typical uses include company logos, document titles, confidentiality notices,
@@ -421,7 +421,7 @@ public class HtmlConverter
 
         var parsingContext = new ParsingContext(this, hostingPart, imageLoader);
         var paragraphs = expression.Interpret(parsingContext);
-        return paragraphs.Cast<OpenXmlCompositeElement>();
+        return paragraphs.Cast<OpenXmlCompositeElement>().ToList();
     }
 
     /// <summary>
@@ -527,7 +527,7 @@ public class HtmlConverter
     /// <para>
     /// Anchor links target another location within the document, such as <c>#_top</c> or
     /// a bookmark reference (<c>#bookmarkReference</c>).
-    /// Bookmars can be created automatically from HTML anchors or explicitely using the <c>data-bookmark</c> attribute.
+    /// Bookmarks can be created automatically from HTML anchors or explicitly using the <c>data-bookmark</c> attribute.
     /// When <c>data-bookmark</c> is present, the library uses this target name to jump to an existing structural
     /// element in the destination DOCX file rather than creating a new anchor.
     /// </para>
