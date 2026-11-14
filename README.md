@@ -14,6 +14,9 @@ Built on top of [DocumentFormat.OpenXml](https://www.nuget.org/packages/Document
 
 -> [Official Nuget Package](https://www.nuget.org/packages/HtmlToOpenXml) (❗ **Update your bookmark**, suffix `.dll` removed)
 
+-> [HtmlToOpenXml.CssInliner](https://www.nuget.org/packages/HtmlToOpenXml.CssInliner/) (companion library for extended CSS support)
+
+
 ## Quick Start
 
 When creating a blank document:
