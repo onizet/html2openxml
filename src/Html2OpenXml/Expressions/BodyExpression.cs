@@ -29,7 +29,7 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
 
     public override IEnumerable<OpenXmlElement> Interpret(ParsingContext context)
     {
-        MarkAllBookmarks();
+        MarBookmarkTargets();
 
         var body = context.MainPart.Document!.Body!;
         var sectionProperties = body.Descendants<SectionProperties>().LastOrDefault();
@@ -38,9 +38,9 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
             context.IsLandscape = WordDocumentFactory.IsLandscape(sectionProperties.GetFirstChild<PageSize>());
         }
 
-        var elements = base.Interpret(context);
+        var elements = base.Interpret(context).ToList();
 
-        if (shouldRegisterTopBookmark && elements.Any())
+        if (shouldRegisterTopBookmark && elements.Count > 0)
         {
             // Check whether it already exists
             if (body.Descendants<BookmarkStart>().Any(b => b.Name?.Value == "_top"))
@@ -94,17 +94,20 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
             var sectionProperties = mainPart.Document!.Body!.GetFirstChild<SectionProperties>();
             if (sectionProperties == null || sectionProperties.GetFirstChild<PageSize>() == null)
             {
-               mainPart.Document.Body.Append(sectionProperties = new());
+                mainPart.Document.Body.Append(sectionProperties = new());
             }
 
-            sectionProperties.AddChild(paraProperties.BiDi.CloneNode(true));
+            if (!sectionProperties.HasChild<BiDi>())
+            {
+                sectionProperties.AddChild(paraProperties.BiDi.CloneNode(true));
+            }
         }
     }
 
     /// <summary>
-    /// Detect all bookmarks (in-document) and mark the nodes for future processing.
+    /// Detect all bookmarks (in-document) and modify the DOM to mark the nodes for future processing.
     /// </summary>
-    private void MarkAllBookmarks()
+    private void MarBookmarkTargets()
     {
         var links = node.QuerySelectorAll("a[href^='#']");
         if (links.Length == 0) return;
@@ -114,7 +117,7 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
             if (link.IsTopAnchor())
             {
                 shouldRegisterTopBookmark = true;
-                return;
+                continue;
             }
 
             var id = link.Hash.Substring(1);

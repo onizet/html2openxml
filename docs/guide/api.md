@@ -45,3 +45,41 @@ Purpose: Converts HTML into a standalone, actionable collection of OpenXML eleme
 * **Use Case:** You are building a custom element, merging snippets from multiple sources, or needing to inspect and modify the generated code before injecting it into a document.
 
 * **Note on Synchronicity**: Use `Parse()` for basic, non-resource-dependent conversions. Use `ParseAsync()` when the content requires external resource fetching (images, links) or longer processing time.
+
+## Advanced Extension Hooks (Optional)
+
+`HtmlConverter` can be extended by overriding two virtual methods that participate in the HTML parsing pipeline.
+These hooks are intended for advanced scenarios such as CSS inlining, DOM transformations, custom AngleSharp integrations, URL rewriting, or document validation before conversion.
+
+### `GetParserConfiguration()`
+
+* **Purpose:** Provides the `AngleSharp` configuration used to parse the input HTML before conversion begins.
+
+* **Use Case:** Override this method to register AngleSharp extensions, services, or features required during
+document parsing. Typical scenario include enabling support for CSS processing, custom resource loaders, or other AngleSharp integrations.
+
+* **Default Behavior:** Returns `Configuration.Default`, providing standard HTML parsing behaviour.
+
+```csharp
+protected override IConfiguration GetParserConfiguration()
+{
+    return Configuration.Default
+        .WithCss();
+}
+```
+
+### `OnDocumentLoadedAsync()`
+
+* **Purpose:** Executes after the HTML has been parsed into an AngleSharp document but before any OpenXML elements or image resources are generated.
+
+* **Use Case:** Inspect or alter the DOM before conversion. Typical sccenarios include:
+  * Inlining CSS stylesheets
+  * Rewriting image URLs
+  * Removing unsupported elements
+  * Adding custom attributes
+  * Performing document validation
+
+* **Default Behavior:** Performs no action.
+
+* **Note:** Any changes made to the DOM are used by all subsequent conversion stages, including the image discovery,
+resource loading, and OpenXML conversion.

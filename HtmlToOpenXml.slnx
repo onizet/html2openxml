@@ -1,9 +1,11 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Html2OpenXml/HtmlToOpenXml.csproj" />
+    <Project Path="src/Html2OpenXml.CssInliner/HtmlToOpenXml.CssInliner.csproj" />
   </Folder>
   <Folder Name="/test/">
     <Project Path="examples/Demo/Demo.csproj" />
     <Project Path="test/HtmlToOpenXml.Tests/HtmlToOpenXml.Tests.csproj" />
+    <Project Path="test/HtmlToOpenXml.CssInliner.Tests/HtmlToOpenXml.CssInliner.Tests.csproj" />
   </Folder>
 </Solution>

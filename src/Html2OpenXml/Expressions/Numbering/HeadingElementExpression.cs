@@ -21,7 +21,7 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 sealed class HeadingElementExpression(IHtmlElement node) : NumberingExpressionBase(node)
 {
-    private static readonly Regex numberingRegex = new(@"^\s*(?<number>[0-9\.]+\s*)[^0-9]",
+    private static readonly Regex numberingRegex = new(@"^\s*(?<number>\d+(?:\.\d+)*\.?\s*)",
         RegexOptions.Compiled, TimeSpan.FromMilliseconds(100));
 
     /// <inheritdoc/>
@@ -29,19 +29,23 @@ sealed class HeadingElementExpression(IHtmlElement node) : NumberingExpressionBa
     {
         char level = node.NodeName[1];
 
-        var childElements = base.Interpret(context);
-        if (!childElements.Any()) // no text = skip this heading
+        var childElements = base.Interpret(context).ToList();
+        if (childElements.Count == 0) // no text = skip this heading
             return childElements;
 
-        var paragraph = childElements.FirstOrDefault() as Paragraph;
+        var paragraph = childElements[0] as Paragraph;
+        string baseStyle;
 
         paragraph ??= new(childElements);
         paragraph.ParagraphProperties ??= new();
 
         var runElement = childElements.FirstOrDefault();
-        if (runElement != null && context.Converter.SupportsHeadingNumbering && IsNumbering(runElement))
+        if (runElement != null && context.Converter.SupportsHeadingNumbering &&
+            TryStripHeadingNumbering(runElement))
         {
-            if (string.Equals(context.DocumentStyle.DefaultStyles.HeadingStyle, context.DocumentStyle.DefaultStyles.NumberedHeadingStyle))
+            if (string.Equals(
+                context.DocumentStyle.DefaultStyles.HeadingStyle,
+                context.DocumentStyle.DefaultStyles.NumberedHeadingStyle))
             {
                 // Only apply the numbering if a custom numbered heading style has not been defined.
                 // If the user defined a custom numbered heading style (with numbering), Word has
@@ -66,27 +70,29 @@ sealed class HeadingElementExpression(IHtmlElement node) : NumberingExpressionBa
             }
 
             // Apply numbered heading style
-            paragraph.ParagraphProperties.ParagraphStyleId =
-                context.DocumentStyle.GetParagraphStyle(context.DocumentStyle.DefaultStyles.NumberedHeadingStyle + level);
+            baseStyle = context.DocumentStyle.DefaultStyles.NumberedHeadingStyle;
         }
         else
         {
             // Apply normal heading style
-            paragraph.ParagraphProperties.ParagraphStyleId =
-                context.DocumentStyle.GetParagraphStyle(context.DocumentStyle.DefaultStyles.HeadingStyle + level);
+            baseStyle = context.DocumentStyle.DefaultStyles.HeadingStyle;
         }
+
+        // Apply normal heading style
+        paragraph.ParagraphProperties.ParagraphStyleId =
+            context.DocumentStyle.GetParagraphStyle(baseStyle + level);
 
         return [paragraph];
     }
 
-    private static bool IsNumbering(OpenXmlElement runElement)
+    internal static bool TryStripHeadingNumbering(OpenXmlElement runElement)
     {
-        if (runElement.InnerText is null)
+        var headingText = runElement.InnerText;
+        if (string.IsNullOrEmpty(headingText))
             return false;
 
         // Check if the line starts with a number format (1., 1.1., 1.1.1.)
         // If it does, make sure we make the heading a numbered item
-        var headingText = runElement.InnerText;
         Match regexMatch;
         try
         {
@@ -97,17 +103,43 @@ sealed class HeadingElementExpression(IHtmlElement node) : NumberingExpressionBa
             return false;
         }
 
-        // Make sure we only grab the heading if it starts with a number
-        if (regexMatch.Success && headingText.Length > regexMatch.Groups["number"].Length)
+        // Strip the numbering only when it is followed by actual heading text.
+        // Values such as: "1", "1.1" are not considered numbered headings (issue #189)
+        if (regexMatch.Success &&
+            headingText.Length > regexMatch.Groups["number"].Length)
         {
-            // Strip numbers from text
-            headingText = headingText.Substring(regexMatch.Groups["number"].Length);
-            runElement.InnerXml = runElement.InnerXml
-                .Replace(runElement.InnerText!, headingText);
+            RemoveLeadingCharacters(runElement, regexMatch.Groups["number"].Length);
 
             return true;
         }
         return false;
+    }
+
+    /// <summary>
+    /// Remove characters from the start of a Run. A Run can contain multiple Text nodes,
+    /// and Run.InnerText is the concatenation of all of them.
+    /// The numbering prefix may therefore span several Text nodes.
+    /// </summary>
+    /// <param name="runElement">The parent Run.</param>
+    /// <param name="count">The number of characters to remove.</param>
+    private static void RemoveLeadingCharacters(OpenXmlElement runElement, int count)
+    {
+        foreach (var text in runElement.Descendants<Text>())
+        {
+            if (count <= 0)
+                break;
+            
+            if (text.Text.Length <= count)
+            {
+                count -= text.Text.Length;
+                text.Text = string.Empty;
+            }
+            else
+            {
+                text.Text = text.Text.Substring(count);
+                break;
+            }
+        }
     }
 
     /// <summary>

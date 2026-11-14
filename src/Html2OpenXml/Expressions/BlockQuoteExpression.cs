@@ -25,16 +25,16 @@ sealed class BlockQuoteExpression(IHtmlElement node) : BlockElementExpression(no
     /// <inheritdoc/>
     public override IEnumerable<OpenXmlElement> Interpret(ParsingContext context)
     {
-        var childElements = base.Interpret(context);
-        if (!childElements.Any())
+        var childElements = base.Interpret(context).ToList();
+        if (childElements.Count == 0)
             return [];
- 
+
         // Footnote or endnote are invalid inside header and footer
         if (context.HostingPart is not MainDocumentPart)
             return childElements;
 
         // Transform the inline acronym/abbreviation to a reference to a foot note.
-        if (childElements.First() is Paragraph paragraph)
+        if (childElements[0] is Paragraph paragraph)
         {
             string? description = node.GetAttribute("cite");
 

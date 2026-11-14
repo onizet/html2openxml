@@ -28,7 +28,7 @@ abstract class ImageExpressionBase(AngleSharp.Dom.IElement node)  : HtmlDomExpre
     private readonly RunProperties runProperties = new();
     private readonly ParagraphProperties paraProperties = new();
     // some style attributes, such as borders, will convert this node to a framed container
-    private bool renderAsFramed;
+    private bool mustRenderAsFrame;
 
 
     /// <inheritdoc/>
@@ -45,7 +45,7 @@ abstract class ImageExpressionBase(AngleSharp.Dom.IElement node)  : HtmlDomExpre
         if (runProperties.HasChildren)
             run.RunProperties = runProperties;
 
-        if (renderAsFramed)
+        if (mustRenderAsFrame)
             return [new Paragraph(paraProperties, run)];
         return [run];
     }
@@ -86,17 +86,17 @@ abstract class ImageExpressionBase(AngleSharp.Dom.IElement node)  : HtmlDomExpre
             && !AngleSharpExtensions.IsInlineLayout(styleAttributes["display"], "inline-block"))
         {
             paraProperties.Justification = new() { Val = JustificationValues.Center };
-            renderAsFramed = true;
+            mustRenderAsFrame = true;
         }
     }
 
     /// <summary>
-    /// Create the Drawing model referencing the iamge part.
+    /// Create the Drawing model referencing the image part.
     /// </summary>
     protected abstract Drawing? CreateDrawing(ParsingContext context);
 
     /// <summary>
-    /// Resolve the next available <see cref="AbstractNum.AbstractNumberId"/> (they must be unique and ordered).
+    /// Resolve the next available drawing (they must be unique and ordered).
     /// </summary>
     protected static GraphicObjectIds IncrementDrawingObjId(ParsingContext context)
     {

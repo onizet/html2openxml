@@ -55,4 +55,10 @@ struct Size(int width, int height) : IEquatable<Size>
     {
         return string.Format("({0},{1})", Width, Height);
     }
+
+    /// <summary>
+    /// Ensure both the Width and Height are positive.
+    /// </summary>
+    public readonly bool HasInvalidDimension
+        => Width <= 0 || Height <= 0;
 }

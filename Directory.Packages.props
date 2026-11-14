@@ -1,0 +1,43 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Primitives -->
+    <PackageVersion Include="System.ValueTuple" Version="4.6.2" />
+    <!-- Html Parser -->
+    <PackageVersion Include="AngleSharp" Version="1.8.6" />
+    <PackageVersion Include="AngleSharp.Css" Version="1.3.0" />
+    <!-- OpenXml SDK -->
+    <PackageVersion Include="DocumentFormat.OpenXml" Version="3.5.1" />
+    <!-- Framework Abstractions -->
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
+    <PackageVersion Include="PolySharp" Version="1.16.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="Build">
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.403" />
+    <PackageVersion Include="NuSpec.AI" Version="3.1.1" />
+  </ItemGroup>
+
+  <ItemGroup Label="Testing">
+    <PackageVersion Include="coverlet.msbuild" Version="10.1.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
+    <!-- NUnit -->
+    <PackageVersion Include="NUnit" Version="5.0.0" />
+    <PackageVersion Include="NUnit.Analyzers" Version="4.15.0" />
+    <PackageVersion Include="NUnit3TestAdapter" Version="6.3.1" />
+    <!-- Mock -->
+    <PackageVersion Include="Moq" Version="4.21.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="Global Analyzers">
+    <GlobalPackageReference Include="Roslynator.Analyzers" Version="5.0.0" />
+    <GlobalPackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="5.9.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="Target for NuGet package">
+    <PackageVersion Include="HtmlToOpenXml" Version="1.0.0" />
+  </ItemGroup>
+</Project>

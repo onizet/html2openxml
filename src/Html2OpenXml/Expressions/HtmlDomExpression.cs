@@ -22,11 +22,11 @@ namespace HtmlToOpenXml.Expressions;
 abstract class HtmlDomExpression
 {
     static readonly Dictionary<string, Func<IElement, HtmlDomExpression>> knownTags = InitKnownTags();
-    static readonly HashSet<string> ignoreTags = new(StringComparer.OrdinalIgnoreCase) {
+    static readonly HashSet<string> ignoreTags = [with(StringComparer.OrdinalIgnoreCase),
         TagNames.Xml, TagNames.AnnotationXml, TagNames.Button, TagNames.Progress,
         TagNames.Select, TagNames.Input, TagNames.Textarea, TagNames.Meter, TagNames.Applet,
         TagNames.Style, TagNames.NoFrames, TagNames.NoEmbed, TagNames.NoScript,
-        TagNames.Script, TagNames.Bgsound, TagNames.Menu, TagNames.MenuItem, };
+        TagNames.Script, TagNames.Bgsound, TagNames.Menu, TagNames.MenuItem];
 
     private static Dictionary<string, Func<IElement, HtmlDomExpression>> InitKnownTags()
     {
@@ -101,7 +101,8 @@ abstract class HtmlDomExpression
         {
             return new TextExpression(node);
         }
-        else if (node.NodeType == NodeType.Element
+
+        if (node.NodeType == NodeType.Element
             && !ignoreTags.Contains(node.NodeName))
         {
             if (knownTags.TryGetValue(node.NodeName, out Func<IElement, HtmlDomExpression>? handler))

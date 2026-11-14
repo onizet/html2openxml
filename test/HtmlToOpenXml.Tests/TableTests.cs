@@ -53,7 +53,7 @@ namespace HtmlToOpenXml.Tests
         public void RowWithNoCell_ReturnsCompletelyFilledRow()
         {
             var elements = converter.Parse(@"<table>
-                <tr><td>Cell 1.1</td><td>Cell 1.2</td></tr>
+                <tr><td>Cell 1.1</td><td>Cell 1.2</td><td>Cell 1.3</td></tr>
                 <tr><td>Cell 2.1</td></tr>
                 <tr><!--no cell!--></tr>
             </table>");
@@ -61,8 +61,8 @@ namespace HtmlToOpenXml.Tests
             Assert.That(elements, Has.All.TypeOf<Table>());
             var rows = elements[0].Elements<TableRow>();
             Assert.That(rows.Count(), Is.EqualTo(2), "Row with no cells should be skipped");
-            Assert.That(rows.Select(r => r.Elements<TableCell>().Count()), 
-                Has.All.EqualTo(2),
+            Assert.That(rows.Select(r => r.Elements<TableCell>().Count()),
+                Has.All.EqualTo(3),
                 "All rows should have the same number of cells");
         }
 
@@ -96,7 +96,7 @@ namespace HtmlToOpenXml.Tests
         {
             var elements = converter.Parse(@$"<table>
                     <tr><th colspan=""{colSpan}"">Cell 1.1</th></tr>
-                    <tr>{("<td>Cell</td>").Repeat(Math.Max(1, colSpan))}</tr>
+                    <tr>{"<td>Cell</td>".Repeat(Math.Max(1, colSpan))}</tr>
                 </table>");
             Assert.That(elements, Has.Count.EqualTo(1));
             Assert.That(elements, Has.All.TypeOf<Table>());
@@ -713,10 +713,10 @@ namespace HtmlToOpenXml.Tests
             Assert.That(runs.First().RunProperties?.Border, Is.Null);
         }
 
-        [TestCase("100%", "pct", "5000")]
+        [TestCase("100%", "pct", Expressions.BlockElementExpression.FullPageWidthPct)]
         [TestCase("auto", "auto", "0")]
         [TestCase("120px", "dxa", "1800")]
-        [TestCase("", "pct", "5000", Description = "Defaults to 100%")]
+        [TestCase("", "pct", Expressions.BlockElementExpression.FullPageWidthPct, Description = "Defaults to 100%")]
         public void Width_ReturnsRefineTableWidth(string width, string expectedUnit, string expectedValue)
         {
             var elements = converter.Parse(@$"<table style='width: {width}'>
@@ -776,7 +776,7 @@ namespace HtmlToOpenXml.Tests
                 Assert.That(cells.Last().TableCellProperties?.TableCellWidth?.Width?.Value, Is.EqualTo("4346"));
             }
         }
-    
+
         [Test]
         public void CellPadding_ReturnsTableCellMargin()
         {
