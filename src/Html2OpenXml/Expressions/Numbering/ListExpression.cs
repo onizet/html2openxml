@@ -136,6 +136,8 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 
                 // any standalone paragraphs must be aligned (indented) along its current level
                 AdjustStandaloneParagraphIndent(paragraphs.Skip(1), listItemStyleId);
+
+                ApplyListMarkerStyle(firstPara);
             }
 
             foreach (var child in childElements)
