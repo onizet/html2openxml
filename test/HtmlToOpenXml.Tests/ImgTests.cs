@@ -160,6 +160,24 @@ namespace HtmlToOpenXml.Tests
             Assert.That(imagePart.ContentType, Is.EqualTo("image/svg+xml"));
         }
 
+        [Test]
+        public void SvgNode_NoSize_ReturnsImage()
+        {
+            var elements = converter.Parse("""
+                <svg viewBox='0 0 100 100'>
+                  <circle cx="50" cy="50" r="40" fill="#4f46e5" stroke="#ffffff" stroke-width="4" />
+                </svg>
+                """);
+
+            Assert.That(elements, Has.Count.EqualTo(1));
+            var (drawing, imagePart) = AssertIsImg(mainPart, elements[0]);
+
+            var expectedUnit = new Unit(UnitMetric.Pixel, 100);
+            Assert.That(drawing.Inline!.Extent?.Cx?.Value, Is.EqualTo(expectedUnit.ValueInEmus));
+            Assert.That(drawing.Inline!.Extent?.Cy?.Value, Is.EqualTo(expectedUnit.ValueInEmus));
+            Assert.That(imagePart.ContentType, Is.EqualTo("image/svg+xml"));
+        }
+
         [Test(Description = "Reading local file containing a space in the name")]
         public async Task RemoteImage_WithBaseUri_ShouldSucceed()
         {

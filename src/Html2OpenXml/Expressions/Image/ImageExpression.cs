@@ -28,6 +28,7 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 class ImageExpression(IHtmlImageElement node) : ImageExpressionBase(node)
 {
+    private static readonly Size DefaultImgSize = new(300, 200);
     private readonly IHtmlImageElement imgNode = node;
 
 
@@ -97,11 +98,11 @@ class ImageExpression(IHtmlImageElement node) : ImageExpressionBase(node)
         }
 
         // If size is still empty (e.g., for external linked images), use default dimensions
-        if (preferredSize.IsEmpty || preferredSize.Width <= 0 || preferredSize.Height <= 0)
+        if (preferredSize.HasInvalidDimension)
         {
             // Use default size for external images or when size cannot be determined
             // Default to a reasonable size (similar to how browsers handle images with unknown dimensions)
-            preferredSize = new Size(300, 200);
+            preferredSize = DefaultImgSize;
         }
 
         long widthInEmus = new Unit(UnitMetric.Pixel, preferredSize.Width).ValueInEmus;
