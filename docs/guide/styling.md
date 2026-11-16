@@ -138,13 +138,14 @@ By default, the converter **does not** process global stylesheets (`<link rel="s
 
 > An optimized pre-processing extension that automatically compiles and flattens global `<style>` declarations into native inline attributes using an asynchronous DOM pipeline.
 
-Add our dedicated companion package to automate style compilation in a single, unified execution chain:
+Add our dedicated companion [NuGet package](https://www.nuget.org/packages/HtmlToOpenXml.CssInliner/) to automate style compilation in a single, unified execution chain:
 
 1. Add a reference this NuGet package `dotnet add package HtmlToOpenXml.CssInliner`.
-2. Instantiate `CssStyleHtmlConverter`.
+2. Instantiate `HtmlConverter`.
 
 ```csharp
-var converter = new CssStyleHtmlConverter();
+var converter = new HtmlConverter()
+    .UseCss();
 await converter.ParseHtmlAsync(mainPart, htmlWithStyleTags);
 ```
 
