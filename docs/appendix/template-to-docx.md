@@ -18,17 +18,9 @@ The conversion involves two critical steps: changing the file type and establish
 ## Code sample
 
 ```csharp
-using (WordprocessingDocument template = WordprocessingDocument.Open(documentStream, true))
+using (WordprocessingDocument template = WordprocessingDocument.CreateFromTemplate(documentStream))
 {
-    // Step 1: Define the document as a final DOCX package.
-    template.ChangeDocumentType(DocumentFormat.OpenXml.WordprocessingDocumentType.Document);
-
-    MainDocumentPart mainPart = template.MainDocumentPart;
-    // Step 2: Establish the relationship to the original template file path.
-    mainPart.DocumentSettingsPart.AddExternalRelationship(
-        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/attachedTemplate",
-        new Uri(templatePath, UriKind.Absolute));
-
-    mainPart.Document.Save();
+    var converter = new HtmlConverter(template);
+    ...
 }
 ```

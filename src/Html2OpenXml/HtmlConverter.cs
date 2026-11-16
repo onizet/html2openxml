@@ -173,39 +173,97 @@ public class HtmlConverter
         if (string.IsNullOrWhiteSpace(html))
             return [];
 
-        var config = GetParserConfiguration();
-        var browsingContext = BrowsingContext.New(config);
-
-        var htmlDocument = await browsingContext.OpenAsync(req => req.Content(html), parallelOptions.CancellationToken).ConfigureAwait(false);
-        if (htmlDocument == null)
+        var fragment = await LoadDocumentAsync(html, parallelOptions.CancellationToken).ConfigureAwait(false);
+        if (fragment is null)
             return [];
 
-        await OnDocumentLoadedAsync(htmlDocument, browsingContext, parallelOptions.CancellationToken).ConfigureAwait(false);
-
         bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, WebRequester, ImageProcessing);
-        return await ParseCoreAsync(htmlDocument, mainPart, bodyImageLoader,
+        return await ParseCoreAsync(fragment, mainPart, bodyImageLoader,
             parallelOptions)
             .ConfigureAwait(false);
     }
 
     /// <summary>
+    /// Convert HTML into OpenXml elements and return them to the caller.
+    /// 
+    /// <para>
+    /// Use this method when you need full control over the insertion point or need
+    /// to inspect or modify the generated elements before adding them to the document.
+    /// </para>
+    /// For most scenarios, prefer ParseBody().
+    /// </summary>
+    /// <param name="fragment">A parsed HTML fragment.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>Returns a collection of generated OpenXml elements.</returns>
+    public async Task<IEnumerable<OpenXmlCompositeElement>> ParseAsync(HtmlFragment fragment, CancellationToken cancellationToken = default)
+    {
+        if (fragment is null)
+            throw new ArgumentNullException(nameof(fragment));
+
+        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, WebRequester, ImageProcessing);
+        return await ParseCoreAsync(fragment, mainPart, bodyImageLoader,
+            new ParallelOptions { CancellationToken = cancellationToken })
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Loads an HTML document and returns its body as a reusable fragment.
+    ///
+    /// <para>
+    /// The document is parsed only once and any registered parser configurators and transformers
+    /// are supplied before the fragment is returned.
+    /// </para>
+    /// </summary>
+    /// <param name="html">The HTML content to parse</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>Returns a reusable fragment.</returns>
+    /// <exception cref="InvalidOperationException">Raised when the loaded document is not an HTML document.</exception>
+    public async Task<HtmlFragment> LoadDocumentAsync(string html, CancellationToken cancellationToken = default)
+    {
+        var config = GetParserConfiguration();
+        foreach (var extension in ParserConfigurators)
+            config = extension.Configure(config);
+
+        var browsingContext = BrowsingContext.New(config);
+
+        var document = await browsingContext
+            .OpenAsync(req => req.Content(html), cancellationToken)
+            .ConfigureAwait(false);
+
+        var htmlDocument = document as IHtmlDocument ??
+            throw new InvalidOperationException("The loaded document is not an HTML document.");
+
+        await OnDocumentLoadedAsync(document, browsingContext, cancellationToken);
+
+        foreach (var transformer in Transformers)
+        {
+            await transformer.TransformAsync(document, cancellationToken);
+        }
+
+        return new HtmlFragment(htmlDocument.Body!);
+    }
+
+    /// <summary>
     /// Parse some HTML and append the generated content to a Word header.
     /// </summary>
-    /// <param name="htmlDocument">The parsed HTML document.</param>
+    /// <param name="fragment">A parsed HTML fragment.</param>
     /// <param name="headerType">Determines the page(s) on which the current header shall be displayed.
     /// If omitted, the value <see cref="HeaderFooterValues.Default"/> is used.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <seealso cref="ParseFooter(string, HeaderFooterValues?, CancellationToken)"/>
-    protected async Task ParseHeader(AngleSharp.Dom.IDocument htmlDocument, HeaderFooterValues? headerType = null,
+    public async Task ParseHeader(HtmlFragment fragment, HeaderFooterValues? headerType = null,
         CancellationToken cancellationToken = default)
     {
+        if (fragment is null)
+            throw new ArgumentNullException(nameof(fragment));
+
         headerType ??= HeaderFooterValues.Default;
         var headerPart = ResolveHeaderFooterPart<HeaderReference, HeaderPart>(headerType);
 
         headerPart.Header ??= new();
         headerImageLoader ??= new ImagePrefetcher<HeaderPart>(headerPart, WebRequester, ImageProcessing);
 
-         var paragraphs = await ParseCoreAsync(htmlDocument, headerPart, headerImageLoader,
+        var paragraphs = await ParseCoreAsync(fragment, headerPart, headerImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
             HtmlStyles.GetParagraphStyle(HtmlStyles.DefaultStyles.ParagraphHeaderStyle))
             .ConfigureAwait(false);
@@ -232,36 +290,34 @@ public class HtmlConverter
         if (string.IsNullOrWhiteSpace(html))
             return;
 
-        var config = GetParserConfiguration();
-        var browsingContext = BrowsingContext.New(config);
-
-        var htmlDocument = await browsingContext.OpenAsync(req => req.Content(html), cancellationToken).ConfigureAwait(false);
-        if (htmlDocument == null)
+        var fragment = await LoadDocumentAsync(html, cancellationToken).ConfigureAwait(false);
+        if (fragment is null)
             return;
 
-        await OnDocumentLoadedAsync(htmlDocument, browsingContext, cancellationToken).ConfigureAwait(false);
-
-        await ParseHeader(htmlDocument, headerType, cancellationToken);
+        await ParseHeader(fragment, headerType, cancellationToken);
     }
 
     /// <summary>
     /// Parse some HTML and append the generated content into a Word footer.
     /// </summary>
-    /// <param name="htmlDocument">The parsed HTML document.</param>
+    /// <param name="fragment">A parsed HTML fragment.</param>
     /// <param name="footerType">Determines the page(s) on which the current footer shall be displayed.
     /// If omitted, the value <see cref="HeaderFooterValues.Default"/> is used.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <seealso cref="ParseFooter(string, HeaderFooterValues?, CancellationToken)"/>
-    protected async Task ParseFooter(AngleSharp.Dom.IDocument htmlDocument, HeaderFooterValues? footerType = null,
+    public async Task ParseFooter(HtmlFragment fragment, HeaderFooterValues? footerType = null,
         CancellationToken cancellationToken = default)
     {
+        if (fragment is null)
+            throw new ArgumentNullException(nameof(fragment));
+
         footerType ??= HeaderFooterValues.Default;
         var footerPart = ResolveHeaderFooterPart<FooterReference, FooterPart>(footerType);
 
         footerPart.Footer ??= new();
         footerImageLoader ??= new ImagePrefetcher<FooterPart>(footerPart, WebRequester, ImageProcessing);
 
-        var paragraphs = await ParseCoreAsync(htmlDocument, footerPart, footerImageLoader,
+        var paragraphs = await ParseCoreAsync(fragment, footerPart, footerImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
             HtmlStyles.GetParagraphStyle(HtmlStyles.DefaultStyles.ParagraphFooterStyle))
             .ConfigureAwait(false);
@@ -288,28 +344,26 @@ public class HtmlConverter
         if (string.IsNullOrWhiteSpace(html))
             return;
 
-        var config = GetParserConfiguration();
-        var browsingContext = BrowsingContext.New(config);
-
-        var htmlDocument = await browsingContext.OpenAsync(req => req.Content(html), cancellationToken).ConfigureAwait(false);
-        if (htmlDocument == null)
+        var fragment = await LoadDocumentAsync(html, cancellationToken).ConfigureAwait(false);
+        if (fragment is null)
             return;
 
-        await OnDocumentLoadedAsync(htmlDocument, browsingContext, cancellationToken).ConfigureAwait(false);
-
-        await ParseFooter(htmlDocument, footerType, cancellationToken);
+        await ParseFooter(fragment, footerType, cancellationToken);
     }
 
     /// <summary>
     /// Parses some Html and appends the generated content to the document body.
     /// </summary>
-    /// <param name="htmlDocument">The parsed HTML document.</param>
+    /// <param name="fragment">A parsed HTML fragment.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <seealso cref="ParseBody(string, CancellationToken)"/>
-    protected async Task ParseBody(AngleSharp.Dom.IDocument htmlDocument, CancellationToken cancellationToken = default)
+    public async Task ParseBody(HtmlFragment fragment, CancellationToken cancellationToken = default)
     {
+        if (fragment is null)
+            throw new ArgumentNullException(nameof(fragment));
+
         bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, WebRequester, ImageProcessing);
-        var paragraphs = await ParseCoreAsync(htmlDocument, mainPart, bodyImageLoader,
+        var paragraphs = await ParseCoreAsync(fragment, mainPart, bodyImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
             HtmlStyles.GetParagraphStyle(HtmlStyles.DefaultStyles.ParagraphBodyStyle))
             .ConfigureAwait(false);
@@ -370,16 +424,11 @@ public class HtmlConverter
         if (string.IsNullOrWhiteSpace(html))
             return;
 
-        var config = GetParserConfiguration();
-        var browsingContext = BrowsingContext.New(config);
-
-        var htmlDocument = await browsingContext.OpenAsync(req => req.Content(html), cancellationToken).ConfigureAwait(false);
-        if (htmlDocument == null)
+        var fragment = await LoadDocumentAsync(html, cancellationToken).ConfigureAwait(false);
+        if (fragment is null)
             return;
 
-        await OnDocumentLoadedAsync(htmlDocument, browsingContext, cancellationToken).ConfigureAwait(false);
-
-        await ParseBody(htmlDocument, cancellationToken);
+        await ParseBody(fragment, cancellationToken);
     }
 
     /// <summary>
@@ -396,28 +445,26 @@ public class HtmlConverter
     /// <summary>
     /// Core method to start the asynchronous parse processing.
     /// </summary>
-    /// <param name="htmlDocument">The parsed HTML document.</param>
+    /// <param name="fragment">A parsed HTML fragment.</param>
     /// <param name="hostingPart">The OpenXml container where the content will be inserted into.</param>
     /// <param name="imageLoader">The image resolver service linked to the <paramref name="hostingPart"/>.</param>
     /// <param name="parallelOptions">The configuration of parallelism while downloading the remote resources.</param>
     /// <param name="defaultParagraphStyleId">The default OpenXml style to apply on paragraphs.</param>
     /// <returns>Returns a list of parsed paragraph.</returns>
     private async Task<IEnumerable<OpenXmlCompositeElement>> ParseCoreAsync(
-        AngleSharp.Dom.IDocument htmlDocument,
+        HtmlFragment fragment,
         OpenXmlPartContainer hostingPart, IImageLoader imageLoader,
         ParallelOptions parallelOptions,
         ParagraphStyleId? defaultParagraphStyleId = null)
     {
-        if (htmlDocument is null)
-            throw new ArgumentNullException(nameof(htmlDocument));
-
-        await PreloadImages(htmlDocument, imageLoader, parallelOptions).ConfigureAwait(false);
+        IHtmlElement htmlElement = fragment.Root;
+        await PreloadImages(htmlElement, imageLoader, parallelOptions).ConfigureAwait(false);
 
         Expressions.HtmlDomExpression expression;
         if (hostingPart is MainDocumentPart)
-            expression = new Expressions.BodyExpression(htmlDocument.Body!, defaultParagraphStyleId);
+            expression = new Expressions.BodyExpression(htmlElement, defaultParagraphStyleId);
         else
-            expression = new Expressions.BlockElementExpression(htmlDocument.Body!, defaultParagraphStyleId);
+            expression = new Expressions.BlockElementExpression(htmlElement, defaultParagraphStyleId);
 
         var parsingContext = new ParsingContext(this, hostingPart, imageLoader);
         var paragraphs = expression.Interpret(parsingContext);
@@ -451,10 +498,10 @@ public class HtmlConverter
     /// Walk through all the <c>img</c> tags and preload all the remote images.
     /// We save the image chunks into the underlying WordProcessingDocument to keep memory low.
     /// </summary>
-    private static async Task PreloadImages(AngleSharp.Dom.IDocument htmlDocument,
+    private static async Task PreloadImages(AngleSharp.Dom.IElement fragment,
         IImageLoader imageLoader, ParallelOptions parallelOptions)
     {
-        var imageUris = htmlDocument.QuerySelectorAll("img[src]")
+        var imageUris = fragment.QuerySelectorAll("img[src]")
             .Cast<IHtmlImageElement>()
             .Where(e => AngleSharpExtensions.TryParseUrl(e.GetAttribute("src"), UriKind.RelativeOrAbsolute, out var _))
             .Select(e => e.GetAttribute("src")!)
@@ -644,5 +691,18 @@ public class HtmlConverter
     /// when extending the parsing pipeline, for example to configure AngleSharp resource loaders.
     /// </para>
     /// </remarks>
-    protected IWebRequest WebRequester { get; }
+    public IWebRequest WebRequester { get; }
+
+    /// <summary>
+    /// Gets the collection of document transformers executed after the HTML document
+    /// has been parsed but before OpenXml conversion begins.
+    /// </summary>
+    /// <remarks>Transformers are executed sequentially in the order they are registered.</remarks>
+    public IList<IHtmlTransformer> Transformers { get; } = [];
+
+    /// <summary>
+    /// Gets the collection of parser configurators used to customize the underlying AngleSharp parsing environment.
+    /// </summary>
+    /// <remarks>Extensions are executed sequentially in the order they are registered.</remarks>
+    public IList<IHtmlParserConfigurator> ParserConfigurators { get; } = [];
 }
