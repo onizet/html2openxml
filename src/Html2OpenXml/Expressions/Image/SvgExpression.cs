@@ -34,12 +34,22 @@ sealed class SvgExpression(ISvgSvgElement node) : ImageExpressionBase(node)
 
     protected override Drawing? CreateDrawing(ParsingContext context)
     {
-        var imgPart = context.MainPart.AddImagePart(ImagePartType.Svg);
+        var imgPart = AddImagePart(context.HostingPart, ImagePartType.Svg);
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(svgNode.OuterHtml), writable: false);
             imgPart.FeedData(stream);
         var imagePartId = context.HostingPart.GetIdOfPart(imgPart);
 
         return CreateSvgDrawing(context, svgNode, imagePartId, Size.Empty);
+    }
+
+    private static ImagePart AddImagePart(OpenXmlPartContainer hostingPart, PartTypeInfo partType)
+    {
+        return hostingPart switch {
+            MainDocumentPart mp => mp.AddImagePart(partType),
+            HeaderPart h => h.AddImagePart(partType),
+            FooterPart f => f.AddImagePart(partType),
+            _ => throw new NotSupportedException($"HostingPart was not recognized: {hostingPart.GetType().FullName}")
+        };
     }
 
     internal static Drawing? CreateSvgDrawing(ParsingContext context, ISvgSvgElement svgNode, string imagePartId, Size preferredSize)
