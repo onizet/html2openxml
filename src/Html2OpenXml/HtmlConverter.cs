@@ -184,6 +184,29 @@ public class HtmlConverter
     }
 
     /// <summary>
+    /// Convert HTML into OpenXml elements and return them to the caller.
+    /// 
+    /// <para>
+    /// Use this method when you need full control over the insertion point or need
+    /// to inspect or modify the generated elements before adding them to the document.
+    /// </para>
+    /// For most scenarios, prefer ParseBody().
+    /// </summary>
+    /// <param name="fragment">A parsed HTML fragment.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>Returns a collection of generated OpenXml elements.</returns>
+    public async Task<IEnumerable<OpenXmlCompositeElement>> ParseAsync(HtmlFragment fragment, CancellationToken cancellationToken = default)
+    {
+        if (fragment is null)
+            throw new ArgumentNullException(nameof(fragment));
+
+        bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, WebRequester, ImageProcessing);
+        return await ParseCoreAsync(fragment, mainPart, bodyImageLoader,
+            new ParallelOptions { CancellationToken = cancellationToken })
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
     /// Loads an HTML document and returns its body as a reusable fragment.
     ///
     /// <para>
@@ -231,6 +254,9 @@ public class HtmlConverter
     public async Task ParseHeader(HtmlFragment fragment, HeaderFooterValues? headerType = null,
         CancellationToken cancellationToken = default)
     {
+        if (fragment is null)
+            throw new ArgumentNullException(nameof(fragment));
+
         headerType ??= HeaderFooterValues.Default;
         var headerPart = ResolveHeaderFooterPart<HeaderReference, HeaderPart>(headerType);
 
@@ -282,6 +308,9 @@ public class HtmlConverter
     public async Task ParseFooter(HtmlFragment fragment, HeaderFooterValues? footerType = null,
         CancellationToken cancellationToken = default)
     {
+        if (fragment is null)
+            throw new ArgumentNullException(nameof(fragment));
+
         footerType ??= HeaderFooterValues.Default;
         var footerPart = ResolveHeaderFooterPart<FooterReference, FooterPart>(footerType);
 
@@ -330,6 +359,9 @@ public class HtmlConverter
     /// <seealso cref="ParseBody(string, CancellationToken)"/>
     public async Task ParseBody(HtmlFragment fragment, CancellationToken cancellationToken = default)
     {
+        if (fragment is null)
+            throw new ArgumentNullException(nameof(fragment));
+
         bodyImageLoader ??= new ImagePrefetcher<MainDocumentPart>(mainPart, WebRequester, ImageProcessing);
         var paragraphs = await ParseCoreAsync(fragment, mainPart, bodyImageLoader,
             new ParallelOptions() { CancellationToken = cancellationToken },
@@ -425,9 +457,6 @@ public class HtmlConverter
         ParallelOptions parallelOptions,
         ParagraphStyleId? defaultParagraphStyleId = null)
     {
-        if (fragment is null)
-            throw new ArgumentNullException(nameof(fragment));
-
         IHtmlElement htmlElement = fragment.Root;
         await PreloadImages(htmlElement, imageLoader, parallelOptions).ConfigureAwait(false);
 
@@ -672,7 +701,7 @@ public class HtmlConverter
     public IList<IHtmlTransformer> Transformers { get; } = [];
 
     /// <summary>
-    /// Gets the collection of parser configurators used when loading HTML.
+    /// Gets the collection of parser configurators used to customize the underlying AngleSharp parsing environment.
     /// </summary>
     /// <remarks>Extensions are executed sequentially in the order they are registered.</remarks>
     public IList<IHtmlParserConfigurator> ParserConfigurators { get; } = [];
