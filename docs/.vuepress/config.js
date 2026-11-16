@@ -42,7 +42,7 @@ export default defineUserConfig({
         text: 'Appendix',
         collapsible: true,
         prefix: 'appendix/',
-        children: ['content-type', 'template-to-docx', 'placeholder-replacement', 'restrict-edition'],
+        children: ['content-type', 'extensibility', 'template-to-docx', 'placeholder-replacement', 'restrict-edition'],
       },
       {
         text: 'Changelog',
