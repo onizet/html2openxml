@@ -6,6 +6,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <AssemblyName>HtmlToOpenXml</AssemblyName>
     <RootNamespace>HtmlToOpenXml</RootNamespace>
+    <IsPackable>true</IsPackable>
     <PackageId>HtmlToOpenXml</PackageId>
     <PackageIcon>icon.png</PackageIcon>
     <PackageProjectUrl>https://onizet.github.io/html2openxml/</PackageProjectUrl>

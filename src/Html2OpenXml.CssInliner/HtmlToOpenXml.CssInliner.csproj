@@ -6,6 +6,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <AssemblyName>HtmlToOpenXml.CssInliner</AssemblyName>
     <RootNamespace>HtmlToOpenXml.CssInliner</RootNamespace>
+    <IsPackable>true</IsPackable>
     <PackageId>HtmlToOpenXml.CssInliner</PackageId>
     <PackageIcon>icon.png</PackageIcon>
     <PackageProjectUrl>https://onizet.github.io/html2openxml/</PackageProjectUrl>
@@ -27,11 +28,8 @@
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
-    <ProjectReference Include="..\Html2OpenXml\HtmlToOpenXml.csproj" />
-  </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="HtmlToOpenXml" VersionOverride="4.2.0" /> 
+    <ProjectReference Include="..\Html2OpenXml\HtmlToOpenXml.csproj" />
   </ItemGroup>
 
   <ItemGroup>
