@@ -426,4 +426,24 @@
   </w:tblPr>
 </w:style>]]></value>
   </data>
+  <data name="TableGrid" xml:space="preserve">
+   <value><![CDATA[
+  <w:style w:type="paragraph" w:styleId="TOCHeading" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+		<w:name w:val="TOC Heading"/>
+		<w:basedOn w:val="Heading1"/>
+		<w:next w:val="Normal"/>
+		<w:unhideWhenUsed/>
+		<w:qFormat/>
+		<w:pPr>
+			<w:spacing w:before="240" w:after="0" w:line="259" w:lineRule="auto"/>
+			<w:outlineLvl w:val="9"/>
+		</w:pPr>
+		<w:rPr>
+			<w:kern w:val="0"/>
+			<w:sz w:val="32"/>
+			<w:szCs w:val="32"/>
+			<w:lang w:val="en-US"/>
+			<w14:ligatures w14:val="none"/>
+		</w:rPr>
+	</w:style>]]></value>
 </root>

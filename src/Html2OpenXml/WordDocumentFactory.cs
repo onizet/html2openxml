@@ -65,6 +65,111 @@ public static class WordDocumentFactory
         return package;
     }
 
+    public enum InsertLocation { DocumentStart, DocumentEnd, AfterCover, Detached }
+
+    public static OpenXmlCompositeElement CreateTableOfContents(this HtmlConverter converter, int maxLevel = 3, string caption = "Table Of Contents",
+        InsertLocation insertLocation = InsertLocation.DocumentStart)
+    {
+        var body = GetOrCreateDocumentBody(converter.mainPart);
+
+        var sdtContent = new SdtContentBlock ();
+        if (!string.IsNullOrEmpty(caption))
+        {
+            sdtContent.AppendChild(new Paragraph(
+                new ParagraphProperties {
+                    ParagraphStyleId = converter.HtmlStyles.GetParagraphStyle(converter.HtmlStyles.DefaultStyles.TOCHeading)
+                },
+                new Run(
+                    new Text(caption))));
+        }
+
+        sdtContent.AppendChild(new Paragraph(
+            new ParagraphProperties(
+                new ParagraphStyleId { Val = "TOC1" },
+                new Tabs(
+                    new TabStop { Val = TabStopValues.Right, Leader = TabStopLeaderCharValues.Dot, Position = 9016 }
+                ),
+                new NoProof()
+            ),
+            new Run(
+                new FieldChar { FieldCharType = FieldCharValues.Begin }
+            ),
+            new Run(
+                new FieldCode($@" TOC \o ""1-{maxLevel}"" \h \z \u ") {
+                    Space = SpaceProcessingModeValues.Preserve }
+            ),
+            new Run(
+                new FieldChar { FieldCharType = FieldCharValues.Separate }
+            ))
+        );
+
+        /* compoose list of headings. Look for styles.xml for any named heading.
+            Cache the list of heading Id until the max level
+            <w:style w:type="paragraph" w:styleId="139">
+                <w:name w:val="Heading 1"/>
+        */
+        HashSet<string> headingStyleIds = [];
+        body.Descendants<Paragraph>()
+            .Where(p => p.ParagraphProperties?.ParagraphStyleId?.Val?.Value != null &&
+                headingStyleIds.Contains(p.ParagraphProperties.ParagraphStyleId.Val.Value));
+
+        /* create bookmark around the heading
+            <w:bookmarkStart w:id="1" w:name="_Toc1"/>
+            <w:r>
+                <w:t xml:space="preserve">Heading 1</w:t>
+            </w:r>
+            <w:bookmarkEnd w:id="1"/>
+        */
+
+        var hyperlink = new Hyperlink(
+            new Run(
+                new RunProperties(new NoProof()) {
+                    RunStyle = converter.HtmlStyles.GetRunStyle(converter.HtmlStyles.DefaultStyles.HyperlinkStyle)
+                },
+                new Text("Heading 1")
+            ),
+            new Run(
+                new RunProperties(
+                    new NoProof(),
+                    new WebHidden()
+                ),
+                new TabStop()
+            ),
+            new Run(
+                new RunProperties(
+                    new NoProof(),
+                    new WebHidden()
+                ),
+                new FieldChar { FieldCharType = FieldCharValues.Begin }
+            ),
+            new Run(
+                new RunProperties(
+                    new NoProof(),
+                    new WebHidden()
+                ),
+                new FieldChar { FieldCharType = FieldCharValues.Begin }
+            ),
+            new Run(
+                new FieldCode($@" PAGEREF _Toc245800159 \h ") {
+                    Space = SpaceProcessingModeValues.Preserve },
+                new FieldChar { FieldCharType = FieldCharValues.Separate },
+                new Text("1") { Space = SpaceProcessingModeValues.Preserve },
+                new FieldChar { FieldCharType = FieldCharValues.End }
+            )
+        ) {
+            Tooltip = "#_Toc1", Anchor = "_Toc1", History = OnOffValue.FromBoolean(true) };
+
+        return new SdtBlock(
+            new SdtProperties(
+                new SdtContentDocPartObject {
+                    DocPartGallery = new DocPartGallery { Val = "Table of Contents" },
+                    DocPartUnique = new DocPartUnique { Val = true }
+                }
+            ),
+            sdtContent
+        );
+    }
+
     /// <summary>
     /// Gets the main document part associated with the document, creating it when it does not already exist.
     /// </summary>

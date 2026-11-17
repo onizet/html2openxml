@@ -62,7 +62,8 @@ public sealed class WordDocumentStyle
             PredefinedStyles.Quote,
             PredefinedStyles.QuoteChar,
             PredefinedStyles.TableGrid,
-            PredefinedStyles.Paragraph
+            PredefinedStyles.Paragraph,
+            PredefinedStyles.TOCHeading,
         ];
         this.mainPart = mainPart;
     }
