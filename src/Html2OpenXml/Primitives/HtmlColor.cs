@@ -51,31 +51,22 @@ readonly partial struct HtmlColor : IEquatable<HtmlColor>
         if (span.Length < 3)
             return Empty;
 
-        try
+        // Is it in hexa? Note: we no more accept hexa value without preceding the '#'
+        if (span[0] == '#')
         {
-            // Is it in hexa? Note: we no more accept hexa value without preceding the '#'
-            if (span[0] == '#')
-            {
-                return ParseHexa(span);
-            }
-
-            // RGB or RGBA
-            if (span.StartsWith(['r','g','b'], StringComparison.OrdinalIgnoreCase))
-            {
-                return ParseRgb(span);
-            }
-
-            // HSL or HSLA
-            if (span.StartsWith(['h','s','l'], StringComparison.OrdinalIgnoreCase))
-            {
-                return ParseHsl(span);
-            }
+            return ParseHexa(span);
         }
-        catch (Exception exc)
+
+        // RGB or RGBA
+        if (span.StartsWith(['r','g','b'], StringComparison.OrdinalIgnoreCase))
         {
-            if (exc is FormatException || exc is OverflowException || exc is ArgumentOutOfRangeException)
-                return Empty;
-            throw;
+            return ParseRgb(span);
+        }
+
+        // HSL or HSLA
+        if (span.StartsWith(['h','s','l'], StringComparison.OrdinalIgnoreCase))
+        {
+            return ParseHsl(span);
         }
 
         return GetNamedColor(span);
@@ -85,21 +76,25 @@ readonly partial struct HtmlColor : IEquatable<HtmlColor>
     {
         if (span.Length == 7)
         {
-            return FromArgb(
-                span.Slice(1, 2).AsByte(NumberStyles.HexNumber),
-                span.Slice(3, 2).AsByte(NumberStyles.HexNumber),
-                span.Slice(5, 2).AsByte(NumberStyles.HexNumber));
+            if (span.Slice(1, 2).TryParseByte(NumberStyles.HexNumber, out var r) &&
+                span.Slice(3, 2).TryParseByte(NumberStyles.HexNumber, out var g) &&
+                span.Slice(5, 2).TryParseByte(NumberStyles.HexNumber, out var b))
+            {
+                return FromArgb(r, g, b);
+            }
         }
         if (span.Length == 4)
         {
             // #0FF --> #00FFFF
-            ReadOnlySpan<char> r = [span[1], span[1]];
-            ReadOnlySpan<char> g = [span[2], span[2]];
-            ReadOnlySpan<char> b = [span[3], span[3]];
-            return FromArgb(
-                    r.AsByte(NumberStyles.HexNumber),
-                    g.AsByte(NumberStyles.HexNumber),
-                    b.AsByte(NumberStyles.HexNumber));
+            ReadOnlySpan<char> rSpan = [span[1], span[1]];
+            ReadOnlySpan<char> gSpan = [span[2], span[2]];
+            ReadOnlySpan<char> bSpan = [span[3], span[3]];
+            if (rSpan.TryParseByte(NumberStyles.HexNumber, out var r) &&
+                gSpan.TryParseByte(NumberStyles.HexNumber, out var g) &&
+                bSpan.TryParseByte(NumberStyles.HexNumber, out var b))
+            {
+                return FromArgb(r, g, b);
+            }
         }
         return Empty;
     }
@@ -113,21 +108,20 @@ readonly partial struct HtmlColor : IEquatable<HtmlColor>
         span = span.Slice(startIndex + 1, endIndex - startIndex - 1);
         Span<Range> tokens = stackalloc Range[5];
         var sep = span.IndexOf(',') > -1? ',' : ' ';
-        return span.Split(tokens, sep, StringSplitOptions.RemoveEmptyEntries) switch
+        var tokenCount = span.Split(tokens, sep, StringSplitOptions.RemoveEmptyEntries);
+        if (tokenCount < 3) return Empty;
+
+        Span<byte> rgb = stackalloc byte[3];
+        if (!TryGetBytes(span, tokens, rgb))
+            return Empty;
+
+        return tokenCount switch
         {
-            3 => FromArgb(1.0,
-                span[tokens[0]].AsByte(NumberStyles.Integer),
-                span[tokens[1]].AsByte(NumberStyles.Integer),
-                span[tokens[2]].AsByte(NumberStyles.Integer)),
-            4 => FromArgb(span[tokens[3]].AsDouble(),
-                span[tokens[0]].AsByte(NumberStyles.Integer),
-                span[tokens[1]].AsByte(NumberStyles.Integer),
-                span[tokens[2]].AsByte(NumberStyles.Integer)),
+            3 => FromArgb(1.0, rgb[0], rgb[1], rgb[2]),
             // r g b / a
-            5 => FromArgb(span[tokens[4]].AsDouble(),
-                span[tokens[0]].AsByte(NumberStyles.Integer),
-                span[tokens[1]].AsByte(NumberStyles.Integer),
-                span[tokens[2]].AsByte(NumberStyles.Integer)),
+            4 or 5 => span[tokens[tokenCount-1]].TryParseDouble(out var a)?
+                FromArgb(a, rgb[0], rgb[1], rgb[2]) :
+                Empty,
             _ => Empty
         };
     }
@@ -139,20 +133,55 @@ readonly partial struct HtmlColor : IEquatable<HtmlColor>
             return Empty;
 
         span = span.Slice(startIndex + 1, endIndex - startIndex - 1);
-        Span<Range> tokens = stackalloc Range[5];
+        Span<Range> tokens = stackalloc Range[4];
         var sep = span.IndexOf(',') > -1? ',' : ' ';
-        return span.Split(tokens, sep, StringSplitOptions.RemoveEmptyEntries) switch
+        var tokenCount = span.Split(tokens, sep, StringSplitOptions.RemoveEmptyEntries);
+        if (tokenCount < 2) return Empty;
+
+        Span<double> sl = stackalloc double[2];
+        if (!TryGetPercents(span, tokens, 1, sl))
+            return Empty;
+
+        return tokenCount switch
         {
-            3 => FromHsl(1.0,
-                span[tokens[0]].AsDouble(),
-                span[tokens[1]].AsPercent(),
-                span[tokens[2]].AsPercent()),
-            4 => FromHsl(span[tokens[3]].AsDouble(),
-                span[tokens[0]].AsDouble(),
-                span[tokens[1]].AsPercent(),
-                span[tokens[2]].AsPercent()),
+            3 => span[tokens[0]].TryParseDouble(out var hue)?
+                FromHsl(1.0, hue, sl[0], sl[1]) :
+                Empty,
+            4 => span[tokens[3]].TryParseDouble(out var alpha) &&
+                span[tokens[0]].TryParseDouble(out var hue)?
+                FromHsl(alpha, hue, sl[0], sl[1]) :
+                Empty,
             _ => Empty
         };
+    }
+
+    /// <summary>
+    /// Shorthand for multiple byte.TryParse.
+    /// </summary>
+    private static bool TryGetBytes(ReadOnlySpan<char> span, Span<Range> ranges, Span<byte> values,
+        NumberStyles numberStyles = NumberStyles.Integer)
+    {
+        for (int i = 0; i < values.Length; i++)
+        {
+            if (!span[ranges[i]].TryParseByte(numberStyles, out values[i]))
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Shorthand for multiple double.TryParse with percentage.
+    /// </summary>
+    private static bool TryGetPercents(ReadOnlySpan<char> span, Span<Range> ranges, int startIndex, Span<double> percents)
+    {
+        for (int i = 0; i < percents.Length; i++)
+        {
+            if (!span[ranges[i + startIndex]].TryParsePercent(out percents[i]))
+                return false;
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -258,15 +287,7 @@ readonly partial struct HtmlColor : IEquatable<HtmlColor>
     /// </summary>
     public bool Equals(HtmlColor color)
     {
-        return AreEqual(color.A, A) && AreEqual(color.R, R) && AreEqual(color.G, G) && AreEqual(color.B, B);
-    }
-
-    /// <summary>
-    /// Compare float-point with a 2-digit precisions
-    /// </summary>
-    private static bool AreEqual(double a, double b, double tolerance = 0.01)
-    {
-        return Math.Abs(a - b) <= tolerance;
+        return color.A == A && color.R == R && color.G == G && color.B == B;
     }
 
     /// <summary>
@@ -310,5 +331,5 @@ readonly partial struct HtmlColor : IEquatable<HtmlColor>
     /// <summary>
     /// Specifies whether this HtmlColor structure is uninitialized.
     /// </summary>
-    public bool IsEmpty { get => this.Equals(Empty); }
+    public bool IsEmpty { get => A == 0 && R == 0 && G == 0 && B == 0; }
 }

@@ -76,19 +76,14 @@ readonly struct Unit
             }
         }
 
-        double value;
-        try
-        {
-            value = span.Slice(0, span.Length - metricSize).AsDouble();
-
-            if (value < short.MinValue || value > short.MaxValue)
-                return Empty;
-        }
-        catch (Exception)
+        if (!span.Slice(0, span.Length - metricSize).TryParseDouble(out var value))
         {
             // No digits, we ignore this style
             return Empty;
         }
+
+        if (value < short.MinValue || value > short.MaxValue)
+            return Empty;
 
         return new Unit(metric, value);
     }
