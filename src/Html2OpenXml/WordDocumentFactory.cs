@@ -38,6 +38,7 @@ namespace HtmlToOpenXml;
 public static class WordDocumentFactory
 {
     const string BuiltInGalleryCoverPageName = "Cover Pages";
+    const string BuiltInGalleryTOCName = "Table of Contents";
     private const uint A4PortraitWidth = 11906U;
     private const uint A4PortraitHeight = 16838U;
 
@@ -109,6 +110,26 @@ public static class WordDocumentFactory
     public static async Task SetCoverPage(this HtmlConverter converter, string html,
         CancellationToken cancellationToken = default)
     {
+        var fragment = await converter.LoadDocumentAsync(html, cancellationToken);
+        await converter.SetCoverPage(fragment, cancellationToken);
+    }
+
+    /// <summary>
+    /// Creates or replaces the document cover page.
+    /// <para>
+    /// The supplied HTML is converted using the current <see cref="HtmlConverter"/> configuration
+    /// and stored inside a Word cover page content control.
+    /// </para>
+    /// <para>
+    /// If a cover page already exists, its content is replaced while the existing content control is preserved.
+    /// </para>
+    /// </summary>
+    /// <param name="converter">The converter owning the target document.</param>
+    /// <param name="fragment">A parsed HTML fragment to render into the cover page.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    public static async Task SetCoverPage(this HtmlConverter converter, HtmlFragment fragment,
+        CancellationToken cancellationToken = default)
+    {
         SdtBlock? coverStdBlock = converter.GetCoverPage();
         if (coverStdBlock is null)
         {
@@ -122,7 +143,7 @@ public static class WordDocumentFactory
         partObject.DocPartUnique ??= new();
         coverStdBlock.SdtContentBlock?.Remove();
 
-        var elements = await converter.ParseAsync(html, cancellationToken);
+        var elements = await converter.ParseAsync(fragment, cancellationToken);
         coverStdBlock.SdtContentBlock = new(elements);
     }
 
