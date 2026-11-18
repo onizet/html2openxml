@@ -148,6 +148,33 @@ public static class WordDocumentFactory
     }
 
     /// <summary>
+    /// Returns the table of contents, if one exists.
+    /// <para>
+    /// The TOC is represented using a Word content control associated with
+    /// the built-in TOC gallery.
+    /// </para>
+    /// </summary>
+    /// <returns>
+    /// The TOC content control, or <see langword="null"/> when the document
+    /// does not contain a cover page.
+    /// </returns>
+    public static SdtBlock? GetTableOfContents(this HtmlConverter converter)
+    {
+        var body = GetOrCreateDocumentBody(converter.mainPart);
+        foreach (var stdBlock in body.Descendants<SdtBlock>())
+        {
+            if (stdBlock.SdtProperties?
+                .GetFirstChild<SdtContentDocPartObject>()?
+                .DocPartGallery?.Val?.Value == BuiltInGalleryTOCName)
+            {
+                return stdBlock;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
     /// Gets the main document part associated with the document, creating it when it does not already exist.
     /// </summary>
     internal static MainDocumentPart GetOrCreateMainDocumentPart(WordprocessingDocument package)
