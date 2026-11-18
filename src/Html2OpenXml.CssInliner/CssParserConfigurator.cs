@@ -19,6 +19,7 @@ namespace HtmlToOpenXml.CssInliner;
 /// into native HTML element attributes before document processing.
 /// </summary>
 /// <param name="mode">Controls how external style sheets are handled during conversion.</param>
+/// <param name="webRequester">Controls how external style sheets are handled during conversion.</param>
 public class CssParserExtension(CssProcessingMode mode, IO.IWebRequest webRequester) : IHtmlParserConfigurator
 {
     /// <inheritdoc />
