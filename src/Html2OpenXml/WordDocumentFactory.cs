@@ -23,11 +23,11 @@ namespace HtmlToOpenXml;
 /// OpenXML package structure, document parts, and page settings.
 /// The generated documents can be used directly with <see cref="HtmlConverter"/> to convert HTML content into WordProcessingML.
 /// </para>
-/// 
+///
 /// </summary>
 /// <example>
 /// Basic quick start:
-/// 
+///
 /// <code>
 /// await using var generatedDocument = new MemoryStream();
 /// using var package = WordDocumentFactory.Create(generatedDocument, PageOrientation.Portrait);
@@ -37,6 +37,7 @@ namespace HtmlToOpenXml;
 /// </example>
 public static class WordDocumentFactory
 {
+    const string BuiltInGalleryCoverPageName = "Cover Pages";
     private const uint A4PortraitWidth = 11906U;
     private const uint A4PortraitHeight = 16838U;
 
@@ -65,109 +66,64 @@ public static class WordDocumentFactory
         return package;
     }
 
-    public enum InsertLocation { DocumentStart, DocumentEnd, AfterCover, Detached }
-
-    public static OpenXmlCompositeElement CreateTableOfContents(this HtmlConverter converter, int maxLevel = 3, string caption = "Table Of Contents",
-        InsertLocation insertLocation = InsertLocation.DocumentStart)
+    /// <summary>
+    /// Returns the document cover page, if one exists.
+    /// <para>
+    /// The cover page is represented using a Word content control associated with
+    /// the built-in Cover Page gallery.
+    /// </para>
+    /// </summary>
+    /// <returns>
+    /// The cover page content control, or <see langword="null"/> when the document
+    /// does not contain a cover page.
+    /// </returns>
+    public static SdtBlock? GetCoverPage(this HtmlConverter converter)
     {
         var body = GetOrCreateDocumentBody(converter.mainPart);
-
-        var sdtContent = new SdtContentBlock ();
-        if (!string.IsNullOrEmpty(caption))
+        foreach (var stdBlock in body.Descendants<SdtBlock>())
         {
-            sdtContent.AppendChild(new Paragraph(
-                new ParagraphProperties {
-                    ParagraphStyleId = converter.HtmlStyles.GetParagraphStyle(converter.HtmlStyles.DefaultStyles.TOCHeading)
-                },
-                new Run(
-                    new Text(caption))));
+            if (stdBlock.SdtProperties?
+                .GetFirstChild<SdtContentDocPartObject>()?
+                .DocPartGallery?.Val?.Value == BuiltInGalleryCoverPageName)
+            {
+                return stdBlock;
+            }
         }
 
-        sdtContent.AppendChild(new Paragraph(
-            new ParagraphProperties(
-                new ParagraphStyleId { Val = "TOC1" },
-                new Tabs(
-                    new TabStop { Val = TabStopValues.Right, Leader = TabStopLeaderCharValues.Dot, Position = 9016 }
-                ),
-                new NoProof()
-            ),
-            new Run(
-                new FieldChar { FieldCharType = FieldCharValues.Begin }
-            ),
-            new Run(
-                new FieldCode($@" TOC \o ""1-{maxLevel}"" \h \z \u ") {
-                    Space = SpaceProcessingModeValues.Preserve }
-            ),
-            new Run(
-                new FieldChar { FieldCharType = FieldCharValues.Separate }
-            ))
-        );
+        return null;
+    }
 
-        /* compoose list of headings. Look for styles.xml for any named heading.
-            Cache the list of heading Id until the max level
-            <w:style w:type="paragraph" w:styleId="139">
-                <w:name w:val="Heading 1"/>
-        */
-        HashSet<string> headingStyleIds = [];
-        body.Descendants<Paragraph>()
-            .Where(p => p.ParagraphProperties?.ParagraphStyleId?.Val?.Value != null &&
-                headingStyleIds.Contains(p.ParagraphProperties.ParagraphStyleId.Val.Value));
+    /// <summary>
+    /// Creates or replaces the document cover page.
+    /// <para>
+    /// The supplied HTML is converted using the current <see cref="HtmlConverter"/> configuration
+    /// and stored inside a Word cover page content control.
+    /// </para>
+    /// <para>
+    /// If a cover page already exists, its content is replaced while the existing content control is preserved.
+    /// </para>
+    /// </summary>
+    /// <param name="converter">The converter owning the target document.</param>
+    /// <param name="html">The HTML content to render into the cover page.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    public static async Task SetCoverPage(this HtmlConverter converter, string html,
+        CancellationToken cancellationToken = default)
+    {
+        SdtBlock? coverStdBlock = converter.GetCoverPage();
+        if (coverStdBlock is null)
+        {
+            coverStdBlock = new();
+            converter.mainPart.Document!.Body!.InsertAt(coverStdBlock, 0);
+        }
 
-        /* create bookmark around the heading
-            <w:bookmarkStart w:id="1" w:name="_Toc1"/>
-            <w:r>
-                <w:t xml:space="preserve">Heading 1</w:t>
-            </w:r>
-            <w:bookmarkEnd w:id="1"/>
-        */
+        coverStdBlock.SdtProperties ??= new();
+        var partObject = coverStdBlock.SdtProperties.GetOrAddFirstChild<SdtContentDocPartObject>();
+        partObject.DocPartGallery ??= new() { Val = BuiltInGalleryCoverPageName };
+        partObject.DocPartUnique ??= new();
+        coverStdBlock.SdtContentBlock?.Remove();
 
-        var hyperlink = new Hyperlink(
-            new Run(
-                new RunProperties(new NoProof()) {
-                    RunStyle = converter.HtmlStyles.GetRunStyle(converter.HtmlStyles.DefaultStyles.HyperlinkStyle)
-                },
-                new Text("Heading 1")
-            ),
-            new Run(
-                new RunProperties(
-                    new NoProof(),
-                    new WebHidden()
-                ),
-                new TabStop()
-            ),
-            new Run(
-                new RunProperties(
-                    new NoProof(),
-                    new WebHidden()
-                ),
-                new FieldChar { FieldCharType = FieldCharValues.Begin }
-            ),
-            new Run(
-                new RunProperties(
-                    new NoProof(),
-                    new WebHidden()
-                ),
-                new FieldChar { FieldCharType = FieldCharValues.Begin }
-            ),
-            new Run(
-                new FieldCode($@" PAGEREF _Toc245800159 \h ") {
-                    Space = SpaceProcessingModeValues.Preserve },
-                new FieldChar { FieldCharType = FieldCharValues.Separate },
-                new Text("1") { Space = SpaceProcessingModeValues.Preserve },
-                new FieldChar { FieldCharType = FieldCharValues.End }
-            )
-        ) {
-            Tooltip = "#_Toc1", Anchor = "_Toc1", History = OnOffValue.FromBoolean(true) };
-
-        return new SdtBlock(
-            new SdtProperties(
-                new SdtContentDocPartObject {
-                    DocPartGallery = new DocPartGallery { Val = "Table of Contents" },
-                    DocPartUnique = new DocPartUnique { Val = true }
-                }
-            ),
-            sdtContent
-        );
+        var elements = await converter.ParseAsync(html, cancellationToken);
+        coverStdBlock.SdtContentBlock = new(elements);
     }
 
     /// <summary>

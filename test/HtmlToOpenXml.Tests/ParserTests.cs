@@ -180,4 +180,38 @@ public class ParserTests : HtmlConverterTestBase
             Assert.That(mainPart.Document!.Body!.InnerText, Is.EqualTo("Body content"));
         }
     }
+
+    [Test]
+    public async Task SetCoverPage_ShouldAddAsFirst()
+    {
+        await converter.ParseBody("Body placeholder");
+        await converter.SetCoverPage("<h1>Cover Page</h1>");
+
+        var body = mainPart.Document!.Body!;
+        var cover = body.GetFirstChild<SdtBlock>();
+        var paragraph = body.GetFirstChild<Paragraph>();
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(cover, Is.Not.Null, "Cover SdtBlock is first");
+            Assert.That(paragraph?.InnerText, Is.EqualTo("Body placeholder"));
+        }
+
+        Assert.That(body.ChildElements.IndexOf(cover),
+            Is.LessThan(body.ChildElements.IndexOf(paragraph)));
+        AssertThatOpenXmlDocumentIsValid();
+    }
+
+    [Test]
+    public async Task SetCoverPage_ShouldReplaceExisting()
+    {
+        await converter.SetCoverPage("<h1>Cover Page</h1>");
+
+        await converter.SetCoverPage("<h1>Cover Page 2</h1>");
+
+        var coverSdtBlock = converter.GetCoverPage();
+        Assert.That(coverSdtBlock, Is.Not.Null);
+        Assert.That(coverSdtBlock.SdtContentBlock?.InnerText, Is.EqualTo("Cover Page 2"));
+        AssertThatOpenXmlDocumentIsValid();
+    }
 }
