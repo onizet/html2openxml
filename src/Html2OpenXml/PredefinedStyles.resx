@@ -302,7 +302,8 @@
 </w:style>]]></value>
   </data>
   <data name="Heading6" xml:space="preserve">
-    <value><![CDATA[<w:style w:type="paragraph" w:styleId="Heading6" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <value><![CDATA[
+  <w:style w:type="paragraph" w:styleId="Heading6" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
   <w:name w:val="heading 6" />
   <w:basedOn w:val="Normal" />
   <w:next w:val="Normal" />
@@ -321,6 +322,71 @@
     <w:iCs />
     <w:color w:val="1F4D78" w:themeColor="accent1" w:themeShade="7F" />
   </w:rPr>
+</w:style>]]></value>
+  </data>
+  <data name="Heading7" xml:space="preserve">
+    <value><![CDATA[
+  <w:style w:type="paragraph" w:styleId="Heading7" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+	<w:name w:val="heading 7"/>
+	<w:basedOn w:val="Normal"/>
+	<w:next w:val="Normal"/>
+	<w:link w:val="Heading7Char"/>
+	<w:unhideWhenUsed/>
+	<w:qFormat/>
+	<w:pPr>
+		<w:keepNext/>
+		<w:keepLines/>
+		<w:spacing w:before="40" w:after="0"/>
+		<w:outlineLvl w:val="6"/>
+	</w:pPr>
+	<w:rPr>
+		<w:rFonts w:eastAsiaTheme="majorEastAsia" w:cstheme="majorBidi"/>
+		<w:color w:val="595959" w:themeColor="text1" w:themeTint="A6"/>
+	</w:rPr>
+</w:style>]]></value>
+  </data>
+  <data name="Heading8" xml:space="preserve" >
+    <value><![CDATA[
+  <w:style w:type="paragraph" w:styleId="Heading8" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+	<w:name w:val="heading 8"/>
+	<w:basedOn w:val="Normal"/>
+	<w:next w:val="Normal"/>
+	<w:link w:val="Heading8Char"/>
+	<w:unhideWhenUsed/>
+	<w:qFormat/>
+	<w:pPr>
+		<w:keepNext/>
+		<w:keepLines/>
+		<w:spacing w:after="0"/>
+		<w:outlineLvl w:val="7"/>
+	</w:pPr>
+	<w:rPr>
+		<w:rFonts w:eastAsiaTheme="majorEastAsia" w:cstheme="majorBidi"/>
+		<w:i/>
+		<w:iCs/>
+		<w:color w:val="272727" w:themeColor="text1" w:themeTint="D8"/>
+	</w:rPr>
+</w:style>]]></value>
+  </data>
+  <data name="Heading9" xml:space="preserve">
+    <value><![CDATA[
+<w:style w:type="paragraph" w:styleId="Heading9" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+	<w:name w:val="heading 9"/>
+	<w:basedOn w:val="Normal"/>
+	<w:next w:val="Normal"/>
+	<w:link w:val="Heading9Char"/>
+	<w:unhideWhenUsed/>
+	<w:qFormat/>
+	<w:pPr>
+		<w:keepNext/>
+		<w:keepLines/>
+		<w:spacing w:after="0"/>
+		<w:outlineLvl w:val="8"/>
+	</w:pPr>
+	<w:rPr>
+		<w:rFonts w:eastAsiaTheme="majorEastAsia" w:cstheme="majorBidi"/>
+		<w:color w:val="272727" w:themeColor="text1" w:themeTint="D8"/>
+	</w:rPr>
 </w:style>]]></value>
   </data>
   <data name="Hyperlink" xml:space="preserve">
@@ -426,7 +492,7 @@
   </w:tblPr>
 </w:style>]]></value>
   </data>
-  <data name="TableGrid" xml:space="preserve">
+  <data name="TOCHeading" xml:space="preserve">
    <value><![CDATA[
   <w:style w:type="paragraph" w:styleId="TOCHeading" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
 		<w:name w:val="TOC Heading"/>
@@ -443,7 +509,129 @@
 			<w:sz w:val="32"/>
 			<w:szCs w:val="32"/>
 			<w:lang w:val="en-US"/>
-			<w14:ligatures w14:val="none"/>
 		</w:rPr>
 	</w:style>]]></value>
+  </data>
+  <data name="TOC1" xml:space="preserve">
+   <value><![CDATA[
+  <w:style w:type="paragraph" w:styleId="TOC1" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+		<w:name w:val="toc 1"/>
+		<w:basedOn w:val="Normal"/>
+		<w:next w:val="Normal"/>
+		<w:autoRedefine/>
+		<w:pPr>
+			<w:spacing w:after="100"/>
+		</w:pPr>
+	</w:style>]]></value>
+  </data>
+  <data name="TOC2" xml:space="preserve">
+   <value><![CDATA[
+	<w:style w:type="paragraph" w:styleId="TOC2" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+		<w:name w:val="toc 2"/>
+		<w:basedOn w:val="Normal"/>
+		<w:next w:val="Normal"/>
+		<w:autoRedefine/>
+		<w:pPr>
+			<w:spacing w:after="100"/>
+			<w:ind w:left="240"/>
+		</w:pPr>
+	</w:style>]]></value>
+  </data>
+	<data name="TOC3" xml:space="preserve">
+   <value><![CDATA[
+  <w:style w:type="paragraph" w:styleId="TOC3" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+		<w:name w:val="toc 3"/>
+		<w:basedOn w:val="Normal"/>
+		<w:next w:val="Normal"/>
+		<w:autoRedefine/>
+		<w:pPr>
+			<w:spacing w:after="100"/>
+			<w:ind w:left="480"/>
+		</w:pPr>
+	</w:style>]]></value>
+  </data>
+  <data name="TOC4" xml:space="preserve">
+   <value><![CDATA[
+  <w:style w:type="paragraph" w:styleId="TOC4" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+	<w:name w:val="toc 4"/>
+	<w:basedOn w:val="Normal"/>
+	<w:next w:val="Normal"/>
+	<w:autoRedefine/>
+	<w:unhideWhenUsed/>
+	<w:pPr>
+		<w:spacing w:after="100"/>
+		<w:ind w:left="720"/>
+	</w:pPr>
+</w:style>]]></value>
+  </data>
+  <data name="TOC5" xml:space="preserve">
+   <value><![CDATA[
+<w:style w:type="paragraph" w:styleId="TOC5" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+	<w:name w:val="toc 5"/>
+	<w:basedOn w:val="Normal"/>
+	<w:next w:val="Normal"/>
+	<w:autoRedefine/>
+	<w:unhideWhenUsed/>
+	<w:pPr>
+		<w:spacing w:after="100"/>
+		<w:ind w:left="960"/>
+	</w:pPr>
+</w:style>]]></value>
+  </data>
+  <data name="TOC6" xml:space="preserve">
+   <value><![CDATA[
+<w:style w:type="paragraph" w:styleId="TOC6" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+	<w:name w:val="toc 6"/>
+	<w:basedOn w:val="Normal"/>
+	<w:next w:val="Normal"/>
+	<w:autoRedefine/>
+	<w:unhideWhenUsed/>
+	<w:pPr>
+		<w:spacing w:after="100"/>
+		<w:ind w:left="1200"/>
+	</w:pPr>
+</w:style>]]></value>
+  </data>
+  <data name="TOC7" xml:space="preserve">
+   <value><![CDATA[
+<w:style w:type="paragraph" w:styleId="TOC7" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+	<w:name w:val="toc 7"/>
+	<w:basedOn w:val="Normal"/>
+	<w:next w:val="Normal"/>
+	<w:autoRedefine/>
+	<w:unhideWhenUsed/>
+	<w:pPr>
+		<w:spacing w:after="100"/>
+		<w:ind w:left="1440"/>
+	</w:pPr>
+</w:style>]]></value>
+  </data>
+  <data name="TOC8" xml:space="preserve">
+   <value><![CDATA[
+<w:style w:type="paragraph" w:styleId="TOC8" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+	<w:name w:val="toc 8"/>
+	<w:basedOn w:val="Normal"/>
+	<w:next w:val="Normal"/>
+	<w:autoRedefine/>
+	<w:unhideWhenUsed/>
+	<w:pPr>
+		<w:spacing w:after="100"/>
+		<w:ind w:left="1680"/>
+	</w:pPr>
+</w:style>]]></value>
+  </data>
+  <data name="TOC9" xml:space="preserve">
+   <value><![CDATA[
+<w:style w:type="paragraph" w:styleId="TOC9" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+	<w:name w:val="toc 9"/>
+	<w:basedOn w:val="Normal"/>
+	<w:next w:val="Normal"/>
+	<w:autoRedefine/>
+	<w:unhideWhenUsed/>
+	<w:pPr>
+		<w:spacing w:after="100"/>
+		<w:ind w:left="1920"/>
+	</w:pPr>
+</w:style>]]></value>
+  </data>
 </root>

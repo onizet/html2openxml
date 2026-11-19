@@ -48,7 +48,7 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
                 return elements;
             }
 
-            var bookmarkId = IncrementBookmarkId(context).ToString(CultureInfo.InvariantCulture);
+            var bookmarkId = context.IncrementBookmarkId().ToString(CultureInfo.InvariantCulture);
             // this is expected to stand in the 1st paragraph
             Paragraph? p = body.GetFirstChild<Paragraph>();
             p ??= body.PrependChild(new Paragraph());

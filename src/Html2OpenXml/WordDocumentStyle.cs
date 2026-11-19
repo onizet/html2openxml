@@ -56,6 +56,9 @@ public sealed class WordDocumentStyle
             PredefinedStyles.Heading + "4",
             PredefinedStyles.Heading + "5",
             PredefinedStyles.Heading + "6",
+            PredefinedStyles.Heading + "7",
+            PredefinedStyles.Heading + "8",
+            PredefinedStyles.Heading + "9",
             PredefinedStyles.Hyperlink,
             PredefinedStyles.IntenseQuote,
             PredefinedStyles.ListParagraph,
@@ -64,6 +67,15 @@ public sealed class WordDocumentStyle
             PredefinedStyles.TableGrid,
             PredefinedStyles.Paragraph,
             PredefinedStyles.TOCHeading,
+            PredefinedStyles.TOC + "1",
+            PredefinedStyles.TOC + "2",
+            PredefinedStyles.TOC + "3",
+            PredefinedStyles.TOC + "4",
+            PredefinedStyles.TOC + "5",
+            PredefinedStyles.TOC + "6",
+            PredefinedStyles.TOC + "7",
+            PredefinedStyles.TOC + "8",
+            PredefinedStyles.TOC + "9",
         ];
         this.mainPart = mainPart;
     }
@@ -211,6 +223,20 @@ public sealed class WordDocumentStyle
             style.StyleName = new() { Val = name };
 
         mainPart.StyleDefinitionsPart!.Styles!.Append(style);
+    }
+
+    internal Dictionary<string, int> CollectHeadingStyles()
+    {
+        var headingStyleIds = new Dictionary<string, int>(9, StringComparer.Ordinal);
+        for (int i = 1; i <= 9; i++)
+        {
+            if (knownStyles.TryGetValue(DefaultStyles.HeadingStyle + i, out var style))
+            {
+                headingStyleIds.Add(style.StyleId!.Value!, i);
+            }
+        }
+
+        return headingStyleIds;
     }
 
     //____________________________________________________________________

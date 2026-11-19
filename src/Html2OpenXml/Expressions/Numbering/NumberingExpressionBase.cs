@@ -52,7 +52,7 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
 
         Numbering numberingPart = context.MainPart.NumberingDefinitionsPart!.Numbering!;
         AbstractNum abstractNum;
-        
+
         // at this stage, we have sanitized the list style so it's safe to grab them from the predefined template lists
         abstractNum = predefinedNumberingLists.TryGetValue(listName, out var predefined)?
             // If it's a predefined style, we clone it as usual
@@ -60,7 +60,7 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
             // If not found in predefined lists, listName contains a custom bullet character (e.g., "-")
             CreateCustomBulletAbstractNum(listName);
 
-        abstractNum.AbstractNumberId = IncrementAbstractNumId(context, numberingPart);
+        abstractNum.AbstractNumberId = context.IncrementAbstractNumId();
         var level1 = abstractNum.GetFirstChild<Level>()!;
 
         // this is not documented but MS Word needs that all the AbstractNum are stored consecutively.
@@ -114,33 +114,6 @@ abstract class NumberingExpressionBase(IHtmlElement node) : BlockElementExpressi
             return instanceId;
         }
         return null;
-    }
-
-    /// <summary>
-    /// Resolve the next available <see cref="AbstractNum.AbstractNumberId"/> (they must be unique and ordered).
-    /// </summary>
-    private static int IncrementAbstractNumId(ParsingContext context, Numbering numbering)
-    {
-        var absNumIdRef = context.Properties<int?>("absNumIdRef");
-        if (!absNumIdRef.HasValue)
-        {
-            absNumIdRef = 0;
-            // The absNumIdRef Id is a required field and should be unique. We will loop through the existing Numbering definition
-            // to retrieve the highest Id and reconstruct our own list definition template.
-            foreach (var abs in numbering.Elements<AbstractNum>())
-            {
-                if (abs.AbstractNumberId != null && abs.AbstractNumberId > absNumIdRef)
-                    absNumIdRef = abs.AbstractNumberId;
-            }
-        }
-
-        // compute the next list instance ID seed. We start at 1 because 0 has a special meaning: 
-        // The w:numId can contain a value of 0, which is a special value that indicates that numbering was removed
-        // at this level of the style hierarchy. While processing this markup, if the w:val='0',
-        // the paragraph does not have a list item (http://msdn.microsoft.com/en-us/library/ee922775(office.14).aspx)
-        absNumIdRef++;
-        context.Properties("absNumIdRef", absNumIdRef);
-        return absNumIdRef.Value;
     }
 
     /// <summary>

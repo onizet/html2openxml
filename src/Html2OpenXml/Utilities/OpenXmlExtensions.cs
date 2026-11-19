@@ -40,6 +40,41 @@ static class OpenXmlExtensions
         return null;
     }
 
+    public static SdtBlock? FindNamedSdtBlock(this Body body, string name)
+    {
+        foreach (var stdBlock in body.Descendants<SdtBlock>())
+        {
+            if (stdBlock.SdtProperties?
+                .GetFirstChild<SdtContentDocPartObject>()?
+                .DocPartGallery?.Val?.Value == name)
+            {
+                return stdBlock;
+            }
+        }
+
+        return null;
+    }
+
+    public static void InsertAt<T>(this Body body,
+        T element, DocumentLocation position) where T: OpenXmlElement
+    {
+        if (position == DocumentLocation.AfterCover)
+        {
+            var coverPage = body.GetCoverPage();
+
+            // if the cover page does not exist, insert at the start of the document
+            if (coverPage != null)
+                body.InsertAfter(element, coverPage);
+            else
+                position = DocumentLocation.DocumentStart;
+        }
+
+        if (position == DocumentLocation.DocumentStart)
+            body.InsertAt(element, 0);
+        else if (position == DocumentLocation.DocumentEnd)
+            body.AddChild(element);
+    }
+
     public static bool Compare(this PageSize pageSize, PageOrientationValues orientation)
     {
         PageOrientationValues pageOrientation;

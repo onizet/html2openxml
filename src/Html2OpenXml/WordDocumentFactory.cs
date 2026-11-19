@@ -9,6 +9,7 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
  */
+using System.Globalization;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -79,20 +80,21 @@ public static class WordDocumentFactory
     /// does not contain a cover page.
     /// </returns>
     public static SdtBlock? GetCoverPage(this HtmlConverter converter)
-    {
-        var body = GetOrCreateDocumentBody(converter.mainPart);
-        foreach (var stdBlock in body.Descendants<SdtBlock>())
-        {
-            if (stdBlock.SdtProperties?
-                .GetFirstChild<SdtContentDocPartObject>()?
-                .DocPartGallery?.Val?.Value == BuiltInGalleryCoverPageName)
-            {
-                return stdBlock;
-            }
-        }
+        => GetOrCreateDocumentBody(converter.mainPart).FindNamedSdtBlock(BuiltInGalleryCoverPageName);
 
-        return null;
-    }
+    /// <summary>
+    /// Returns the document cover page, if one exists.
+    /// <para>
+    /// The cover page is represented using a Word content control associated with
+    /// the built-in Cover Page gallery.
+    /// </para>
+    /// </summary>
+    /// <returns>
+    /// The cover page content control, or <see langword="null"/> when the document
+    /// does not contain a cover page.
+    /// </returns>
+    internal static SdtBlock? GetCoverPage(this Body body)
+        => body.FindNamedSdtBlock(BuiltInGalleryCoverPageName);
 
     /// <summary>
     /// Creates or replaces the document cover page.
@@ -140,7 +142,7 @@ public static class WordDocumentFactory
         coverStdBlock.SdtProperties ??= new();
         var partObject = coverStdBlock.SdtProperties.GetOrAddFirstChild<SdtContentDocPartObject>();
         partObject.DocPartGallery ??= new() { Val = BuiltInGalleryCoverPageName };
-        partObject.DocPartUnique ??= new();
+        partObject.DocPartUnique ??= new() { Val = true };
         coverStdBlock.SdtContentBlock?.Remove();
 
         var elements = await converter.ParseAsync(fragment, cancellationToken);
@@ -159,19 +161,128 @@ public static class WordDocumentFactory
     /// does not contain a cover page.
     /// </returns>
     public static SdtBlock? GetTableOfContents(this HtmlConverter converter)
+        => GetOrCreateDocumentBody(converter.mainPart).FindNamedSdtBlock(BuiltInGalleryTOCName);
+
+    public static SdtBlock SetTableOfContents(
+        this HtmlConverter converter, int maxLevel = 3,
+        string caption = "Table Of Contents",
+        DocumentLocation position = DocumentLocation.AfterCover)
     {
         var body = GetOrCreateDocumentBody(converter.mainPart);
-        foreach (var stdBlock in body.Descendants<SdtBlock>())
+        SdtBlock? tocStdBlock = converter.GetTableOfContents();
+        if (tocStdBlock is null)
         {
-            if (stdBlock.SdtProperties?
-                .GetFirstChild<SdtContentDocPartObject>()?
-                .DocPartGallery?.Val?.Value == BuiltInGalleryTOCName)
-            {
-                return stdBlock;
-            }
+            tocStdBlock = new();
+            body.InsertAt(tocStdBlock, position);
         }
 
-        return null;
+        tocStdBlock.SdtProperties ??= new();
+        var partObject = tocStdBlock.SdtProperties.GetOrAddFirstChild<SdtContentDocPartObject>();
+        partObject.DocPartGallery ??= new() { Val = BuiltInGalleryTOCName };
+        partObject.DocPartUnique ??= new() { Val = true };
+        tocStdBlock.SdtContentBlock?.Remove();
+
+        // append main caption if provided
+        var sdtContent = new SdtContentBlock();
+        if (!string.IsNullOrEmpty(caption))
+        {
+            sdtContent.AppendChild(new Paragraph(
+                new ParagraphProperties {
+                    ParagraphStyleId = converter.HtmlStyles.GetParagraphStyle(converter.HtmlStyles.DefaultStyles.TOCHeading)
+                },
+                new Run(
+                    new Text(caption))));
+        }
+
+        // compose list of headings. Look for styles.xml for any named heading.
+        var headingStyleIds = converter.HtmlStyles.CollectHeadingStyles();
+
+        var headings = body.Descendants<Paragraph>()
+            .Where(p => p.ParagraphProperties?.ParagraphStyleId?.Val?.Value != null &&
+                headingStyleIds.TryGetValue(p.ParagraphProperties.ParagraphStyleId.Val.Value, out var level)
+                && level <= maxLevel);
+
+        var parsingContext = new ParsingContext(converter, converter.mainPart, imageLoader: null!);
+        foreach (var heading in headings)
+        {
+            int level = headingStyleIds[heading.ParagraphProperties!.ParagraphStyleId!.Val!.Value!];
+
+            // create bookmark around the heading as the landing target of the TOC heading links
+            string bookmarkId = EncloseHeadingInBookmark(parsingContext, heading);
+
+            var hyperlink = new Hyperlink(
+                new Run(
+                    new RunProperties(new NoProof()) {
+                        RunStyle = converter.HtmlStyles.GetRunStyle(converter.HtmlStyles.DefaultStyles.HyperlinkStyle)
+                    },
+                    new Text(heading.InnerText)
+                ),
+                new Run(
+                    new RunProperties(
+                        new NoProof(),
+                        new WebHidden()
+                    ),
+                    new TabChar(),
+                    new FieldChar { FieldCharType = FieldCharValues.Begin },
+                    new FieldCode($@" PAGEREF {bookmarkId} \h ") {
+                        Space = SpaceProcessingModeValues.Preserve },
+                    new FieldChar { FieldCharType = FieldCharValues.Separate },
+                    new Text("1") { Space = SpaceProcessingModeValues.Preserve },
+                    new FieldChar { FieldCharType = FieldCharValues.End }
+                )
+            ) {
+                Anchor = bookmarkId, History = true };
+
+            sdtContent.AppendChild(new Paragraph(
+                new ParagraphProperties(
+                    new Tabs(
+                        new TabStop { Val = TabStopValues.Right, Leader = TabStopLeaderCharValues.Dot, Position = 9016 }
+                    )
+                ) {
+                    ParagraphStyleId = converter.HtmlStyles.GetParagraphStyle($"TOC{level}")
+                },
+                hyperlink
+            ));
+        }
+
+        if (sdtContent.ChildElements.Count < 2)
+            sdtContent.AddChild(new Paragraph());
+
+        Paragraph toc1 = sdtContent.ChildElements.OfType<Paragraph>().ElementAt(1);
+
+        // this fieldCode allows Word to auto-refresh the TOC
+        toc1.InsertAfter(
+            new Run(
+                new FieldChar { FieldCharType = FieldCharValues.Begin },
+                new FieldCode($@" TOC \o ""1-{maxLevel}"" \h \z \u ") {
+                    Space = SpaceProcessingModeValues.Preserve },
+                new FieldChar { FieldCharType = FieldCharValues.Separate }
+            ),
+            toc1.ParagraphProperties
+        );
+
+        tocStdBlock.SdtContentBlock = sdtContent;
+        return tocStdBlock;
+    }
+
+    private static string EncloseHeadingInBookmark(ParsingContext parsingContext, Paragraph heading)
+    {
+        var bookmark = heading.GetFirstChild<BookmarkStart>();
+
+        if (bookmark is not null)
+        {
+            if (bookmark.Id?.HasValue == false)
+                bookmark.Id = parsingContext.IncrementBookmarkId().ToString(CultureInfo.InvariantCulture);
+            return bookmark.Id!.Value!;
+        }
+
+        var bookmarkId = parsingContext.IncrementBookmarkId().ToString(CultureInfo.InvariantCulture);
+        var bookmarkName = "_Toc" + bookmarkId;
+        // need to be inserted after pPr to avoid schema warning
+        heading.InsertAfter(new BookmarkStart() { Id = bookmarkId, Name = bookmarkName }, heading.GetFirstChild<ParagraphProperties>());
+        heading.AppendChild(new BookmarkEnd() { Id = bookmarkId });
+
+        return bookmarkName;
     }
 
     /// <summary>

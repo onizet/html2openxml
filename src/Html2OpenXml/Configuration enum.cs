@@ -101,3 +101,23 @@ public enum PageOrientation
     /// </summary>
     Landscape
 }
+
+/// <summary>
+/// Defines a logical insertion point within the document.
+/// </summary>
+public enum DocumentLocation
+{
+    /// <summary>
+    /// Inserts the content at the beginning of the document.
+    /// </summary>
+    DocumentStart,
+    /// <summary>
+    /// Insert the content immediately after the cover page.
+    /// If no cover page exists, the content is inserted at the beginning of the document.
+    /// </summary>
+    AfterCover,
+    /// <summary>
+    /// Appends the content at the end of the document.
+    /// </summary>
+    DocumentEnd
+}
