@@ -248,13 +248,13 @@ public static class WordDocumentFactory
                         new WebHidden()
                     ),
                     new TabChar(),
-                    // we can't reliabily compute the page number where the heading will stand.
-                    // we mark the field as `dirty` for requiring refresh
-                    new FieldChar { FieldCharType = FieldCharValues.Begin, Dirty = true },
+                    // we can't reliabily guess the page number where the heading stands.
+                    // we will leave the text empty but ready for a manual refresh from Word
+                    new FieldChar { FieldCharType = FieldCharValues.Begin },
                     new FieldCode($@" PAGEREF {bookmarkId} \h ") {
                         Space = SpaceProcessingModeValues.Preserve },
                     new FieldChar { FieldCharType = FieldCharValues.Separate },
-                    new Text("1") { Space = SpaceProcessingModeValues.Preserve },
+                    new Text("") { Space = SpaceProcessingModeValues.Preserve },
                     new FieldChar { FieldCharType = FieldCharValues.End }
                 )
             ) {
