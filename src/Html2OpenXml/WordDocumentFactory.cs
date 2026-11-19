@@ -185,13 +185,20 @@ public static class WordDocumentFactory
         string caption = "Table Of Contents",
         DocumentLocation position = DocumentLocation.AfterCover)
     {
-        var body = GetOrCreateDocumentBody(converter.mainPart);
+        var mainPart = converter.mainPart;
+        var body = GetOrCreateDocumentBody(mainPart);
         SdtBlock? tocStdBlock = converter.GetTableOfContents();
         if (tocStdBlock is null)
         {
             tocStdBlock = new();
             body.InsertAt(tocStdBlock, position);
         }
+
+        // request update fields when Word open the document
+        var settingsPart = mainPart.DocumentSettingsPart ??
+            mainPart.AddNewPart<DocumentSettingsPart>();
+        settingsPart.Settings ??= new();
+        settingsPart.Settings.GetOrAddFirstChild<UpdateFieldsOnOpen>().Val = true;
 
         tocStdBlock.SdtProperties ??= new();
         var partObject = tocStdBlock.SdtProperties.GetOrAddFirstChild<SdtContentDocPartObject>();
@@ -220,7 +227,7 @@ public static class WordDocumentFactory
                 headingStyleIds.TryGetValue(p.ParagraphProperties.ParagraphStyleId.Val.Value, out var level)
                 && level <= maxLevel).ToList();
 
-        var parsingContext = new ParsingContext(converter, converter.mainPart, imageLoader: null!);
+        var parsingContext = new ParsingContext(converter, mainPart, imageLoader: null!);
         foreach (var heading in headings)
         {
             int level = headingStyleIds[heading.ParagraphProperties!.ParagraphStyleId!.Val!.Value!];
@@ -241,7 +248,9 @@ public static class WordDocumentFactory
                         new WebHidden()
                     ),
                     new TabChar(),
-                    new FieldChar { FieldCharType = FieldCharValues.Begin },
+                    // we can't reliabily compute the page number where the heading will stand.
+                    // we mark the field as `dirty` for requiring refresh
+                    new FieldChar { FieldCharType = FieldCharValues.Begin, Dirty = true },
                     new FieldCode($@" PAGEREF {bookmarkId} \h ") {
                         Space = SpaceProcessingModeValues.Preserve },
                     new FieldChar { FieldCharType = FieldCharValues.Separate },
