@@ -146,7 +146,13 @@ public static class WordDocumentFactory
         coverStdBlock.SdtContentBlock?.Remove();
 
         var elements = await converter.ParseAsync(fragment, cancellationToken);
-        coverStdBlock.SdtContentBlock = new(elements);
+        var content = new SdtContentBlock();
+        content.Append(elements);
+        content.Append(new Paragraph(
+            new Run(
+                new Break() { Type = BreakValues.Page })));
+
+        coverStdBlock.SdtContentBlock = content;
     }
 
     /// <summary>
@@ -193,12 +199,6 @@ public static class WordDocumentFactory
             tocStdBlock = new();
             body.InsertAt(tocStdBlock, position);
         }
-
-        // request update fields when Word open the document
-        var settingsPart = mainPart.DocumentSettingsPart ??
-            mainPart.AddNewPart<DocumentSettingsPart>();
-        settingsPart.Settings ??= new();
-        settingsPart.Settings.GetOrAddFirstChild<UpdateFieldsOnOpen>().Val = true;
 
         tocStdBlock.SdtProperties ??= new();
         var partObject = tocStdBlock.SdtProperties.GetOrAddFirstChild<SdtContentDocPartObject>();
@@ -287,6 +287,9 @@ public static class WordDocumentFactory
             ),
             toc1.ParagraphProperties
         );
+        sdtContent.AppendChild(new Paragraph(
+            new Run(
+                new FieldChar { FieldCharType = FieldCharValues.End })));
 
         tocStdBlock.SdtContentBlock = sdtContent;
         return tocStdBlock;

@@ -427,6 +427,6 @@ class BlockElementExpression: PhrasingElementExpression
             yield break;
 
         yield return new Run(
-                new Break() { Type = BreakValues.Page });
+            new Break() { Type = BreakValues.Page });
     }
 }
