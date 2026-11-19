@@ -136,6 +136,8 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
 
                 // any standalone paragraphs must be aligned (indented) along its current level
                 AdjustStandaloneParagraphIndent(paragraphs.Skip(1), listItemStyleId);
+
+                ApplyListMarkerStyle(firstPara);
             }
 
             foreach (var child in childElements)
@@ -359,5 +361,29 @@ sealed class ListExpression(IHtmlElement node) : NumberingExpressionBase(node)
             && long.TryParse(left, NumberStyles.Integer, CultureInfo.InvariantCulture, out var dxa))
             return dxa;
         return 0;
+    }
+
+    private void ApplyListMarkerStyle(Paragraph paragraph)
+    {
+        var runProps = paragraph.Descendants<Run>().Select(r => r.RunProperties).FirstOrDefault(r => r is { HasChildren: true });
+        if (runProps == null)
+            return;
+
+        var props = paragraph.ParagraphProperties!;
+        var mark = new ParagraphMarkRunProperties();
+        foreach (var runProp in runProps)
+            mark.Append(runProp.CloneNode(true));
+
+        if (props.ParagraphMarkRunProperties != null)
+        {
+            var known = new HashSet<string>(mark.Select(c => c.LocalName));
+            foreach (var runProp in props.ParagraphMarkRunProperties)
+            {
+                // add marker styling i.e. fill gaps and not override existing mark run properties
+                if (known.Add(runProp.LocalName))
+                    mark.Append(runProp.CloneNode(true));
+            }
+        }
+        props.ParagraphMarkRunProperties = mark;
     }
 }
