@@ -158,11 +158,28 @@ public static class WordDocumentFactory
     /// </summary>
     /// <returns>
     /// The TOC content control, or <see langword="null"/> when the document
-    /// does not contain a cover page.
+    /// does not contain a table of contents.
     /// </returns>
     public static SdtBlock? GetTableOfContents(this HtmlConverter converter)
         => GetOrCreateDocumentBody(converter.mainPart).FindNamedSdtBlock(BuiltInGalleryTOCName);
 
+    /// <summary>
+    /// Create or updates the document table of contents.
+    /// <para>
+    /// The table of contents is generated from paragrahs using Word heading styles 
+    /// (<c>Heading 1</c> through <c>Heading 9</c>, see also <see cref="HtmlConverter.HtmlStyles"/>)
+    /// and represented as a Word content control associated with the built-in TOC gallery.
+    /// </para>
+    ///
+    /// If a table of contents already exists, its content is replaced.
+    /// </summary>
+    /// <param name="converter">The converter owning the target document.</param>
+    /// <param name="maxLevel">The maximum heading level to include in the table of contents. Valid values
+    /// are typically between 1 and 9.</param>
+    /// <param name="caption">The optional caption displayed above the table of contents.
+    /// Specify <see langword="null"/> or an empty string to omit the caption.</param>
+    /// <param name="position">Determines where the table of contents is inserted when it does not already exist.</param>
+    /// <returns>The content control representing the table of contents.</returns>
     public static SdtBlock SetTableOfContents(
         this HtmlConverter converter, int maxLevel = 3,
         string caption = "Table Of Contents",
@@ -197,10 +214,11 @@ public static class WordDocumentFactory
         // compose list of headings. Look for styles.xml for any named heading.
         var headingStyleIds = converter.HtmlStyles.CollectHeadingStyles();
 
+        maxLevel = Math.Max(1, Math.Min(9, maxLevel));
         var headings = body.Descendants<Paragraph>()
             .Where(p => p.ParagraphProperties?.ParagraphStyleId?.Val?.Value != null &&
                 headingStyleIds.TryGetValue(p.ParagraphProperties.ParagraphStyleId.Val.Value, out var level)
-                && level <= maxLevel);
+                && level <= maxLevel).ToList();
 
         var parsingContext = new ParsingContext(converter, converter.mainPart, imageLoader: null!);
         foreach (var heading in headings)
@@ -265,15 +283,21 @@ public static class WordDocumentFactory
         return tocStdBlock;
     }
 
+    /// <summary>
+    /// Ensures that the specified heading paragraph is enclosed within a bookmark.
+    /// If the heading already contains a bookmark, the existing bookmark name is reused.
+    /// Otherwise, a new bookmark is generated and inserted around the heading content.
+    /// </summary>
+    /// <returns>The bookmark name that can referenced by hyperlinks and PAGEREF fields.</returns>
     private static string EncloseHeadingInBookmark(ParsingContext parsingContext, Paragraph heading)
     {
         var bookmark = heading.GetFirstChild<BookmarkStart>();
 
         if (bookmark is not null)
         {
-            if (bookmark.Id?.HasValue == false)
-                bookmark.Id = parsingContext.IncrementBookmarkId().ToString(CultureInfo.InvariantCulture);
-            return bookmark.Id!.Value!;
+            if (bookmark.Name?.HasValue == false)
+                bookmark.Name = parsingContext.IncrementBookmarkId().ToString(CultureInfo.InvariantCulture);
+            return bookmark.Name!.Value!;
         }
 
         var bookmarkId = parsingContext.IncrementBookmarkId().ToString(CultureInfo.InvariantCulture);
