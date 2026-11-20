@@ -89,7 +89,7 @@ converter.AddPageBreakAfter(toc);
 
 ### Document Structure
 
-- [Cover Pages and Table of Contents](https://onizet.github.io/html2openxml/guide/toc.md)
+- [Cover Pages and Table of Contents](https://onizet.github.io/html2openxml/guide/document-layout.md)
 
 ### Technical Deep Dive
 

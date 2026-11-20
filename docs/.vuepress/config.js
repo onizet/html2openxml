@@ -20,7 +20,7 @@ export default defineUserConfig({
     navbar: ['/',
       { text: 'API Reference', link: '/guide/api',
         prefix: 'guide/',
-        children: ['api', 'hyperlinks', 'images', 'styling', 'tables', 'numbering', 'toc', 'pre', 'footnotes', 'pagebreak', 'rtl']
+        children: ['api', 'hyperlinks', 'images', 'styling', 'tables', 'numbering', 'document-layout', 'pre', 'footnotes', 'pagebreak', 'rtl']
       },
       { text: 'LLM Docs Friendly', link: '/llmdoc' },
       { text: 'NuGet', link: 'https://www.nuget.org/packages/HtmlToOpenXml', ariaLabel: 'NuGet', target: '_blank' }
@@ -31,7 +31,7 @@ export default defineUserConfig({
         text: 'API Reference',
         collapsible: true,
         prefix: 'guide/',
-        children: ['quickstart', 'api', 'hyperlinks', 'images', 'styling', 'tables', 'numbering', 'toc', 'pre', 'footnotes', 'pagebreak', 'rtl'],
+        children: ['quickstart', 'api', 'hyperlinks', 'images', 'styling', 'tables', 'numbering', 'document-layout', 'pre', 'footnotes', 'pagebreak', 'rtl'],
       },
       {
         text: 'LLM Docs Friendly', link: 'llmdoc'
