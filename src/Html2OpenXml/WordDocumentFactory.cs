@@ -40,8 +40,6 @@ public static class WordDocumentFactory
 {
     const string BuiltInGalleryCoverPageName = "Cover Pages";
     const string BuiltInGalleryTOCName = "Table of Contents";
-    private const uint A4PortraitWidth = 11906U;
-    private const uint A4PortraitHeight = 16838U;
 
     /// <summary>
     /// Create a new Word document on the specified stream and configures its page settings.
