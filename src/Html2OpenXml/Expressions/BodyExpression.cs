@@ -72,21 +72,7 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
             PageOrientation orientation = attrValue.Is("landscape")?
                 PageOrientation.Landscape : PageOrientation.Portrait;
 
-            /*var sectionProperties = mainPart.Document!.Body!.GetLastChild<SectionProperties>();
-            var pageSize = sectionProperties?.GetFirstChild<PageSize>();
-            if (pageSize == null)
-            {
-                context.IsLandscape = orientation == PageOrientation.Landscape;
-                mainPart.Document.Body!.Append(WordDocumentFactory.CreateSectionProperties(orientation));
-            }
-            else if (WordDocumentFactory.IsLandscape(pageSize) != (orientation == PageOrientation.Landscape))
-            {
-                PageSize newPageSize = WordDocumentFactory.CreateSectionProperties(orientation)
-                    .GetFirstChild<PageSize>()!;
-
-                pageSize.Width = newPageSize.Width;
-                pageSize.Height = newPageSize.Height;
-            }*/
+            context.Converter.AddPage(orientation);
         }
 
         if (paraProperties.BiDi is not null)
