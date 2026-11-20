@@ -8,11 +8,35 @@ document template, and custom resource resolution.
 
 ![Logo](https://raw.githubusercontent.com/onizet/html2openxml/master/docs/images/html2openxml.png)
 
-Supports **.Net Framework 4.6.2**, **.NET Standard 2.0**, **.NET 8** **.NET 10** which are all LTS.
+## Features
+
+- HTML → DOCX conversion
+- Word template integration
+- Cover pages
+- Native Word table of contents generation
+- Portrait and landscape page sections
+- Headers and footers
+- Tables with RowSpan and ColSpan support
+- Numbered and bulleted lists
+- Images (PNG, JPEG, SVG, Data URI)
+- Internal hyperlinks and bookmarks
+- Right-to-left (RTL) documents
+- Markdown support (optional package)
+- CSS stylesheet support (optional package)
+
+Supports **.NET Framework 4.6.2**, **.NET Standard 2.0**, **.NET 8** and **.NET 10**.
 
 Built on top of [DocumentFormat.OpenXml](https://www.nuget.org/packages/DocumentFormat.OpenXml/) and [AngleSharp](https://www.nuget.org/packages/AngleSharp).
 
--> [Official Nuget Package](https://www.nuget.org/packages/HtmlToOpenXml) (❗ **Update your bookmark**, suffix `.dll` removed)
+| Package | NuGet Stable | Downloads |
+| ------- | ------------ | --------- |
+| [HtmlToOpenXml](https://www.nuget.org/packages/HtmlToOpenXml/) | [![HtmlToOpenXml](https://img.shields.io/nuget/v/HtmlToOpenXml.svg)](https://www.nuget.org/packages/HtmlToOpenXml/) | [![HtmlToOpenXml](https://img.shields.io/nuget/dt/HtmlToOpenXml.svg)](https://www.nuget.org/packages/HtmlToOpenXml/) |
+| [HtmlToOpenXml.CssInliner](https://www.nuget.org/packages/HtmlToOpenXml.CssInliner/) | [![HtmlToOpenXml.CssInliner](https://img.shields.io/nuget/v/HtmlToOpenXml.CssInliner.svg)](https://www.nuget.org/packages/HtmlToOpenXml.CssInliner/) | [![HtmlToOpenXml.CssInliner](https://img.shields.io/nuget/dt/HtmlToOpenXml.CssInliner.svg)](https://www.nuget.org/packages/HtmlToOpenXml.CssInliner/) |
+| [HtmlToOpenXml.Markdown](https://www.nuget.org/packages/HtmlToOpenXml.Markdown/) | [![HtmlToOpenXml.Markdown](https://img.shields.io/nuget/v/HtmlToOpenXml.Markdown.svg)](https://www.nuget.org/packages/HtmlToOpenXml.Markdown/) | [![HtmlToOpenXml.Markdown](https://img.shields.io/nuget/dt/HtmlToOpenXml.Markdown.svg)](https://www.nuget.org/packages/HtmlToOpenXml.Markdown/) |
+
+> **Note**
+> The package was renamed from `HtmlToOpenXml.dll` to `HtmlToOpenXml`.
+> NuGet download statistics were unfortunately not transferred to the new package.
 
 ## Quick Start
 
@@ -20,17 +44,13 @@ When creating a blank document:
 
 ```csharp
 await using var generatedDocument = new MemoryStream();
-using var package = WordprocessingDocument.Create(generatedDocument, WordprocessingDocumentType.Document);
+using var package = WordDocumentFactory.Create(generatedDocument);
 
 HtmlConverter converter = new(package);
 await converter.ParseBody(html);
-converter.AddPage(PageOrientation.Landscape);
-await converter.ParseBody(wideTableHtml);
-var toc = converter.SetTableOfContents(maxLevel: 3, position: DocumentPosition.DocumentStart);
-converter.AddPageBreakAfter(toc);
 ```
 
-When inserting inside an existing document:
+Using an existing template:
 
 ```csharp
 await using var generatedDocument = new MemoryStream();
@@ -41,36 +61,53 @@ HtmlConverter converter = new(package);
 await converter.ParseBody(html);
 ```
 
+Advanced document features:
+
+```csharp
+await converter.SetCoverPage("<h1>Annual Report 2026</h1>");
+
+converter.AddPage(PageOrientation.Landscape);
+await converter.ParseBody(wideTableHtml);
+
+// generate the TOC after all document headings have been created
+var toc = converter.SetTableOfContents();
+converter.AddPageBreakAfter(toc);
+```
+
 ## Documentation
 
 [**Documentation**](https://onizet.github.io/html2openxml/) covers from the minimal code to advanced scenarios.
 
 ### Guides & Tutorials
 
-* [Getting Started Guide](https://onizet.github.io/html2openxml/guide/quickstart.md)
-* [LLM Guidance](https://onizet.github.io/html2openxml/llmdoc.md)
+- [Getting Started Guide](https://onizet.github.io/html2openxml/guide/quickstart.md)
+- [LLM Guidance](https://onizet.github.io/html2openxml/llmdoc.md)
 
 ### API Reference
 
-* [API Contract](https://onizet.github.io/html2openxml/guide/api.md)
+- [API Contract](https://onizet.github.io/html2openxml/guide/api.md)
+
+### Document Structure
+
+- [Cover Pages and Table of Contents](https://onizet.github.io/html2openxml/guide/toc.md)
 
 ### Technical Deep Dive
 
-* [Numbering List](https://onizet.github.io/html2openxml/guide/numbering.md)
-* [Advanced Table Structures (Row/ColSpan, ColGroup)](https://onizet.github.io/html2openxml/guide/tables.md)
-* [Image Processing](https://onizet.github.io/html2openxml/guide/images.md)
-* [CSS Stylesheet support](https://onizet.github.io/html2openxml/guide/styling.html#note-on-external-css)
-* [Performance notes and memory allocations](https://onizet.github.io/html2openxml/appendix/performance.md)
+- [List Numbering](https://onizet.github.io/html2openxml/guide/numbering.md)
+- [Advanced Tables (RowSpan, ColSpan, ColGroup)](https://onizet.github.io/html2openxml/guide/tables.md)
+- [Image Processing](https://onizet.github.io/html2openxml/guide/images.md)
+- [CSS Stylesheet support](https://onizet.github.io/html2openxml/guide/styling.html#note-on-external-css)
+- [Performance notes and memory allocations](https://onizet.github.io/html2openxml/appendix/performance.md)
 
 ## How to implement or debug features
 
-My reference bibles cover both OpenXml and HTML:
+Useful references for both OpenXML and HTML:
 
-* [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML)
-* [W3Schools](https://www.w3schools.com/html/default.asp)
-* [OpenXml MSDN](https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.wordprocessing?view=openxml-3.0.1)
+- [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML)
+- [W3Schools](https://www.w3schools.com/html/default.asp)
+- [OpenXml MSDN](https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.wordprocessing?view=openxml-3.0.1)
 
-Open MS Word or Apple Pages and design your expected output. Save as a DOCX file, then rename as a ZIP. Extract the content and inspect those files:
+Open Microsoft Word and design your expected output. Save as a DOCX file, then rename as a ZIP. Extract the content and inspect those files:
 `document.xml`, `numbering.xml` (for list) and `styles.xml`.
 
 ## Acknowledgements
@@ -82,5 +119,9 @@ Logo provided with the permission of [Enhanced Labs Design Studio](http://www.en
 
 ## Support
 
-This project is open source and I do my best to support it in my spare time. I'm always happy to receive Pull Request and grateful for the time you have taken. Please target branch `dev` only.
-If you have questions, don't hesitate to get in touch with me!
+This project is open source and I maintain it in my spare time.
+
+Bug reports, feature requests, and pull requests are always welcome.
+Please target the `dev` branch when submitting pull requests.
+
+If you have questions, don't hesitate to get in touch.
