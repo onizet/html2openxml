@@ -24,6 +24,10 @@ using var package = WordprocessingDocument.Create(generatedDocument, Wordprocess
 
 HtmlConverter converter = new(package);
 await converter.ParseBody(html);
+converter.AddPage(PageOrientation.Landscape);
+await converter.ParseBody(wideTableHtml);
+var toc = converter.SetTableOfContents(maxLevel: 3, position: DocumentPosition.DocumentStart);
+converter.AddPageBreakAfter(toc);
 ```
 
 When inserting inside an existing document:

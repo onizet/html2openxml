@@ -20,7 +20,7 @@ namespace HtmlToOpenXml;
 /// Provides helper methods for creating Word documents configured for use with <see cref="HtmlConverter"/>. 
 ///
 /// <para>
-/// This factory simplifies the creation of new DOCX documents by configuring the required 
+/// This factory simplifies the creation of new DOCX documents by configuring the required
 /// OpenXML package structure, document parts, and page settings.
 /// The generated documents can be used directly with <see cref="HtmlConverter"/> to convert HTML content into WordProcessingML.
 /// </para>
@@ -45,7 +45,7 @@ public static class WordDocumentFactory
 
     /// <summary>
     /// Create a new Word document on the specified stream and configures its page settings.
-    /// 
+    ///
     /// <para>
     ///The created document contains the minimum required OpenXML structure, including a main document part
     /// and an empty body. The returned document can be passed directly to <see cref="HtmlConverter"/> or
@@ -55,17 +55,113 @@ public static class WordDocumentFactory
     /// <param name="stream">The destination stream that will receive the generated DOCX package
     /// The stream must be writable.</param>
     /// <param name="orientation">The page orientation to apply to the document.</param>
+    /// <param name="paperSize">The paper size of the first page.</param>
     /// <exception cref="ArgumentNullException">Thrown when "stream" is null reference.</exception>
     /// <exception cref="IOException">Thrown when "stream" is not opened with Write access.</exception>
     public static WordprocessingDocument Create(Stream stream,
-        PageOrientation orientation = PageOrientation.Portrait)
+        PageOrientation orientation = PageOrientation.Portrait,
+        PaperSize paperSize = PaperSize.A4)
     {
         var package = WordprocessingDocument.Create(stream, WordprocessingDocumentType.Document);
 
         var mainPart = GetOrCreateMainDocumentPart(package);
-        var sectionProperties = CreateSectionProperties(orientation);
+        var sectionProperties = CreateSectionProperties(orientation, paperSize);
         mainPart.Document!.Body!.AddChild(sectionProperties);
         return package;
+    }
+
+    /// <summary>
+    /// Starts a new page in the document using the specified paper size and orientation.
+    ///
+    /// <para>
+    /// The new page is created as a separate Word section, allowing the
+    /// page size and orientation to differ from the surrounding content.
+    /// </para>
+    /// </summary>
+    /// <param name="converter">The converter owning the target document.</param>
+    /// <param name="orientation">The orientation of the new page.</param>
+    /// <param name="paperSize">The paper size of the new page.</param>
+    public static void AddPage(this HtmlConverter converter, PageOrientation orientation, PaperSize paperSize = PaperSize.A4)
+    {
+        var body = GetOrCreateDocumentBody(converter.mainPart);
+        var sectionProperties = body.GetLastChild<SectionProperties>();
+        var pageSize = sectionProperties?.GetFirstChild<PageSize>();
+
+        if (pageSize is null)
+        {
+            converter.AddPageBreakAfter(null);
+            body.AppendChild(CreateSectionProperties(orientation, paperSize));
+            return;
+        }
+
+        var (w, h) = GetPageDimensions(paperSize);
+        if (orientation == PageOrientation.Landscape)
+            (w, h) = (h, w);
+
+        if (pageSize.Width?.Value != w || pageSize.Height?.Value != h)
+        {
+            sectionProperties!.Remove();
+            body.AppendChild(new Paragraph(
+                new ParagraphProperties(
+                    sectionProperties
+                ),
+                new Run(
+                   new LastRenderedPageBreak())));
+
+            body.AppendChild(CreateSectionProperties(orientation, paperSize));
+        }
+        else
+        {
+            if (sectionProperties!.PreviousSibling() is Paragraph lastPara)
+            {
+                lastPara.AppendChild(new Run(
+                    new Break { Type = BreakValues.Page }));
+            }
+            else
+            {
+                body.AppendChild(new Paragraph(
+                new Run(
+                    new Break { Type = BreakValues.Page })));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Inserts a page break immediately before the specified element.
+    ///
+    /// <para>
+    /// When <paramref name="element"/> is <see langword="null"/>, the page break
+    /// is inserted at the beginning of the document.
+    /// </para>
+    /// </summary>
+    /// <param name="converter">The converter owning the target document.</param>
+    /// <param name="element">The element that should be preceded by a page break.</param>
+    public static void AddPageBreakBefore(this HtmlConverter converter, OpenXmlElement? element)
+    {
+        var pageBreak = CreatePageBreak();
+        GetOrCreateDocumentBody(converter.mainPart).InsertBefore(pageBreak, element);
+    }
+
+    /// <summary>
+    /// Inserts a page break immediately after the specified element.
+    ///
+    /// <para>
+    /// When <paramref name="element"/> is <see langword="null"/>, the page break
+    /// is inserted at the end of the document.
+    /// </para>
+    /// </summary>
+    /// <param name="converter">The converter owning the target document.</param>
+    /// <param name="element">
+    /// The element that should be followed by a page break.
+    /// </param>
+    public static void AddPageBreakAfter(this HtmlConverter converter, OpenXmlElement? element)
+    {
+        var pageBreak = CreatePageBreak();
+        var body = GetOrCreateDocumentBody(converter.mainPart);
+        if (element is null)
+            body.InsertOrMove(pageBreak, DocumentPosition.DocumentEnd);
+        else
+            body.InsertAfter(pageBreak, element);
     }
 
     /// <summary>
@@ -172,7 +268,7 @@ public static class WordDocumentFactory
     /// <summary>
     /// Create or updates the document table of contents.
     /// <para>
-    /// The table of contents is generated from paragrahs using Word heading styles 
+    /// The table of contents is generated from paragraphs using Word heading styles 
     /// (<c>Heading 1</c> through <c>Heading 9</c>, see also <see cref="HtmlConverter.HtmlStyles"/>)
     /// and represented as a Word content control associated with the built-in TOC gallery.
     /// </para>
@@ -189,16 +285,13 @@ public static class WordDocumentFactory
     public static SdtBlock SetTableOfContents(
         this HtmlConverter converter, int maxLevel = 3,
         string caption = "Table Of Contents",
-        DocumentLocation position = DocumentLocation.AfterCover)
+        DocumentPosition position = DocumentPosition.AfterCover)
     {
         var mainPart = converter.mainPart;
         var body = GetOrCreateDocumentBody(mainPart);
-        SdtBlock? tocStdBlock = converter.GetTableOfContents();
-        if (tocStdBlock is null)
-        {
-            tocStdBlock = new();
-            body.InsertAt(tocStdBlock, position);
-        }
+        SdtBlock? tocStdBlock = converter.GetTableOfContents() ?? new();
+        body.InsertOrMove(tocStdBlock, position);
+
 
         tocStdBlock.SdtProperties ??= new();
         var partObject = tocStdBlock.SdtProperties.GetOrAddFirstChild<SdtContentDocPartObject>();
@@ -272,10 +365,11 @@ public static class WordDocumentFactory
             ));
         }
 
-        if (sdtContent.ChildElements.Count < 2)
-            sdtContent.AddChild(new Paragraph());
+        var paragraphs = sdtContent.ChildElements.OfType<Paragraph>().Take(2);
+        if (paragraphs.Count()  < 2)
+            sdtContent.AppendChild(new Paragraph());
 
-        Paragraph toc1 = sdtContent.ChildElements.OfType<Paragraph>().ElementAt(1);
+        Paragraph toc1 = paragraphs.ElementAt(1);
 
         // this fieldCode allows Word to auto-refresh the TOC
         toc1.InsertAfter(
@@ -352,23 +446,13 @@ public static class WordDocumentFactory
     /// <summary>
     /// Generate the required OpenXml element for handling page orientation.
     /// </summary>
-    internal static SectionProperties CreateSectionProperties(PageOrientation orientation)
+    internal static SectionProperties CreateSectionProperties(PageOrientation orientation, PaperSize paperSize)
     {
-        PageSize pageSize;
-        if (orientation == PageOrientation.Portrait)
-        {
-            pageSize = new() {
-                Width = A4PortraitWidth, Height = A4PortraitHeight,
-                Orient = PageOrientationValues.Portrait
-            };
-        }
-        else
-        {
-            pageSize = new() {
-                Width = A4PortraitHeight, Height = A4PortraitWidth,
-                Orient = PageOrientationValues.Landscape
-            };
-        }
+        var (width, height) = GetPageDimensions(paperSize);
+        PageSize pageSize = new() { Width = width, Height = height };
+
+        if (orientation == PageOrientation.Landscape)
+            pageSize.FlipPage();
 
         return new SectionProperties (
             pageSize,
@@ -381,14 +465,30 @@ public static class WordDocumentFactory
         );
     }
 
-    /// <summary>
-    /// Determines whether the specified page size represents a landscape orientation.
-    /// </summary>
-    internal static bool IsLandscape(PageSize? pageSize)
+    private static (uint Width, uint Height) GetPageDimensions(PaperSize paperSize)
     {
-        if (pageSize is null)
-            return false;
+        return paperSize switch {
+            PaperSize.A6 => (5953, 8391),
+            PaperSize.A5 => (8391, 11906),
+            PaperSize.A4 => (11906, 16838),
+            PaperSize.A3 => (16838, 23811),
 
-        return pageSize.Width?.Value >= A4PortraitHeight;
+            PaperSize.B6 => (7087, 9978),
+            PaperSize.B5 => (9978, 14173),
+            PaperSize.B4 => (14173, 20013),
+            PaperSize.B3 => (20013, 28346),
+
+            PaperSize.Letter => (12240, 15840),
+            PaperSize.Legal => (12240, 20160),
+
+            _ => throw new ArgumentOutOfRangeException(nameof(paperSize))
+        };
     }
+
+    static Paragraph CreatePageBreak() => new Paragraph(
+        new Run(
+            new Break { Type = BreakValues.Page }),
+        new Run(
+            new LastRenderedPageBreak())
+    );
 }

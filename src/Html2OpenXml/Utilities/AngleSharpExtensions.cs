@@ -172,17 +172,13 @@ static class AngleSharpExtensions
 
     public static bool RequiresPageBreakBefore(this HtmlAttributeCollection styleAttributes)
     {
-        if (styleAttributes.HasStyleEqualsTo("break-before", "page") ||
-            styleAttributes.HasStyleEqualsTo("page-break-before", "always"))
-            return true;
-        return false;
+        return styleAttributes["break-before"].Is("page") ||
+            styleAttributes["page-break-before"].Is("always");
     }
 
     public static bool RequiresPageBreakAfter(this HtmlAttributeCollection styleAttributes)
     {
-        if (styleAttributes.HasStyleEqualsTo("break-after", "page") ||
-            styleAttributes.HasStyleEqualsTo("page-break-after", "always"))
-            return true;
-        return false;
+        return styleAttributes["break-after"].Is("page") ||
+            styleAttributes["page-break-after"].Is("always");
     }
 }

@@ -240,8 +240,8 @@ class BlockElementExpression: PhrasingElementExpression
         }
 
         var lineHeight = styleAttributes.GetUnit("line-height");
-        if (!lineHeight.IsValid 
-            && styleAttributes.HasStyleEqualsTo("line-height", "normal"))
+        if (!lineHeight.IsValid
+            && styleAttributes["line-height"].Is("normal"))
         {
             // if `normal` is specified, reset any values
             lineHeight = new Unit(UnitMetric.Unitless, 1);

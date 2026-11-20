@@ -55,24 +55,50 @@ static class OpenXmlExtensions
         return null;
     }
 
-    public static void InsertAt<T>(this Body body,
-        T element, DocumentLocation position) where T: OpenXmlElement
+    public static void InsertOrMove<T>(this Body body,
+        T element, DocumentPosition position) where T: OpenXmlElement
     {
-        if (position == DocumentLocation.AfterCover)
+        if (element.Parent != null)
+            element.Remove();
+
+        if (position == DocumentPosition.AfterCover)
         {
             var coverPage = body.GetCoverPage();
-
-            // if the cover page does not exist, insert at the start of the document
             if (coverPage != null)
+            {
                 body.InsertAfter(element, coverPage);
-            else
-                position = DocumentLocation.DocumentStart;
+                return;
+            }
+
+            position = DocumentPosition.DocumentStart;
         }
 
-        if (position == DocumentLocation.DocumentStart)
+        if (position == DocumentPosition.DocumentStart)
+        {
             body.InsertAt(element, 0);
-        else if (position == DocumentLocation.DocumentEnd)
-            body.AddChild(element);
+        }
+        else if (position == DocumentPosition.DocumentEnd)
+        {
+            var sectionProperties = body.GetLastChild<SectionProperties>();
+            body.InsertBefore(element, sectionProperties);
+        }
+    }
+
+    /// <summary>
+    /// Determines whether the specified page size represents a landscape orientation.
+    /// </summary>
+    public static bool IsLandscape(this PageSize pageSize)
+    {
+        return pageSize.Width?.Value >= pageSize.Height?.Value;
+    }
+
+    /// <summary>
+    /// Swap the orientation of a page.
+    /// </summary>
+    public static void FlipPage(this PageSize pageSize)
+    {
+        (pageSize.Height, pageSize.Width) = (pageSize.Width, pageSize.Height);
+        pageSize.Orient = pageSize.IsLandscape() ? PageOrientationValues.Landscape : PageOrientationValues.Portrait;
     }
 
     public static bool Compare(this PageSize pageSize, PageOrientationValues orientation)
