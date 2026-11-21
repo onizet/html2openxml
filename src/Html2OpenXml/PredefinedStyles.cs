@@ -25,6 +25,8 @@ static class PredefinedStyles
     public const string Header = "Header";
     public const string Footer = "Footer";
     public const string Paragraph = "Normal";
+    public const string TOCHeading = "TOCHeading";
+    public const string TOC = "TOC";
 
 
 

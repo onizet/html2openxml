@@ -51,7 +51,7 @@ class BlockElementExpression: PhrasingElementExpression
         var bookmarkTarget = node.GetAttribute("data-bookmark");
         if (bookmarkTarget is not null)
         {
-            var bookmarkId = IncrementBookmarkId(context).ToString(CultureInfo.InvariantCulture);
+            var bookmarkId = context.IncrementBookmarkId().ToString(CultureInfo.InvariantCulture);
             var p = childElements.First();
             // need to be inserted after pPr to avoid schema warning
             p.InsertAfter(new BookmarkStart() { Id = bookmarkId, Name = bookmarkTarget }, p.GetFirstChild<ParagraphProperties>());
@@ -240,8 +240,8 @@ class BlockElementExpression: PhrasingElementExpression
         }
 
         var lineHeight = styleAttributes.GetUnit("line-height");
-        if (!lineHeight.IsValid 
-            && styleAttributes.HasStyleEqualsTo("line-height", "normal"))
+        if (!lineHeight.IsValid
+            && styleAttributes["line-height"].Is("normal"))
         {
             // if `normal` is specified, reset any values
             lineHeight = new Unit(UnitMetric.Unitless, 1);
@@ -409,29 +409,6 @@ class BlockElementExpression: PhrasingElementExpression
         return framedTable;
     }
 
-    /// <summary>
-    /// Resolve the next available <see cref="BookmarkStart.Id"/> (they must be unique).
-    /// </summary>
-    protected static int IncrementBookmarkId(ParsingContext context)
-    {
-        var bookmarkRef = context.Properties<int?>("bookmarkRef");
-
-        if (!bookmarkRef.HasValue)
-        {
-            bookmarkRef = 0;
-            foreach (var b in context.MainPart.Document!.Body!.Descendants<BookmarkStart>())
-            {
-                // OpenXml SDK expose the ID as a string value but this is really an integer
-                if (b.Id != null && int.TryParse(b.Id.Value, out int id) && id > bookmarkRef)
-                    bookmarkRef = id;
-            }
-        }
-
-        bookmarkRef++;
-        context.Properties("bookmarkRef", bookmarkRef);
-        return bookmarkRef.Value;
-    }
-
     private IEnumerable<OpenXmlElement> CreatePageBreakBeforeRuns()
     {
         if (!styleAttributes.RequiresPageBreakBefore())
@@ -450,6 +427,6 @@ class BlockElementExpression: PhrasingElementExpression
             yield break;
 
         yield return new Run(
-                new Break() { Type = BreakValues.Page });
+            new Break() { Type = BreakValues.Page });
     }
 }

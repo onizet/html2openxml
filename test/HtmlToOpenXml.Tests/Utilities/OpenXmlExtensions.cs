@@ -11,17 +11,27 @@
  */
 using DocumentFormat.OpenXml;
 
-namespace HtmlToOpenXml.Tests
+namespace HtmlToOpenXml.Tests;
+
+/// <summary>
+/// Helper class that provide some extension methods to OpenXml SDK.
+/// </summary>
+[System.Diagnostics.DebuggerStepThrough]
+static class OpenXmlExtensions
 {
-    /// <summary>
-    /// Helper class that provide some extension methods to OpenXml SDK.
-    /// </summary>
-    [System.Diagnostics.DebuggerStepThrough]
-    static class OpenXmlExtensions
+    public static bool HasChild<T>(this OpenXmlElement element) where T : OpenXmlElement
     {
-        public static bool HasChild<T>(this OpenXmlElement element) where T : OpenXmlElement
+        return element.GetFirstChild<T>() != null;
+    }
+
+    public static int IndexOf(this OpenXmlElementList collection, OpenXmlElement element)
+    {
+        for (int i = 0; i < collection.Count; i++)
         {
-            return element.GetFirstChild<T>() != null;
+            if (collection[i] == element)
+                return i;
         }
+
+        return -1;
     }
 }

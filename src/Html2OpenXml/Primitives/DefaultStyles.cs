@@ -130,4 +130,10 @@ public class DefaultStyles
     /// </summary>
     /// <value>Normal</value>
     public string ParagraphBodyStyle { get; set; } = PredefinedStyles.Paragraph;
+
+    /// <summary>
+    /// Default style for the Table Of Contents heading (the caption "Table Of Contents").
+    /// </summary>
+    /// <value>TOC Heading</value>
+    public string TOCHeading { get; set; } = PredefinedStyles.TOCHeading;
 }

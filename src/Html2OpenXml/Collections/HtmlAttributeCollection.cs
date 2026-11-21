@@ -135,18 +135,6 @@ sealed class HtmlAttributeCollection
     }
 
     /// <summary>
-    /// Efficient way to determine if a style is equals to a value.
-    /// </summary>
-    public bool HasStyleEqualsTo(string name, ReadOnlySpan<char> value)
-    {
-        if (TryGetValue(name, out var span))
-        {
-            return span.Equals(value, StringComparison.OrdinalIgnoreCase);
-        }
-        return false;
-    }
-
-    /// <summary>
     /// Gets an attribute representing a color (named color, hexadecimal or hexadecimal 
     /// without the preceding # character).
     /// </summary>

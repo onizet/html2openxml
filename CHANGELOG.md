@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.3.0
+
+- New `SetTableOfContent()` helper.
+- New `SetCoverPage()` helper.
+- New `AddPage(orientation, paperSize)` helper.
+- New `AddPageBreakBefore` and `AddPageBreakAfter` helper.
+
 ## 4.2.0
 
 Ease of Use Improvements:

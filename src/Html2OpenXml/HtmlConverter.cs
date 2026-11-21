@@ -368,11 +368,8 @@ public class HtmlConverter
             HtmlStyles.GetParagraphStyle(HtmlStyles.DefaultStyles.ParagraphBodyStyle))
             .ConfigureAwait(false);
 
-        if (!paragraphs.Any())
-            return;
-
         SectionProperties? sectionProperties = body.GetLastChild<SectionProperties>()
-            ?? WordDocumentFactory.CreateSectionProperties(PageOrientation.Portrait);
+            ?? WordDocumentFactory.CreateSectionProperties(PageOrientation.Portrait, PaperSize.A4);
 
         foreach (var para in paragraphs)
             body.Append(para);
@@ -382,7 +379,7 @@ public class HtmlConverter
         if (sectionProperties?.Parent != null)
         {
             sectionProperties.Remove();
-            body.AddChild(sectionProperties);
+            body.AppendChild(sectionProperties);
         }
 
         // we automatically create the _top bookmark if missing. To avoid having an empty paragrah,

@@ -35,7 +35,7 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
         var sectionProperties = body.Descendants<SectionProperties>().LastOrDefault();
         if (sectionProperties != null)
         {
-            context.IsLandscape = WordDocumentFactory.IsLandscape(sectionProperties.GetFirstChild<PageSize>());
+            context.IsLandscape = sectionProperties.GetFirstChild<PageSize>()?.IsLandscape() == true;
         }
 
         var elements = base.Interpret(context).ToList();
@@ -48,7 +48,7 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
                 return elements;
             }
 
-            var bookmarkId = IncrementBookmarkId(context).ToString(CultureInfo.InvariantCulture);
+            var bookmarkId = context.IncrementBookmarkId().ToString(CultureInfo.InvariantCulture);
             // this is expected to stand in the 1st paragraph
             Paragraph? p = body.GetFirstChild<Paragraph>();
             p ??= body.PrependChild(new Paragraph());
@@ -72,30 +72,13 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
             PageOrientation orientation = attrValue.Is("landscape")?
                 PageOrientation.Landscape : PageOrientation.Portrait;
 
-            var sectionProperties = mainPart.Document!.Body!.GetFirstChild<SectionProperties>();
-            var pageSize = sectionProperties?.GetFirstChild<PageSize>();
-            if (pageSize == null)
-            {
-                context.IsLandscape = orientation == PageOrientation.Landscape;
-                mainPart.Document.Body.Append(WordDocumentFactory.CreateSectionProperties(orientation));
-            }
-            else if (WordDocumentFactory.IsLandscape(pageSize) != (orientation == PageOrientation.Landscape))
-            {
-                PageSize newPageSize = WordDocumentFactory.CreateSectionProperties(orientation)
-                    .GetFirstChild<PageSize>()!;
-
-                pageSize.Width = newPageSize.Width;
-                pageSize.Height = newPageSize.Height;
-            }
+            context.Converter.AddPage(orientation);
         }
 
         if (paraProperties.BiDi is not null)
         {
-            var sectionProperties = mainPart.Document!.Body!.GetFirstChild<SectionProperties>();
-            if (sectionProperties == null || sectionProperties.GetFirstChild<PageSize>() == null)
-            {
-                mainPart.Document.Body.Append(sectionProperties = new());
-            }
+            var sectionProperties = mainPart.Document!.Body!.GetFirstChild<SectionProperties>()
+                ?? mainPart.Document.Body.AppendChild(new SectionProperties());
 
             if (!sectionProperties.HasChild<BiDi>())
             {
