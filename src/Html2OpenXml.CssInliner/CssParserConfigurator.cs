@@ -28,7 +28,7 @@ public class CssParserExtension(CssProcessingMode mode, IO.IWebRequest webReques
         // Enables downloading the external stylesheets
         if (mode == CssProcessingMode.All)
         {
-            return Configuration.Default
+            return configuration
                 .With(new WebRequestRequester(webRequester))
                 .WithDefaultLoader(new AngleSharp.Io.LoaderOptions {
                 IsResourceLoadingEnabled = true
@@ -36,6 +36,6 @@ public class CssParserExtension(CssProcessingMode mode, IO.IWebRequest webReques
             .WithCss();
         }
 
-        return Configuration.Default.WithCss();
+        return configuration.WithCss();
     }
 }
