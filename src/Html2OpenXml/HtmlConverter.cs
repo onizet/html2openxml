@@ -368,9 +368,6 @@ public class HtmlConverter
             HtmlStyles.GetParagraphStyle(HtmlStyles.DefaultStyles.ParagraphBodyStyle))
             .ConfigureAwait(false);
 
-        if (!paragraphs.Any())
-            return;
-
         SectionProperties? sectionProperties = body.GetLastChild<SectionProperties>()
             ?? WordDocumentFactory.CreateSectionProperties(PageOrientation.Portrait, PaperSize.A4);
 

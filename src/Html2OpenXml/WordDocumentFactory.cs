@@ -136,7 +136,13 @@ public static class WordDocumentFactory
     /// <param name="element">The element that should be preceded by a page break.</param>
     public static void AddPageBreakBefore(this HtmlConverter converter, OpenXmlElement? element)
     {
-        var pageBreak = CreatePageBreak();
+        var pageBreak = new Paragraph(
+            new Run(
+                new Break { Type = BreakValues.Page }),
+            new Run(
+                new LastRenderedPageBreak()
+            )
+        );
         GetOrCreateDocumentBody(converter.mainPart).InsertBefore(pageBreak, element);
     }
 
@@ -154,7 +160,10 @@ public static class WordDocumentFactory
     /// </param>
     public static void AddPageBreakAfter(this HtmlConverter converter, OpenXmlElement? element)
     {
-        var pageBreak = CreatePageBreak();
+        var pageBreak = new Paragraph(
+            new Run(
+                new Break { Type = BreakValues.Page })
+        );
         var body = GetOrCreateDocumentBody(converter.mainPart);
         if (element is null)
             body.InsertOrMove(pageBreak, DocumentPosition.DocumentEnd);
@@ -482,11 +491,4 @@ public static class WordDocumentFactory
             _ => throw new ArgumentOutOfRangeException(nameof(paperSize))
         };
     }
-
-    static Paragraph CreatePageBreak() => new Paragraph(
-        new Run(
-            new Break { Type = BreakValues.Page }),
-        new Run(
-            new LastRenderedPageBreak())
-    );
 }
