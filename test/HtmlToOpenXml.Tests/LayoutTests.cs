@@ -86,8 +86,8 @@ public class DocumentLayoutTests : HtmlConverterTestBase
             Assert.That(pageRef.InnerText, Does.Contain(anchor));
         }
 
-        var bookmarks = converter.mainPart.Document!.Body!.Descendants<BookmarkStart>()
-            .Select(b => b.Name?.Value).ToHashSet();
+        var bookmarks = new HashSet<string>(converter.mainPart.Document!.Body!.Descendants<BookmarkStart>()
+            .Select(b => b.Name?.Value)!);
 
         foreach (var hyperlink in hyperlinks)
         {
