@@ -1,22 +1,22 @@
-/*
- * Copyright (c) 2017 Deal Stream sàrl. All rights reserved
+/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml
+ * Licensed under the MIT License.
+ * Please see the LICENSE file in the project root fo full license information
  */
 using System.Net.Http;
 
-namespace HtmlToOpenXml.Tests
+namespace HtmlToOpenXml.Tests;
+
+public class ProxyHttpMessageHandler : HttpMessageHandler
 {
-    public class ProxyHttpMessageHandler : HttpMessageHandler
+    private readonly Func<Uri, Task<HttpResponseMessage>> _getResponseFunc;
+
+    public ProxyHttpMessageHandler(Func<Uri, Task<HttpResponseMessage>> getResponseFunc)
     {
-        private readonly Func<Uri, Task<HttpResponseMessage>> _getResponseFunc;
+        _getResponseFunc = getResponseFunc;
+    }
 
-        public ProxyHttpMessageHandler(Func<Uri, Task<HttpResponseMessage>> getResponseFunc)
-        {
-            _getResponseFunc = getResponseFunc;
-        }
-
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            return await _getResponseFunc(request.RequestUri!);
-        }
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        return await _getResponseFunc(request.RequestUri!);
     }
 }

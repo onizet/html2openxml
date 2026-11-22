@@ -1,41 +1,41 @@
-/*
- * Copyright (c) 2017 Deal Stream sàrl. All rights reserved
+/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml
+ * Licensed under the MIT License.
+ * Please see the LICENSE file in the project root fo full license information
  */
 using System.Reflection;
 using System.Resources;
 
-namespace HtmlToOpenXml.Tests
+namespace HtmlToOpenXml.Tests;
+
+/// <summary>
+/// Helper class to get an embedded resources.
+/// </summary>
+public static class ResourceHelper
 {
-    /// <summary>
-    /// Helper class to get an embedded resources.
-    /// </summary>
-    public static class ResourceHelper
+    public static string GetString(string resourceName)
     {
-        public static string GetString(string resourceName)
-        {
-            return GetString(typeof(ResourceHelper).GetTypeInfo().Assembly, resourceName);
-        }
+        return GetString(typeof(ResourceHelper).GetTypeInfo().Assembly, resourceName);
+    }
 
-        public static string GetString(Assembly assembly, string resourceName)
+    public static string GetString(Assembly assembly, string resourceName)
+    {
+        using (var stream = GetStream(assembly, resourceName))
         {
-            using (var stream = GetStream(assembly, resourceName))
-            {
-                using (var reader = new StreamReader(stream))
-                    return reader.ReadToEnd();
-            }
+            using (var reader = new StreamReader(stream))
+                return reader.ReadToEnd();
         }
+    }
 
-        public static Stream GetStream(string resourceName)
-        {
-            return GetStream(typeof(ResourceHelper).GetTypeInfo().Assembly, resourceName);
-        }
+    public static Stream GetStream(string resourceName)
+    {
+        return GetStream(typeof(ResourceHelper).GetTypeInfo().Assembly, resourceName);
+    }
 
-        public static Stream GetStream(Assembly assembly, string resourceName)
-        {
-            var stream = assembly.GetManifestResourceStream(assembly.GetName().Name + "." + resourceName)
-                ?? throw new MissingManifestResourceException($"Requested resource `{resourceName}` was not found in the assembly `{assembly}`.");
+    public static Stream GetStream(Assembly assembly, string resourceName)
+    {
+        var stream = assembly.GetManifestResourceStream(assembly.GetName().Name + "." + resourceName)
+            ?? throw new MissingManifestResourceException($"Requested resource `{resourceName}` was not found in the assembly `{assembly}`.");
 
-            return stream;
-        }
+        return stream;
     }
 }
