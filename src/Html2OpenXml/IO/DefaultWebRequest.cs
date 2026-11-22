@@ -46,7 +46,6 @@ public class DefaultWebRequest : IWebRequest
     public DefaultWebRequest(HttpClient httpClient)
     {
         this.httpClient = httpClient ?? DefaultHttp;
-        this.httpClient.DefaultRequestHeaders.AcceptEncoding.ParseAdd("gzip, deflate");
     }
 
     /// <inheritdoc/>
