@@ -6,7 +6,6 @@ using System.Net;
 #if !NET5_0_OR_GREATER
 using System.Net.Http;
 #endif
-using Microsoft.Extensions.Logging;
 
 namespace HtmlToOpenXml.IO;
 
@@ -27,14 +26,13 @@ public class DefaultWebRequest : IWebRequest
         AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
     });
     private readonly HttpClient httpClient;
-    private readonly ILogger? logger;
 
 
 
     /// <summary>
     /// Initialize a new instance of the <see cref="DefaultWebRequest"/> class.
     /// </summary>
-    public DefaultWebRequest(ILogger? logger = null) : this(DefaultHttp, logger) { }
+    public DefaultWebRequest() : this(DefaultHttp) { }
 
     /// <summary>
     /// Initialize a new instance of the <see cref="DefaultWebRequest"/> class with
@@ -45,12 +43,10 @@ public class DefaultWebRequest : IWebRequest
     /// </para>
     /// </summary>
     /// <param name="httpClient">The HTTP client to use to download remote resources.</param>
-    /// <param name="logger">Provide a logging mechanism for diagnose.</param>
-    public DefaultWebRequest(HttpClient httpClient, ILogger? logger = null)
+    public DefaultWebRequest(HttpClient httpClient)
     {
         this.httpClient = httpClient ?? DefaultHttp;
         this.httpClient.DefaultRequestHeaders.AcceptEncoding.ParseAdd("gzip, deflate");
-        this.logger = logger;
     }
 
     /// <inheritdoc/>
@@ -89,11 +85,6 @@ public class DefaultWebRequest : IWebRequest
 
         try
         {
-            if (logger?.IsEnabled(LogLevel.Debug) == true)
-            {
-                logger.LogDebug("Downloading local file: {RequestUri}", requestUri);
-            }
-
             return Task.FromResult<Resource?>(new Resource() {
                 Content = File.OpenRead(localPath),
                 StatusCode = HttpStatusCode.OK
@@ -101,8 +92,6 @@ public class DefaultWebRequest : IWebRequest
         }
         catch (Exception exc)
         {
-            logger?.LogError(exc, "Failed to download file: {RequestUri}", requestUri);
-
             if (exc is IOException || exc is UnauthorizedAccessException || exc is System.Security.SecurityException || exc is NotSupportedException)
                 return Task.FromResult<Resource?>(null);
             throw;
@@ -118,11 +107,6 @@ public class DefaultWebRequest : IWebRequest
 
         try
         {
-            if (logger?.IsEnabled(LogLevel.Debug) == true)
-            {
-                logger.LogDebug("Downloading remote file: {RequestUri}", requestUri);
-            }
-
             if (httpClient.BaseAddress is null && !requestUri.IsAbsoluteUri)
                 return null;
 
@@ -146,11 +130,6 @@ public class DefaultWebRequest : IWebRequest
         {
             if (cancellationToken.IsCancellationRequested)
                 return null;
-            throw;
-        }
-        catch(Exception exc)
-        {
-            logger?.LogError(exc, "Failed to download file: {RequestUri}", requestUri);
             throw;
         }
 

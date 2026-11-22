@@ -42,8 +42,8 @@
 @e ImageProcessingMode "Controls whether images are embedded in the generated document or kept as external references."
  .ev Embed=0,LinkExternal=1,EmbedDataUriOnly=2
 @c DefaultWebRequest "Default implementation of HtmlToOpenXml.IO.IWebRequest. Supports http, https, local file and inline data (base64). Derive from this class to customise resource retrieval, authentication, image processing, URL resolution, or content transformation while reusing the built-in behaviour."
- .ctor (ILogger? logger = null) "Initialize a new instance of the HtmlToOpenXml.IO.DefaultWebRequest class."
- .ctor (HttpClient httpClient, ILogger? logger = null) "Initialize a new instance of the HtmlToOpenXml.IO.DefaultWebRequest class with the specified HttpClient. Supply your own HttpClient to customise how external resources are retrieved, for example to configure cookies, authentication headers, API keys, proxies, or message handlers."
+ .ctor () "Initialize a new instance of the HtmlToOpenXml.IO.DefaultWebRequest class."
+ .ctor (HttpClient httpClient) "Initialize a new instance of the HtmlToOpenXml.IO.DefaultWebRequest class with the specified HttpClient. Supply your own HttpClient to customise how external resources are retrieved, for example to configure cookies, authentication headers, API keys, proxies, or message handlers."
  .m FetchAsync:Task<Resource?>(Uri requestUri, CancellationToken cancellationToken)
  .m SupportsProtocol:bool(string protocol)
  .p BaseImageUrl:Uri? "Defines the base URI used to resolve image URLs. Use this property when HTML content contains relative images references such as /images/logo.png or /../assets/banner.jpg. During conversion, relative URLs are combined with this base URI to locate and download the image resource"
