@@ -12,6 +12,7 @@ namespace HtmlToOpenXml.CssInliner;
 /// An extended HTML-to-OpenXML converter that automatically compiles and inlines 
 /// global <c>&lt;style&gt;</c> sheets into native HTML element attributes before document processing.
 /// </summary>
+[Obsolete("Prefer converter.UseCssInliner()", true)]
 public class CssStyleHtmlConverter : HtmlConverter
 {
     /// <summary>
