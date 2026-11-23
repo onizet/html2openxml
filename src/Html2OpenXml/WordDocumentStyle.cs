@@ -37,7 +37,7 @@ public sealed class WordDocumentStyle
     internal WordDocumentStyle(MainDocumentPart mainPart)
     {
         PrepareStyles(mainPart);
-        lazyPredefinedStyles = [ 
+        lazyPredefinedStyles = [
             PredefinedStyles.Caption,
             PredefinedStyles.EndnoteReference,
             PredefinedStyles.EndnoteText,
@@ -49,6 +49,9 @@ public sealed class WordDocumentStyle
             PredefinedStyles.Heading + "4",
             PredefinedStyles.Heading + "5",
             PredefinedStyles.Heading + "6",
+            PredefinedStyles.Heading + "7",
+            PredefinedStyles.Heading + "8",
+            PredefinedStyles.Heading + "9",
             PredefinedStyles.Hyperlink,
             PredefinedStyles.IntenseQuote,
             PredefinedStyles.ListParagraph,
