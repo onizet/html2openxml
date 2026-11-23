@@ -78,7 +78,7 @@ public class HtmlConverter
     /// Do not use the same converter instance with multiple documents.
     /// Instances are not thread-safe and should not be used concurrently.
     /// </summary>
-    /// <param name="mainPart">The mainDocumentPart must be the document MainDocumentPart where converted content will be inserted.</param>
+    /// <param name="mainPart">The mainDocumentPart where converted content will be inserted.</param>
     /// <param name="webRequester">Control retrieval of external resources such as images.</param>
     public HtmlConverter(MainDocumentPart mainPart, IWebRequest? webRequester = null)
     {
@@ -361,9 +361,6 @@ public class HtmlConverter
             HtmlStyles.GetParagraphStyle(HtmlStyles.DefaultStyles.ParagraphBodyStyle))
             .ConfigureAwait(false);
 
-        if (!paragraphs.Any())
-            return;
-
         SectionProperties? sectionProperties = body.GetLastChild<SectionProperties>()
             ?? WordDocumentFactory.CreateSectionProperties(PageOrientation.Portrait);
 
@@ -375,7 +372,7 @@ public class HtmlConverter
         if (sectionProperties?.Parent != null)
         {
             sectionProperties.Remove();
-            body.AddChild(sectionProperties);
+            body.AppendChild(sectionProperties);
         }
 
         // we automatically create the _top bookmark if missing. To avoid having an empty paragrah,
