@@ -1,6 +1,6 @@
 # HtmlToOpenXml&nbsp;[![Latest version](https://img.shields.io/nuget/v/HtmlToOpenXml.svg)](https://www.nuget.org/packages/HtmlToOpenXml/)&nbsp;[![Download Counts](https://img.shields.io/nuget/dt/HtmlToOpenXml.svg)](https://www.nuget.org/packages/HtmlToOpenXml/)&nbsp;[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/onizet/html2openxml/blob/dev/LICENSE)
 
-HtmlToOpenXml is a mature, high-fidelity converter that translates complex HTML structures into native OpenXML elements, ensuring your content renders exactly as intended across all Microsoft Word users.
+HtmlToOpenXml is a mature library for generating native OpenXML Word documents from HTML. It transforms simple or complete HTML into fully editable Word content while preserving document styles, numbering definitions, templates, and layout.
 
 Originally created in 2009 to transform user-generated content into templated Word documents, it has evolved
 into a mature HTML-to-OpenXML converter supporting styles, numbering, images, bookmarks, page layout, tables,
@@ -8,11 +8,31 @@ document template, and custom resource resolution.
 
 ![Logo](https://raw.githubusercontent.com/onizet/html2openxml/master/docs/images/html2openxml.png)
 
-Supports **.Net Framework 4.6.2**, **.NET Standard 2.0**, **.NET 8** **.NET 10** which are all LTS.
+## Features
+
+- HTML → DOCX conversion
+- Word template integration
+- Portrait and landscape page sections
+- Headers and footers
+- Tables with RowSpan and ColSpan support
+- Numbered and bulleted lists
+- Images (PNG, JPEG, SVG, Data URI)
+- Internal hyperlinks and bookmarks
+- Right-to-left (RTL) documents
+- CSS stylesheet support (optional package)
+
+Supports **.NET Framework 4.6.2**, **.NET Standard 2.0**, **.NET 8** **.NET 10**.
 
 Built on top of [DocumentFormat.OpenXml](https://www.nuget.org/packages/DocumentFormat.OpenXml/) and [AngleSharp](https://www.nuget.org/packages/AngleSharp).
 
--> [Official Nuget Package](https://www.nuget.org/packages/HtmlToOpenXml) (❗ **Update your bookmark**, suffix `.dll` removed)
+| Package | NuGet Stable | Downloads |
+| ------- | ------------ | --------- |
+| [HtmlToOpenXml](https://www.nuget.org/packages/HtmlToOpenXml/) | [![HtmlToOpenXml](https://img.shields.io/nuget/v/HtmlToOpenXml.svg)](https://www.nuget.org/packages/HtmlToOpenXml/) | [![HtmlToOpenXml](https://img.shields.io/nuget/dt/HtmlToOpenXml.svg)](https://www.nuget.org/packages/HtmlToOpenXml/) |
+| [HtmlToOpenXml.CssInliner](https://www.nuget.org/packages/HtmlToOpenXml.CssInliner/) | [![HtmlToOpenXml.CssInliner](https://img.shields.io/nuget/v/HtmlToOpenXml.CssInliner.svg)](https://www.nuget.org/packages/HtmlToOpenXml.CssInliner/) | [![HtmlToOpenXml.CssInliner](https://img.shields.io/nuget/dt/HtmlToOpenXml.CssInliner.svg)](https://www.nuget.org/packages/HtmlToOpenXml.CssInliner/) |
+
+> **Note**
+> The package was renamed from `HtmlToOpenXml.dll` to `HtmlToOpenXml`.
+> NuGet download statistics were unfortunately not transferred to the new package.
 
 ## Quick Start
 
