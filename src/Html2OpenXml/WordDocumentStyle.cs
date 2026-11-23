@@ -224,4 +224,12 @@ public sealed class WordDocumentStyle
     /// Defaults follow the style: « abc ».
     /// </summary>
     public QuoteChars QuoteCharacters { get; set; } = QuoteChars.IE;
+
+    /// <summary>
+    /// Gets the styles currently known by the converter.
+    /// </summary>
+    public IEnumerable<Style> Styles
+    {
+        get => knownStyles.Values;
+    }
 }
