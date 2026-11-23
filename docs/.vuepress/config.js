@@ -30,7 +30,7 @@ export default defineUserConfig({
       {
         text: 'API Reference',
         prefix: 'guide/',
-        children: ['quickstart', 'api', 'hyperlinks', 'images', 'styling', 'tables', 'numbering', 'pre', 'footnotes', 'pagebreak', 'rtl'],
+        children: ['quickstart', 'api', 'hyperlinks', 'images', 'styling', 'tables', 'numbering', 'pre', 'footnotes', 'pagebreak', 'rtl', 'extensibility'],
       },
       {
         text: 'LLM Docs Friendly', link: 'llmdoc'
@@ -42,7 +42,7 @@ export default defineUserConfig({
         text: 'Appendix',
         collapsible: true,
         prefix: 'appendix/',
-        children: ['content-type', 'extensibility', 'template-to-docx', 'placeholder-replacement', 'restrict-edition'],
+        children: ['content-type', 'template-to-docx', 'placeholder-replacement', 'restrict-edition'],
       },
       {
         text: 'Changelog',
