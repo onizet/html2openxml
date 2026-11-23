@@ -2,6 +2,7 @@ using NUnit.Framework;
 using DocumentFormat.OpenXml.Wordprocessing;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml;
+using Moq;
 
 namespace HtmlToOpenXml.Tests;
 
@@ -179,5 +180,40 @@ public class ParserTests : HtmlConverterTestBase
             Assert.That(mainPart.HeaderParts.First().Header!.InnerText, Is.EqualTo("Header content"));
             Assert.That(mainPart.Document!.Body!.InnerText, Is.EqualTo("Body content"));
         }
+    }
+
+    [Test]
+    public void OverrideNodeProcessor_ShouldReplaceDefaultInterpreter()
+    {
+        var today = DateTime.Today;
+
+        var dateProcessor = new Mock<IHtmlNodeProcessor>();
+        dateProcessor.Setup(p => p.CanProcess(It.IsAny<AngleSharp.Dom.INode>()))
+            .Returns(false);
+        dateProcessor.Setup(p => p.CanProcess(It.Is<AngleSharp.Dom.INode>(
+            n => n.NodeName == "H2O-DATE")))
+            .Returns(true);
+
+        dateProcessor.Setup(p => p.Interpret(
+                It.IsAny<IHtmlNodeContext>(),
+                It.Is<AngleSharp.Dom.INode>(n => n.NodeName == "H2O-DATE")))
+            .Returns([
+                new Run(new Text(today.ToShortDateString()))
+            ]);
+
+        converter.NodeProcessors.Add(dateProcessor.Object);
+
+        var elements = converter.Parse("<h2o-date></h2o-date><i>Italics</i>");
+        dateProcessor.Verify(p => p.CanProcess(It.IsAny<AngleSharp.Dom.INode>()),
+            Times.Exactly(2), "Expected to be called for <h2o-date> and <i>");
+
+        dateProcessor.Verify(p => p.Interpret(
+            It.IsAny<IHtmlNodeContext>(),
+            It.Is<AngleSharp.Dom.INode>(n => n.NodeName == "H2O-DATE")), Times.Once());
+
+        Assert.That(elements, Has.Count.EqualTo(1));
+        Assert.That(elements[0].ChildElements, Has.Count.EqualTo(2));
+        Assert.That(elements[0].FirstChild?.InnerText, Is.EqualTo(today.ToShortDateString()));
+        Assert.That(elements[0].LastChild?.InnerText, Is.EqualTo("Italics"));
     }
 }

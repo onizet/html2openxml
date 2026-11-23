@@ -88,11 +88,17 @@ abstract class HtmlDomExpression
     /// <summary>
     /// Create a new interpreter for the given html tag.
     /// </summary>
-    public static HtmlDomExpression? CreateFromHtmlNode (INode node)
+    public static HtmlDomExpression? CreateFromHtmlNode (HtmlConverter converter, INode node)
     {
         if (node.NodeType == NodeType.Text)
         {
             return new TextExpression(node);
+        }
+
+        foreach (var processor in converter.NodeProcessors)
+        {
+            if (processor.CanProcess(node))
+                return new CustomNodeExpression(processor, node);
         }
 
         if (node.NodeType == NodeType.Element

@@ -40,6 +40,8 @@ public sealed class CorporateTransformer : IHtmlTransformer
 }
 ```
 
+---
+
 ## Parser Configurators
 
 Parser Configurators provide access to the underlying AngleSharp parsing infrastructure used by `HtmlConverter`.
@@ -66,14 +68,102 @@ public sealed class CssParserConfigurator : IHtmlParserConfigurator
 }
 ```
 
+---
+
+## Node Processors
+
+Node Processors extend the OpenXml conversion pipeline by providing support for additional HTML nodes.
+
+Unlike transformers, which modify the HTML document before conversion begins, node processors participate directly in the OpenXml generation process and produce OpenXml content for specific HTML nodes.
+
+Processors are evaluated before the built-in HTML tag handlers. When a processor declares that it can handle a node, it becomes responsible for generating the corresponding OpenXml elements.
+
+**Typical use cases**
+
+- Generate native Word content controls from HTML form elements.
+- Support custom HTML elements.
+- Implement MathML rendering.
+- Interpret organisation-specific markup.
+- Generate domain-specific OpenXml content.
+
+```csharp
+converter.NodeProcessors.Add(
+    new CurrentDateProcessor());
+```
+
+```csharp title="CurrentDateProcessor.cs"
+public sealed class CurrentDateProcessor : IHtmlNodeProcessor
+{
+    public bool CanProcess(INode node)
+    {
+        return node.NodeName.Equals(
+            "h2o-date",
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    public IEnumerable<OpenXmlElement> Interpret(IHtmlNodeContext context, INode node)
+    {
+        yield return new Run(
+            new Text(DateTime.Today.ToShortDateString()));
+    }
+}
+```
+
+### Using Custom Elements
+
+A common approach is to introduce custom HTML elements that are interpreted by a node processor.
+
+```html
+<h2o-date />
+```
+
+These elements are not part of standard HTML and are ignored by browsers, but can be used as placeholders for custom OpenXml generation.
+
+### IHtmlNodeContext
+
+`IHtmlNodeContext` provides access to document-level services during node interpretation.
+
+```csharp
+public interface IHtmlNodeContext
+{
+    MainDocumentPart MainPart { get; }
+
+    WordDocumentStyle DocumentStyle { get; }
+
+    void CascadeStyles(OpenXmlElement element);
+}
+```
+
+### CascadeStyles()
+
+When a processor generates OpenXml elements directly, inherited HTML styles are not applied automatically.
+
+Use `CascadeStyles()` to ensure generated content participates in the same style inheritance rules as content produced by HtmlToOpenXml itself.
+
+```csharp
+public IEnumerable<OpenXmlElement> Interpret(IHtmlNodeContext context, INode node)
+{
+    var run = new Run(
+        new Text("Generated content"));
+
+    context.CascadeStyles(run);
+
+    yield return run;
+}
+```
+
+---
+
 ## Processing Order
 
-The loading pipeline executes in the following order:
+The loading and conversion pipeline executes in the following order:
 
-1. Create the default `AngleSHarp.IConfiguration`.
+1. Create the default `AngleSharp.IConfiguration`.
 2. Apply all registered parser configurators.
 3. Create the `IBrowsingContext`.
 4. Parse the HTML document.
-5. Execute OnDocumentLoadedAsync().
+5. Execute `OnDocumentLoadedAsync()`.
 6. Execute all registered transformers.
-7. Return the resulting `HtmlFragment` or continue with OpenXml conversion.
+7. Build the HtmlToOpenXml expression tree.
+8. Evaluate registered node processors during OpenXml conversion.
+9. Generate the resulting OpenXml elements.

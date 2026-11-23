@@ -695,4 +695,10 @@ public class HtmlConverter
     /// </summary>
     /// <remarks>Extensions are executed sequentially in the order they are registered.</remarks>
     public IList<IHtmlParserConfigurator> ParserConfigurators { get; } = [];
+
+    /// <summary>
+    /// Gets the collection of custom HTML node processors used during document conversion.
+    /// Processors can extend or override the interpretation of HTML nodes.
+    /// </summary>
+    public IList<IHtmlNodeProcessor> NodeProcessors { get; } = [];
 }

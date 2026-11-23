@@ -297,7 +297,7 @@ class BlockElementExpression: PhrasingElementExpression
         OpenXmlElement? previousElement = null;
         foreach (var child in childNodes)
         {
-            var expression = CreateFromHtmlNode (child);
+            var expression = CreateFromHtmlNode (context.Converter, child);
             if (expression == null) continue;
 
             foreach (var element in expression.Interpret(context))
