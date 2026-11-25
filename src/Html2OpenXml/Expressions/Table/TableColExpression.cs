@@ -14,8 +14,6 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 sealed class TableColExpression(IHtmlTableColumnElement node) : TableElementExpressionBase(node)
 {
-    private const int MaxTablePortraitWidth = 9622;
-    private const int MaxTableLandscapeWidth = 12996;
     private readonly IHtmlTableColumnElement colNode = node;
     private double? columnWidthPercent;
 
@@ -37,7 +35,11 @@ sealed class TableColExpression(IHtmlTableColumnElement node) : TableElementExpr
             }
             else if (width.Metric == UnitMetric.Percent)
             {
-                var maxWidth = context.IsLandscape ? MaxTableLandscapeWidth : MaxTablePortraitWidth;
+                var sectionProperties = WordDocumentFactory.GetOrCreateSectionProperties(context.MainPart);
+                var pageSize = sectionProperties.GetFirstChild<PageSize>()!;
+                var pageMargin = sectionProperties.GetFirstChild<PageMargin>()!;
+
+                var maxWidth =  pageSize.Width!.Value - pageMargin.Left!.Value - pageMargin.Right!.Value - (pageMargin.Gutter ?? 0);
                 columnWidthPercent = Math.Max(0, Math.Min(100, width.Value));
                 column.Width = Math.Ceiling(maxWidth / 100d * columnWidthPercent.Value).ToString(CultureInfo.InvariantCulture);
             }

@@ -763,8 +763,8 @@ public class TableTests : HtmlConverterTestBase
         using (Assert.EnterMultipleScope())
         {
             Assert.That(columns.Count(), Is.EqualTo(2));
-            Assert.That(columns.First().Width?.Value, Is.EqualTo("1269"));
-            Assert.That(columns.Last().Width?.Value, Is.EqualTo("8365"));
+            Assert.That(columns.First().Width?.Value, Is.EqualTo("1191"));
+            Assert.That(columns.Last().Width?.Value, Is.EqualTo("7847"));
         }
 
         var cells = elements[0].GetFirstChild<TableRow>()?.Elements<TableCell>();

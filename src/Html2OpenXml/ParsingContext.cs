@@ -4,6 +4,7 @@
  */
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
 using HtmlToOpenXml.Expressions;
 
 namespace HtmlToOpenXml;
@@ -34,9 +35,6 @@ sealed class ParsingContext(HtmlConverter converter, OpenXmlPartContainer hostin
     /// <summary>Whether the text content should collapse the whitespaces.</summary>
     public bool CollapseWhitespaces { get; set; } = true;
 
-    /// <summary>Whether the page orientation is portrait or landscape.</summary>
-    public bool IsLandscape { get; set; }
-
     public void CascadeStyles(OpenXmlElement element)
     {
         parentExpression?.CascadeStyles(element);
@@ -55,15 +53,13 @@ sealed class ParsingContext(HtmlConverter converter, OpenXmlPartContainer hostin
     /// </param>
     public ParsingContext CreateChild(HtmlElementExpression expression, bool isStyleScoped = false)
     {
-        var childContext = new ParsingContext(Converter, HostingPart, ImageLoader) {
+        return new ParsingContext(Converter, HostingPart, ImageLoader) {
             propertyBag = propertyBag,
             parentExpression = expression,
             parentContext = isStyleScoped ? null :this,
-            IsLandscape = IsLandscape,
             PreserveLinebreaks = PreserveLinebreaks,
             CollapseWhitespaces = CollapseWhitespaces
         };
-        return childContext;
     }
 
     /// <summary>Retrieves a variable tied to the context of the parsing.</summary>

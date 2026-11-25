@@ -30,8 +30,8 @@ namespace HtmlToOpenXml;
 /// </example>
 public static class WordDocumentFactory
 {
-    private const uint A4PortraitWidth = 11906U;
-    private const uint A4PortraitHeight = 16838U;
+    internal static readonly PageSize A4PageSize = new() { Width = 11906U, Height = 16838U };
+
 
     /// <summary>
     /// Create a new Word document on the specified stream and configures its page settings.
@@ -45,17 +45,92 @@ public static class WordDocumentFactory
     /// <param name="stream">The destination stream that will receive the generated DOCX package
     /// The stream must be writable.</param>
     /// <param name="orientation">The page orientation to apply to the document.</param>
+    /// <param name="paperSize">The paper size of the first page.</param>
     /// <exception cref="ArgumentNullException">Thrown when "stream" is null reference.</exception>
     /// <exception cref="IOException">Thrown when "stream" is not opened with Write access.</exception>
     public static WordprocessingDocument Create(Stream stream,
-        PageOrientation orientation = PageOrientation.Portrait)
+        PageOrientation orientation = PageOrientation.Portrait,
+        PaperSize paperSize = PaperSize.A4)
     {
         var package = WordprocessingDocument.Create(stream, WordprocessingDocumentType.Document);
 
         var mainPart = GetOrCreateMainDocumentPart(package);
-        var sectionProperties = CreateSectionProperties(orientation);
-        mainPart.Document!.Body!.AddChild(sectionProperties);
+        var sectionProperties = CreateSectionProperties(orientation, paperSize);
+        mainPart.Document!.Body!.AppendChild(sectionProperties);
         return package;
+    }
+
+    /// <summary>
+    /// Starts a new page in the document using the specified paper size and orientation.
+    ///
+    /// <para>
+    /// The new page is created as a separate Word section, allowing the
+    /// page size and orientation to differ from the surrounding content.
+    /// </para>
+    /// </summary>
+    /// <param name="converter">The converter owning the target document.</param>
+    /// <param name="orientation">The orientation of the new page.</param>
+    /// <param name="paperSize">The paper size of the new page.</param>
+    public static void AddPage(this HtmlConverter converter, PageOrientation orientation, PaperSize paperSize = PaperSize.A4)
+    {
+        var body = GetOrCreateDocumentBody(converter.mainPart);
+        var sectionProperties = body.GetLastChild<SectionProperties>();
+        var pageSize = sectionProperties?.GetFirstChild<PageSize>();
+
+        if (pageSize is null)
+        {
+            converter.AddPageBreak();
+            body.AppendChild(CreateSectionProperties(orientation, paperSize));
+            return;
+        }
+
+        var (w, h) = GetPageDimensions(paperSize);
+        if (orientation == PageOrientation.Landscape)
+            (w, h) = (h, w);
+
+        if (pageSize.Width?.Value != w || pageSize.Height?.Value != h)
+        {
+            // detach from parent
+            sectionProperties!.Remove();
+
+            body.AppendChild(new Paragraph(
+                new ParagraphProperties(
+                    sectionProperties
+                ),
+                new Run(
+                   new LastRenderedPageBreak())));
+
+            body.AppendChild(CreateSectionProperties(orientation, paperSize));
+        }
+        else
+        {
+            if (sectionProperties!.PreviousSibling() is Paragraph lastPara)
+            {
+                lastPara.AppendChild(new Run(
+                    new Break { Type = BreakValues.Page }));
+            }
+            else
+            {
+                body.AppendChild(new Paragraph(
+                    new Run(
+                        new Break { Type = BreakValues.Page })));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Inserts a page break immediately after the specified element.
+    /// </summary>
+    /// <param name="converter">The converter owning the target document.</param>
+    public static void AddPageBreak(this HtmlConverter converter)
+    {
+        var pageBreak = new Paragraph(
+            new Run(
+                new Break { Type = BreakValues.Page })
+        );
+        var body = GetOrCreateDocumentBody(converter.mainPart);
+        var sectionProperties = body.GetLastChild<SectionProperties>();
+        body.InsertBefore(pageBreak, sectionProperties);
     }
 
     /// <summary>
@@ -86,26 +161,27 @@ public static class WordDocumentFactory
         return mainPart.Document!.Body!;
     }
 
+    internal static SectionProperties GetOrCreateSectionProperties(MainDocumentPart mainPart,
+        PageOrientation orientation = PageOrientation.Portrait, PaperSize paperSize = PaperSize.A4)
+    {
+        var body = GetOrCreateDocumentBody(mainPart);
+        var sectionProperties = body.GetLastChild<SectionProperties>();
+        if (sectionProperties is null)
+            body.AppendChild(sectionProperties = CreateSectionProperties(orientation, paperSize));
+
+        return sectionProperties;
+    }
+
     /// <summary>
     /// Generate the required OpenXml element for handling page orientation.
     /// </summary>
-    internal static SectionProperties CreateSectionProperties(PageOrientation orientation)
+    internal static SectionProperties CreateSectionProperties(PageOrientation orientation, PaperSize paperSize)
     {
-        PageSize pageSize;
-        if (orientation == PageOrientation.Portrait)
-        {
-            pageSize = new() {
-                Width = A4PortraitWidth, Height = A4PortraitHeight,
-                Orient = PageOrientationValues.Portrait
-            };
-        }
-        else
-        {
-            pageSize = new() {
-                Width = A4PortraitHeight, Height = A4PortraitWidth,
-                Orient = PageOrientationValues.Landscape
-            };
-        }
+        var (width, height) = GetPageDimensions(paperSize);
+        PageSize pageSize = new() { Width = width, Height = height };
+
+        if (orientation == PageOrientation.Landscape)
+            pageSize.FlipPage();
 
         return new SectionProperties (
             pageSize,
@@ -118,14 +194,23 @@ public static class WordDocumentFactory
         );
     }
 
-    /// <summary>
-    /// Determines whether the specified page size represents a landscape orientation.
-    /// </summary>
-    internal static bool IsLandscape(PageSize? pageSize)
+    private static (uint Width, uint Height) GetPageDimensions(PaperSize paperSize)
     {
-        if (pageSize is null)
-            return false;
+        return paperSize switch {
+            PaperSize.A6 => (5953, 8391),
+            PaperSize.A5 => (8391, 11906),
+            PaperSize.A4 => (11906, 16838),
+            PaperSize.A3 => (16838, 23811),
 
-        return pageSize.Width?.Value >= A4PortraitHeight;
+            PaperSize.B6 => (7087, 9978),
+            PaperSize.B5 => (9978, 14173),
+            PaperSize.B4 => (14173, 20013),
+            PaperSize.B3 => (20013, 28346),
+
+            PaperSize.Letter => (12240, 15840),
+            PaperSize.Legal => (12240, 20160),
+
+            _ => throw new ArgumentOutOfRangeException(nameof(paperSize))
+        };
     }
 }

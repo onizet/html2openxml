@@ -361,8 +361,7 @@ public class HtmlConverter
             HtmlStyles.GetParagraphStyle(HtmlStyles.DefaultStyles.ParagraphBodyStyle))
             .ConfigureAwait(false);
 
-        SectionProperties? sectionProperties = body.GetLastChild<SectionProperties>()
-            ?? WordDocumentFactory.CreateSectionProperties(PageOrientation.Portrait);
+        SectionProperties? sectionProperties = WordDocumentFactory.GetOrCreateSectionProperties(mainPart);
 
         foreach (var para in paragraphs)
             body.Append(para);

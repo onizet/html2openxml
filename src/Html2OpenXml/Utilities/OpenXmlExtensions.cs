@@ -33,15 +33,21 @@ static class OpenXmlExtensions
         return null;
     }
 
-    public static bool Compare(this PageSize pageSize, PageOrientationValues orientation)
+    /// <summary>
+    /// Determines whether the specified page size represents a landscape orientation.
+    /// </summary>
+    public static bool IsLandscape(this PageSize pageSize)
     {
-        PageOrientationValues pageOrientation;
+        return pageSize.Width?.Value >= pageSize.Height?.Value;
+    }
 
-        if (pageSize.Orient != null) pageOrientation = pageSize.Orient.Value;
-        else if (pageSize.Width > pageSize.Height) pageOrientation = PageOrientationValues.Landscape;
-        else pageOrientation = PageOrientationValues.Portrait;
-
-        return pageOrientation == orientation;
+    /// <summary>
+    /// Swap the orientation of a page.
+    /// </summary>
+    public static void FlipPage(this PageSize pageSize)
+    {
+        (pageSize.Height, pageSize.Width) = (pageSize.Width, pageSize.Height);
+        pageSize.Orient = pageSize.IsLandscape() ? PageOrientationValues.Landscape : PageOrientationValues.Portrait;
     }
 
     // needed since December 2009 CTP refactoring, where casting is not anymore an option
