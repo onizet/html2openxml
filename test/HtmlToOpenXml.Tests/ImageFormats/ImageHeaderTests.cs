@@ -77,11 +77,11 @@ sealed class ImageHeaderTests
     [TestCaseSource(nameof(ResizedImageTestCases))]
     public void KeepAspectRatio_Returns((Size actualSize, Size preferredSize, Size expectedSize) td)
     {
-        var resized = ImageHeader.KeepAspectRatio(td.actualSize, td.preferredSize);
+        var (resizedW, resizedH) = ImageHeader.KeepAspectRatio(td.actualSize, td.preferredSize.Width, td.preferredSize.Height);
         using (Assert.EnterMultipleScope())
         {
-            Assert.That(resized.Width, Is.EqualTo(td.expectedSize.Width));
-            Assert.That(resized.Height, Is.EqualTo(td.expectedSize.Height));
+            Assert.That(resizedW.Value, Is.EqualTo(td.expectedSize.Width));
+            Assert.That(resizedH.Value, Is.EqualTo(td.expectedSize.Height));
         }
     }
 

@@ -42,7 +42,7 @@ public class ImgTests : HtmlConverterTestBase
     }
 
     [Test]
-    public async Task PercentSize_ReturnsDrawing_()
+    public async Task PercentSize_ReturnsDrawing()
     {
         await converter.ParseBody(
             @"<img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=='
@@ -51,7 +51,29 @@ public class ImgTests : HtmlConverterTestBase
 
         var paragraphs = mainPart.Document!.Body!.Elements<Paragraph>();
         Assert.That(paragraphs.Count(), Is.EqualTo(1));
-        var (_, imagePart) = AssertIsImg(mainPart, paragraphs.First());
+        _ = AssertIsImg(mainPart, paragraphs.First());
+    }
+
+    [Test]
+    public async Task LargeSize_ReturnsNoOverflowDrawing()
+    {
+        await converter.ParseBody(
+            @"<img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=='
+                style='max-width:100%'>",
+            TestContext.CurrentContext.CancellationToken);
+
+        const uint Gutter = 0;
+        const uint LeftMargin = 1440;
+        const uint RightMargin = 1440;
+        const uint A4PageWidthInTwips = 11906;
+        const uint A4PageWidthInEmus = (A4PageWidthInTwips - RightMargin - LeftMargin - Gutter) * 635;
+
+
+        var paragraphs = mainPart.Document!.Body!.Elements<Paragraph>();
+        Assert.That(paragraphs.Count(), Is.EqualTo(1));
+        var (drawing, _) = AssertIsImg(mainPart, paragraphs.First());
+        Assert.That(drawing.Inline?.Extent?.Cx?.Value, Is.EqualTo(A4PageWidthInEmus));
+        Assert.That(drawing.Inline?.Extent?.Cy?.Value, Is.EqualTo(5731510));
     }
 
     [Test]
@@ -79,8 +101,8 @@ public class ImgTests : HtmlConverterTestBase
         var elements = converter.Parse(@"<img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==' style='max-width:100%'>");
         AssertIsImg(mainPart, elements[0]);
         var drawing = elements[0].GetFirstChild<Run>()!.GetFirstChild<Drawing>()!;
-        Assert.That(drawing.Inline?.Extent?.Cx?.Value, Is.EqualTo(6115050));
-        Assert.That(drawing.Inline?.Extent?.Cy?.Value, Is.EqualTo(6115050));
+        Assert.That(drawing.Inline?.Extent?.Cx?.Value, Is.EqualTo(5731510));
+        Assert.That(drawing.Inline?.Extent?.Cy?.Value, Is.EqualTo(5731510));
     }
 
     [Test]

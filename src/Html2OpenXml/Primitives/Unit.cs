@@ -102,6 +102,7 @@ readonly struct Unit
         {
             UnitMetric.Auto or UnitMetric.Unitless or UnitMetric.Percent => 0L,// not applicable
             UnitMetric.Emus => (long)value,
+            UnitMetric.Twips => (long)(value * 635L),
             UnitMetric.Inch => (long)(value * 914400L),
             UnitMetric.Centimeter => (long)(value * 360000L),
             UnitMetric.Millimeter => (long)(value * 36000L),
@@ -156,9 +157,11 @@ readonly struct Unit
     }
 
     /// <summary>
-    /// Gets the value expressed in 1/8 of a Point
+    /// Gets the value expressed in 1/8 of a Point.
+    /// <para>
     /// IMPORTANT: Use this for borders, as OpenXML expresses Border Width in 1/8 of points,
     /// with a minimum value of 2 (1/4 of a point) and a maximum value of 96 (12 points).
+    /// </para>
     /// </summary>
     public double ValueInEighthPoint
     {

@@ -92,36 +92,39 @@ static class ImageHeader
     /// <summary>
     /// Resize an image keeping its aspect ratio.
     /// </summary>
-    public static Size KeepAspectRatio(Size actualSize, Size preferredSize)
+    public static (Unit Width, Unit Height) KeepAspectRatio(Size actualSize,
+        long preferredWidthEmus, long preferredHeightEmus)
     {
-        int width, height;
-
         // Handle edge cases where dimensions are zero or negative
-        if (actualSize.Width <= 0 || actualSize.Height <= 0)
-            return Size.Empty;
+        if (actualSize.HasInvalidDimension)
+            return (Unit.Empty, Unit.Empty);
 
         // Resize by the highest difference ratio between constrained dimension and real one.
-        bool scaleByWidth = preferredSize.Height <= 0 && preferredSize.Width > 0;
-        bool scaleByHeight = preferredSize.Width <= 0 && preferredSize.Height > 0;
-        if (!scaleByHeight && !scaleByWidth)
+
+        if (preferredWidthEmus > 0 && preferredHeightEmus == 0)
         {
-            int widthDiff = Math.Abs(preferredSize.Width - actualSize.Width);
-            int heightDiff = Math.Abs(preferredSize.Height - actualSize.Height);
-            scaleByWidth = widthDiff >= heightDiff;
+            return (
+                new Unit(UnitMetric.Emus, preferredWidthEmus),
+                new Unit(UnitMetric.Emus,
+                    Math.Round(
+                        actualSize.Height * (double)preferredWidthEmus / actualSize.Width))
+            );
         }
 
-        if (scaleByWidth)
+        if (preferredHeightEmus > 0 && preferredWidthEmus == 0)
         {
-            width = preferredSize.Width;
-            height = actualSize.Height * width / actualSize.Width;
-        }
-        else
-        {
-            height = preferredSize.Height;
-            width = actualSize.Width * height / actualSize.Height;
+            return (
+                new Unit(UnitMetric.Emus,
+                    Math.Round(
+                        actualSize.Width * (double)preferredHeightEmus / actualSize.Height)),
+                new Unit(UnitMetric.Emus, preferredHeightEmus)
+            );
         }
 
-        return new Size(width, height);
+        return (
+            new Unit(UnitMetric.Emus, preferredWidthEmus),
+            new Unit(UnitMetric.Emus, preferredHeightEmus)
+        );
     }
 
     /// <summary>
@@ -160,19 +163,19 @@ static class ImageHeader
         reader.Skip(4 + 2 + 2 + 4);
 
         int headerSize = reader.ReadInt32();
-        int width, height;
+        uint width, height;
 
         // We expect the header size to be either 40 (BITMAPINFOHEADER) or 12 (BITMAPCOREHEADER)
         if (headerSize == 40)
         {
             // BITMAPINFOHEADER
-            width = reader.ReadInt32();
-            height = Math.Abs(reader.ReadInt32());
+            width = reader.ReadUInt32();
+            height = (uint) Math.Abs(reader.ReadInt32());
         }
         else if (headerSize == 12)
         {
-            width = reader.ReadInt16();
-            height = reader.ReadInt16();
+            width = reader.ReadUInt16();
+            height = reader.ReadUInt16();
         }
         else
         {
@@ -189,8 +192,8 @@ static class ImageHeader
         // 3 - version: either "87a" or "89a"
         reader.Skip(6);
 
-        int width = reader.ReadInt16();
-        int height = reader.ReadInt16();
+        var width = reader.ReadUInt16();
+        var height = reader.ReadUInt16();
         return new Size(width, height);
     }
 
@@ -225,8 +228,8 @@ static class ImageHeader
             if (segmentType == 0xC0 || segmentType == 0xC2)
             {
                 reader.ReadByte(); // bits/sample, usually 8
-                int height = reader.ReadUInt16();
-                int width = reader.ReadUInt16();
+                var height = reader.ReadUInt16();
+                var width = reader.ReadUInt16();
                 return new Size(width, height);
             }
             else
@@ -244,8 +247,8 @@ static class ImageHeader
         reader.ReadBytes(pngSignatureBytes.Length);
         reader.Skip(8);
 
-        int width = reader.ReadInt32();
-        int height = reader.ReadInt32();
+        var width = reader.ReadUInt32();
+        var height = reader.ReadUInt32();
         return new Size(width, height);
     }
 
@@ -256,10 +259,10 @@ static class ImageHeader
 
         // Frame: specify the rectangular inclusive-inclusive dimensions, 
         // in .01 millimeter units, of a rectangle that surrounds the image stored in the metafile.
-        int left   = reader.ReadInt32();
-        int top    = reader.ReadInt32();
-        int right  = reader.ReadInt32();
-        int bottom = reader.ReadInt32();
+        var left   = reader.ReadInt32();
+        var top    = reader.ReadInt32();
+        var right  = reader.ReadInt32();
+        var bottom = reader.ReadInt32();
 
         // Skip other headers:
         // Signature (4) + Version (4) + Size (4) + Records (4) + Handles (2)
@@ -267,17 +270,20 @@ static class ImageHeader
         reader.Skip(32);
 
         // Next 8 bytes specify the size of the reference device, in pixels
-        int deviceSizeInPixelX = reader.ReadInt32();
-        int deviceSizeInPixelY = reader.ReadInt32();
+        var deviceSizeInPixelX = reader.ReadUInt32();
+        var deviceSizeInPixelY = reader.ReadUInt32();
 
         // Then 8 more to specify the size of the reference device, in millimeters
-        int deviceSizeInMlmX = reader.ReadInt32();
-        int deviceSizeInMlmY = reader.ReadInt32();
+        var deviceSizeInMlmX = reader.ReadUInt32();
+        var deviceSizeInMlmY = reader.ReadUInt32();
 
-        int widthInPixel = (int) Math.Round(0.5 + (right - left + 1.0) * deviceSizeInPixelX / deviceSizeInMlmX / 100.0);
-        int heightInPixel = (int) Math.Round(0.5 + (bottom-top + 1.0) * deviceSizeInPixelY / deviceSizeInMlmY / 100.0);
+        var widthInPixel = Math.Round(0.5 + (right - left + 1.0) * deviceSizeInPixelX / deviceSizeInMlmX / 100.0);
+        var heightInPixel = Math.Round(0.5 + (bottom-top + 1.0) * deviceSizeInPixelY / deviceSizeInMlmY / 100.0);
 
-        return new Size(widthInPixel, heightInPixel);
+        if (widthInPixel <= 0 || heightInPixel <= 0)
+            return Size.Empty;
+
+        return new Size((uint) widthInPixel, (uint) heightInPixel);
     }
 
     private static Size DecodeXml(Stream stream)
@@ -292,7 +298,7 @@ static class ImageHeader
                 var width = Unit.Parse(nav.GetAttribute("width", string.Empty).AsSpan());
                 var height = Unit.Parse(nav.GetAttribute("height", string.Empty).AsSpan());
                 if (width.IsValid && height.IsValid)
-                    return new Size(width.ValueInPx, height.ValueInPx);
+                    return new Size((uint) width.ValueInPx, (uint) height.ValueInPx);
             }
         }
         catch (SystemException)

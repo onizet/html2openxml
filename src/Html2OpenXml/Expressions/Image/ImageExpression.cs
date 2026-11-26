@@ -42,30 +42,13 @@ class ImageExpression(IHtmlImageElement node) : ImageExpressionBase(node)
         }
 
         string alt = imgNode.Title ?? imgNode.AlternativeText ?? string.Empty;
-
-        Size preferredSize = Size.Empty;
-
-        // % is not supported
-        if (imgNode.DisplayWidth > 0)
-        {
-            preferredSize.Width = imgNode.DisplayWidth;
-        }
-        if (imgNode.DisplayHeight > 0)
-        {
-            preferredSize.Height = imgNode.DisplayHeight;
-        }
-        if (preferredSize.IsEmpty)
-        {
-            var styles = imgNode.GetStyles();
-            preferredSize.Width = GetDimension(styles, "width", "max-width", 642);
-            preferredSize.Height = GetDimension(styles, "height", "max-height", 428);
-        }
-
         HtmlImageInfo? iinfo = context.ImageLoader.Download(src, CancellationToken.None)
             .ConfigureAwait(false).GetAwaiter().GetResult();
 
         if (iinfo == null)
             return null;
+
+        var (widthInEmus, heightInEmus) = CalculateSize(context, iinfo);
 
         if (iinfo.TypeInfo == ImagePartType.Svg)
         {
@@ -76,36 +59,15 @@ class ImageExpression(IHtmlImageElement node) : ImageExpressionBase(node)
 
             var svgNode = imgNode.FindChild<ISvgSvgElement>();
             if (svgNode is null) return null;
-            return SvgExpression.CreateSvgDrawing(context, svgNode, iinfo.ImagePartId, preferredSize);
+            return SvgExpression.CreateSvgDrawing(context, svgNode, iinfo.ImagePartId,
+                widthInEmus, heightInEmus);
         }
-
-        if (preferredSize.IsEmpty)
-        {
-            preferredSize = iinfo.Size;
-        }
-        else if (preferredSize.HasInvalidDimension)
-        {
-            Size actualSize = iinfo.Size;
-            // Image perspective skewed. Bug fixed by ddeforge on github.com/onizet/html2openxml/discussions/350500
-            preferredSize = ImageHeader.KeepAspectRatio(actualSize, preferredSize);
-        }
-
-        // If size is still empty (e.g., for external linked images), use default dimensions
-        if (preferredSize.HasInvalidDimension)
-        {
-            // Use default size for external images or when size cannot be determined
-            // Default to a reasonable size (similar to how browsers handle images with unknown dimensions)
-            preferredSize = DefaultImgSize;
-        }
-
-        long widthInEmus = new Unit(UnitMetric.Pixel, preferredSize.Width).ValueInEmus;
-        long heightInEmus = new Unit(UnitMetric.Pixel, preferredSize.Height).ValueInEmus;
 
         var (imageObjId, drawingObjId) = IncrementDrawingObjId(context);
         var img = new Drawing(
             new wp.Inline(
                 new wp.Extent() { Cx = widthInEmus, Cy = heightInEmus },
-                new wp.EffectExtent() { LeftEdge = 19050L, TopEdge = 0L, RightEdge = 0L, BottomEdge = 0L },
+                new wp.EffectExtent() { LeftEdge = 0L, TopEdge = 0L, RightEdge = 0L, BottomEdge = 0L },
                 new wp.DocProperties() { Id = drawingObjId, Name = "Picture " + imageObjId, Description = string.Empty },
                 new wp.NonVisualGraphicFrameDrawingProperties
                 {
@@ -148,7 +110,71 @@ class ImageExpression(IHtmlImageElement node) : ImageExpressionBase(node)
         return img;
     }
 
-    private static int GetDimension(HtmlAttributeCollection styles, string primaryStyle, string fallbackStyle, int percentageBase)
+    private (long WidthInEmus, long HeightInEmus) CalculateSize(ParsingContext context, HtmlImageInfo imageInfo)
+    {
+        Unit preferredWidth = Unit.Empty;
+        Unit preferredHeight = Unit.Empty;
+        Unit maxContentWidth = context.GetAvailableContentWidth();
+
+        // width and height attribute are pixels according to HTML spec.
+        if (imgNode.DisplayWidth > 0)
+        {
+            preferredWidth = new Unit(UnitMetric.Pixel, imgNode.DisplayWidth);
+        }
+        if (imgNode.DisplayHeight > 0)
+        {
+            preferredHeight = new Unit(UnitMetric.Pixel, imgNode.DisplayHeight);
+        }
+
+        HtmlAttributeCollection? styles = null;
+        if (preferredWidth.Value == 0)
+        {
+            styles = imgNode.GetStyles();
+            preferredWidth = GetDimension(styles, "width", "max-width", () => maxContentWidth);
+        }
+        if (preferredHeight.Value == 0)
+        {
+            styles ??= imgNode.GetStyles();
+            preferredHeight = GetDimension(styles, "height", "max-height", () => context.GetAvailableContentHeight());
+        }
+
+        // Intrinsic image size
+        Size actualSize = imageInfo.Size;
+
+        // Resolve missing dimension from image aspect ratio
+        // Image perspective skewed. Bug fixed by ddeforge on github.com/onizet/html2openxml/discussions/350500
+        if (preferredWidth.Value <= 0 || preferredHeight.Value <= 0)
+        {
+            // Image perspective skewed. Bug fixed by ddeforge on github.com/onizet/html2openxml/discussions/350500
+            (preferredWidth, preferredHeight) = ImageHeader.KeepAspectRatio(actualSize, preferredWidth.ValueInEmus, preferredHeight.ValueInEmus);
+        }
+
+        // Fallback for unknown image sizes (external image, malformed image...)
+        if (preferredWidth.ValueInEmus <= 0 || preferredHeight.ValueInEmus <= 0)
+        {
+            // Use default size for external images or when size cannot be determined
+            // Default to a reasonable size (similar to how browsers handle images with unknown dimensions)
+            preferredWidth = new Unit(UnitMetric.Pixel, DefaultImgSize.Width);
+            preferredHeight = new Unit(UnitMetric.Pixel, DefaultImgSize.Height);
+        }
+
+        long widthInEmus = preferredWidth.ValueInEmus;
+        long heightInEmus = preferredHeight.ValueInEmus;
+
+        // Prevent overflow
+        if (widthInEmus > maxContentWidth.ValueInEmus)
+        {
+            double scale = (double) maxContentWidth.ValueInEmus / widthInEmus;
+
+            widthInEmus = maxContentWidth.ValueInEmus;
+            heightInEmus = (long) Math.Round(heightInEmus * scale);
+        }
+
+        return (widthInEmus, heightInEmus);
+    }
+
+    private static Unit GetDimension(HtmlAttributeCollection styles,
+        string primaryStyle, string fallbackStyle, Func<Unit> availableContainerWidthInTwips)
     {
         var unit = styles.GetUnit(primaryStyle);
         if (!unit.IsValid)
@@ -156,14 +182,16 @@ class ImageExpression(IHtmlImageElement node) : ImageExpressionBase(node)
             unit = styles.GetUnit(fallbackStyle);
         }
 
-        if (unit.IsValid)
+        if (!unit.IsValid)
+            return Unit.Empty;
+
+        if (unit.Metric == UnitMetric.Percent)
         {
-            return unit.Metric == UnitMetric.Percent ?
-                (int)(unit.Value * percentageBase / 100) :
-                unit.ValueInPx;
+            var maxValue = availableContainerWidthInTwips().Value;
+            return new Unit(UnitMetric.Twips, unit.Value * maxValue / 100);
         }
 
-        return 0;
+        return unit;
     }
 
     /// <summary>

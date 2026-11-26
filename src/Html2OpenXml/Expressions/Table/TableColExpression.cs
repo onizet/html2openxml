@@ -35,11 +35,7 @@ sealed class TableColExpression(IHtmlTableColumnElement node) : TableElementExpr
             }
             else if (width.Metric == UnitMetric.Percent)
             {
-                var sectionProperties = WordDocumentFactory.GetOrCreateSectionProperties(context.MainPart);
-                var pageSize = sectionProperties.GetFirstChild<PageSize>()!;
-                var pageMargin = sectionProperties.GetFirstChild<PageMargin>()!;
-
-                var maxWidth =  pageSize.Width!.Value - pageMargin.Left!.Value - pageMargin.Right!.Value - (pageMargin.Gutter ?? 0);
+                var maxWidth = context.GetAvailableContentWidth().Value;
                 columnWidthPercent = Math.Max(0, Math.Min(100, width.Value));
                 column.Width = Math.Ceiling(maxWidth / 100d * columnWidthPercent.Value).ToString(CultureInfo.InvariantCulture);
             }

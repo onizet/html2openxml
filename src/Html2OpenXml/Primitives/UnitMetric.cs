@@ -24,6 +24,8 @@ enum UnitMetric
 
     // this value is not parsed but can be used internally
     Emus,
+    // this value is not parsed but can be used internally for paper size
+    Twips,
 
     /// <summary>Not convertible to any other units.</summary>
     Auto,

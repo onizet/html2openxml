@@ -77,7 +77,7 @@ public static class WordDocumentFactory
         var sectionProperties = body.GetLastChild<SectionProperties>();
         var pageSize = sectionProperties?.GetFirstChild<PageSize>();
 
-        if (pageSize is null)
+        if (pageSize is null || sectionProperties is null)
         {
             converter.AddPageBreak();
             body.AppendChild(CreateSectionProperties(orientation, paperSize));
@@ -100,7 +100,7 @@ public static class WordDocumentFactory
                 new Run(
                    new LastRenderedPageBreak())));
 
-            body.AppendChild(CreateSectionProperties(orientation, paperSize));
+            body.AppendChild(sectionProperties.CloneSectionProperties(orientation, paperSize));
         }
         else
         {
@@ -128,6 +128,7 @@ public static class WordDocumentFactory
             new Run(
                 new Break { Type = BreakValues.Page })
         );
+
         var body = GetOrCreateDocumentBody(converter.mainPart);
         var sectionProperties = body.GetLastChild<SectionProperties>();
         body.InsertBefore(pageBreak, sectionProperties);
@@ -192,6 +193,23 @@ public static class WordDocumentFactory
             new Columns() { Space = "720" },
             new DocGrid() { LinePitch = 360 }
         );
+    }
+
+    /// <summary>
+    /// Copy a SectionProperties (reuse margings, gutter etc) but change the page size and orientation.
+    /// </summary>
+    internal static SectionProperties CloneSectionProperties(this SectionProperties sectionProperties,
+        PageOrientation orientation, PaperSize paperSize)
+    {
+        var (width, height) = GetPageDimensions(paperSize);
+        PageSize pageSize = new() { Width = width, Height = height };
+
+        if (orientation == PageOrientation.Landscape)
+            pageSize.FlipPage();
+
+        sectionProperties = (SectionProperties) sectionProperties.CloneNode(true);
+        sectionProperties.ReplaceChild(pageSize, sectionProperties.GetFirstChild<PageSize>());
+        return sectionProperties;
     }
 
     private static (uint Width, uint Height) GetPageDimensions(PaperSize paperSize)

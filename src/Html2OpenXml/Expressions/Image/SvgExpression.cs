@@ -51,7 +51,12 @@ sealed class SvgExpression(ISvgSvgElement node) : ImageExpressionBase(node)
 
         long widthInEmus = new Unit(UnitMetric.Pixel, preferredSize.Width).ValueInEmus;
         long heightInEmus = new Unit(UnitMetric.Pixel, preferredSize.Height).ValueInEmus;
+        return CreateSvgDrawing(context, svgNode, imagePartId, widthInEmus, heightInEmus);
+    }
 
+    internal static Drawing? CreateSvgDrawing(ParsingContext context,
+        ISvgSvgElement svgNode, string imagePartId, long widthInEmus, long heightInEmus)
+    {
         var (imageObjId, drawingObjId) = IncrementDrawingObjId(context);
 
         string? title = svgNode.QuerySelector("title")?.TextContent?.CollapseAndStrip() ?? "Picture " + imageObjId;
@@ -117,12 +122,12 @@ sealed class SvgExpression(ISvgSvgElement node) : ImageExpressionBase(node)
         var width = Unit.Parse(svgNode.GetAttribute("width").AsSpan(), UnitMetric.Pixel);
         if (width.IsFixed && width.Value > 0)
         {
-            preferredSize.Width = width.ValueInPx;
+            preferredSize.Width = (uint) Math.Abs(width.ValueInPx);
         }
         var height = Unit.Parse(svgNode.GetAttribute("height").AsSpan(), UnitMetric.Pixel);
         if (height.IsFixed && height.Value > 0)
         {
-            preferredSize.Height = height.ValueInPx;
+            preferredSize.Height = (uint) Math.Abs(height.ValueInPx);
         }
 
         if (preferredSize.HasInvalidDimension &&
@@ -130,8 +135,8 @@ sealed class SvgExpression(ISvgSvgElement node) : ImageExpressionBase(node)
                 p => Unit.Parse(p, UnitMetric.Pixel), p => p.IsValid,
                 out (Unit, Unit, Unit, Unit) viewBox))
         {
-            preferredSize.Width = viewBox.Item3.ValueInPx;
-            preferredSize.Height = viewBox.Item4.ValueInPx;
+            preferredSize.Width = (uint) Math.Max(0, viewBox.Item3.ValueInPx);
+            preferredSize.Height = (uint) Math.Max(0, viewBox.Item4.ValueInPx);
         }
 
         if (preferredSize.HasInvalidDimension)

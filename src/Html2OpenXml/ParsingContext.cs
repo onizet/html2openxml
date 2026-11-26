@@ -62,6 +62,37 @@ sealed class ParsingContext(HtmlConverter converter, OpenXmlPartContainer hostin
         };
     }
 
+    /// <summary>
+    /// Gets the maximum width for the content, expressed in Twips unit.
+    /// </summary>
+    public Unit GetAvailableContentWidth()
+    {
+        var sectionProperties = WordDocumentFactory.GetOrCreateSectionProperties(MainPart);
+        var pageSize = sectionProperties.GetFirstChild<PageSize>()!;
+        var pageMargin = sectionProperties.GetFirstChild<PageMargin>()!;
+
+        var contentWidth = pageSize.Width!.Value
+            - pageMargin.Left!.Value - pageMargin.Right!.Value
+            - (pageMargin.Gutter ?? 0U);
+        return new Unit(UnitMetric.Twips, contentWidth);
+    }
+
+    /// <summary>
+    /// Gets the maximum height for the content, expressed in Twips unit.
+    /// </summary>
+    public Unit GetAvailableContentHeight()
+    {
+        var sectionProperties = WordDocumentFactory.GetOrCreateSectionProperties(MainPart);
+        var pageSize = sectionProperties.GetFirstChild<PageSize>()!;
+        var pageMargin = sectionProperties.GetFirstChild<PageMargin>()!;
+
+        // Top and Bottom are int while other margin are uint.
+        // We will prevent underflow by defining the lower boundary to 0
+        var contentHeight = Math.Max(0, pageSize.Height!.Value
+            - pageMargin.Top!.Value - pageMargin.Bottom!.Value);
+        return new Unit(UnitMetric.Twips, contentHeight);
+    }
+
     /// <summary>Retrieves a variable tied to the context of the parsing.</summary>
     public T? Properties<T>(string name)
         => propertyBag.TryGetValue(name, out var value)? (T?) value : default;
