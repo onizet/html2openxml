@@ -99,9 +99,19 @@ static class ImageHeader
         if (actualSize.HasInvalidDimension)
             return (Unit.Empty, Unit.Empty);
 
-        // Resize by the highest difference ratio between constrained dimension and real one.
+        bool scaleByWidth = preferredHeightEmus <= 0 && preferredWidthEmus > 0;
+        bool scaleByHeight = preferredWidthEmus <= 0 && preferredHeightEmus > 0;
 
-        if (preferredWidthEmus > 0 && preferredHeightEmus == 0)
+        // Resize by the highest difference ratio between constrained dimension and real one.
+        if (!scaleByWidth && !scaleByHeight)
+        {
+            long widthDiff = Math.Abs(preferredWidthEmus - actualSize.Width);
+            long heightDiff = Math.Abs(preferredHeightEmus - actualSize.Height);
+
+            scaleByWidth = widthDiff >= heightDiff;
+        }
+
+        if (scaleByWidth)
         {
             return (
                 new Unit(UnitMetric.Emus, preferredWidthEmus),
@@ -111,18 +121,10 @@ static class ImageHeader
             );
         }
 
-        if (preferredHeightEmus > 0 && preferredWidthEmus == 0)
-        {
-            return (
-                new Unit(UnitMetric.Emus,
-                    Math.Round(
-                        actualSize.Width * (double)preferredHeightEmus / actualSize.Height)),
-                new Unit(UnitMetric.Emus, preferredHeightEmus)
-            );
-        }
-
         return (
-            new Unit(UnitMetric.Emus, preferredWidthEmus),
+            new Unit(UnitMetric.Emus,
+                Math.Round(
+                    actualSize.Width * (double)preferredHeightEmus / actualSize.Height)),
             new Unit(UnitMetric.Emus, preferredHeightEmus)
         );
     }
