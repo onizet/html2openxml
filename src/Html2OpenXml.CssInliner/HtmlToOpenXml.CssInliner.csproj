@@ -19,6 +19,7 @@
     <Authors>Olivier Nizet</Authors>
     <RepositoryType>GIT</RepositoryType>
     <NoWarn>$(NoWarn);CS8981</NoWarn>
+    <Version>1.1.0</Version>
   </PropertyGroup>
   <Import Project="..\..\build\SignAssembly.props" />
 
