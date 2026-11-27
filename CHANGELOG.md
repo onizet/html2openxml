@@ -6,6 +6,7 @@
 - New `WordDocumentFactory.AddPage(orientation, paperSize)` helper.
 - New `WordDocumentFactory.AddPageBreak()` helper.
 - Add extensibility capabilities to the converter: `Transformers`, `ParserConfigurators` and `NodeProcessors`.
+- New `LoadDocumentAsync(html)` which allow parsing once and converting multiple times.
 - Image size expressed in percentage (max-width) consider the current page width (orientation and different paper size than A4).
 - Image widths are automatically constrained to prevent overflow of the page.
 - Fix SVG appended to the body rather than in the footer/header.
