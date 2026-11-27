@@ -12,7 +12,7 @@ public class InlineCssTests
 {
     private MemoryStream generatedDocument = default!;
     private WordprocessingDocument package = default!;
-    private CssStyleHtmlConverter converter;
+    private HtmlConverter converter;
 
 
     [SetUp]
@@ -21,7 +21,8 @@ public class InlineCssTests
         generatedDocument = new MemoryStream();
         package = WordDocumentFactory.Create(generatedDocument);
 
-        converter = new CssStyleHtmlConverter(package);
+        converter = new HtmlConverter(package)
+            .UseCssInliner(CssProcessingMode.InternalOnly);
     }
 
     [TearDown]

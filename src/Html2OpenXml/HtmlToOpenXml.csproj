@@ -6,6 +6,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <AssemblyName>HtmlToOpenXml</AssemblyName>
     <RootNamespace>HtmlToOpenXml</RootNamespace>
+    <IsPackable>true</IsPackable>
     <PackageId>HtmlToOpenXml</PackageId>
     <PackageIcon>icon.png</PackageIcon>
     <PackageProjectUrl>https://onizet.github.io/html2openxml/</PackageProjectUrl>
@@ -39,7 +40,8 @@
     <PackageReference Include="AngleSharp" />
     <PackageReference Include="DocumentFormat.OpenXml" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)' == 'Release'">
     <PackageReference Include="NuSpec.AI" PrivateAssets="all" />
   </ItemGroup>
 

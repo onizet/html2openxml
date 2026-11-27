@@ -1,5 +1,6 @@
-/*
- * Copyright (c) 2017 Deal Stream sàrl. All rights reserved
+/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml
+ * Licensed under the MIT License.
+ * Please see the LICENSE file in the project root fo full license information
  */
 using System.IO;
 using System.Reflection;

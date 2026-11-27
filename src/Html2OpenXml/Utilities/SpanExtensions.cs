@@ -1,13 +1,6 @@
-/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
- * 
- * This source is subject to the Microsoft Permissive License.
- * Please see the License.txt file for more information.
- * All other rights reserved.
- * 
- * THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY 
- * KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
- * PARTICULAR PURPOSE.
+/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml
+ * Licensed under the MIT License.
+ * Please see the LICENSE file in the project root fo full license information
  */
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -24,12 +17,12 @@ static partial class SpanExtensions
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [System.Diagnostics.DebuggerHidden]
-    public static byte AsByte(this ReadOnlySpan<char> span, NumberStyles style)
+    public static bool TryParseByte(this ReadOnlySpan<char> span, NumberStyles style, out byte value)
     {
 #if NET5_0_OR_GREATER
-        return byte.Parse(span, style);
+        return byte.TryParse(span, style, CultureInfo.InvariantCulture, out value);
 #else
-        return byte.Parse(span.ToString(), style);
+        return byte.TryParse(span.ToString(), style, CultureInfo.InvariantCulture, out value);
 #endif
     }
 
@@ -38,12 +31,14 @@ static partial class SpanExtensions
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [System.Diagnostics.DebuggerHidden]
-    public static double AsDouble(this ReadOnlySpan<char> span)
+    public static bool TryParseDouble(this ReadOnlySpan<char> span, out double value)
     {
+        const NumberStyles numberStyles = NumberStyles.Integer | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent;
+
 #if NET5_0_OR_GREATER
-        return double.Parse(span, CultureInfo.InvariantCulture);
+        return double.TryParse(span, numberStyles, CultureInfo.InvariantCulture, out value);
 #else
-        return double.Parse(span.ToString(), CultureInfo.InvariantCulture);
+        return double.TryParse(span.ToString(), numberStyles, CultureInfo.InvariantCulture, out value);
 #endif
     }
 
@@ -57,16 +52,16 @@ static partial class SpanExtensions
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [System.Diagnostics.DebuggerHidden]
-    public static double AsPercent (this ReadOnlySpan<char> span)
+    public static bool TryParsePercent (this ReadOnlySpan<char> span, out double percentValue)
     {
         int index = span.IndexOf('%');
-        if (index > -1)
+        if (index > -1 && span.Slice(0, index).TryParseDouble(out var parsedValue))
         {
-            double parsedValue = span.Slice(0, index).AsDouble() / 100d;
-            return Math.Min(1, Math.Max(0, parsedValue));
+            percentValue = Math.Min(1, Math.Max(0, parsedValue / 100d));
+            return true;
         }
 
-        return span.AsDouble();
+        return span.TryParseDouble(out percentValue);
     }
 
     /// <summary>

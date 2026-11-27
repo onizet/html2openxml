@@ -77,11 +77,11 @@ sealed class ImageHeaderTests
     [TestCaseSource(nameof(ResizedImageTestCases))]
     public void KeepAspectRatio_Returns((Size actualSize, Size preferredSize, Size expectedSize) td)
     {
-        var resized = ImageHeader.KeepAspectRatio(td.actualSize, td.preferredSize);
+        var (resizedW, resizedH) = ImageHeader.KeepAspectRatio(td.actualSize, td.preferredSize.Width, td.preferredSize.Height);
         using (Assert.EnterMultipleScope())
         {
-            Assert.That(resized.Width, Is.EqualTo(td.expectedSize.Width));
-            Assert.That(resized.Height, Is.EqualTo(td.expectedSize.Height));
+            Assert.That(resizedW.Value, Is.EqualTo(td.expectedSize.Width));
+            Assert.That(resizedH.Value, Is.EqualTo(td.expectedSize.Height));
         }
     }
 
@@ -89,11 +89,11 @@ sealed class ImageHeaderTests
     {
         yield return (new Size(255, 0), new Size(255, 255), Size.Empty);
         yield return (new Size(255, 255), new Size(255, 255), new Size(255, 255));
-        yield return (new Size(500, 255), new Size(125, 255), new Size(125, 63));
+        yield return (new Size(500, 255), new Size(125, 255), new Size(125, 64));
         yield return (new Size(500, 255), new Size(255, 125), new Size(255, 130));
-        yield return (new Size(255, 500), new Size(255, 125), new Size(63, 125));
-        yield return (new Size(500, 255), new Size(500, 750), new Size(1470, 750));
-        yield return (new Size(9999, 7499), new Size(100, 75), new Size(100, 74));
-        yield return (new Size(1000, 1498), new Size(0, 642), new Size(428, 642));
+        yield return (new Size(255, 500), new Size(255, 125), new Size(64, 125));
+        yield return (new Size(500, 255), new Size(500, 750), new Size(1471, 750));
+        yield return (new Size(9999, 7499), new Size(100, 75), new Size(100, 75));
+        yield return (new Size(1000, 1498), new Size(0, 642), new Size(429, 642));
     }
 }

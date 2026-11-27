@@ -1,13 +1,6 @@
-﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
- * 
- * This source is subject to the Microsoft Permissive License.
- * Please see the License.txt file for more information.
- * All other rights reserved.
- * 
- * THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY 
- * KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
- * PARTICULAR PURPOSE.
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml
+ * Licensed under the MIT License.
+ * Please see the LICENSE file in the project root fo full license information
  */
 using System.Runtime.CompilerServices;
 using DocumentFormat.OpenXml;
@@ -40,15 +33,21 @@ static class OpenXmlExtensions
         return null;
     }
 
-    public static bool Compare(this PageSize pageSize, PageOrientationValues orientation)
+    /// <summary>
+    /// Determines whether the specified page size represents a landscape orientation.
+    /// </summary>
+    public static bool IsLandscape(this PageSize pageSize)
     {
-        PageOrientationValues pageOrientation;
+        return pageSize.Width?.Value >= pageSize.Height?.Value;
+    }
 
-        if (pageSize.Orient != null) pageOrientation = pageSize.Orient.Value;
-        else if (pageSize.Width > pageSize.Height) pageOrientation = PageOrientationValues.Landscape;
-        else pageOrientation = PageOrientationValues.Portrait;
-
-        return pageOrientation == orientation;
+    /// <summary>
+    /// Swap the orientation of a page.
+    /// </summary>
+    public static void FlipPage(this PageSize pageSize)
+    {
+        (pageSize.Height, pageSize.Width) = (pageSize.Width, pageSize.Height);
+        pageSize.Orient = pageSize.IsLandscape() ? PageOrientationValues.Landscape : PageOrientationValues.Portrait;
     }
 
     // needed since December 2009 CTP refactoring, where casting is not anymore an option

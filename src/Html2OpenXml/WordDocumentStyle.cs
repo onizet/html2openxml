@@ -1,13 +1,6 @@
-﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
- * 
- * This source is subject to the Microsoft Permissive License.
- * Please see the License.txt file for more information.
- * All other rights reserved.
- * 
- * THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY 
- * KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
- * PARTICULAR PURPOSE.
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml
+ * Licensed under the MIT License.
+ * Please see the LICENSE file in the project root fo full license information
  */
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -44,7 +37,7 @@ public sealed class WordDocumentStyle
     internal WordDocumentStyle(MainDocumentPart mainPart)
     {
         PrepareStyles(mainPart);
-        lazyPredefinedStyles = [ 
+        lazyPredefinedStyles = [
             PredefinedStyles.Caption,
             PredefinedStyles.EndnoteReference,
             PredefinedStyles.EndnoteText,
@@ -56,6 +49,9 @@ public sealed class WordDocumentStyle
             PredefinedStyles.Heading + "4",
             PredefinedStyles.Heading + "5",
             PredefinedStyles.Heading + "6",
+            PredefinedStyles.Heading + "7",
+            PredefinedStyles.Heading + "8",
+            PredefinedStyles.Heading + "9",
             PredefinedStyles.Hyperlink,
             PredefinedStyles.IntenseQuote,
             PredefinedStyles.ListParagraph,
@@ -228,4 +224,12 @@ public sealed class WordDocumentStyle
     /// Defaults follow the style: « abc ».
     /// </summary>
     public QuoteChars QuoteCharacters { get; set; } = QuoteChars.IE;
+
+    /// <summary>
+    /// Gets the styles currently known by the converter.
+    /// </summary>
+    public IEnumerable<Style> Styles
+    {
+        get => knownStyles.Values;
+    }
 }

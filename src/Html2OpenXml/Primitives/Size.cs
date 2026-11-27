@@ -1,15 +1,7 @@
-/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
- * 
- * This source is subject to the Microsoft Permissive License.
- * Please see the License.txt file for more information.
- * All other rights reserved.
- * 
- * THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY 
- * KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
- * PARTICULAR PURPOSE.
+/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml
+ * Licensed under the MIT License.
+ * Please see the LICENSE file in the project root fo full license information
  */
-
 namespace HtmlToOpenXml;
 
 /// <summary>
@@ -19,7 +11,7 @@ namespace HtmlToOpenXml;
 /// Initializes a new instance of the <see cref='Size'/> class from
 /// the specified dimensions.
 /// </remarks>
-struct Size(int width, int height) : IEquatable<Size>
+struct Size(uint width, uint height) : IEquatable<Size>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref='Size'/> class.
@@ -35,12 +27,12 @@ struct Size(int width, int height) : IEquatable<Size>
     /// <summary>
     /// Represents the horizontal component of this size.
     /// </summary>
-    public int Width { get; set; } = width;
+    public uint Width { get; set; } = width;
 
     /// <summary>
     /// Represents the vertical component of this size.
     /// </summary>
-    public int Height { get; set; } = height;
+    public uint Height { get; set; } = height;
 
     /// <inheritdoc/>
     public bool Equals(Size other)
@@ -60,5 +52,5 @@ struct Size(int width, int height) : IEquatable<Size>
     /// Ensure both the Width and Height are positive.
     /// </summary>
     public readonly bool HasInvalidDimension
-        => Width <= 0 || Height <= 0;
+        => Width == 0 || Height == 0;
 }

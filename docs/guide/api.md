@@ -46,6 +46,26 @@ Purpose: Converts HTML into a standalone, actionable collection of OpenXML eleme
 
 * **Note on Synchronicity**: Use `Parse()` for basic, non-resource-dependent conversions. Use `ParseAsync()` when the content requires external resource fetching (images, links) or longer processing time.
 
+## `LoadDocumentAsync()`
+
+* **Purpose:** Parses HTML into an editable `HtmlFragment` without generating OpenXml content.inspection or modification.
+
+* **Use Case:** Extracting portions of a document, generating cover pages, rendering content into different Word sections, validating HTML, or performing custom transformations before conversion.
+
+* **Key Benefit:**: Parse once, convert many times. The same loaded document can be queried, modified and rendered into different locations of a Word document.
+
+```csharp
+var document = await converter.LoadDocumentAsync(html);
+
+var header = document.QuerySelector("header");
+if (header != null)
+{
+  await converter.ParseHeader(header);
+  header.Remove();
+}
+await converter.ParseBody(document);
+```
+
 ## Advanced Extension Hooks (Optional)
 
 `HtmlConverter` can be extended by overriding two virtual methods that participate in the HTML parsing pipeline.

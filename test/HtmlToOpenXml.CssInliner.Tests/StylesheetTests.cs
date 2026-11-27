@@ -13,7 +13,7 @@ public class StylesheetTests
 {
     private MemoryStream generatedDocument = default!;
     private WordprocessingDocument package = default!;
-    private CssStyleHtmlConverter converter;
+    private HtmlConverter converter;
     private Mock<IO.IWebRequest> webRequest;
 
 
@@ -33,7 +33,8 @@ public class StylesheetTests
 
         generatedDocument = new MemoryStream();
         package = WordDocumentFactory.Create(generatedDocument);
-        converter = new CssStyleHtmlConverter(package, webRequest.Object);
+        converter = new HtmlConverter(package, webRequest.Object)
+            .UseCssInliner();
     }
 
     [TearDown]

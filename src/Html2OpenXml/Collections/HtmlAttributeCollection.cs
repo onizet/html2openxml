@@ -1,15 +1,7 @@
-﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
- * 
- * This source is subject to the Microsoft Permissive License.
- * Please see the License.txt file for more information.
- * All other rights reserved.
- * 
- * THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY 
- * KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
- * PARTICULAR PURPOSE.
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml
+ * Licensed under the MIT License.
+ * Please see the LICENSE file in the project root fo full license information
  */
-
 namespace HtmlToOpenXml;
 
 /// <summary>
@@ -131,18 +123,6 @@ sealed class HtmlAttributeCollection
             return true;
         }
         value = [];
-        return false;
-    }
-
-    /// <summary>
-    /// Efficient way to determine if a style is equals to a value.
-    /// </summary>
-    public bool HasStyleEqualsTo(string name, ReadOnlySpan<char> value)
-    {
-        if (TryGetValue(name, out var span))
-        {
-            return span.Equals(value, StringComparison.OrdinalIgnoreCase);
-        }
         return false;
     }
 

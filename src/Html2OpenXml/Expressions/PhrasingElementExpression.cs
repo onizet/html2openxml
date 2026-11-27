@@ -1,13 +1,6 @@
-﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
- * 
- * This source is subject to the Microsoft Permissive License.
- * Please see the License.txt file for more information.
- * All other rights reserved.
- * 
- * THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY 
- * KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
- * PARTICULAR PURPOSE.
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml
+ * Licensed under the MIT License.
+ * Please see the LICENSE file in the project root fo full license information
  */
 using System.Globalization;
 using AngleSharp.Dom;
@@ -43,7 +36,7 @@ class PhrasingElementExpression(IHtmlElement node, OpenXmlLeafElement? styleProp
         var runs = new List<OpenXmlElement>();
         foreach (var child in childNodes)
         {
-            var expression = CreateFromHtmlNode (child);
+            var expression = CreateFromHtmlNode (context.Converter, child);
             if (expression == null) continue;
 
             foreach (var element in expression.Interpret(context))

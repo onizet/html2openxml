@@ -1,13 +1,6 @@
-/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
- * 
- * This source is subject to the Microsoft Permissive License.
- * Please see the License.txt file for more information.
- * All other rights reserved.
- * 
- * THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY 
- * KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
- * PARTICULAR PURPOSE.
+/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml
+ * Licensed under the MIT License.
+ * Please see the LICENSE file in the project root fo full license information
  */
 using System.Globalization;
 using AngleSharp.Dom;
@@ -31,17 +24,12 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
     {
         MarBookmarkTargets();
 
-        var body = context.MainPart.Document!.Body!;
-        var sectionProperties = body.Descendants<SectionProperties>().LastOrDefault();
-        if (sectionProperties != null)
-        {
-            context.IsLandscape = WordDocumentFactory.IsLandscape(sectionProperties.GetFirstChild<PageSize>());
-        }
-
         var elements = base.Interpret(context).ToList();
 
         if (shouldRegisterTopBookmark && elements.Count > 0)
         {
+            var body = context.MainPart.Document!.Body!;
+
             // Check whether it already exists
             if (body.Descendants<BookmarkStart>().Any(b => b.Name?.Value == "_top"))
             {
@@ -63,41 +51,11 @@ sealed class BodyExpression(IHtmlElement node, ParagraphStyleId? defaultStyle)
     {
         base.ComposeStyles(context);
 
-        var mainPart = context.MainPart;
-
-        // Unsupported W3C attribute but claimed by users. Specified at <body> level, the page
-        // orientation is applied on the whole document
-        if (styleAttributes.TryGetValue("page-orientation", out var attrValue))
-        {
-            PageOrientation orientation = attrValue.Is("landscape")?
-                PageOrientation.Landscape : PageOrientation.Portrait;
-
-            var sectionProperties = mainPart.Document!.Body!.GetFirstChild<SectionProperties>();
-            var pageSize = sectionProperties?.GetFirstChild<PageSize>();
-            if (pageSize == null)
-            {
-                context.IsLandscape = orientation == PageOrientation.Landscape;
-                mainPart.Document.Body.Append(WordDocumentFactory.CreateSectionProperties(orientation));
-            }
-            else if (WordDocumentFactory.IsLandscape(pageSize) != (orientation == PageOrientation.Landscape))
-            {
-                PageSize newPageSize = WordDocumentFactory.CreateSectionProperties(orientation)
-                    .GetFirstChild<PageSize>()!;
-
-                pageSize.Width = newPageSize.Width;
-                pageSize.Height = newPageSize.Height;
-            }
-        }
-
         if (paraProperties.BiDi is not null)
         {
-            var sectionProperties = mainPart.Document!.Body!.GetFirstChild<SectionProperties>();
-            if (sectionProperties == null || sectionProperties.GetFirstChild<PageSize>() == null)
-            {
-                mainPart.Document.Body.Append(sectionProperties = new());
-            }
-
-            if (!sectionProperties.HasChild<BiDi>())
+            var body = WordDocumentFactory.GetOrCreateDocumentBody(context.MainPart);
+            var sectionProperties = body.GetLastChild<SectionProperties>();
+            if (sectionProperties?.HasChild<BiDi>() == false)
             {
                 sectionProperties.AddChild(paraProperties.BiDi.CloneNode(true));
             }

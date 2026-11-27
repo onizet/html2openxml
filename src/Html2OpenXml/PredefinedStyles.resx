@@ -323,6 +323,71 @@
   </w:rPr>
 </w:style>]]></value>
   </data>
+  <data name="Heading7" xml:space="preserve">
+    <value><![CDATA[
+  <w:style w:type="paragraph" w:styleId="Heading7" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+	<w:name w:val="heading 7"/>
+	<w:basedOn w:val="Normal"/>
+	<w:next w:val="Normal"/>
+	<w:link w:val="Heading7Char"/>
+	<w:unhideWhenUsed/>
+	<w:qFormat/>
+	<w:pPr>
+		<w:keepNext/>
+		<w:keepLines/>
+		<w:spacing w:before="40" w:after="0"/>
+		<w:outlineLvl w:val="6"/>
+	</w:pPr>
+	<w:rPr>
+		<w:rFonts w:eastAsiaTheme="majorEastAsia" w:cstheme="majorBidi"/>
+		<w:color w:val="595959" w:themeColor="text1" w:themeTint="A6"/>
+	</w:rPr>
+</w:style>]]></value>
+  </data>
+  <data name="Heading8" xml:space="preserve" >
+    <value><![CDATA[
+  <w:style w:type="paragraph" w:styleId="Heading8" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+	<w:name w:val="heading 8"/>
+	<w:basedOn w:val="Normal"/>
+	<w:next w:val="Normal"/>
+	<w:link w:val="Heading8Char"/>
+	<w:unhideWhenUsed/>
+	<w:qFormat/>
+	<w:pPr>
+		<w:keepNext/>
+		<w:keepLines/>
+		<w:spacing w:after="0"/>
+		<w:outlineLvl w:val="7"/>
+	</w:pPr>
+	<w:rPr>
+		<w:rFonts w:eastAsiaTheme="majorEastAsia" w:cstheme="majorBidi"/>
+		<w:i/>
+		<w:iCs/>
+		<w:color w:val="272727" w:themeColor="text1" w:themeTint="D8"/>
+	</w:rPr>
+</w:style>]]></value>
+  </data>
+  <data name="Heading9" xml:space="preserve">
+    <value><![CDATA[
+<w:style w:type="paragraph" w:styleId="Heading9" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+	<w:name w:val="heading 9"/>
+	<w:basedOn w:val="Normal"/>
+	<w:next w:val="Normal"/>
+	<w:link w:val="Heading9Char"/>
+	<w:unhideWhenUsed/>
+	<w:qFormat/>
+	<w:pPr>
+		<w:keepNext/>
+		<w:keepLines/>
+		<w:spacing w:after="0"/>
+		<w:outlineLvl w:val="8"/>
+	</w:pPr>
+	<w:rPr>
+		<w:rFonts w:eastAsiaTheme="majorEastAsia" w:cstheme="majorBidi"/>
+		<w:color w:val="272727" w:themeColor="text1" w:themeTint="D8"/>
+	</w:rPr>
+</w:style>]]></value>
+  </data>
   <data name="Hyperlink" xml:space="preserve">
     <value><![CDATA[<w:style w:type="character" w:styleId="Hyperlink" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
   <w:name w:val="Hyperlink" />

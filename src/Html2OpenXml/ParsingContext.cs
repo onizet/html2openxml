@@ -1,16 +1,10 @@
-﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
- * 
- * This source is subject to the Microsoft Permissive License.
- * Please see the License.txt file for more information.
- * All other rights reserved.
- * 
- * THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY 
- * KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
- * PARTICULAR PURPOSE.
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml
+ * Licensed under the MIT License.
+ * Please see the LICENSE file in the project root fo full license information
  */
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
 using HtmlToOpenXml.Expressions;
 
 namespace HtmlToOpenXml;
@@ -41,9 +35,6 @@ sealed class ParsingContext(HtmlConverter converter, OpenXmlPartContainer hostin
     /// <summary>Whether the text content should collapse the whitespaces.</summary>
     public bool CollapseWhitespaces { get; set; } = true;
 
-    /// <summary>Whether the page orientation is portrait or landscape.</summary>
-    public bool IsLandscape { get; set; }
-
     public void CascadeStyles(OpenXmlElement element)
     {
         parentExpression?.CascadeStyles(element);
@@ -62,15 +53,44 @@ sealed class ParsingContext(HtmlConverter converter, OpenXmlPartContainer hostin
     /// </param>
     public ParsingContext CreateChild(HtmlElementExpression expression, bool isStyleScoped = false)
     {
-        var childContext = new ParsingContext(Converter, HostingPart, ImageLoader) {
+        return new ParsingContext(Converter, HostingPart, ImageLoader) {
             propertyBag = propertyBag,
             parentExpression = expression,
             parentContext = isStyleScoped ? null :this,
-            IsLandscape = IsLandscape,
             PreserveLinebreaks = PreserveLinebreaks,
             CollapseWhitespaces = CollapseWhitespaces
         };
-        return childContext;
+    }
+
+    /// <summary>
+    /// Gets the maximum width for the content, expressed in Twips unit.
+    /// </summary>
+    public Unit GetAvailableContentWidth()
+    {
+        var sectionProperties = WordDocumentFactory.GetOrCreateSectionProperties(MainPart);
+        var pageSize = sectionProperties.GetFirstChild<PageSize>()!;
+        var pageMargin = sectionProperties.GetFirstChild<PageMargin>()!;
+
+        var contentWidth = pageSize.Width!.Value
+            - pageMargin.Left!.Value - pageMargin.Right!.Value
+            - (pageMargin.Gutter ?? 0U);
+        return new Unit(UnitMetric.Twips, contentWidth);
+    }
+
+    /// <summary>
+    /// Gets the maximum height for the content, expressed in Twips unit.
+    /// </summary>
+    public Unit GetAvailableContentHeight()
+    {
+        var sectionProperties = WordDocumentFactory.GetOrCreateSectionProperties(MainPart);
+        var pageSize = sectionProperties.GetFirstChild<PageSize>()!;
+        var pageMargin = sectionProperties.GetFirstChild<PageMargin>()!;
+
+        // Top and Bottom are int while other margin are uint.
+        // We will prevent underflow by defining the lower boundary to 0
+        var contentHeight = Math.Max(0, pageSize.Height!.Value
+            - pageMargin.Top!.Value - pageMargin.Bottom!.Value);
+        return new Unit(UnitMetric.Twips, contentHeight);
     }
 
     /// <summary>Retrieves a variable tied to the context of the parsing.</summary>

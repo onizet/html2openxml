@@ -123,15 +123,6 @@ await converter.ParseBody(@"<img src='https://www.gstatic.com/webp/gallery/1.web
 
 * **SVG Detail:** When using `<svg>`, placing descriptions inside the `<title>` or `<desc>` tags ensures these metadata fields are accurately reflected in the resulting Word document properties.
 
-### Logging
-
-For monitoring or advanced troubleshooting of I/O access during downloads, you may provide a custom `ILogger` implementation to the `DefaultWebRequest` constructor. This enables you to log connection status and resource retrieval attempts without modifying the core conversion logic:
-
-```csharp
-// Pass the logger for detailed I/O troubleshooting. The null indicates you are not providing a custom HttpClient.
-HtmlConverter converter = new(mainPart, new DefaultWebRequest(null, myLoggerInstance)); 
-```
-
 ## Styling and Layout Support
 
 The library interprets several HTML attributes that control the visual rendering in Word:

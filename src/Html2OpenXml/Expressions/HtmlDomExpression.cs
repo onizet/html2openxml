@@ -1,13 +1,6 @@
-/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
- * 
- * This source is subject to the Microsoft Permissive License.
- * Please see the License.txt file for more information.
- * All other rights reserved.
- * 
- * THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY 
- * KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
- * PARTICULAR PURPOSE.
+/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml
+ * Licensed under the MIT License.
+ * Please see the LICENSE file in the project root fo full license information
  */
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
@@ -95,11 +88,17 @@ abstract class HtmlDomExpression
     /// <summary>
     /// Create a new interpreter for the given html tag.
     /// </summary>
-    public static HtmlDomExpression? CreateFromHtmlNode (INode node)
+    public static HtmlDomExpression? CreateFromHtmlNode (HtmlConverter converter, INode node)
     {
         if (node.NodeType == NodeType.Text)
         {
             return new TextExpression(node);
+        }
+
+        foreach (var processor in converter.NodeProcessors)
+        {
+            if (processor.CanProcess(node))
+                return new CustomNodeExpression(processor, node);
         }
 
         if (node.NodeType == NodeType.Element

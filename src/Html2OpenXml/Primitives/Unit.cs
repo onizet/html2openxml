@@ -1,15 +1,7 @@
-﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
- * 
- * This source is subject to the Microsoft Permissive License.
- * Please see the License.txt file for more information.
- * All other rights reserved.
- * 
- * THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY 
- * KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
- * PARTICULAR PURPOSE.
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml
+ * Licensed under the MIT License.
+ * Please see the LICENSE file in the project root fo full license information
  */
-
 namespace HtmlToOpenXml;
 
 /// <summary>
@@ -76,19 +68,14 @@ readonly struct Unit
             }
         }
 
-        double value;
-        try
-        {
-            value = span.Slice(0, span.Length - metricSize).AsDouble();
-
-            if (value < short.MinValue || value > short.MaxValue)
-                return Empty;
-        }
-        catch (Exception)
+        if (!span.Slice(0, span.Length - metricSize).TryParseDouble(out var value))
         {
             // No digits, we ignore this style
             return Empty;
         }
+
+        if (value < short.MinValue || value > short.MaxValue)
+            return Empty;
 
         return new Unit(metric, value);
     }
@@ -115,6 +102,7 @@ readonly struct Unit
         {
             UnitMetric.Auto or UnitMetric.Unitless or UnitMetric.Percent => 0L,// not applicable
             UnitMetric.Emus => (long)value,
+            UnitMetric.Twips => (long)(value * 635L),
             UnitMetric.Inch => (long)(value * 914400L),
             UnitMetric.Centimeter => (long)(value * 360000L),
             UnitMetric.Millimeter => (long)(value * 36000L),
@@ -169,9 +157,11 @@ readonly struct Unit
     }
 
     /// <summary>
-    /// Gets the value expressed in 1/8 of a Point
+    /// Gets the value expressed in 1/8 of a Point.
+    /// <para>
     /// IMPORTANT: Use this for borders, as OpenXML expresses Border Width in 1/8 of points,
     /// with a minimum value of 2 (1/4 of a point) and a maximum value of 96 (12 points).
+    /// </para>
     /// </summary>
     public double ValueInEighthPoint
     {

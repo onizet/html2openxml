@@ -1,5 +1,21 @@
 # Changelog
 
+## 4.3.0
+
+- New `WordDocumentFactory.Create(orientation, paperSize)` helper.
+- New `WordDocumentFactory.AddPage(orientation, paperSize)` helper.
+- New `WordDocumentFactory.AddPageBreak()` helper.
+- Add extensibility capabilities to the converter: `Transformers`, `ParserConfigurators` and `NodeProcessors`.
+- New `LoadDocumentAsync(html)` which allow parsing once and converting multiple times.
+- Image size expressed in percentage (max-width) consider the current page width (orientation and different paper size than A4).
+- Image widths are automatically constrained to prevent overflow of the page.
+- Fix SVG appended to the body rather than in the footer/header.
+
+- **[BREAKING CHANGE]** Remove the non-standard attribute `page-orientation` on the body to change the orientation. Use `AddPage()` instead.
+- Stop mutating the `HttpClient` in `DefaultWebRequest`.
+- Remove `ILogger` from `DefaultWebRequest` which removes one extra package dependency.
+- Prefer `converter.UseCssInliner()` rather than creating a new instance of `CssStyleHtmlConverter`.
+
 ## 4.2.0
 
 Ease of Use Improvements:

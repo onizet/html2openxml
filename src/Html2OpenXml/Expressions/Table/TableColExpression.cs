@@ -1,13 +1,6 @@
-﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml - All Rights Reserved
- * 
- * This source is subject to the Microsoft Permissive License.
- * Please see the License.txt file for more information.
- * All other rights reserved.
- * 
- * THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY 
- * KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
- * PARTICULAR PURPOSE.
+﻿/* Copyright (C) Olivier Nizet https://github.com/onizet/html2openxml
+ * Licensed under the MIT License.
+ * Please see the LICENSE file in the project root fo full license information
  */
 using System.Globalization;
 using AngleSharp.Html.Dom;
@@ -21,8 +14,6 @@ namespace HtmlToOpenXml.Expressions;
 /// </summary>
 sealed class TableColExpression(IHtmlTableColumnElement node) : TableElementExpressionBase(node)
 {
-    private const int MaxTablePortraitWidth = 9622;
-    private const int MaxTableLandscapeWidth = 12996;
     private readonly IHtmlTableColumnElement colNode = node;
     private double? columnWidthPercent;
 
@@ -44,7 +35,7 @@ sealed class TableColExpression(IHtmlTableColumnElement node) : TableElementExpr
             }
             else if (width.Metric == UnitMetric.Percent)
             {
-                var maxWidth = context.IsLandscape ? MaxTableLandscapeWidth : MaxTablePortraitWidth;
+                var maxWidth = context.GetAvailableContentWidth().Value;
                 columnWidthPercent = Math.Max(0, Math.Min(100, width.Value));
                 column.Width = Math.Ceiling(maxWidth / 100d * columnWidthPercent.Value).ToString(CultureInfo.InvariantCulture);
             }
