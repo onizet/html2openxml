@@ -30,9 +30,6 @@ namespace HtmlToOpenXml;
 /// </example>
 public static class WordDocumentFactory
 {
-    internal static readonly PageSize A4PageSize = new() { Width = 11906U, Height = 16838U };
-
-
     /// <summary>
     /// Create a new Word document on the specified stream and configures its page settings.
     /// 

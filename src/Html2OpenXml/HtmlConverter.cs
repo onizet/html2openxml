@@ -396,14 +396,6 @@ public class HtmlConverter
     /// and <c>page-break-after</c> with the value "always".
     /// Useful for reports, invoices, contracts, and other multi-page business documents.
     /// </para>
-    /// 
-    /// <para>
-    /// <c>Page Orientation</c> can be changed through the non-standard <c>page-orientation</c>
-    /// attribute (supported values: portrait and landscape).
-    /// This is useful for wide tables, reports and other content that benefits
-    /// from a landscape layout.
-    /// Currently, the attribute is supported on the body element and applies to the main document.
-    /// </para>
     /// </summary>
     /// <param name="html">The HTML content to parse</param>
     /// <param name="cancellationToken">The cancellation token.</param>
